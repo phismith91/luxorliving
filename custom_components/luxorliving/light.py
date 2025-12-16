@@ -71,7 +71,6 @@ class LuxorLivingLight(CoordinatorEntity[LuxorLivingCoordinator], LightEntity):
         self._device_id = device_id
         self._attr_unique_id = f"{entry.entry_id}_{device_id}"
         self._attr_name = device_data.get("name", f"Light {device_id}")
-        self._attr_has_entity_name = True
         
         # Set device info
         self._attr_device_info = {
