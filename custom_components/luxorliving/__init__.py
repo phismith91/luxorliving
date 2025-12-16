@@ -8,16 +8,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import LuxorLivingApi
-from .const import (
-    DEFAULT_SCAN_INTERVAL,
-    DOMAIN,
-    PLATFORMS,
-)
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import LuxorLivingCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-# Convert platform names to Platform enum
+# Platform enum list
 PLATFORMS_ENUM = [Platform.LIGHT, Platform.SWITCH, Platform.SENSOR]
 
 

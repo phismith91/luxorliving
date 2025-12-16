@@ -9,9 +9,6 @@ DEFAULT_PORT = 80
 DEFAULT_SCAN_INTERVAL = 30
 DEFAULT_TIMEOUT = 10
 
-# Platform types
-PLATFORMS = ["light", "switch", "sensor"]
-
 # API endpoints (placeholder - adjust based on actual API)
 API_ENDPOINT_STATUS = "/api/status"
 API_ENDPOINT_DEVICES = "/api/devices"
