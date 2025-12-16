@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to LUXORliving",
+        "description": "Set up your Theben LUXORliving system",
+        "data": {
+          "host": "Host (IP address or hostname)",
+          "port": "Port",
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the LUXORliving system. Please check the host and port.",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This LUXORliving system is already configured"
+    }
+  }
+}
