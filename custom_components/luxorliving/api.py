@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 import aiohttp
-import async_timeout
 
 from .const import (
     API_ENDPOINT_CONTROL,
@@ -75,7 +74,7 @@ class LuxorLivingApi:
         url = f"{self._base_url}{endpoint}"
         
         try:
-            async with async_timeout.timeout(self._timeout):
+            async with asyncio.timeout(self._timeout):
                 async with self._session.request(
                     method,
                     url,

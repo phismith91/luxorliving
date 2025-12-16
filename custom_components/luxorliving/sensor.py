@@ -2,8 +2,9 @@
 import logging
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -72,13 +73,13 @@ class LuxorLivingSensor(CoordinatorEntity[LuxorLivingCoordinator], SensorEntity)
         # Set device class and unit based on sensor type
         sensor_type = device_data.get("sensor_type", "generic")
         if sensor_type == "temperature":
-            self._attr_device_class = "temperature"
-            self._attr_native_unit_of_measurement = "°C"
+            self._attr_device_class = SensorDeviceClass.TEMPERATURE
+            self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
         elif sensor_type == "humidity":
-            self._attr_device_class = "humidity"
+            self._attr_device_class = SensorDeviceClass.HUMIDITY
             self._attr_native_unit_of_measurement = "%"
         elif sensor_type == "illuminance":
-            self._attr_device_class = "illuminance"
+            self._attr_device_class = SensorDeviceClass.ILLUMINANCE
             self._attr_native_unit_of_measurement = "lx"
         
         # Set device info

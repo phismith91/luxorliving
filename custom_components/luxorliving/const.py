@@ -4,18 +4,10 @@ from datetime import timedelta
 # Integration domain
 DOMAIN = "luxorliving"
 
-# Configuration constants
-CONF_HOST = "host"
-CONF_PORT = "port"
-CONF_SCAN_INTERVAL = "scan_interval"
-
 # Default values
 DEFAULT_PORT = 80
 DEFAULT_SCAN_INTERVAL = 30
 DEFAULT_TIMEOUT = 10
-
-# Update interval
-UPDATE_INTERVAL = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
 
 # Platform types
 PLATFORMS = ["light", "switch", "sensor"]

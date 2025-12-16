@@ -1,5 +1,6 @@
 """The Theben LUXORliving integration."""
 import logging
+from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL, Platform
@@ -11,7 +12,6 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     PLATFORMS,
-    UPDATE_INTERVAL,
 )
 from .coordinator import LuxorLivingCoordinator
 
@@ -42,11 +42,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = async_get_clientsession(hass)
     api = LuxorLivingApi(host=host, port=port, session=session)
     
-    # Create coordinator
+    # Create coordinator with configured scan interval
     coordinator = LuxorLivingCoordinator(
         hass=hass,
         api=api,
-        update_interval=UPDATE_INTERVAL,
+        update_interval=timedelta(seconds=scan_interval),
     )
     
     # Fetch initial data
