@@ -55,17 +55,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     if lxp_path and lxp_path.exists():
         _LOGGER.info("Parsing LXP file: %s", lxp_path)
-        parser = LXPParser(str(lxp_path))
-        project = await parser.parse()
-        
-        # Create entity mapper
-        mapper = EntityMapper(project)
-        entity_count = len(mapper.entities)
-        _LOGGER.warning("🔥 Mapped %d entities from LXP project", entity_count)
-        
-        # Store mapper and config in integration data
-        hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
-        hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
+        try:
+            parser = LXPParser(str(lxp_path))
+            project = await parser.parse()
+            
+            # Create entity mapper
+            mapper = EntityMapper(project)
+            entity_count = len(mapper.entities)
+            _LOGGER.warning("🔥 Mapped %d entities from LXP project", entity_count)
+            
+            # Store mapper and config in integration data
+            hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
+            hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
+        except Exception as err:
+            _LOGGER.exception("Failed to parse LXP file %s: %s", lxp_path, err)
+            return False
     else:
         _LOGGER.error("LXP file not found: %s - cannot load entities", lxp_file)
         return False

@@ -117,6 +117,15 @@ class LuxorLivingLight(LightEntity):
                 self._attr_is_on = False
                 self.async_write_ha_state()
 
+    async def async_will_remove_from_hass(self) -> None:
+        """Clean up listener when entity is removed."""
+        if self._address_status:
+            self._knx_gateway.unregister_listener(
+                self._address_status,
+                self._handle_knx_update
+            )
+        await super().async_will_remove_from_hass()
+
 
 class LuxorLivingDimmableLight(LuxorLivingLight):
     """Representation of a dimmable LUXORliving light."""
@@ -174,3 +183,12 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         else:
             # Fallback to simple on/off
             await super().async_turn_on(**kwargs)
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Clean up listeners when entity is removed."""
+        if self._address_dim:
+            self._knx_gateway.unregister_listener(
+                self._address_dim,
+                self._handle_brightness_update
+            )
+        await super().async_will_remove_from_hass()

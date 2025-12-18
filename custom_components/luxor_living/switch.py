@@ -114,6 +114,15 @@ class LuxorLivingSwitch(SwitchEntity):
                 self._attr_is_on = False
                 self.async_write_ha_state()
 
+    async def async_will_remove_from_hass(self) -> None:
+        """Clean up listener when entity is removed."""
+        if self._address_status:
+            self._knx_gateway.unregister_listener(
+                self._address_status,
+                self._handle_knx_update
+            )
+        await super().async_will_remove_from_hass()
+
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return extra attributes."""

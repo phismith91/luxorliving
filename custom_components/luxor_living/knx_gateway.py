@@ -147,8 +147,9 @@ class LuxorKNXGateway:
             if value_type == "binary":
                 payload = GroupValueWrite(DPTBinary(value))
             elif value_type == "percent":
-                # DPT 5.001 (0-100%)
-                payload = GroupValueWrite(DPTArray(int(value * 255 / 100)))
+                # DPT 5.001 (0-100%) - must be list!
+                byte_value = int(value * 255 / 100)
+                payload = GroupValueWrite(DPTArray([byte_value]))
             else:
                 # For now, treat unknown types as raw bytes
                 payload = GroupValueWrite(DPTArray(value if isinstance(value, (list, bytes)) else [int(value)]))
@@ -256,9 +257,14 @@ class LuxorKNXGateway:
             if isinstance(telegram.payload.value, DPTBinary):
                 value = telegram.payload.value.value
             elif isinstance(telegram.payload.value, DPTArray):
-                # For DPT arrays, we'll need to decode based on type
-                # For now, just get the raw value
-                value = telegram.payload.value.value
+                # Decode DPT arrays based on length
+                raw_value = telegram.payload.value.value
+                if isinstance(raw_value, (list, bytes)) and len(raw_value) == 1:
+                    # DPT 5.001 (percent): 0-255 → 0-100
+                    value = int(raw_value[0] * 100 / 255)
+                else:
+                    # Unknown DPT - return raw value
+                    value = raw_value
             else:
                 value = telegram.payload.value
             
@@ -270,7 +276,12 @@ class LuxorKNXGateway:
             
             # Notify listeners
             if group_address in self._listeners:
-                for callback in self._listeners[group_address]:
+                # Create snapshot to avoid modification during iteration
+                callbacks = list(self._listeners[group_address])
+                for callback in callbacks:
+                    # Check if still registered (could be removed during iteration)
+                    if callback not in self._listeners.get(group_address, []):
+                        continue
                     try:
                         await self.hass.async_add_executor_job(
                             callback, group_address, value
