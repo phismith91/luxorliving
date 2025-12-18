@@ -35,21 +35,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     lxp_file = entry.data.get(CONF_LXP_FILE)
     
     if not lxp_file:
-        # Fallback to legacy behavior for existing installations
-        _LOGGER.warning("No LXP file in config, using fallback paths")
-        test_file_paths = [
-            Path.home() / "Nextcloud/Projekte_Rechner/Madeira/Schmidt_Madeira_V0.8.lxp",
-            Path.home() / "Nextcloud/Projekte_Rechner/Madeira/Madeira.lxp",
-            Path(__file__).parent.parent.parent / "Familie Schmidt_0.9.lxp",
-        ]
-        
-        lxp_path = None
-        for path in test_file_paths:
-            if path.exists():
-                lxp_path = path
-                break
-    else:
-        lxp_path = Path(lxp_file).expanduser()
+        _LOGGER.error("No LXP file configured - setup cannot continue")
+        return False
+    
+    lxp_path = Path(lxp_file).expanduser()
     
     if lxp_path and lxp_path.exists():
         _LOGGER.info("Parsing LXP file: %s", lxp_path)
@@ -65,7 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
         hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
     else:
-        _LOGGER.error("LXP file not found: %s - cannot load entities", lxp_file or "none")
+        _LOGGER.error("LXP file not found: %s - cannot load entities", lxp_file)
         return False
     
     # Forward setup to platforms

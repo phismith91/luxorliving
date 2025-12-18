@@ -11,6 +11,7 @@
     "requirements": [
         "xknx>=2.12.0"
     ],
+    "integration_type": "hub",
     "iot_class": "local_polling",
     "config_flow": true,
     "homeassistant": "2024.12.0"
