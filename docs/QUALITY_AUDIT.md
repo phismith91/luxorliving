@@ -249,16 +249,16 @@ _LOGGER.warning("🔥🔥🔥 LUXOR SETUP STARTED 🔥🔥🔥")
 
 ## 4. 📋 Code Quality Checklist
 
-| Category | Status | Score | Notes |
-|----------|--------|-------|-------|
-| **Type Hints** | ⚠️ Good | 8/10 | `Any` statt `MappedEntity` |
-| **Docstrings** | ✅ Excellent | 9/10 | Alle Funktionen dokumentiert |
-| **Error Handling** | ⚠️ Needs Work | 6/10 | XML/Network errors unhandled |
-| **Resource Cleanup** | ❌ Critical Gap | 4/10 | Listener Memory Leaks |
-| **Async Best Practices** | ✅ Good | 8/10 | Korrekte `to_thread()` Nutzung |
-| **PEP8 Compliance** | ✅ Excellent | 9/10 | Nur Debug-Log Violations |
-| **Test Coverage** | ⚠️ Limited | 5/10 | Nur Parser/Mapper Tests |
-| **Security** | ⚠️ Moderate Risk | 6/10 | XXE, Input Validation |
+| Category                 | Status          | Score | Notes                          |
+| ------------------------ | --------------- | ----- | ------------------------------ |
+| **Type Hints**           | ⚠️ Good          | 8/10  | `Any` statt `MappedEntity`     |
+| **Docstrings**           | ✅ Excellent     | 9/10  | Alle Funktionen dokumentiert   |
+| **Error Handling**       | ⚠️ Needs Work    | 6/10  | XML/Network errors unhandled   |
+| **Resource Cleanup**     | ❌ Critical Gap  | 4/10  | Listener Memory Leaks          |
+| **Async Best Practices** | ✅ Good          | 8/10  | Korrekte `to_thread()` Nutzung |
+| **PEP8 Compliance**      | ✅ Excellent     | 9/10  | Nur Debug-Log Violations       |
+| **Test Coverage**        | ⚠️ Limited       | 5/10  | Nur Parser/Mapper Tests        |
+| **Security**             | ⚠️ Moderate Risk | 6/10  | XXE, Input Validation          |
 
 **Overall Code Quality:** 7.0/10
 

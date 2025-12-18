@@ -129,11 +129,11 @@ Simulation Mode: true
 
 ### Unterstützte DPT-Typen:
 
-| Typ | DPT | Beschreibung | Verwendung |
-|-----|-----|--------------|------------|
-| **binary** | DPT 1.001 | On/Off | Schalter, Lichter |
-| **percent** | DPT 5.001 | 0-100% | Dimmer, Jalousien |
-| **temperature** | DPT 9.001 | Temperatur | Sensoren |
+| Typ             | DPT       | Beschreibung | Verwendung        |
+| --------------- | --------- | ------------ | ----------------- |
+| **binary**      | DPT 1.001 | On/Off       | Schalter, Lichter |
+| **percent**     | DPT 5.001 | 0-100%       | Dimmer, Jalousien |
+| **temperature** | DPT 9.001 | Temperatur   | Sensoren          |
 
 **Erweiterbar** für weitere DPT-Typen in `knx_gateway.py`
 

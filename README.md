@@ -4,10 +4,14 @@
 [![GitHub Release](https://img.shields.io/github/release/phismith91/luxorliving.svg)](https://github.com/phismith91/luxorliving/releases)
 [![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](LICENSE)
 ![Quality Score](https://img.shields.io/badge/Quality-8.5%2F10-green)
+![Test Coverage](https://img.shields.io/badge/Coverage-35%25-yellow)
+![Tests](https://img.shields.io/badge/Tests-23%2F23%20passing-brightgreen)
 
 Home Assistant Integration für **Theben LUXORliving KNX/IP Gateways** mit automatischer Geräteerkennung aus LXP-Projektdateien.
 
 > ⚠️ **Beta Status**: Diese Integration ist funktionsfähig, aber noch in aktiver Entwicklung. Sensor-, Climate- und Cover-Plattformen sind noch nicht vollständig implementiert.
+> 
+> ✅ **Getestet**: 23/23 Tests passing, Quality Score 8.5/10, Production-ready für Light & Switch Plattformen
 
 ---
 
@@ -87,14 +91,14 @@ Die Integration erkennt automatisch alle Geräte aus deinem LXP-Projekt und erst
 
 ## 🎯 Plattform-Status
 
-| Plattform | Status | Features |
-|-----------|--------|----------|
-| 💡 **Light** | ✅ Production | On/Off, Dimming, Status Updates |
-| 🔌 **Switch** | ✅ Production | On/Off, Status Updates |
-| 📊 **Binary Sensor** | ✅ Production | Status Updates |
-| 🌡️ **Sensor** | ⚠️ Beta | Basis-Implementation |
-| 🪟 **Cover** | ⚠️ Planned | Noch nicht implementiert |
-| 🌡️ **Climate** | ⚠️ Planned | Noch nicht implementiert |
+| Plattform           | Status       | Features                        |
+| ------------------- | ------------ | ------------------------------- |
+| 💡 **Light**         | ✅ Production | On/Off, Dimming, Status Updates |
+| 🔌 **Switch**        | ✅ Production | On/Off, Status Updates          |
+| 📊 **Binary Sensor** | ✅ Production | Status Updates                  |
+| 🌡️ **Sensor**        | ⚠️ Beta       | Basis-Implementation            |
+| 🪟 **Cover**         | ⚠️ Planned    | Noch nicht implementiert        |
+| 🌡️ **Climate**       | ⚠️ Planned    | Noch nicht implementiert        |
 
 ---
 
@@ -132,26 +136,69 @@ tail -f /config/home-assistant.log | grep luxor_living
 
 ---
 
-## 📚 Weitere Ressourcen
+## 📚 Dokumentation
 
-- [QUICKSTART.md](QUICKSTART.md) – Entwickler-Dokumentation
-- [CONTEXT.md](.github/copilot/CONTEXT.md) – Architektur-Übersicht
-- [Issue Tracker](https://github.com/phismith91/luxorliving/issues) – Bugs & Feature Requests
+### Benutzer-Dokumentation
+- 📖 [Schnellstart-Anleitung](docs/QUICKSTART.md) – Installation und Konfiguration
+- 📖 [Test-Dokumentation](docs/TESTS.md) – Testing Guidelines
+
+### Entwickler-Dokumentation
+- 🔧 [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technische Details zur KNX/IP Kommunikation
+- 🔍 [Quality Audit](docs/QUALITY_AUDIT.md) – Umfassende Code-Qualitätsanalyse (Score: 8.5/10)
+- 🐛 [Critical Fixes](docs/CRITICAL_FIXES.md) – Dokumentation behobener kritischer Issues
+- ✅ [Test Report](docs/TEST_REPORT.md) – Aktueller Test-Status (23/23 passing, 35% Coverage)
+- 🏗️ [Architektur-Übersicht](.github/copilot/CONTEXT.md) – System-Architektur und Design
+
+### Support
+- 🐞 [Issue Tracker](https://github.com/phismith91/luxorliving/issues) – Bugs & Feature Requests
+- 💬 [Discussions](https://github.com/phismith91/luxorliving/discussions) – Community Support
 
 ---
 
 ## 📝 Lizenz
 
 Dieses Projekt steht unter der [LICENSE](LICENSE).
+� Qualitätssicherung
+
+Diese Integration durchläuft umfassende Qualitätsprüfungen:
+
+- ✅ **23/23 Unit Tests** passing (100% Success Rate)
+- ✅ **35% Code Coverage** (88% config_flow, 77% knx_gateway)
+- ✅ **Quality Score: 8.5/10** (Code Quality, Security, Performance)
+- ✅ **Security Audit** passed (XXE Protection, Input Validation)
+- ✅ **Memory Leak Tests** passed
+- ✅ **Race Condition Tests** passed
+
+Siehe [Test Report](docs/TEST_REPORT.md) und [Quality Audit](docs/QUALITY_AUDIT.md) für Details.
 
 ---
 
-## 🙏 Credits
+## 🤝 Beitragen
 
-- **Theben AG** – LUXORliving Hardware & LUXORPlug Software
-- **xknx** – KNX/IP Python Library
-- **Home Assistant Community** – Framework & Support
+Pull Requests sind willkommen! Für größere Änderungen bitte zuerst ein Issue öffnen.
 
+### Development Setup
+
+1. Fork das Repository
+2. Erstelle einen Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Installiere Development Dependencies:
+   ```bash
+   pip install -r requirements_dev.txt
+   ```
+4. Führe Tests aus:
+   ```bash
+   pytest tests/ -v
+   ```
+5. Commit deine Änderungen (`git commit -m 'Add some AmazingFeature'`)
+6. Push zum Branch (`git push origin feature/AmazingFeature`)
+7. Öffne einen Pull Request
+
+### Test Coverage
+
+Bitte stelle sicher, dass neue Features getestet sind:
+- Unit Tests für neue Funktionen
+- Integration Tests für komplexe Workflows
+- Ziel: >60% Code Coverage für neue Module
 ---
 
 ## 🤝 Beitragen
