@@ -12,6 +12,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers import selector
 
 from .const import (
     DOMAIN,
@@ -27,9 +28,11 @@ from .lxp_parser import LXPParser
 
 _LOGGER = logging.getLogger(__name__)
 
-# Step 1: LXP file selection from config/luxor_living/
+# Step 1: LXP file browser
 STEP_LXP_DATA_SCHEMA = vol.Schema({
-    vol.Required(CONF_LXP_FILE, description="Filename in /config/luxor_living/"): str,
+    vol.Required(CONF_LXP_FILE): selector.FileSelector(
+        selector.FileSelectorConfig(accept=".lxp")
+    ),
 })
 
 # Step 2: Gateway configuration
@@ -57,31 +60,19 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the initial step - LXP file selection."""
+        """Handle the initial step - LXP file selection via file browser."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            filename = user_input[CONF_LXP_FILE]
-            
-            # Build path to file in config/luxor_living/
-            luxor_dir = self.hass.config.path("luxor_living")
-            lxp_file = os.path.join(luxor_dir, filename)
+            lxp_file = user_input[CONF_LXP_FILE]
             
             # Validate LXP file
             try:
-                if not os.path.exists(lxp_file):
-                    # Try to list available files for better error message
-                    if os.path.exists(luxor_dir):
-                        available = [f for f in os.listdir(luxor_dir) if f.endswith('.lxp')]
-                        if available:
-                            _LOGGER.error("File not found: %s. Available: %s", filename, available)
-                        else:
-                            _LOGGER.error("No .lxp files found in %s", luxor_dir)
-                    raise FileNotFoundError(f"LXP file not found: {filename}")
-                
                 project_name = await self._validate_lxp_file(lxp_file)
                 self._lxp_file = lxp_file
                 self._project_name = project_name
+                
+                _LOGGER.info("✅ LXP file selected: %s (Project: %s)", lxp_file, project_name)
                 
                 # Proceed to gateway configuration
                 return await self.async_step_gateway()
@@ -92,29 +83,10 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Error parsing LXP file: %s", err)
                 errors["base"] = "invalid_lxp"
 
-        # Check for available LXP files
-        luxor_dir = self.hass.config.path("luxor_living")
-        available_files = []
-        default_filename = "project.lxp"
-        
-        if os.path.exists(luxor_dir):
-            available_files = [f for f in os.listdir(luxor_dir) if f.endswith('.lxp')]
-            if available_files:
-                default_filename = available_files[0]
-        
-        schema = vol.Schema({
-            vol.Required(CONF_LXP_FILE, default=default_filename): str,
-        })
-
-        description = "Please copy your LXP file to /config/luxor_living/ first"
-        if available_files:
-            description = f"Available files: {', '.join(available_files)}"
-
         return self.async_show_form(
             step_id="user",
-            data_schema=schema,
+            data_schema=STEP_LXP_DATA_SCHEMA,
             errors=errors,
-            description_placeholders={"info": description},
         )
 
     async def async_step_gateway(
