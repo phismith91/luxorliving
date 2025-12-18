@@ -71,16 +71,18 @@ class LuxorLivingSwitch(SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on (simulation mode)."""
-        _LOGGER.info(
-            "SIMULATION: Would send ON to KNX address %s", self._address_on
+        _LOGGER.warning(
+            "🔥 SIMULATION: Would send ON to KNX address %s for %s", 
+            self._address_on, self._attr_name
         )
         self._attr_is_on = True
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off (simulation mode)."""
-        _LOGGER.info(
-            "SIMULATION: Would send OFF to KNX address %s", self._address_on
+        _LOGGER.warning(
+            "🔥 SIMULATION: Would send OFF to KNX address %s for %s",
+            self._address_on, self._attr_name
         )
         self._attr_is_on = False
         self.async_write_ha_state()

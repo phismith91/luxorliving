@@ -77,12 +77,13 @@ class LXPParser:
         self.tree: ET.ElementTree | None = None
         self.root: ET.Element | None = None
 
-    def parse(self) -> LXPProject:
+    async def parse(self) -> LXPProject:
         """Parse the LXP file and return a project object."""
         _LOGGER.info("Parsing LXP file: %s", self.file_path)
 
-        # Parse XML
-        self.tree = ET.parse(self.file_path)
+        # Parse XML asynchronously to avoid blocking the event loop
+        import asyncio
+        self.tree = await asyncio.to_thread(ET.parse, self.file_path)
         self.root = self.tree.getroot()
 
         # Extract project info

@@ -74,20 +74,18 @@ class LuxorLivingLight(LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
-        # TODO: Send KNX telegram when KNX integration is ready
-        # For now, just update state (simulation mode)
-        _LOGGER.debug(
-            "Turning on %s (address: %s)", self._attr_name, self._address_on
+        _LOGGER.warning(
+            "🔥 SIMULATION: Would send ON to KNX address %s for %s", 
+            self._address_on, self._attr_name
         )
         self._attr_is_on = True
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
-        # TODO: Send KNX telegram when KNX integration is ready
-        # For now, just update state (simulation mode)
-        _LOGGER.debug(
-            "Turning off %s (address: %s)", self._attr_name, self._address_on
+        _LOGGER.warning(
+            "🔥 SIMULATION: Would send OFF to KNX address %s for %s", 
+            self._address_on, self._attr_name
         )
         self._attr_is_on = False
         self.async_write_ha_state()
@@ -113,8 +111,8 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         
         # TODO: Send KNX telegram for dimming
-        _LOGGER.debug(
-            "Turning on %s with brightness %d (address: %s)",
+        _LOGGER.warning(
+            "🔥 SIMULATION: Dimming %s to brightness %d (address: %s)",
             self._attr_name,
             brightness,
             self._address_dim or self._address_on,

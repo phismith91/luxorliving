@@ -9,58 +9,64 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import DOMAIN, CONF_LXP_FILE
 from .lxp_parser import LXPParser
 from .entity_mapper import EntityMapper
 
 _LOGGER = logging.getLogger(__name__)
 
+# Only include implemented platforms
 PLATFORMS: list[Platform] = [
     Platform.LIGHT,
     Platform.SWITCH,
-    Platform.COVER,
-    Platform.CLIMATE,
-    Platform.SENSOR,
     Platform.BINARY_SENSOR,
 ]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up LUXORliving from a config entry."""
-    _LOGGER.info("Setting up LUXORliving integration")
+    _LOGGER.warning("🔥🔥🔥 LUXOR SETUP STARTED 🔥🔥🔥")
     
     # Store integration data
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {}
     
-    # TODO: Get LXP file path from config entry
-    # For now, use a hardcoded test file
-    test_file_paths = [
-        Path.home() / "Nextcloud/Projekte_Rechner/Madeira/Schmidt_Madeira_V0.8.lxp",
-        Path.home() / "Nextcloud/Projekte_Rechner/Madeira/Madeira.lxp",
-        Path(__file__).parent.parent.parent / "Familie Schmidt_0.9.lxp",
-    ]
+    # Get LXP file path from config entry
+    lxp_file = entry.data.get(CONF_LXP_FILE)
     
-    test_file = None
-    for path in test_file_paths:
-        if path.exists():
-            test_file = path
-            break
+    if not lxp_file:
+        # Fallback to legacy behavior for existing installations
+        _LOGGER.warning("No LXP file in config, using fallback paths")
+        test_file_paths = [
+            Path.home() / "Nextcloud/Projekte_Rechner/Madeira/Schmidt_Madeira_V0.8.lxp",
+            Path.home() / "Nextcloud/Projekte_Rechner/Madeira/Madeira.lxp",
+            Path(__file__).parent.parent.parent / "Familie Schmidt_0.9.lxp",
+        ]
+        
+        lxp_path = None
+        for path in test_file_paths:
+            if path.exists():
+                lxp_path = path
+                break
+    else:
+        lxp_path = Path(lxp_file).expanduser()
     
-    if test_file:
-        _LOGGER.info("Parsing LXP file: %s", test_file)
-        parser = LXPParser(str(test_file))
-        project = parser.parse()
+    if lxp_path and lxp_path.exists():
+        _LOGGER.info("Parsing LXP file: %s", lxp_path)
+        parser = LXPParser(str(lxp_path))
+        project = await parser.parse()
         
         # Create entity mapper
         mapper = EntityMapper(project)
         entity_count = len(mapper.entities)
-        _LOGGER.info("Mapped %d entities from LXP project", entity_count)
+        _LOGGER.warning("🔥 Mapped %d entities from LXP project", entity_count)
         
-        # Store mapper in integration data
+        # Store mapper and config in integration data
         hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
+        hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
     else:
-        _LOGGER.warning("LXP file not found: %s - running without entities", test_file)
+        _LOGGER.error("LXP file not found: %s - cannot load entities", lxp_file or "none")
+        return False
     
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
