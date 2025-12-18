@@ -69,7 +69,7 @@ class LuxorLivingLight(LightEntity):
         
         # Store datapoint addresses
         self._address_on = mapped_entity.datapoints.get("OnOff") or mapped_entity.datapoints.get("SchaltenOnOff")
-        self._address_status = mapped_entity.datapoints.get("StatusOnOff")
+        self._address_status = mapped_entity.datapoints.get("StatusOnOff") or mapped_entity.datapoints.get("status@OnOff")
         
         # Device info
         self._attr_device_info = {
@@ -80,24 +80,30 @@ class LuxorLivingLight(LightEntity):
         }
         
         # Register listener for status updates
-        if self._address_status:
+        # Listen on status address if available, otherwise on control address
+        listen_address = self._address_status or self._address_on
+        if listen_address:
             self._knx_gateway.register_listener(
-                self._address_status,
+                listen_address,
                 self._handle_knx_update
             )
+            self._listen_address = listen_address  # Store for cleanup
 
     async def async_added_to_hass(self) -> None:
         """Entity added to hass - request current state from KNX."""
         await super().async_added_to_hass()
         
         # Request current state from KNX bus
-        if self._address_status:
-            _LOGGER.debug("Requesting initial state for %s from %s", self._attr_name, self._address_status)
-            await self._knx_gateway.async_read_group_address(self._address_status)
+        # Try status address first, fallback to control address
+        read_address = self._address_status or self._address_on
+        if read_address:
+            _LOGGER.debug("Requesting initial state for %s from %s", self._attr_name, read_address)
+            await self._knx_gateway.async_read_group_address(read_address)
 
     def _handle_knx_update(self, group_address: str, value: Any) -> None:
         """Handle KNX status update."""
-        if group_address == self._address_status:
+        # Accept updates from both status and control addresses
+        if group_address in (self._address_status, self._address_on):
             self._attr_is_on = bool(value)
             self.schedule_update_ha_state()
             _LOGGER.debug("Updated %s state: %s", self._attr_name, value)
@@ -128,9 +134,9 @@ class LuxorLivingLight(LightEntity):
 
     async def async_will_remove_from_hass(self) -> None:
         """Clean up listener when entity is removed."""
-        if self._address_status:
+        if hasattr(self, '_listen_address'):
             self._knx_gateway.unregister_listener(
-                self._address_status,
+                self._listen_address,
                 self._handle_knx_update
             )
         await super().async_will_remove_from_hass()

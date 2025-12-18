@@ -95,7 +95,7 @@ class TestLuxorLivingLight:
 
     @pytest.mark.asyncio
     async def test_async_added_to_hass_no_status_address(self, mock_knx_gateway):
-        """Test entity added when no status address available."""
+        """Test entity added when no status address available - should use OnOff as fallback."""
         entity = Mock()
         entity.unique_id = "test_light_no_status"
         entity.name = "Test Light No Status"
@@ -108,8 +108,8 @@ class TestLuxorLivingLight:
         
         await light.async_added_to_hass()
         
-        # Should NOT request state if no status address
-        mock_knx_gateway.async_read_group_address.assert_not_called()
+        # Should fallback to OnOff address for reading
+        mock_knx_gateway.async_read_group_address.assert_called_once_with("1/2/8")
 
     @pytest.mark.asyncio
     async def test_turn_on(self, mock_mapped_entity, mock_knx_gateway):
