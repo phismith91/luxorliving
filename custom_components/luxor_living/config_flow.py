@@ -66,6 +66,8 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             lxp_file = user_input[CONF_LXP_FILE]
             
+            _LOGGER.debug("📁 Received file input: %s (type: %s)", lxp_file, type(lxp_file))
+            
             # Validate LXP file
             try:
                 project_name = await self._validate_lxp_file(lxp_file)
@@ -77,7 +79,8 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # Proceed to gateway configuration
                 return await self.async_step_gateway()
                 
-            except FileNotFoundError:
+            except FileNotFoundError as err:
+                _LOGGER.error("❌ File not found: %s", err)
                 errors["base"] = "file_not_found"
             except Exception as err:  # pylint: disable=broad-except
                 _LOGGER.exception("Error parsing LXP file: %s", err)
