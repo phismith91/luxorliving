@@ -11,10 +11,19 @@ from custom_components.luxor_living.lxp_parser import LXPParser
 
 def main():
     """Test the LXP parser."""
-    lxp_file = Path(__file__).parent.parent / "data" / "test_project.lxp"
+    import sys
     
-    if not lxp_file.exists():
-        lxp_file = Path("/home/phil/Nextcloud/Familie Schmidt_0.8.lxp")
+    # Check if file provided as argument
+    if len(sys.argv) > 1:
+        lxp_file = Path(sys.argv[1])
+    else:
+        lxp_file = Path(__file__).parent.parent / "data" / "test_project.lxp"
+        
+        if not lxp_file.exists():
+            lxp_file = Path("/home/phil/Nextcloud/Familie Schmidt_0.9.lxp")
+        
+        if not lxp_file.exists():
+            lxp_file = Path("/home/phil/Nextcloud/Familie Schmidt_0.8.lxp")
     
     if not lxp_file.exists():
         print(f"❌ LXP file not found: {lxp_file}")
