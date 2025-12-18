@@ -4,12 +4,13 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
+import shutil
 from typing import Any
 
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.components import media_source
+from homeassistant.components.file_upload import process_uploaded_file
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
@@ -28,6 +29,21 @@ from .const import (
 from .lxp_parser import LXPParser
 
 _LOGGER = logging.getLogger(__name__)
+
+STORAGE_PATH = ".storage/luxor_living.{key}.lxp"
+
+
+def save_uploaded_lxp_file(hass: HomeAssistant, uploaded_file_id: str) -> str:
+    """Save uploaded LXP file and return the storage path."""
+    storage_path = hass.config.path(STORAGE_PATH.format(key=uploaded_file_id[:8]))
+    
+    with process_uploaded_file(hass, uploaded_file_id) as file_path:
+        # Copy uploaded file to permanent storage
+        shutil.copy(file_path, storage_path)
+    
+    _LOGGER.info("📂 Saved uploaded file to: %s", storage_path)
+    return storage_path
+
 
 # Step 1: LXP file browser
 STEP_LXP_DATA_SCHEMA = vol.Schema({
@@ -69,35 +85,20 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             _LOGGER.debug("📁 Received file input: %s (type: %s)", lxp_file_id, type(lxp_file_id))
             
-            # FileSelector returns uploaded file ID - resolve to actual file path
+            # Save uploaded file using Home Assistant's file_upload component
             try:
-                # The uploaded file is stored temporarily in .storage/uploaded_files/
-                upload_dir = self.hass.config.path(".storage", "uploaded_files")
-                lxp_file = os.path.join(upload_dir, lxp_file_id)
-                
-                # Check if file exists
-                if not await self.hass.async_add_executor_job(os.path.isfile, lxp_file):
-                    # Try alternative path patterns
-                    alt_path = self.hass.config.path("media", lxp_file_id)
-                    if await self.hass.async_add_executor_job(os.path.isfile, alt_path):
-                        lxp_file = alt_path
-                    else:
-                        raise FileNotFoundError(f"Uploaded file not found: {lxp_file_id}")
+                lxp_file = await self.hass.async_add_executor_job(
+                    save_uploaded_lxp_file, self.hass, lxp_file_id
+                )
                 
                 _LOGGER.info("📂 Resolved file path: %s", lxp_file)
                 
             except Exception as err:
-                _LOGGER.error("❌ Failed to resolve file: %s", err)
+                _LOGGER.error("❌ Failed to save uploaded file: %s", err)
                 errors["base"] = "file_not_found"
                 return self.async_show_form(
                     step_id="user",
-                    data_schema=vol.Schema(
-                        {
-                            vol.Required(CONF_LXP_FILE): selector.FileSelector(
-                                selector.FileSelectorConfig(accept=".lxp")
-                            )
-                        }
-                    ),
+                    data_schema=STEP_LXP_DATA_SCHEMA,
                     errors=errors,
                 )
             
