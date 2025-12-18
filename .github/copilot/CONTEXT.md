@@ -1,57 +1,71 @@
 # Copilot Context – luxor_living
 
-This repository implements a Home Assistant integration for
+This repository contains a Home Assistant integration for
 **Theben LUXORliving IP1**, based on **KNX/IP**.
 
-The project is designed to be:
+The integration is designed to be:
 
 * HACS-ready
 * Community-friendly
 * Maintainable long-term
 * Independent of ETS or `.knxproj` files
 
-Instead, it relies on **LUXORliving project exports (`.lxp`, XML)** for
-automatic device and entity mapping.
+Instead of ETS, it optionally uses **LUXORliving project exports (`.lxp`, XML)**
+to automatically discover and map devices.
 
 ---
 
 ## Core Principles
 
-* **No ETS dependency**
-* **KNX/IP only**, via LUXORliving IP1 (Weinzierl-based)
-* **`.lxp` project files are optional but preferred**
-* **Auto-mapping based on datapoint roles**
-* **Simulation / Dry-Run mode is a first-class feature**
-* HACS-first, but written close to HA Core standards
+* No ETS dependency
+* KNX/IP via LUXORliving IP1 (Weinzierl-based)
+* `.lxp` project files are optional but preferred
+* Deterministic auto-mapping based on datapoint roles
+* Simulation / Dry-Run mode is a first-class feature
+* HACS-first, but written close to Home Assistant Core standards
 
 ---
 
-## Architecture Overview
+## High-Level Architecture
 
 * KNX/IP communication is abstracted
-* LUXORliving-specific behavior is isolated
-* `.lxp` parsing is independent of Home Assistant code
-* Entity mapping is deterministic and role-based
-* Fallback logic exists when no project file is provided
+* Luxor Living specifics are isolated from HA logic
+* `.lxp` parsing is independent from Home Assistant code
+* Mapping logic is role-based and predictable
+* Fallback behavior exists when no project file is available
+* Simulation mode must never affect production behavior
 
 ---
 
-## Copilot Usage Rules
+## Language & Usage Rules
 
-* Copilot agents are located in `.github/copilot/`
-* Agents define **how** code should be generated
-* This file defines **when** agents should be used
-* Agents are written in **English**
-* User messages may be in **German or English**
-* All generated code, identifiers, and comments must be in **English**
+* Copilot agent definitions are written in **English**
+* User prompts may be **German or English**
+* All generated code, identifiers, comments, and documentation must be **English**
+* Agents define *how* Copilot should behave
+* This file defines *when* each agent must be used
+
+---
+
+## Agent Interaction Rules (IMPORTANT)
+
+* Only **agent_architect** may make architectural or structural decisions
+* Luxor/KNX domain assumptions come exclusively from **agent_luxor_expert**
+* Parsing, mapping, UX, compliance, and quality concerns are strictly separated
+* Review agents must not introduce new features or redesigns
+
+### Conflict Resolution Order
+
+If agents provide conflicting advice, resolve it in this order:
+
+1. agent_architect
+2. agent_luxor_expert
+3. Functional agent (parser / mapping / config flow / testing)
+4. Review agents (HACS / Quality Auditor)
 
 ---
 
-## Agent Selection Guide
-
-Use the following agents depending on the task you are working on.
-
----
+## Agent Usage Guide
 
 ### 🧠 Architecture & Structure
 
@@ -59,22 +73,23 @@ Use the following agents depending on the task you are working on.
 
 Use when:
 
-* Creating or refactoring module structure
-* Making high-level architectural decisions
-* Introducing new subsystems (simulation, parsing, mapping)
+* Designing or refactoring overall architecture
+* Defining module boundaries and data flow
+* Introducing or restructuring subsystems
+* Resolving conflicts between agent recommendations
 
 ---
 
-### 🔌 Luxor Living / IP1 Domain Knowledge
+### 🔌 Luxor Living & IP1 Domain Knowledge
 
 **Agent:** `agent_luxor_expert.md`
 
 Use when:
 
 * Working with Luxor Living–specific behavior
-* Handling differences between standard KNX and Luxor KNX
-* Making assumptions about IP1 capabilities or limitations
-* Evaluating feasibility of features
+* Handling differences between standard KNX and Luxor proprietary KNX
+* Evaluating IP1 controller capabilities or limitations
+* Assessing feasibility or constraints
 
 ---
 
@@ -84,10 +99,10 @@ Use when:
 
 Use when:
 
-* Parsing `.lxp` XML project files
-* Handling devices, sensors, and datapoints
-* Working with LuxorPlug namespaces or versions
-* Improving robustness of project imports
+* Parsing `.lxp` (LuxorPlug XML) project files
+* Handling namespaces, versions, and schema changes
+* Extracting devices, channels, sensors, actuators, and datapoints
+* Improving robustness of project import
 
 ---
 
@@ -99,7 +114,7 @@ Use when:
 
 * Creating Home Assistant entities
 * Mapping Luxor datapoint roles to HA platforms
-* Generating entity IDs, names, and devices
+* Generating entity IDs, names, and device groupings
 * Implementing fallback mappings
 
 ---
@@ -110,23 +125,24 @@ Use when:
 
 Use when:
 
-* Implementing `config_flow.py`
+* Implementing or refining `config_flow.py`
+* Designing onboarding flows
 * Handling `.lxp` file uploads
-* Improving onboarding for non-KNX users
-* Validating IP1 connectivity
+* Improving error handling and user guidance
+* Supporting simulation / dry-run setup
 
 ---
 
-### 🧪 Simulation, Testing & Debugging
+### 🧪 Simulation, Testing & Diagnostics
 
 **Agent:** `agent_testing.md`
 
 Use when:
 
-* Working on simulation / dry-run mode
-* Adding tests
-* Debugging without real KNX hardware
-* Improving logging and diagnostics
+* Implementing simulation or dry-run mode
+* Writing or improving tests
+* Debugging without physical KNX hardware
+* Enhancing logging and diagnostics
 
 ---
 
@@ -137,9 +153,9 @@ Use when:
 Use when:
 
 * Preparing releases
-* Editing `manifest.json`, `hacs.json`
-* Writing or reviewing README files
-* Ensuring HACS and HA guideline compliance
+* Reviewing `manifest.json` and `hacs.json`
+* Ensuring README meets HACS requirements
+* Checking versioning and metadata
 
 ---
 
@@ -149,10 +165,10 @@ Use when:
 
 Use when:
 
-* Reviewing code quality and readability
-* Preparing PRs for community review
+* Reviewing code readability and maintainability
 * Improving documentation clarity
-* Ensuring maintainability and positive community perception
+* Preparing pull requests for community review
+* Evaluating long-term project health
 
 ---
 
@@ -160,10 +176,11 @@ Use when:
 
 * This integration intentionally avoids ETS-based workflows
 * `.lxp` files are the primary source for automation metadata
-* Simulation mode should always remain functional
-* Clarity and maintainability are prioritized over feature completeness
+* Simulation mode must always remain functional
+* Simplicity and clarity are prioritized over feature completeness
+* Community expectations and maintainability matter as much as functionality
 
 ---
 
-This file provides **context and guidance** for GitHub Copilot and contributors.
-It has **no runtime impact** on the integration.
+This file provides **context and behavioral guidance** for GitHub Copilot
+and contributors. It has **no runtime impact** on the integration.

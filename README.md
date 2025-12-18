@@ -58,23 +58,17 @@ Home Assistant Integration für **Theben LUXORliving KNX/IP Gateways** mit autom
 
 ### Schritt 1: LXP-Datei exportieren
 
-1. Öffne **Theben LUXORPlug** Software
-2. Öffne dein Projekt
-3. Gehe zu **Datei** → **Exportieren** → **LXP-Datei speichern** (`.lxp`)
-4. Speichere die Datei auf deinem Home Assistant Server (z.B. `/config/luxor/mein_projekt.lxp`)
+**Theben LUXORPlug** → **Datei** → **Exportieren** → **LXP-Datei speichern** → Auf HA Server (z.B. `/config/luxor/projekt.lxp`)
 
 ### Schritt 2: Integration hinzufügen
 
-1. Gehe zu **Einstellungen** → **Geräte & Dienste**
-2. Klicke auf **Integration hinzufügen**
-3. Suche nach **LUXORliving**
-4. Folge dem Setup-Assistenten:
-   - **Schritt 1:** Pfad zur LXP-Datei eingeben (z.B. `/config/luxor/mein_projekt.lxp`)
-   - **Schritt 2:** Gateway-Konfiguration:
-     - **IP-Adresse**: IP des LUXORliving IP1 Gateways
-     - **Port**: 3671 (KNX/IP Standard)
-     - **Connection Type**: Tunneling (empfohlen) oder Routing
-     - **Simulation Mode**: Für Tests ohne Hardware aktivieren
+**Einstellungen** → **Geräte & Dienste** → **Integration hinzufügen** → **LUXORliving**
+
+**Setup:**
+1. LXP-Datei Pfad (z.B. `/config/luxor/mein_projekt.lxp`)
+2. Gateway IP & Port (Standard: 3671)
+3. Connection Type: Tunneling (empfohlen)
+4. Optional: Simulation Mode aktivieren
 
 ### Schritt 3: Fertig!
 
@@ -104,112 +98,57 @@ Die Integration erkennt automatisch alle Geräte aus deinem LXP-Projekt und erst
 
 ## 🧪 Simulation Mode (Dry-Run)
 
-Zum Testen ohne echte Hardware:
-
-1. Gehe zu **Einstellungen** → **Geräte & Dienste** → **LUXORliving**
-2. Klicke auf **Optionen**
-3. Aktiviere **Simulation Mode**
-4. Alle Entity-Befehle werden geloggt, aber nicht an das Gateway gesendet
+Testen ohne echte Hardware: **Einstellungen** → **Geräte & Dienste** → **LUXORliving** → **Optionen** → **Simulation Mode aktivieren**
 
 ---
 
 ## 🛠️ Troubleshooting
 
-### Integration lädt nicht
+Siehe [QUICKSTART.md](docs/QUICKSTART.md) für detaillierte Fehlerbehebung.
 
-```bash
-# Logfile prüfen
-tail -f /config/home-assistant.log | grep luxor_living
-```
-
-### LXP-Datei wird nicht erkannt
-
-- Stelle sicher, dass der Pfad korrekt ist (absoluter Pfad)
-- Prüfe Dateiberechtigungen (`chmod 644 mein_projekt.lxp`)
-- LXP-Datei muss aus **Theben LUXORPlug** exportiert sein (XML-Format)
-
-### Gateway nicht erreichbar
-
-- Prüfe IP-Adresse und Port (Standard: `3671`)
-- Firewall-Regeln prüfen
-- Ping zum Gateway: `ping <GATEWAY_IP>`
+**Häufige Probleme:**
+- **Integration lädt nicht** → Logfile prüfen: `tail -f /config/home-assistant.log | grep luxor_living`
+- **LXP-Datei nicht erkannt** → Absoluten Pfad verwenden, Dateiberechtigungen prüfen
+- **Gateway nicht erreichbar** → IP/Port prüfen (Standard: 3671), Firewall checken
 
 ---
 
 ## 📚 Dokumentation
 
-### Benutzer-Dokumentation
-- 📖 [Schnellstart-Anleitung](docs/QUICKSTART.md) – Installation und Konfiguration
-- 📖 [Test-Dokumentation](docs/TESTS.md) – Testing Guidelines
-
-### Entwickler-Dokumentation
-- 🔧 [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technische Details zur KNX/IP Kommunikation
-- 🔍 [Quality Audit](docs/QUALITY_AUDIT.md) – Umfassende Code-Qualitätsanalyse (Score: 8.5/10)
-- 🐛 [Critical Fixes](docs/CRITICAL_FIXES.md) – Dokumentation behobener kritischer Issues
-- ✅ [Test Report](docs/TEST_REPORT.md) – Aktueller Test-Status (23/23 passing, 35% Coverage)
-- 🏗️ [Architektur-Übersicht](.github/copilot/CONTEXT.md) – System-Architektur und Design
-
-### Support
+- 📖 [Schnellstart-Anleitung](docs/QUICKSTART.md) – Komplettes Setup & Troubleshooting
+- 🔧 [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technische Details
+- 📊 [Test Report](docs/TEST_REPORT.md) – Test-Status & Coverage
+- 🔍 [Quality Audit](docs/QUALITY_AUDIT.md) – Code-Qualitätsanalyse
 - 🐞 [Issue Tracker](https://github.com/phismith91/luxorliving/issues) – Bugs & Feature Requests
-- 💬 [Discussions](https://github.com/phismith91/luxorliving/discussions) – Community Support
 
 ---
+
 
 ## 📝 Lizenz
 
 Dieses Projekt steht unter der [LICENSE](LICENSE).
-� Qualitätssicherung
 
-Diese Integration durchläuft umfassende Qualitätsprüfungen:
+---
 
-- ✅ **23/23 Unit Tests** passing (100% Success Rate)
-- ✅ **35% Code Coverage** (88% config_flow, 77% knx_gateway)
-- ✅ **Quality Score: 8.5/10** (Code Quality, Security, Performance)
-- ✅ **Security Audit** passed (XXE Protection, Input Validation)
-- ✅ **Memory Leak Tests** passed
-- ✅ **Race Condition Tests** passed
+## 📊 Qualität
 
-Siehe [Test Report](docs/TEST_REPORT.md) und [Quality Audit](docs/QUALITY_AUDIT.md) für Details.
+- ✅ **23/23 Tests passing** – [Test Report](docs/TEST_REPORT.md)
+- ✅ **Quality Score: 8.5/10** – [Quality Audit](docs/QUALITY_AUDIT.md)
+- ✅ **35% Coverage** (config_flow 88%, knx_gateway 77%)
 
 ---
 
 ## 🤝 Beitragen
 
-Pull Requests sind willkommen! Für größere Änderungen bitte zuerst ein Issue öffnen.
+Pull Requests sind willkommen! Siehe [QUICKSTART.md](docs/QUICKSTART.md) für Development Setup.
 
-### Development Setup
-
-1. Fork das Repository
-2. Erstelle einen Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Installiere Development Dependencies:
-   ```bash
-   pip install -r requirements_dev.txt
-   ```
-4. Führe Tests aus:
-   ```bash
-   pytest tests/ -v
-   ```
-5. Commit deine Änderungen (`git commit -m 'Add some AmazingFeature'`)
-6. Push zum Branch (`git push origin feature/AmazingFeature`)
-7. Öffne einen Pull Request
-
-### Test Coverage
-
-Bitte stelle sicher, dass neue Features getestet sind:
-- Unit Tests für neue Funktionen
-- Integration Tests für komplexe Workflows
-- Ziel: >60% Code Coverage für neue Module
 ---
 
-## 🤝 Beitragen
+## 🙏 Credits
 
-Pull Requests sind willkommen! Für größere Änderungen bitte zuerst ein Issue öffnen.
-
-1. Fork das Repository
-2. Erstelle einen Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit deine Änderungen (`git commit -m 'Add some AmazingFeature'`)
-4. Push zum Branch (`git push origin feature/AmazingFeature`)
-5. Öffne einen Pull Request
+- **[Theben AG](https://www.theben.de/)** – LUXORliving System
+- **[xknx Library](https://github.com/XKNX/xknx)** – KNX/IP Kommunikation
+- **Home Assistant Community** – Framework & Support
 
 ---
 
