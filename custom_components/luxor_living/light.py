@@ -10,8 +10,9 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import DOMAIN, DATA_KNX_GATEWAY
 from .entity_mapper import EntityMapper
+from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,11 +25,16 @@ async def async_setup_entry(
     """Set up LUXORliving lights from a config entry."""
     _LOGGER.info("Setting up LUXORliving lights")
     
-    # Get mapper from integration data
+    # Get mapper and KNX gateway from integration data
     mapper: EntityMapper = hass.data[DOMAIN][entry.entry_id].get("mapper")
+    knx_gateway: LuxorKNXGateway = hass.data[DOMAIN][entry.entry_id].get(DATA_KNX_GATEWAY)
     
     if not mapper:
         _LOGGER.warning("No mapper found, skipping light setup")
+        return
+    
+    if not knx_gateway:
+        _LOGGER.error("No KNX gateway found, skipping light setup")
         return
     
     # Get all light entities
@@ -38,9 +44,9 @@ async def async_setup_entry(
     entities = []
     for mapped_entity in light_entities:
         if mapped_entity.entity_type == "dimmable_light":
-            entity = LuxorLivingDimmableLight(mapped_entity)
+            entity = LuxorLivingDimmableLight(mapped_entity, knx_gateway)
         else:
-            entity = LuxorLivingLight(mapped_entity)
+            entity = LuxorLivingLight(mapped_entity, knx_gateway)
         entities.append(entity)
     
     async_add_entities(entities)
@@ -53,9 +59,10 @@ class LuxorLivingLight(LightEntity):
     _attr_color_mode = ColorMode.ONOFF
     _attr_supported_color_modes = {ColorMode.ONOFF}
 
-    def __init__(self, mapped_entity: Any) -> None:
+    def __init__(self, mapped_entity: Any, knx_gateway: LuxorKNXGateway) -> None:
         """Initialize the light."""
         self._mapped = mapped_entity
+        self._knx_gateway = knx_gateway
         self._attr_unique_id = mapped_entity.unique_id
         self._attr_name = mapped_entity.name
         self._attr_is_on = False
@@ -71,24 +78,44 @@ class LuxorLivingLight(LightEntity):
             "manufacturer": "Theben",
             "model": "LUXORliving",
         }
+        
+        # Register listener for status updates
+        if self._address_status:
+            self._knx_gateway.register_listener(
+                self._address_status,
+                self._handle_knx_update
+            )
+
+    def _handle_knx_update(self, group_address: str, value: Any) -> None:
+        """Handle KNX status update."""
+        if group_address == self._address_status:
+            self._attr_is_on = bool(value)
+            self.schedule_update_ha_state()
+            _LOGGER.debug("Updated %s state: %s", self._attr_name, value)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
-        _LOGGER.warning(
-            "🔥 SIMULATION: Would send ON to KNX address %s for %s", 
-            self._address_on, self._attr_name
-        )
-        self._attr_is_on = True
-        self.async_write_ha_state()
+        if self._address_on:
+            success = await self._knx_gateway.async_send_telegram(
+                self._address_on,
+                True,
+                "binary"
+            )
+            if success:
+                self._attr_is_on = True
+                self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
-        _LOGGER.warning(
-            "🔥 SIMULATION: Would send OFF to KNX address %s for %s", 
-            self._address_on, self._attr_name
-        )
-        self._attr_is_on = False
-        self.async_write_ha_state()
+        if self._address_on:
+            success = await self._knx_gateway.async_send_telegram(
+                self._address_on,
+                False,
+                "binary"
+            )
+            if success:
+                self._attr_is_on = False
+                self.async_write_ha_state()
 
 
 class LuxorLivingDimmableLight(LuxorLivingLight):
@@ -97,27 +124,53 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
     _attr_color_mode = ColorMode.BRIGHTNESS
     _attr_supported_color_modes = {ColorMode.BRIGHTNESS}
 
-    def __init__(self, mapped_entity: Any) -> None:
+    def __init__(self, mapped_entity: Any, knx_gateway: LuxorKNXGateway) -> None:
         """Initialize the dimmable light."""
-        super().__init__(mapped_entity)
+        super().__init__(mapped_entity, knx_gateway)
         self._attr_brightness = 255
         
         # Additional datapoints for dimming
         self._address_dim = mapped_entity.datapoints.get("Dimmen%")
         self._address_dim_rel = mapped_entity.datapoints.get("DimmenRel")
+        
+        # Register listener for brightness status
+        if self._address_dim:
+            self._knx_gateway.register_listener(
+                self._address_dim,
+                self._handle_brightness_update
+            )
+
+    def _handle_brightness_update(self, group_address: str, value: Any) -> None:
+        """Handle KNX brightness update."""
+        if group_address == self._address_dim:
+            # Convert percentage (0-100) to brightness (0-255)
+            if isinstance(value, (int, float)):
+                self._attr_brightness = int(value * 255 / 100)
+                self._attr_is_on = self._attr_brightness > 0
+                self.schedule_update_ha_state()
+                _LOGGER.debug(
+                    "Updated %s brightness: %d%%",
+                    self._attr_name,
+                    value
+                )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
         brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         
-        # TODO: Send KNX telegram for dimming
-        _LOGGER.warning(
-            "🔥 SIMULATION: Dimming %s to brightness %d (address: %s)",
-            self._attr_name,
-            brightness,
-            self._address_dim or self._address_on,
-        )
-        
-        self._attr_is_on = True
-        self._attr_brightness = brightness
-        self.async_write_ha_state()
+        # Send brightness value if dimming address exists
+        if self._address_dim:
+            # Convert brightness (0-255) to percentage (0-100)
+            percent = int(brightness * 100 / 255)
+            success = await self._knx_gateway.async_send_telegram(
+                self._address_dim,
+                percent,
+                "percent"
+            )
+            if success:
+                self._attr_is_on = True
+                self._attr_brightness = brightness
+                self.async_write_ha_state()
+        else:
+            # Fallback to simple on/off
+            await super().async_turn_on(**kwargs)

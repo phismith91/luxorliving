@@ -12,7 +12,16 @@ from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
-from .const import DOMAIN, CONF_LXP_FILE, DEFAULT_PORT
+from .const import (
+    DOMAIN,
+    CONF_LXP_FILE,
+    CONF_CONNECTION_TYPE,
+    CONF_SIMULATION_MODE,
+    DEFAULT_PORT,
+    DEFAULT_CONNECTION_TYPE,
+    CONNECTION_TYPE_TUNNELING,
+    CONNECTION_TYPE_ROUTING,
+)
 from .lxp_parser import LXPParser
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,6 +35,11 @@ STEP_LXP_DATA_SCHEMA = vol.Schema({
 STEP_GATEWAY_DATA_SCHEMA = vol.Schema({
     vol.Required(CONF_HOST, default="192.168.1.3"): str,
     vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+    vol.Required(CONF_CONNECTION_TYPE, default=DEFAULT_CONNECTION_TYPE): vol.In([
+        CONNECTION_TYPE_TUNNELING,
+        CONNECTION_TYPE_ROUTING,
+    ]),
+    vol.Optional(CONF_SIMULATION_MODE, default=False): bool,
 })
 
 
@@ -90,6 +104,8 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_LXP_FILE: self._lxp_file,
                 CONF_HOST: user_input[CONF_HOST],
                 CONF_PORT: user_input[CONF_PORT],
+                CONF_CONNECTION_TYPE: user_input[CONF_CONNECTION_TYPE],
+                CONF_SIMULATION_MODE: user_input.get(CONF_SIMULATION_MODE, False),
             }
 
             # Create entry
