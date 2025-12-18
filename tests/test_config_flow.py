@@ -1,6 +1,8 @@
 """Tests for config flow."""
+from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 from pathlib import Path
+import tempfile
 
 import pytest
 
@@ -35,8 +37,27 @@ def mock_lxp_parser():
 def mock_hass():
     """Mock Home Assistant instance."""
     hass = MagicMock()
-    hass.config.path = MagicMock(return_value="/config")
+    hass.config.path = MagicMock(return_value="/config/.storage/luxor_living.test.lxp")
+    hass.async_add_executor_job = AsyncMock(side_effect=lambda func, *args: func(*args))
     return hass
+
+
+@pytest.fixture
+def mock_file_upload():
+    """Mock file upload context manager."""
+    @contextmanager
+    def mock_process_uploaded_file(hass, file_id):
+        # Create a temporary file to simulate the uploaded file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.lxp', delete=False) as f:
+            f.write('<?xml version="1.0"?><Project name="Test"><Functions/></Project>')
+            temp_path = f.name
+        try:
+            yield Path(temp_path)
+        finally:
+            Path(temp_path).unlink(missing_ok=True)
+    
+    with patch("custom_components.luxor_living.config_flow.process_uploaded_file", mock_process_uploaded_file):
+        yield
 
 
 class TestLuxorLivingConfigFlow:
@@ -58,44 +79,48 @@ class TestLuxorLivingConfigFlow:
         assert str(schema_key) == CONF_LXP_FILE
 
     @pytest.mark.asyncio
-    async def test_user_step_file_not_found(self, mock_hass):
-        """Test user step with non-existent file."""
+    async def test_user_step_file_not_found(self, mock_hass, mock_file_upload):
+        """Test user step with file upload error."""
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
         
-        with patch("pathlib.Path.exists", return_value=False):
-            result = await flow.async_step_user({CONF_LXP_FILE: "/nonexistent.lxp"})
+        # Mock process_uploaded_file to raise exception
+        with patch("custom_components.luxor_living.config_flow.process_uploaded_file") as mock_upload:
+            mock_upload.side_effect = Exception("File not found")
+            
+            result = await flow.async_step_user({CONF_LXP_FILE: "019b336bd0ef4a4b"})
         
         assert result["type"] == "form"
         assert result["errors"]["base"] == "file_not_found"
 
     @pytest.mark.asyncio
-    async def test_user_step_valid_file(self, mock_hass, mock_lxp_parser):
-        """Test user step with valid LXP file."""
+    async def test_user_step_valid_file(self, mock_hass, mock_lxp_parser, mock_file_upload):
+        """Test user step with valid LXP file upload."""
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
         
-        with patch("pathlib.Path.exists", return_value=True):
-            with patch("pathlib.Path.is_file", return_value=True):
-                result = await flow.async_step_user({CONF_LXP_FILE: "/config/test.lxp"})
+        with patch("custom_components.luxor_living.config_flow.shutil.copy"):
+            with patch("pathlib.Path.exists", return_value=True):
+                with patch("pathlib.Path.is_file", return_value=True):
+                    result = await flow.async_step_user({CONF_LXP_FILE: "019b336bd0ef4a4b"})
         
         assert result["type"] == "form"
         assert result["step_id"] == "gateway"
-        assert flow._lxp_file == "/config/test.lxp"
         assert flow._project_name == "Test Project"
 
     @pytest.mark.asyncio
-    async def test_user_step_invalid_lxp(self, mock_hass, mock_lxp_parser):
-        """Test user step with invalid LXP file."""
+    async def test_user_step_invalid_lxp(self, mock_hass, mock_lxp_parser, mock_file_upload):
+        """Test user step with invalid LXP file content."""
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
         
         # Make parser raise exception
         mock_lxp_parser.return_value.parse.side_effect = Exception("Invalid XML")
         
-        with patch("pathlib.Path.exists", return_value=True):
-            with patch("pathlib.Path.is_file", return_value=True):
-                result = await flow.async_step_user({CONF_LXP_FILE: "/test.lxp"})
+        with patch("custom_components.luxor_living.config_flow.shutil.copy"):
+            with patch("pathlib.Path.exists", return_value=True):
+                with patch("pathlib.Path.is_file", return_value=True):
+                    result = await flow.async_step_user({CONF_LXP_FILE: "019b336bd0ef4a4b"})
         
         assert result["type"] == "form"
         assert result["errors"]["base"] == "invalid_lxp"
@@ -171,8 +196,8 @@ class TestLuxorLivingConfigFlow:
         assert result["data"][CONF_SIMULATION_MODE] is True
 
     @pytest.mark.asyncio
-    async def test_full_flow_with_file_selector(self, mock_hass, mock_lxp_parser):
-        """Test complete flow from file selection to entry creation."""
+    async def test_full_flow_with_file_selector(self, mock_hass, mock_lxp_parser, mock_file_upload):
+        """Test complete flow from file upload to entry creation."""
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
         
@@ -181,12 +206,13 @@ class TestLuxorLivingConfigFlow:
         assert result["type"] == "form"
         assert result["step_id"] == "user"
         
-        # Step 2: Submit file selection
-        with patch("pathlib.Path.exists", return_value=True):
-            with patch("pathlib.Path.is_file", return_value=True):
-                result = await flow.async_step_user({
-                    CONF_LXP_FILE: "/config/luxor_living/project.lxp"
-                })
+        # Step 2: Submit file upload (with file ID from FileSelector)
+        with patch("custom_components.luxor_living.config_flow.shutil.copy"):
+            with patch("pathlib.Path.exists", return_value=True):
+                with patch("pathlib.Path.is_file", return_value=True):
+                    result = await flow.async_step_user({
+                        CONF_LXP_FILE: "019b336bd0ef4a4b4b3318d08a60e437"
+                    })
         
         assert result["type"] == "form"
         assert result["step_id"] == "gateway"
@@ -201,4 +227,3 @@ class TestLuxorLivingConfigFlow:
         
         assert result["type"] == "create_entry"
         assert result["title"] == "LUXORliving (Test Project)"
-        assert result["data"][CONF_LXP_FILE] == "/config/luxor_living/project.lxp"
