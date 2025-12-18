@@ -69,14 +69,20 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             _LOGGER.debug("📁 Received file input: %s (type: %s)", lxp_file_id, type(lxp_file_id))
             
-            # Convert FileSelector ID to actual file path
+            # FileSelector returns uploaded file ID - resolve to actual file path
             try:
-                # Resolve media source to local file path
-                media = await media_source.async_resolve_media(
-                    self.hass, lxp_file_id, None
-                )
-                lxp_file = media.url.removeprefix("/media/local/")
-                lxp_file = os.path.join(self.hass.config.path("media"), lxp_file)
+                # The uploaded file is stored temporarily in .storage/uploaded_files/
+                upload_dir = self.hass.config.path(".storage", "uploaded_files")
+                lxp_file = os.path.join(upload_dir, lxp_file_id)
+                
+                # Check if file exists
+                if not await self.hass.async_add_executor_job(os.path.isfile, lxp_file):
+                    # Try alternative path patterns
+                    alt_path = self.hass.config.path("media", lxp_file_id)
+                    if await self.hass.async_add_executor_job(os.path.isfile, alt_path):
+                        lxp_file = alt_path
+                    else:
+                        raise FileNotFoundError(f"Uploaded file not found: {lxp_file_id}")
                 
                 _LOGGER.info("📂 Resolved file path: %s", lxp_file)
                 
