@@ -5,9 +5,15 @@ DOMAIN = "luxor_living"
 # Configuration
 CONF_LXP_FILE = "lxp_file"
 CONF_SIMULATION_MODE = "simulation_mode"
+CONF_CONNECTION_TYPE = "connection_type"
 
 # Defaults
 DEFAULT_PORT = 3671  # KNX/IP default port
+DEFAULT_CONNECTION_TYPE = "tunneling"
+
+# KNX Connection Types
+CONNECTION_TYPE_TUNNELING = "tunneling"
+CONNECTION_TYPE_ROUTING = "routing"
 
 # LXP Project
 LXP_NAMESPACE = "{http://www.luxor.de/LuxorPlug}"
@@ -16,3 +22,6 @@ LXP_NAMESPACE = "{http://www.luxor.de/LuxorPlug}"
 ATTR_ROOM = "room"
 ATTR_FUNCTION = "function"
 ATTR_DEVICE = "device"
+
+# KNX Gateway
+DATA_KNX_GATEWAY = "knx_gateway"

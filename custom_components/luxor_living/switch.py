@@ -9,7 +9,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import DOMAIN, DATA_KNX_GATEWAY
+from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,12 +23,17 @@ async def async_setup_entry(
     """Set up LUXORliving switches from a config entry."""
     _LOGGER.info("Setting up LUXORliving switches")
     
-    # Get mapper from integration data
+    # Get mapper and KNX gateway from integration data
     from homeassistant.const import Platform
     mapper = hass.data[DOMAIN][entry.entry_id].get("mapper")
+    knx_gateway: LuxorKNXGateway = hass.data[DOMAIN][entry.entry_id].get(DATA_KNX_GATEWAY)
     
     if not mapper:
         _LOGGER.warning("No mapper found, skipping switch setup")
+        return
+    
+    if not knx_gateway:
+        _LOGGER.error("No KNX gateway found, skipping switch setup")
         return
     
     # Get all switch entities
@@ -36,7 +42,7 @@ async def async_setup_entry(
     
     entities = []
     for mapped_entity in switch_entities:
-        entity = LuxorLivingSwitch(mapped_entity)
+        entity = LuxorLivingSwitch(mapped_entity, knx_gateway)
         entities.append(entity)
     
     async_add_entities(entities)
@@ -47,9 +53,10 @@ class LuxorLivingSwitch(SwitchEntity):
 
     _attr_has_entity_name = True
 
-    def __init__(self, mapped_entity: Any) -> None:
+    def __init__(self, mapped_entity: Any, knx_gateway: LuxorKNXGateway) -> None:
         """Initialize the switch."""
         self._mapped = mapped_entity
+        self._knx_gateway = knx_gateway
         self._attr_unique_id = mapped_entity.unique_id
         self._attr_name = mapped_entity.name
         self._attr_is_on = False
@@ -68,24 +75,53 @@ class LuxorLivingSwitch(SwitchEntity):
             "manufacturer": "Theben",
             "model": "LUXORliving",
         }
+        
+        # Register listener for status updates
+        if self._address_status:
+            self._knx_gateway.register_listener(
+                self._address_status,
+                self._handle_knx_update
+            )
+
+    def _handle_knx_update(self, group_address: str, value: Any) -> None:
+        """Handle KNX status update."""
+        if group_address == self._address_status:
+            self._attr_is_on = bool(value)
+            self.schedule_update_ha_state()
+            _LOGGER.debug("Updated %s state: %s", self._attr_name, value)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn the switch on (simulation mode)."""
-        _LOGGER.warning(
-            "🔥 SIMULATION: Would send ON to KNX address %s for %s", 
-            self._address_on, self._attr_name
-        )
-        self._attr_is_on = True
-        self.async_write_ha_state()
+        """Turn the switch on."""
+        if self._address_on:
+            success = await self._knx_gateway.async_send_telegram(
+                self._address_on,
+                True,
+                "binary"
+            )
+            if success:
+                self._attr_is_on = True
+                self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn the switch off (simulation mode)."""
-        _LOGGER.warning(
-            "🔥 SIMULATION: Would send OFF to KNX address %s for %s",
-            self._address_on, self._attr_name
-        )
-        self._attr_is_on = False
-        self.async_write_ha_state()
+        """Turn the switch off."""
+        if self._address_on:
+            success = await self._knx_gateway.async_send_telegram(
+                self._address_on,
+                False,
+                "binary"
+            )
+            if success:
+                self._attr_is_on = False
+                self.async_write_ha_state()
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Clean up listener when entity is removed."""
+        if self._address_status:
+            self._knx_gateway.unregister_listener(
+                self._address_status,
+                self._handle_knx_update
+            )
+        await super().async_will_remove_from_hass()
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

@@ -2,10 +2,22 @@
 from __future__ import annotations
 
 import logging
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+try:
+    from defusedxml import ElementTree as ET
+except ImportError:
+    # Fallback to standard library with warning
+    import xml.etree.ElementTree as ET
+    import warnings
+    warnings.warn(
+        "defusedxml not available, using xml.etree.ElementTree. "
+        "This may be vulnerable to XML attacks. Install defusedxml for production use.",
+        UserWarning,
+        stacklevel=2
+    )
 
 _LOGGER = logging.getLogger(__name__)
 

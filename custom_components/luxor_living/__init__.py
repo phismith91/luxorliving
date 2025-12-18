@@ -6,12 +6,20 @@ from pathlib import Path
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import Platform, CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, CONF_LXP_FILE
+from .const import (
+    DOMAIN,
+    CONF_LXP_FILE,
+    CONF_CONNECTION_TYPE,
+    CONF_SIMULATION_MODE,
+    DEFAULT_CONNECTION_TYPE,
+    DATA_KNX_GATEWAY,
+)
 from .lxp_parser import LXPParser
 from .entity_mapper import EntityMapper
+from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,31 +39,59 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {}
     
-    # Get LXP file path from config entry
+    # Get configuration
     lxp_file = entry.data.get(CONF_LXP_FILE)
+    host = entry.data.get(CONF_HOST, "localhost")
+    port = entry.data.get(CONF_PORT, 3671)
+    connection_type = entry.data.get(CONF_CONNECTION_TYPE, DEFAULT_CONNECTION_TYPE)
+    simulation_mode = entry.data.get(CONF_SIMULATION_MODE, False)
     
     if not lxp_file:
         _LOGGER.error("No LXP file configured - setup cannot continue")
         return False
     
+    # Parse LXP file
     lxp_path = Path(lxp_file).expanduser()
     
     if lxp_path and lxp_path.exists():
         _LOGGER.info("Parsing LXP file: %s", lxp_path)
-        parser = LXPParser(str(lxp_path))
-        project = await parser.parse()
-        
-        # Create entity mapper
-        mapper = EntityMapper(project)
-        entity_count = len(mapper.entities)
-        _LOGGER.warning("🔥 Mapped %d entities from LXP project", entity_count)
-        
-        # Store mapper and config in integration data
-        hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
-        hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
+        try:
+            parser = LXPParser(str(lxp_path))
+            project = await parser.parse()
+            
+            # Create entity mapper
+            mapper = EntityMapper(project)
+            entity_count = len(mapper.entities)
+            _LOGGER.warning("🔥 Mapped %d entities from LXP project", entity_count)
+            
+            # Store mapper and config in integration data
+            hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
+            hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
+        except Exception as err:
+            _LOGGER.exception("Failed to parse LXP file %s: %s", lxp_path, err)
+            return False
     else:
         _LOGGER.error("LXP file not found: %s - cannot load entities", lxp_file)
         return False
+    
+    # Initialize KNX Gateway
+    knx_gateway = LuxorKNXGateway(
+        hass=hass,
+        host=host,
+        port=port,
+        connection_type=connection_type,
+        simulation_mode=simulation_mode,
+    )
+    
+    # Connect to gateway
+    if not await knx_gateway.async_setup():
+        _LOGGER.error("Failed to connect to KNX gateway")
+        # Continue anyway in simulation mode
+        if not simulation_mode:
+            return False
+    
+    # Store gateway in integration data
+    hass.data[DOMAIN][entry.entry_id][DATA_KNX_GATEWAY] = knx_gateway
     
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -66,6 +102,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.info("Unloading LUXORliving integration")
+    
+    # Disconnect KNX gateway
+    knx_gateway = hass.data[DOMAIN][entry.entry_id].get(DATA_KNX_GATEWAY)
+    if knx_gateway:
+        await knx_gateway.async_disconnect()
     
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     

@@ -3,15 +3,24 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 [![GitHub Release](https://img.shields.io/github/release/phismith91/luxorliving.svg)](https://github.com/phismith91/luxorliving/releases)
 [![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](LICENSE)
+![Quality Score](https://img.shields.io/badge/Quality-8.5%2F10-green)
+![Test Coverage](https://img.shields.io/badge/Coverage-35%25-yellow)
+![Tests](https://img.shields.io/badge/Tests-23%2F23%20passing-brightgreen)
 
 Home Assistant Integration für **Theben LUXORliving KNX/IP Gateways** mit automatischer Geräteerkennung aus LXP-Projektdateien.
+
+> ⚠️ **Beta Status**: Diese Integration ist funktionsfähig, aber noch in aktiver Entwicklung. Sensor-, Climate- und Cover-Plattformen sind noch nicht vollständig implementiert.
+> 
+> ✅ **Getestet**: 23/23 Tests passing, Quality Score 8.5/10, Production-ready für Light & Switch Plattformen
 
 ---
 
 ## 🌟 Highlights
 
+- ✅ **Echte KNX/IP Kommunikation** – Unterstützt Tunneling & Routing Modi
 - ✅ **Kein ETS erforderlich** – Nutzt `.lxp` Projektexporte aus Theben LUXORPlug
-- ✅ **Automatisches Entity-Mapping** – Erkennt Lichter, Schalter, Sensoren, Jalousien automatisch
+- ✅ **Automatisches Entity-Mapping** – Erkennt Lichter, Schalter, Sensoren automatisch
+- ✅ **Live Status-Updates** – Empfängt KNX Telegramme in Echtzeit
 - ✅ **Config Flow UI** – Einfache Einrichtung über Home Assistant UI
 - ✅ **Simulation Mode** – Testen ohne Hardware (Dry-Run)
 - ✅ **HACS-Ready** – Einfache Installation über HACS
@@ -49,88 +58,71 @@ Home Assistant Integration für **Theben LUXORliving KNX/IP Gateways** mit autom
 
 ### Schritt 1: LXP-Datei exportieren
 
-1. Öffne **Theben LUXORPlug** Software
-2. Öffne dein Projekt
-3. Gehe zu **Datei** → **Exportieren** → **LXP-Datei speichern** (`.lxp`)
-4. Speichere die Datei auf deinem Home Assistant Server (z.B. `/config/luxor/mein_projekt.lxp`)
+**Theben LUXORPlug** → **Datei** → **Exportieren** → **LXP-Datei speichern** → Auf HA Server (z.B. `/config/luxor/projekt.lxp`)
 
 ### Schritt 2: Integration hinzufügen
 
-1. Gehe zu **Einstellungen** → **Geräte & Dienste**
-2. Klicke auf **Integration hinzufügen**
-3. Suche nach **LUXORliving**
-4. Folge dem Setup-Assistenten:
-   - **Schritt 1:** Pfad zur LXP-Datei eingeben (z.B. `/config/luxor/mein_projekt.lxp`)
-   - **Schritt 2:** Gateway-IP und Port konfigurieren (Standard: Port 3671)
+**Einstellungen** → **Geräte & Dienste** → **Integration hinzufügen** → **LUXORliving**
+
+**Setup:**
+1. LXP-Datei Pfad (z.B. `/config/luxor/mein_projekt.lxp`)
+2. Gateway IP & Port (Standard: 3671)
+3. Connection Type: Tunneling (empfohlen)
+4. Optional: Simulation Mode aktivieren
 
 ### Schritt 3: Fertig!
 
 Die Integration erkennt automatisch alle Geräte aus deinem LXP-Projekt und erstellt entsprechende Entities:
 
-- 💡 **Lights** (Dimmer, Schaltaktoren)
-- 🔌 **Switches** (Schaltaktoren)
-- 🌡️ **Sensors** (Temperatur, Helligkeit, etc.)
-- 🪟 **Covers** (Jalousien, Rollläden)
-- 📊 **Binary Sensors** (Bewegungsmelder, Fensterkontakte)
+- ✅ **Lights** (Dimmer, Schaltaktoren) - **Voll funktionsfähig**
+- ✅ **Switches** (Schaltaktoren) - **Voll funktionsfähig**
+- ✅ **Binary Sensors** (Bewegungsmelder, Fensterkontakte) - **Voll funktionsfähig**
+- ⚠️ **Sensors** (Temperatur, Helligkeit) - **In Entwicklung**
+- ⚠️ **Covers** (Jalousien, Rollläden) - **In Entwicklung**
+- ⚠️ **Climate** (Thermostate) - **In Entwicklung**
 
 ---
 
-## 🎯 Unterstützte Geräte
+## 🎯 Plattform-Status
 
-Alle KNX-Geräte, die über **Theben LUXORliving IP1** verbunden sind und in der LXP-Datei definiert wurden:
-
-| Typ | Beispiele |
-|-----|-----------|
-| **Dimmer** | LED-Dimmer, Universaldimmer |
-| **Schalter** | Licht-Schalter, Steckdosen |
-| **Jalousien** | Rollläden, Raffstores, Markisen |
-| **Sensoren** | Temperatur, Helligkeit, CO₂ |
-| **Binär-Sensoren** | Bewegungsmelder, Fensterkontakte |
-| **Thermostate** | Raumtemperaturregler |
+| Plattform           | Status       | Features                        |
+| ------------------- | ------------ | ------------------------------- |
+| 💡 **Light**         | ✅ Production | On/Off, Dimming, Status Updates |
+| 🔌 **Switch**        | ✅ Production | On/Off, Status Updates          |
+| 📊 **Binary Sensor** | ✅ Production | Status Updates                  |
+| 🌡️ **Sensor**        | ⚠️ Beta       | Basis-Implementation            |
+| 🪟 **Cover**         | ⚠️ Planned    | Noch nicht implementiert        |
+| 🌡️ **Climate**       | ⚠️ Planned    | Noch nicht implementiert        |
 
 ---
 
 ## 🧪 Simulation Mode (Dry-Run)
 
-Zum Testen ohne echte Hardware:
-
-1. Gehe zu **Einstellungen** → **Geräte & Dienste** → **LUXORliving**
-2. Klicke auf **Optionen**
-3. Aktiviere **Simulation Mode**
-4. Alle Entity-Befehle werden geloggt, aber nicht an das Gateway gesendet
+Testen ohne echte Hardware: **Einstellungen** → **Geräte & Dienste** → **LUXORliving** → **Optionen** → **Simulation Mode aktivieren**
 
 ---
 
 ## 🛠️ Troubleshooting
 
-### Integration lädt nicht
+Siehe [QUICKSTART.md](docs/QUICKSTART.md) für detaillierte Fehlerbehebung.
 
-```bash
-# Logfile prüfen
-tail -f /config/home-assistant.log | grep luxor_living
-```
-
-### LXP-Datei wird nicht erkannt
-
-- Stelle sicher, dass der Pfad korrekt ist (absoluter Pfad)
-- Prüfe Dateiberechtigungen (`chmod 644 mein_projekt.lxp`)
-- LXP-Datei muss aus **Theben LUXORPlug** exportiert sein (XML-Format)
-
-### Gateway nicht erreichbar
-
-- Prüfe IP-Adresse und Port (Standard: `3671`)
-- Firewall-Regeln prüfen
-- Ping zum Gateway: `ping <GATEWAY_IP>`
+**Häufige Probleme:**
+- **Integration lädt nicht** → Logfile prüfen: `tail -f /config/home-assistant.log | grep luxor_living`
+- **LXP-Datei nicht erkannt** → Absoluten Pfad verwenden, Dateiberechtigungen prüfen
+- **Gateway nicht erreichbar** → IP/Port prüfen (Standard: 3671), Firewall checken
 
 ---
 
-## 📚 Weitere Ressourcen
+## 📚 Dokumentation
 
-- [QUICKSTART.md](QUICKSTART.md) – Entwickler-Dokumentation
-- [CONTEXT.md](.github/copilot/CONTEXT.md) – Architektur-Übersicht
-- [Issue Tracker](https://github.com/phismith91/luxorliving/issues) – Bugs & Feature Requests
+- 📖 [Schnellstart-Anleitung](docs/QUICKSTART.md) – Komplettes Setup & Troubleshooting
+- 🔧 [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technische Details
+- 📊 [Test Report](docs/TEST_REPORT.md) – Test-Status & Coverage
+- 🔍 [Quality Audit](docs/QUALITY_AUDIT.md) – Code-Qualitätsanalyse
+- 🐞 [Issue Tracker](https://github.com/phismith91/luxorliving/issues) – Bugs & Feature Requests
 
 ---
+
 
 ## 📝 Lizenz
 
@@ -138,23 +130,25 @@ Dieses Projekt steht unter der [LICENSE](LICENSE).
 
 ---
 
-## 🙏 Credits
+## 📊 Qualität
 
-- **Theben AG** – LUXORliving Hardware & LUXORPlug Software
-- **xknx** – KNX/IP Python Library
-- **Home Assistant Community** – Framework & Support
+- ✅ **23/23 Tests passing** – [Test Report](docs/TEST_REPORT.md)
+- ✅ **Quality Score: 8.5/10** – [Quality Audit](docs/QUALITY_AUDIT.md)
+- ✅ **35% Coverage** (config_flow 88%, knx_gateway 77%)
 
 ---
 
 ## 🤝 Beitragen
 
-Pull Requests sind willkommen! Für größere Änderungen bitte zuerst ein Issue öffnen.
+Pull Requests sind willkommen! Siehe [QUICKSTART.md](docs/QUICKSTART.md) für Development Setup.
 
-1. Fork das Repository
-2. Erstelle einen Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit deine Änderungen (`git commit -m 'Add some AmazingFeature'`)
-4. Push zum Branch (`git push origin feature/AmazingFeature`)
-5. Öffne einen Pull Request
+---
+
+## 🙏 Credits
+
+- **[Theben AG](https://www.theben.de/)** – LUXORliving System
+- **[xknx Library](https://github.com/XKNX/xknx)** – KNX/IP Kommunikation
+- **Home Assistant Community** – Framework & Support
 
 ---
 

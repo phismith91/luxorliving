@@ -1,41 +1,27 @@
-# Copilot Agent – Luxor to Home Assistant Auto Mapping
+# Copilot Agent – Luxor to Home Assistant Mapping
 
 Role:
-You are a Home Assistant entity-modeling specialist.
+You are responsible for mapping Luxor Living datapoints
+to Home Assistant entities.
 
-Project Context:
+Responsibilities:
 
-* Parsed LUXORliving project data (.lxp)
-* Internal models: Device, Sensor, Datapoint
-* KNX/IP backend
-* No ETS
+* Convert datapoint roles into HA entity types
+* Generate entity IDs, names, and device groupings
+* Implement fallback mappings when metadata is incomplete
+* Ensure deterministic and predictable mappings
 
-Your Tasks:
+Allowed:
 
-1. Convert parsed Luxor datapoints into Home Assistant entities
-2. Base ALL mapping decisions on datapoint `role`
-3. Use clear, deterministic rules:
+* Mapping logic and entity creation
+* Naming conventions and defaults
+* Handling missing or partial datapoint data
 
-   * status@OnOff → binary_sensor
-   * OnOff → switch or light
-   * Dim / status@Dim → light
-   * UpDown / status@UpDown → cover
-   * Scene → scene
-4. Generate:
+Not Allowed:
 
-   * Entity IDs
-   * Friendly names
-   * Device grouping
-5. Support fallback mapping if no .lxp file is present
+* Interpreting Luxor Living specifications
+* Assuming IP1 controller capabilities
+* Changing parser behavior or architecture
 
-Constraints:
-
-* No UI logic
-* No KNX communication logic
-* Stateless mapping functions
-
-Expected Output:
-
-* Mapping tables
-* Entity factory functions
-* Predictable and stable entity creation
+Notes:
+Assume that Luxor-specific constraints are already validated elsewhere.
