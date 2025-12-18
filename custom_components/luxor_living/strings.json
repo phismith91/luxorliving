@@ -3,12 +3,12 @@
         "step": {
             "user": {
                 "title": "LUXORliving - LXP Project File",
-                "description": "Select your LXP project file exported from Theben Plug",
+                "description": "Please copy your LXP file to /config/luxor_living/ first. Info: {info}",
                 "data": {
-                    "lxp_file": "LXP File Path"
+                    "lxp_file": "LXP Filename"
                 },
                 "data_description": {
-                    "lxp_file": "Full path to your .lxp project file (e.g., /home/user/project.lxp)"
+                    "lxp_file": "Filename of your .lxp file (e.g., project.lxp). File must be in /config/luxor_living/"
                 }
             },
             "gateway": {
@@ -26,7 +26,7 @@
         },
         "error": {
             "cannot_connect": "Failed to connect to the gateway",
-            "file_not_found": "LXP file not found at specified path",
+            "file_not_found": "LXP file not found in /config/luxor_living/. Please copy your .lxp file there first.",
             "invalid_lxp": "Invalid or corrupted LXP file",
             "unknown": "Unexpected error occurred"
         },

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -26,9 +27,9 @@ from .lxp_parser import LXPParser
 
 _LOGGER = logging.getLogger(__name__)
 
-# Step 1: LXP file path
+# Step 1: LXP file selection from config/luxor_living/
 STEP_LXP_DATA_SCHEMA = vol.Schema({
-    vol.Required(CONF_LXP_FILE, description="Path to LXP project file"): str,
+    vol.Required(CONF_LXP_FILE, description="Filename in /config/luxor_living/"): str,
 })
 
 # Step 2: Gateway configuration
@@ -60,10 +61,24 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            lxp_file = user_input[CONF_LXP_FILE]
+            filename = user_input[CONF_LXP_FILE]
+            
+            # Build path to file in config/luxor_living/
+            luxor_dir = self.hass.config.path("luxor_living")
+            lxp_file = os.path.join(luxor_dir, filename)
             
             # Validate LXP file
             try:
+                if not os.path.exists(lxp_file):
+                    # Try to list available files for better error message
+                    if os.path.exists(luxor_dir):
+                        available = [f for f in os.listdir(luxor_dir) if f.endswith('.lxp')]
+                        if available:
+                            _LOGGER.error("File not found: %s. Available: %s", filename, available)
+                        else:
+                            _LOGGER.error("No .lxp files found in %s", luxor_dir)
+                    raise FileNotFoundError(f"LXP file not found: {filename}")
+                
                 project_name = await self._validate_lxp_file(lxp_file)
                 self._lxp_file = lxp_file
                 self._project_name = project_name
@@ -77,19 +92,29 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Error parsing LXP file: %s", err)
                 errors["base"] = "invalid_lxp"
 
-        # Show suggestions for common LXP locations
-        suggested_path = str(Path.home() / "Nextcloud/Projekte_Rechner/Madeira/Schmidt_Madeira_V0.8.lxp")
+        # Check for available LXP files
+        luxor_dir = self.hass.config.path("luxor_living")
+        available_files = []
+        default_filename = "project.lxp"
+        
+        if os.path.exists(luxor_dir):
+            available_files = [f for f in os.listdir(luxor_dir) if f.endswith('.lxp')]
+            if available_files:
+                default_filename = available_files[0]
+        
         schema = vol.Schema({
-            vol.Required(CONF_LXP_FILE, default=suggested_path): str,
+            vol.Required(CONF_LXP_FILE, default=default_filename): str,
         })
+
+        description = "Please copy your LXP file to /config/luxor_living/ first"
+        if available_files:
+            description = f"Available files: {', '.join(available_files)}"
 
         return self.async_show_form(
             step_id="user",
             data_schema=schema,
             errors=errors,
-            description_placeholders={
-                "example": suggested_path,
-            },
+            description_placeholders={"info": description},
         )
 
     async def async_step_gateway(
