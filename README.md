@@ -3,15 +3,20 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 [![GitHub Release](https://img.shields.io/github/release/phismith91/luxorliving.svg)](https://github.com/phismith91/luxorliving/releases)
 [![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](LICENSE)
+![Quality Score](https://img.shields.io/badge/Quality-8.5%2F10-green)
 
 Home Assistant Integration für **Theben LUXORliving KNX/IP Gateways** mit automatischer Geräteerkennung aus LXP-Projektdateien.
+
+> ⚠️ **Beta Status**: Diese Integration ist funktionsfähig, aber noch in aktiver Entwicklung. Sensor-, Climate- und Cover-Plattformen sind noch nicht vollständig implementiert.
 
 ---
 
 ## 🌟 Highlights
 
+- ✅ **Echte KNX/IP Kommunikation** – Unterstützt Tunneling & Routing Modi
 - ✅ **Kein ETS erforderlich** – Nutzt `.lxp` Projektexporte aus Theben LUXORPlug
-- ✅ **Automatisches Entity-Mapping** – Erkennt Lichter, Schalter, Sensoren, Jalousien automatisch
+- ✅ **Automatisches Entity-Mapping** – Erkennt Lichter, Schalter, Sensoren automatisch
+- ✅ **Live Status-Updates** – Empfängt KNX Telegramme in Echtzeit
 - ✅ **Config Flow UI** – Einfache Einrichtung über Home Assistant UI
 - ✅ **Simulation Mode** – Testen ohne Hardware (Dry-Run)
 - ✅ **HACS-Ready** – Einfache Installation über HACS
@@ -61,32 +66,35 @@ Home Assistant Integration für **Theben LUXORliving KNX/IP Gateways** mit autom
 3. Suche nach **LUXORliving**
 4. Folge dem Setup-Assistenten:
    - **Schritt 1:** Pfad zur LXP-Datei eingeben (z.B. `/config/luxor/mein_projekt.lxp`)
-   - **Schritt 2:** Gateway-IP und Port konfigurieren (Standard: Port 3671)
+   - **Schritt 2:** Gateway-Konfiguration:
+     - **IP-Adresse**: IP des LUXORliving IP1 Gateways
+     - **Port**: 3671 (KNX/IP Standard)
+     - **Connection Type**: Tunneling (empfohlen) oder Routing
+     - **Simulation Mode**: Für Tests ohne Hardware aktivieren
 
 ### Schritt 3: Fertig!
 
 Die Integration erkennt automatisch alle Geräte aus deinem LXP-Projekt und erstellt entsprechende Entities:
 
-- 💡 **Lights** (Dimmer, Schaltaktoren)
-- 🔌 **Switches** (Schaltaktoren)
-- 🌡️ **Sensors** (Temperatur, Helligkeit, etc.)
-- 🪟 **Covers** (Jalousien, Rollläden)
-- 📊 **Binary Sensors** (Bewegungsmelder, Fensterkontakte)
+- ✅ **Lights** (Dimmer, Schaltaktoren) - **Voll funktionsfähig**
+- ✅ **Switches** (Schaltaktoren) - **Voll funktionsfähig**
+- ✅ **Binary Sensors** (Bewegungsmelder, Fensterkontakte) - **Voll funktionsfähig**
+- ⚠️ **Sensors** (Temperatur, Helligkeit) - **In Entwicklung**
+- ⚠️ **Covers** (Jalousien, Rollläden) - **In Entwicklung**
+- ⚠️ **Climate** (Thermostate) - **In Entwicklung**
 
 ---
 
-## 🎯 Unterstützte Geräte
+## 🎯 Plattform-Status
 
-Alle KNX-Geräte, die über **Theben LUXORliving IP1** verbunden sind und in der LXP-Datei definiert wurden:
-
-| Typ | Beispiele |
-|-----|-----------|
-| **Dimmer** | LED-Dimmer, Universaldimmer |
-| **Schalter** | Licht-Schalter, Steckdosen |
-| **Jalousien** | Rollläden, Raffstores, Markisen |
-| **Sensoren** | Temperatur, Helligkeit, CO₂ |
-| **Binär-Sensoren** | Bewegungsmelder, Fensterkontakte |
-| **Thermostate** | Raumtemperaturregler |
+| Plattform | Status | Features |
+|-----------|--------|----------|
+| 💡 **Light** | ✅ Production | On/Off, Dimming, Status Updates |
+| 🔌 **Switch** | ✅ Production | On/Off, Status Updates |
+| 📊 **Binary Sensor** | ✅ Production | Status Updates |
+| 🌡️ **Sensor** | ⚠️ Beta | Basis-Implementation |
+| 🪟 **Cover** | ⚠️ Planned | Noch nicht implementiert |
+| 🌡️ **Climate** | ⚠️ Planned | Noch nicht implementiert |
 
 ---
 

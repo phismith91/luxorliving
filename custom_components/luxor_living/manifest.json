@@ -9,7 +9,8 @@
         "@phismith91"
     ],
     "requirements": [
-        "xknx>=2.12.0"
+        "xknx>=2.12.0",
+        "defusedxml>=0.7.1"
     ],
     "integration_type": "hub",
     "iot_class": "local_polling",
