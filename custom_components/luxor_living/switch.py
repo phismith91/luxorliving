@@ -83,6 +83,15 @@ class LuxorLivingSwitch(SwitchEntity):
                 self._handle_knx_update
             )
 
+    async def async_added_to_hass(self) -> None:
+        """Entity added to hass - request current state from KNX."""
+        await super().async_added_to_hass()
+        
+        # Request current state from KNX bus
+        if self._address_status:
+            _LOGGER.debug("Requesting initial state for %s from %s", self._attr_name, self._address_status)
+            await self._knx_gateway.async_read_group_address(self._address_status)
+
     def _handle_knx_update(self, group_address: str, value: Any) -> None:
         """Handle KNX status update."""
         if group_address == self._address_status:
