@@ -251,24 +251,37 @@ class LuxorKNXGateway:
             group_address = str(telegram.destination_address)
             
             # Extract value from payload
-            if isinstance(telegram.payload.value, DPTBinary):
-                value = telegram.payload.value.value
-            elif isinstance(telegram.payload.value, DPTArray):
+            payload_value = telegram.payload.value
+            
+            if payload_value is None:
+                _LOGGER.debug("Received telegram with None value for %s", group_address)
+                return
+            
+            # Handle different DPT types
+            if isinstance(payload_value, DPTBinary):
+                value = payload_value.value
+            elif isinstance(payload_value, DPTArray):
                 # Decode DPT arrays based on length
-                raw_value = telegram.payload.value.value
+                raw_value = payload_value.value
                 if isinstance(raw_value, (list, bytes)) and len(raw_value) == 1:
                     # DPT 5.001 (percent): 0-255 → 0-100
                     value = int(raw_value[0] * 100 / 255)
                 else:
                     # Unknown DPT - return raw value
                     value = raw_value
+            elif isinstance(payload_value, int):
+                # Direct integer value (common for binary/switch)
+                value = bool(payload_value)
             else:
-                value = telegram.payload.value
+                value = payload_value
             
+            telegram_type = "Response" if isinstance(telegram.payload, GroupValueResponse) else "Write"
             _LOGGER.debug(
-                "📥 Received KNX telegram: %s=%s",
+                "📥 Received KNX %s: %s=%s (type: %s)",
+                telegram_type,
                 group_address,
                 value,
+                type(payload_value).__name__,
             )
             
             # Notify listeners
