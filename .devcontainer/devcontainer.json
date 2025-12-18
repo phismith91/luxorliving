@@ -1,0 +1,29 @@
+{
+  "name": "LUXORliving Development",
+  "image": "ghcr.io/home-assistant/devcontainer:latest",
+  "appPort": [
+    "8123:8123"
+  ],
+  "postCreateCommand": "scripts/setup",
+  "extensions": [
+    "ms-python.python",
+    "github.vscode-pull-request-github",
+    "ryanluker.vscode-coverage-gutters",
+    "ms-python.vscode-pylance"
+  ],
+  "settings": {
+    "python.pythonPath": "/usr/bin/python3",
+    "python.analysis.autoSearchPaths": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.formatting.provider": "black",
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "files.trimTrailingWhitespace": true
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder}/custom_components,target=/workspaces/luxorliving/custom_components,type=bind"
+  ],
+  "remoteUser": "vscode"
+}

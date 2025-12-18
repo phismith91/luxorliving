@@ -1,0 +1,11 @@
+# Basic configuration for Home Assistant
+default_config:
+
+# Enable the logger
+logger:
+  default: info
+  logs:
+    custom_components.luxor_living: debug
+
+# Enable development mode
+development: true

@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+echo "Setting up development environment..."
+
+# Install dependencies
+pip3 install --upgrade pip
+pip3 install -r requirements.txt
+pip3 install pytest pytest-homeassistant-custom-component black pylint
+
+# Create config directory
+mkdir -p config/custom_components
+ln -sf $(pwd)/custom_components/luxor_living config/custom_components/
+
+echo "Setup complete!"
+echo ""
+echo "To start Home Assistant:"
+echo "  hass -c config"
+echo ""
+echo "Or use the VS Code debugger (F5)"

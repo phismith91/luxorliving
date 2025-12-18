@@ -1,0 +1,41 @@
+#!/bin/bash
+# Quick development script
+
+set -e
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}LUXORliving Development Helper${NC}"
+echo ""
+
+case "${1}" in
+  "test")
+    echo "Running tests..."
+    pytest tests/
+    ;;
+  "lint")
+    echo "Running linters..."
+    pylint custom_components/luxor_living
+    black --check custom_components/luxor_living
+    ;;
+  "format")
+    echo "Formatting code..."
+    black custom_components/luxor_living
+    ;;
+  "run")
+    echo "Starting Home Assistant..."
+    hass -c config
+    ;;
+  *)
+    echo "Usage: $0 {test|lint|format|run}"
+    echo ""
+    echo "  test   - Run pytest tests"
+    echo "  lint   - Check code quality"
+    echo "  format - Format code with black"
+    echo "  run    - Start Home Assistant"
+    exit 1
+    ;;
+esac
