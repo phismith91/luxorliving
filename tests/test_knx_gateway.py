@@ -3,12 +3,13 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import pytest_asyncio
 from homeassistant.core import HomeAssistant
 
 from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 def mock_hass():
     """Create a mock Home Assistant instance."""
     hass = MagicMock(spec=HomeAssistant)
@@ -61,6 +62,7 @@ class TestLuxorKNXGateway:
         from xknx.io import ConnectionType
         assert gateway._connection_type == ConnectionType.ROUTING
 
+    @pytest.mark.asyncio
     async def test_async_setup_simulation_mode(self, mock_hass):
         """Test setup in simulation mode."""
         gateway = LuxorKNXGateway(
@@ -76,6 +78,7 @@ class TestLuxorKNXGateway:
         assert gateway.connected is True
         assert gateway._xknx is None
 
+    @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
     async def test_async_setup_real_mode(self, mock_xknx_class, mock_hass):
         """Test setup in real mode."""
@@ -99,6 +102,7 @@ class TestLuxorKNXGateway:
         mock_xknx.start.assert_called_once()
         mock_xknx.connection_manager.connect.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
     async def test_async_setup_failure(self, mock_xknx_class, mock_hass):
         """Test setup failure."""
@@ -118,6 +122,7 @@ class TestLuxorKNXGateway:
         assert result is False
         assert gateway.connected is False
 
+    @pytest.mark.asyncio
     async def test_async_send_telegram_simulation(self, mock_hass):
         """Test sending telegram in simulation mode."""
         gateway = LuxorKNXGateway(
@@ -132,6 +137,7 @@ class TestLuxorKNXGateway:
         
         assert result is True
 
+    @pytest.mark.asyncio
     async def test_async_send_telegram_not_connected(self, mock_hass):
         """Test sending telegram when not connected."""
         gateway = LuxorKNXGateway(
@@ -145,6 +151,8 @@ class TestLuxorKNXGateway:
         
         assert result is False
 
+    @pytest.mark.asyncio
+    @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
     async def test_async_send_telegram_binary(self, mock_xknx_class, mock_hass):
         """Test sending binary telegram."""
@@ -168,6 +176,7 @@ class TestLuxorKNXGateway:
         assert result is True
         mock_xknx.telegrams.put.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
     async def test_async_send_telegram_percent(self, mock_xknx_class, mock_hass):
         """Test sending percent telegram."""
@@ -221,6 +230,7 @@ class TestLuxorKNXGateway:
         
         assert callback not in gateway._listeners.get("1/2/3", [])
 
+    @pytest.mark.asyncio
     async def test_telegram_received_callback_binary(self, mock_hass):
         """Test receiving binary telegram."""
         gateway = LuxorKNXGateway(
@@ -248,6 +258,7 @@ class TestLuxorKNXGateway:
         
         callback.assert_called_once_with("1/2/3", True)
 
+    @pytest.mark.asyncio
     async def test_telegram_received_callback_percent(self, mock_hass):
         """Test receiving percent telegram."""
         gateway = LuxorKNXGateway(
@@ -280,6 +291,7 @@ class TestLuxorKNXGateway:
         assert args[0] == "1/2/4"
         assert 49 <= args[1] <= 50  # Allow rounding
 
+    @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
     async def test_async_disconnect(self, mock_xknx_class, mock_hass):
         """Test disconnecting from gateway."""
