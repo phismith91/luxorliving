@@ -77,12 +77,12 @@ Pfad zur LXP-Datei: /config/luxor/mein_projekt.lxp
 ```
 
 #### Schritt 2b: Gateway-Konfiguration
-| Parameter | Wert | Beschreibung |
-|-----------|------|--------------|
-| **Host** | `192.168.1.100` | IP-Adresse des IP1 Gateways |
-| **Port** | `3671` | KNX/IP Standard-Port |
-| **Connection Type** | `Tunneling` | Empfohlen (oder Routing) |
-| **Simulation Mode** | `false` | Für Tests ohne Hardware: `true` |
+| Parameter           | Wert            | Beschreibung                    |
+| ------------------- | --------------- | ------------------------------- |
+| **Host**            | `192.168.1.100` | IP-Adresse des IP1 Gateways     |
+| **Port**            | `3671`          | KNX/IP Standard-Port            |
+| **Connection Type** | `Tunneling`     | Empfohlen (oder Routing)        |
+| **Simulation Mode** | `false`         | Für Tests ohne Hardware: `true` |
 
 ### Schritt 3: Entities überprüfen
 
@@ -359,16 +359,16 @@ pytest tests/ -v --tb=short
 
 ## 🚦 Status Overview
 
-| Komponente | Status | Coverage | Hinweise |
-|------------|--------|----------|----------|
-| **Config Flow** | ✅ Production | 88% | UI-Setup funktioniert |
-| **KNX Gateway** | ✅ Production | 77% | Tunneling & Routing |
-| **Light Platform** | ✅ Production | 0%* | Voll funktionsfähig |
-| **Switch Platform** | ✅ Production | 0%* | Voll funktionsfähig |
-| **Binary Sensor** | ✅ Production | 0%* | Voll funktionsfähig |
-| **Sensor Platform** | ⚠️ Beta | 0%* | Basis implementiert |
-| **Cover Platform** | 📅 Planned | - | Q1 2026 geplant |
-| **Climate Platform** | 📅 Planned | - | Q1 2026 geplant |
+| Komponente           | Status       | Coverage | Hinweise              |
+| -------------------- | ------------ | -------- | --------------------- |
+| **Config Flow**      | ✅ Production | 88%      | UI-Setup funktioniert |
+| **KNX Gateway**      | ✅ Production | 77%      | Tunneling & Routing   |
+| **Light Platform**   | ✅ Production | 0%*      | Voll funktionsfähig   |
+| **Switch Platform**  | ✅ Production | 0%*      | Voll funktionsfähig   |
+| **Binary Sensor**    | ✅ Production | 0%*      | Voll funktionsfähig   |
+| **Sensor Platform**  | ⚠️ Beta       | 0%*      | Basis implementiert   |
+| **Cover Platform**   | 📅 Planned    | -        | Q1 2026 geplant       |
+| **Climate Platform** | 📅 Planned    | -        | Q1 2026 geplant       |
 
 \* *Coverage für Platform-Module noch nicht in Tests erfasst*
 
