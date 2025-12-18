@@ -61,10 +61,7 @@ class LuxorKNXGateway:
             return True
 
         try:
-            # Create XKNX instance
-            self._xknx = XKNX()
-            
-            # Configure connection
+            # Configure connection BEFORE creating XKNX instance
             connection_config = ConnectionConfig(
                 connection_type=self._connection_type,
                 gateway_ip=self.host,
@@ -73,11 +70,11 @@ class LuxorKNXGateway:
                 auto_reconnect_wait=3,
             )
             
-            # Start XKNX
-            await self._xknx.start()
+            # Create XKNX instance with connection config
+            self._xknx = XKNX(connection_config=connection_config)
             
-            # Connect to gateway
-            await self._xknx.connection_manager.connect(connection_config)
+            # Start XKNX with configured connection
+            await self._xknx.start()
             
             # Register telegram callback
             self._xknx.telegram_queue.register_telegram_received_cb(
