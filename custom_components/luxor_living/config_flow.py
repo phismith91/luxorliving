@@ -9,6 +9,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.components import media_source
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
@@ -64,9 +65,35 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            lxp_file = user_input[CONF_LXP_FILE]
+            lxp_file_id = user_input[CONF_LXP_FILE]
             
-            _LOGGER.debug("📁 Received file input: %s (type: %s)", lxp_file, type(lxp_file))
+            _LOGGER.debug("📁 Received file input: %s (type: %s)", lxp_file_id, type(lxp_file_id))
+            
+            # Convert FileSelector ID to actual file path
+            try:
+                # Resolve media source to local file path
+                media = await media_source.async_resolve_media(
+                    self.hass, lxp_file_id, None
+                )
+                lxp_file = media.url.removeprefix("/media/local/")
+                lxp_file = os.path.join(self.hass.config.path("media"), lxp_file)
+                
+                _LOGGER.info("📂 Resolved file path: %s", lxp_file)
+                
+            except Exception as err:
+                _LOGGER.error("❌ Failed to resolve file: %s", err)
+                errors["base"] = "file_not_found"
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=vol.Schema(
+                        {
+                            vol.Required(CONF_LXP_FILE): selector.FileSelector(
+                                selector.FileSelectorConfig(accept=".lxp")
+                            )
+                        }
+                    ),
+                    errors=errors,
+                )
             
             # Validate LXP file
             try:
