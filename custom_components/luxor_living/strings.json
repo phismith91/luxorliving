@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "LUXORliving Setup",
+        "description": "Configure your LUXORliving KNX/IP gateway connection",
+        "data": {
+          "host": "Host (IP Address)",
+          "port": "Port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the gateway",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This device is already configured",
+      "not_implemented": "This feature is not yet implemented"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "LUXORliving Options",
+        "data": {
+          "simulation_mode": "Simulation Mode (Dry-run)"
+        }
+      }
+    }
+  }
+}
