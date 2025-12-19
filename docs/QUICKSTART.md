@@ -8,7 +8,7 @@
 
 ## 📋 Voraussetzungen
 
-- **Home Assistant** ≥ 2024.12.0
+- **Home Assistant** ≥ 2025.12.0
 - **Python** ≥ 3.12
 - **Theben LUXORliving IP1 Gateway** (optional für echte KNX-Kommunikation)
 - **LXP-Projektdatei** aus Theben LUXORPlug Software
