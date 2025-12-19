@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from pathlib import Path
 import shutil
 from typing import Any
@@ -13,6 +12,7 @@ from homeassistant import config_entries
 from homeassistant.components.file_upload import process_uploaded_file
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
@@ -76,7 +76,7 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the initial step - LXP file selection via file browser."""
         errors: dict[str, str] = {}
 
@@ -128,7 +128,7 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_gateway(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle gateway configuration step."""
         errors: dict[str, str] = {}
 

@@ -1,7 +1,6 @@
 """KNX Gateway Manager for LUXORliving IP1."""
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Callable, Any
 
@@ -13,7 +12,6 @@ from xknx.telegram.address import GroupAddress
 from xknx.dpt import DPTBinary, DPTArray
 
 from homeassistant.core import HomeAssistant
-from homeassistant.const import CONF_HOST, CONF_PORT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +35,7 @@ class LuxorKNXGateway:
         self._xknx: XKNX | None = None
         self._listeners: dict[str, list[Callable]] = {}
         self._connected = False
+        self._initial_read_pending: set[str] = set()  # Track pending initial reads
         
         # Map connection type string to XKNX enum
         self._connection_type = (
@@ -76,10 +75,12 @@ class LuxorKNXGateway:
             # Start XKNX with configured connection
             await self._xknx.start()
             
-            # Register telegram callback
-            self._xknx.telegram_queue.register_telegram_received_cb(
-                self._telegram_received_callback
-            )
+            # Register telegram callback (wrap async callback)
+            def _sync_callback(telegram: Telegram) -> None:
+                """Sync wrapper for async telegram callback."""
+                self.hass.async_create_task(self._telegram_received_callback(telegram))
+            
+            self._xknx.telegram_queue.register_telegram_received_cb(_sync_callback)
             
             self._connected = True
             _LOGGER.info(
@@ -142,10 +143,12 @@ class LuxorKNXGateway:
             
             # Create payload based on value type
             if value_type == "binary":
-                payload = GroupValueWrite(DPTBinary(value))
+                payload = GroupValueWrite(DPTBinary(int(value)))
             elif value_type == "percent":
                 # DPT 5.001 (0-100%) - must be list!
-                byte_value = int(value * 255 / 100)
+                # Ensure value is numeric for division
+                num_value = float(value) if not isinstance(value, (int, float)) else value
+                byte_value = int(num_value * 255 / 100)
                 payload = GroupValueWrite(DPTArray([byte_value]))
             else:
                 # For now, treat unknown types as raw bytes
@@ -176,11 +179,12 @@ class LuxorKNXGateway:
             )
             return False
 
-    async def async_read_group_address(self, group_address: str) -> bool:
+    async def async_read_group_address(self, group_address: str, is_initial: bool = False) -> bool:
         """Send a read request to a KNX group address.
         
         Args:
             group_address: KNX group address to read
+            is_initial: Whether this is an initial read after startup
             
         Returns:
             True if request was sent successfully
@@ -203,12 +207,17 @@ class LuxorKNXGateway:
                 payload=GroupValueRead(),
             )
             
+            if is_initial:
+                self._initial_read_pending.add(group_address)
+            
             await self._xknx.telegrams.put(telegram)
-            _LOGGER.debug("📖 Sent read request to %s", group_address)
+            _LOGGER.debug("📖 Sent read request to %s%s", group_address, " (initial)" if is_initial else "")
             return True
 
         except Exception as err:
             _LOGGER.error("Failed to read from %s: %s", group_address, err)
+            if is_initial and group_address in self._initial_read_pending:
+                self._initial_read_pending.discard(group_address)
             return False
 
     def register_listener(
@@ -258,6 +267,7 @@ class LuxorKNXGateway:
                 return
             
             # Handle different DPT types
+            value: bool | int | float | bytes | tuple | list
             if isinstance(payload_value, DPTBinary):
                 value = payload_value.value
             elif isinstance(payload_value, DPTArray):
@@ -265,7 +275,8 @@ class LuxorKNXGateway:
                 raw_value = payload_value.value
                 if isinstance(raw_value, (list, bytes)) and len(raw_value) == 1:
                     # DPT 5.001 (percent): 0-255 → 0-100
-                    value = int(raw_value[0] * 100 / 255)
+                    byte_val = int(raw_value[0]) if isinstance(raw_value, (list, bytes)) else int(raw_value)
+                    value = int(byte_val * 100 / 255)
                 else:
                     # Unknown DPT - return raw value
                     value = raw_value
@@ -275,13 +286,19 @@ class LuxorKNXGateway:
             else:
                 value = payload_value
             
+            # Track initial read completion
+            was_initial = group_address in self._initial_read_pending
+            if was_initial:
+                self._initial_read_pending.discard(group_address)
+            
             telegram_type = "Response" if isinstance(telegram.payload, GroupValueResponse) else "Write"
             _LOGGER.debug(
-                "📥 Received KNX %s: %s=%s (type: %s)",
+                "📥 Received KNX %s: %s=%s (type: %s)%s",
                 telegram_type,
                 group_address,
                 value,
                 type(payload_value).__name__,
+                " ✅ initial" if was_initial else "",
             )
             
             # Notify listeners
@@ -315,3 +332,44 @@ class LuxorKNXGateway:
     def xknx(self) -> XKNX | None:
         """Return XKNX instance for advanced usage."""
         return self._xknx
+
+    async def async_batch_read_group_addresses(
+        self, addresses: list[str], delay_ms: int = 50
+    ) -> int:
+        """Send batch read requests with small delay between each.
+        
+        Args:
+            addresses: List of KNX group addresses to read
+            delay_ms: Delay in milliseconds between reads (default: 50ms)
+            
+        Returns:
+            Number of successfully sent read requests
+        """
+        import asyncio
+        
+        if not addresses:
+            return 0
+        
+        _LOGGER.info("📖 Starting batch read of %d addresses", len(addresses))
+        
+        success_count = 0
+        for i, address in enumerate(addresses):
+            if await self.async_read_group_address(address, is_initial=True):
+                success_count += 1
+            
+            # Small delay to avoid overwhelming the bus
+            if i < len(addresses) - 1:  # Skip delay after last address
+                await asyncio.sleep(delay_ms / 1000.0)
+        
+        _LOGGER.info(
+            "📖 Batch read completed: %d/%d successful",
+            success_count,
+            len(addresses),
+        )
+        
+        return success_count
+
+    @property
+    def pending_initial_reads(self) -> int:
+        """Return number of pending initial reads."""
+        return len(self._initial_read_pending)

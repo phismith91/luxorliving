@@ -41,8 +41,9 @@ async def async_setup_entry(
     light_entities = mapper.get_entities_by_platform(Platform.LIGHT)
     _LOGGER.info("Creating %d light entities", len(light_entities))
     
-    entities = []
+    entities: list[LightEntity] = []
     for mapped_entity in light_entities:
+        entity: LightEntity
         if mapped_entity.entity_type == "dimmable_light":
             entity = LuxorLivingDimmableLight(mapped_entity, knx_gateway)
         else:
@@ -98,7 +99,7 @@ class LuxorLivingLight(LightEntity):
         read_address = self._address_status or self._address_on
         if read_address:
             _LOGGER.debug("Requesting initial state for %s from %s", self._attr_name, read_address)
-            await self._knx_gateway.async_read_group_address(read_address)
+            await self._knx_gateway.async_read_group_address(read_address, is_initial=True)
 
     def _handle_knx_update(self, group_address: str, value: Any) -> None:
         """Handle KNX status update."""
@@ -171,7 +172,7 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         # Request current brightness from KNX bus
         if self._address_dim:
             _LOGGER.debug("Requesting initial brightness for %s from %s", self._attr_name, self._address_dim)
-            await self._knx_gateway.async_read_group_address(self._address_dim)
+            await self._knx_gateway.async_read_group_address(self._address_dim, is_initial=True)
 
     def _handle_brightness_update(self, group_address: str, value: Any) -> None:
         """Handle KNX brightness update."""

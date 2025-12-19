@@ -1,10 +1,10 @@
 """LXP Parser for LUXORliving project files."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 try:
     from defusedxml import ElementTree as ET
@@ -94,8 +94,9 @@ class LXPParser:
         _LOGGER.info("Parsing LXP file: %s", self.file_path)
 
         # Parse XML asynchronously to avoid blocking the event loop
-        import asyncio
         self.tree = await asyncio.to_thread(ET.parse, self.file_path)
+        if self.tree is None:
+            raise ValueError(f"Failed to parse XML file: {self.file_path}")
         self.root = self.tree.getroot()
 
         # Extract project info
@@ -135,6 +136,10 @@ class LXPParser:
     def _parse_devices(self) -> list[LXPDevice]:
         """Parse all devices from the LXP file."""
         devices: list[LXPDevice] = []
+
+        if self.root is None:
+            _LOGGER.warning("No root element available")
+            return devices
 
         devices_elem = self.root.find(f"{NAMESPACE}devices")
         if devices_elem is None:

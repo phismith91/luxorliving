@@ -6,6 +6,7 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -24,7 +25,6 @@ async def async_setup_entry(
     _LOGGER.info("Setting up LUXORliving switches")
     
     # Get mapper and KNX gateway from integration data
-    from homeassistant.const import Platform
     mapper = hass.data[DOMAIN][entry.entry_id].get("mapper")
     knx_gateway: LuxorKNXGateway = hass.data[DOMAIN][entry.entry_id].get(DATA_KNX_GATEWAY)
     
@@ -95,7 +95,7 @@ class LuxorLivingSwitch(SwitchEntity):
         read_address = self._address_status or self._address_on
         if read_address:
             _LOGGER.debug("Requesting initial state for %s from %s", self._attr_name, read_address)
-            await self._knx_gateway.async_read_group_address(read_address)
+            await self._knx_gateway.async_read_group_address(read_address, is_initial=True)
 
     def _handle_knx_update(self, group_address: str, value: Any) -> None:
         """Handle KNX status update."""

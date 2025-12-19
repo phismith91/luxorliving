@@ -84,7 +84,6 @@ class TestLuxorKNXGateway:
         """Test setup in real mode."""
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
-        mock_xknx.connection_manager.connect = AsyncMock()
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
         mock_xknx_class.return_value = mock_xknx
         
@@ -100,7 +99,7 @@ class TestLuxorKNXGateway:
         assert result is True
         assert gateway.connected is True
         mock_xknx.start.assert_called_once()
-        mock_xknx.connection_manager.connect.assert_called_once()
+        # In XKNX 3.x, connection happens automatically in start()
 
     @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
