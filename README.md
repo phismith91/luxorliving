@@ -29,7 +29,7 @@ Home Assistant Integration für **Theben LUXORliving KNX/IP Gateways** mit autom
 
 ## 📋 Anforderungen
 
-- **Home Assistant** ≥ 2024.12.0
+- **Home Assistant** ≥ 2025.12.0
 - **Theben LUXORliving IP1 Gateway** (KNX/IP Interface)
 - **LXP-Projektdatei** (`.lxp`) – Export aus Theben LUXORPlug Software
 

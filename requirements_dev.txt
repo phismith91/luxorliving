@@ -1,8 +1,8 @@
 # Home Assistant (compatible with Python 3.12)
-homeassistant>=2024.12.0
+homeassistant>=2025.12.0
 
 # KNX/IP
-xknx>=2.12.0
+xknx>=3.0.0
 
 # Config Flow Dependencies
 voluptuous>=0.14.0
