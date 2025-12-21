@@ -1,6 +1,6 @@
 {
     "name": "LUXORliving",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "domain": "luxor_living",
     "documentation": "https://github.com/phismith91/luxorliving",
     "issue_tracker": "https://github.com/phismith91/luxorliving/issues",
@@ -9,7 +9,7 @@
         "@phismith91"
     ],
     "requirements": [
-        "xknx>=3.13.0",
+        "xknx>=3.11.0,<3.15.0",
         "defusedxml>=0.7.1",
         "aiohttp>=3.9.0"
     ],
