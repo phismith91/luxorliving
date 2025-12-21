@@ -117,7 +117,7 @@ class BAOSRestClient:
         _LOGGER.debug(f"Attempting login to {url}")
         
         try:
-            async with self._session.post(url, json=payload, allow_redirects=False) as response:
+            async with self._session.post(url, json=payload) as response:
                 if response.status == 401:
                     raise AuthenticationError("Invalid username or password")
                 
