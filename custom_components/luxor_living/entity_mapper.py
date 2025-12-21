@@ -86,6 +86,15 @@ class EntityMapper:
         """Map an actuator to entities."""
         # Collect datapoints by role
         datapoints = {dp.role: dp.address for dp in actuator.datapoints}
+        
+        # Debug: Log extracted datapoints
+        if datapoints:
+            _LOGGER.debug(
+                "📋 Actuator '%s' datapoints: %s",
+                actuator.name,
+                {role: f"{addr} ({addr >> 11}/{(addr >> 8) & 0x7}/{addr & 0xFF})" 
+                 for role, addr in datapoints.items()}
+            )
 
         # Determine platform based on primary roles
         platform = self._determine_platform(datapoints)

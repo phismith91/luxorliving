@@ -1,6 +1,7 @@
 """Switch platform for LUXORliving integration."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -69,6 +70,14 @@ class LuxorLivingSwitch(SwitchEntity):
         )
         self._address_status = mapped_entity.datapoints.get("status@OnOff") or mapped_entity.datapoints.get("StatusOnOff")
         
+        # Debug: Log extracted addresses
+        _LOGGER.debug(
+            "🔧 Switch '%s' addresses: ON=%s, STATUS=%s",
+            self._attr_name,
+            f"{self._address_on} ({GroupAddress(self._address_on)})" if self._address_on else "None",
+            f"{self._address_status} ({GroupAddress(self._address_status)})" if self._address_status else "None"
+        )
+        
         # Device info
         self._attr_device_info = {
             "identifiers": {(DOMAIN, mapped_entity.device_id)},
@@ -91,12 +100,35 @@ class LuxorLivingSwitch(SwitchEntity):
         """Entity added to hass - request current state from KNX."""
         await super().async_added_to_hass()
         
+        # Wait for KNX connection to be ready (max 5 seconds)
+        if not self._knx_gateway._connected:
+            _LOGGER.debug("⏳ Waiting for KNX connection for switch '%s'...", self._attr_name)
+            for i in range(50):
+                if self._knx_gateway._connected:
+                    _LOGGER.debug("✅ KNX connected after %.1fs for '%s'", i * 0.1, self._attr_name)
+                    break
+                await asyncio.sleep(0.1)
+            
+            if not self._knx_gateway._connected:
+                _LOGGER.error("❌ KNX not connected after 5s for switch '%s', skipping initial read!", self._attr_name)
+                return
+        
         # Request current state from KNX bus
         # Try status address first, fallback to control address
         read_address = self._address_status or self._address_on
         if read_address:
-            _LOGGER.debug("Requesting initial state for %s from %s", self._attr_name, read_address)
+            _LOGGER.info(
+                "📖 Switch '%s' requesting initial state from %s (%s)",
+                self._attr_name,
+                GroupAddress(read_address),
+                "STATUS" if read_address == self._address_status else "CONTROL"
+            )
             await self._knx_gateway.async_read_group_address(read_address, is_initial=True)
+        else:
+            _LOGGER.warning(
+                "⚠️ Switch '%s' has NO read address! Cannot request initial state.",
+                self._attr_name
+            )
 
     def _handle_knx_update(self, group_address: str, value: Any) -> None:
         """Handle KNX status update."""

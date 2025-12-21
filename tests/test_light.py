@@ -86,6 +86,7 @@ class TestLuxorLivingLight:
     @pytest.mark.asyncio
     async def test_async_added_to_hass(self, mock_mapped_entity, mock_knx_gateway):
         """Test entity added to hass - should request initial state."""
+        mock_knx_gateway._connected = True  # KNX is connected
         light = LuxorLivingLight(mock_mapped_entity, mock_knx_gateway)
         
         await light.async_added_to_hass()
@@ -96,6 +97,7 @@ class TestLuxorLivingLight:
     @pytest.mark.asyncio
     async def test_async_added_to_hass_no_status_address(self, mock_knx_gateway):
         """Test entity added when no status address available - should use OnOff as fallback."""
+        mock_knx_gateway._connected = True  # KNX is connected
         entity = Mock()
         entity.unique_id = "test_light_no_status"
         entity.name = "Test Light No Status"
@@ -184,6 +186,7 @@ class TestLuxorLivingDimmableLight:
     @pytest.mark.asyncio
     async def test_async_added_to_hass(self, mock_dimmable_entity, mock_knx_gateway):
         """Test dimmable light added to hass - should request initial state."""
+        mock_knx_gateway._connected = True  # KNX is connected
         light = LuxorLivingDimmableLight(mock_dimmable_entity, mock_knx_gateway)
         
         await light.async_added_to_hass()

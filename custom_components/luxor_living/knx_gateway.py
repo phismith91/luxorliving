@@ -297,7 +297,11 @@ class LuxorKNXGateway:
                 self._initial_read_pending.add(group_address)
             
             await self._xknx.telegrams.put(telegram)
-            _LOGGER.debug("📖 Sent read request to %s%s", group_address, " (initial)" if is_initial else "")
+            _LOGGER.info(
+                "📤 Sent GroupValueRead to %s%s",
+                group_address,
+                " (INITIAL READ)" if is_initial else ""
+            )
             return True
 
         except Exception as err:
@@ -378,19 +382,24 @@ class LuxorKNXGateway:
                 self._initial_read_pending.discard(group_address)
             
             telegram_type = "Response" if isinstance(telegram.payload, GroupValueResponse) else "Write"
-            _LOGGER.debug(
-                "📥 Received KNX %s: %s=%s (type: %s)%s",
+            _LOGGER.info(
+                "📥 Received KNX %s: %s=%s (DPT: %s)%s",
                 telegram_type,
                 group_address,
                 value,
                 type(payload_value).__name__,
-                " ✅ initial" if was_initial else "",
+                " ✅ INITIAL READ RESPONSE" if was_initial else "",
             )
             
             # Notify listeners
             if group_address in self._listeners:
                 # Create snapshot to avoid modification during iteration
                 callbacks = list(self._listeners[group_address])
+                _LOGGER.debug(
+                    "🔔 Notifying %d listener(s) for address %s",
+                    len(callbacks),
+                    group_address
+                )
                 for callback in callbacks:
                     # Check if still registered (could be removed during iteration)
                     if callback not in self._listeners.get(group_address, []):

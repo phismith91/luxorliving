@@ -66,6 +66,7 @@ class TestLuxorLivingSwitch:
     @pytest.mark.asyncio
     async def test_async_added_to_hass(self, mock_mapped_entity, mock_knx_gateway):
         """Test entity added to hass - should request initial state."""
+        mock_knx_gateway._connected = True  # KNX is connected
         switch = LuxorLivingSwitch(mock_mapped_entity, mock_knx_gateway)
         
         await switch.async_added_to_hass()
@@ -76,6 +77,7 @@ class TestLuxorLivingSwitch:
     @pytest.mark.asyncio
     async def test_async_added_to_hass_no_status_address(self, mock_knx_gateway):
         """Test entity added when no status address available - should use OnOff as fallback."""
+        mock_knx_gateway._connected = True  # KNX is connected
         entity = Mock()
         entity.unique_id = "test_switch_no_status"
         entity.name = "Test Switch No Status"
