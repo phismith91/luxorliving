@@ -326,14 +326,19 @@ class BAOSRestClient:
         if not self.session_token:
             return {}
         
-        # Cookie format: sessionid=<token> (standard format)
-        # If API returns just the token value, we need to add the cookie name
+        # Try different cookie formats - API documentation unclear
         cookie_value = self.session_token
-        if "=" not in cookie_value:
-            # Token is plain value, add cookie name
-            cookie_value = f"sessionid={cookie_value}"
         
+        # OPTION 1: Plain token (most likely based on API docs)
+        # Response from /rest/login is just: "3c8b531737cbd849..."
+        # So maybe that's exactly what Cookie header needs
+        _LOGGER.debug(f"Using cookie format: Plain token (no prefix)")
         return {"Cookie": cookie_value}
+        
+        # OPTION 2: Standard format with name (currently disabled)
+        # if "=" not in cookie_value:
+        #     cookie_value = f"sessionid={cookie_value}"
+        # return {"Cookie": cookie_value}
     
     @property
     def is_authenticated(self) -> bool:
