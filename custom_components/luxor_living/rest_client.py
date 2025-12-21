@@ -32,17 +32,19 @@ class BAOSRestClient:
     - PUT /rest/device/authtunneling → Enable/Disable Tunneling
     """
     
-    def __init__(self, host: str, port: int = 80):
+    def __init__(self, host: str, port: int = 443):
         """
         Initialize REST API Client.
         
         Args:
             host: IP address of BAOS 777 device
-            port: HTTP port (default: 80)
+            port: HTTPS port (default: 443, uses HTTP 80 with redirect)
         """
         self.host = host
         self.port = port
-        self.base_url = f"http://{host}:{port}"
+        # BAOS 777 redirects HTTP:80 -> HTTPS:443
+        # Use HTTPS directly with SSL verification disabled
+        self.base_url = f"https://{host}:{port}"
         
         self.session_token: Optional[str] = None
         self.session_expires: Optional[datetime] = None

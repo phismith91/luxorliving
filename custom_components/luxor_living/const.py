@@ -11,7 +11,7 @@ CONF_PASSWORD = "password"
 
 # Defaults
 DEFAULT_PORT = 3671  # KNX/IP default port
-DEFAULT_HTTP_PORT = 80  # REST API default port
+DEFAULT_HTTP_PORT = 443  # REST API HTTPS port (device redirects 80->443)
 DEFAULT_CONNECTION_TYPE = "tunneling"
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin"
