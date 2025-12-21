@@ -11,7 +11,7 @@ CONF_PASSWORD = "password"
 
 # Defaults
 DEFAULT_PORT = 3671  # KNX/IP default port
-DEFAULT_HTTP_PORT = 80  # REST API HTTP port (per LUXORliving documentation)
+DEFAULT_HTTP_PORT = 443  # REST API enforces HTTPS (308 redirect from port 80)
 DEFAULT_CONNECTION_TYPE = "tunneling"
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin"
