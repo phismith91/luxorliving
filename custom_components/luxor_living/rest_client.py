@@ -53,8 +53,13 @@ class BAOSRestClient:
     async def __aenter__(self):
         """Context manager entry."""
         # Create session without SSL verification for local HTTP
+        # Disable redirects to prevent HTTP->HTTPS redirect issues
         connector = aiohttp.TCPConnector(ssl=False)
-        self._session = aiohttp.ClientSession(connector=connector)
+        self._session = aiohttp.ClientSession(
+            connector=connector,
+            connector_owner=True,
+            timeout=aiohttp.ClientTimeout(total=30)
+        )
         return self
     
     async def __aexit__(self, *args):
@@ -79,8 +84,13 @@ class BAOSRestClient:
         """
         if not self._session:
             # Create session without SSL verification for local HTTP
+            # Disable redirects to prevent HTTP->HTTPS redirect issues
             connector = aiohttp.TCPConnector(ssl=False)
-            self._session = aiohttp.ClientSession(connector=connector)
+            self._session = aiohttp.ClientSession(
+                connector=connector,
+                connector_owner=True,
+                timeout=aiohttp.ClientTimeout(total=30)
+            )
         
         url = f"{self.base_url}/rest/auth/login"
         payload = {
@@ -91,7 +101,7 @@ class BAOSRestClient:
         _LOGGER.debug(f"Attempting login to {url}")
         
         try:
-            async with self._session.post(url, json=payload) as response:
+            async with self._session.post(url, json=payload, allow_redirects=False) as response:
                 if response.status == 401:
                     raise AuthenticationError("Invalid username or password")
                 
