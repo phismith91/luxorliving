@@ -324,29 +324,27 @@ class BAOSRestClient:
     
     def _get_auth_headers(self) -> Dict[str, str]:
         """
-        Get authentication headers.
+        Get authentication headers per BAOS REST API Documentation (Page 7).
         
-        LUXORliving uses Cookie-based authentication.
-        The session cookie returned by /rest/login is sent in subsequent requests.
+        Two supported methods:
+        1. Cookie: user=%22TOKEN%22 (where %22 is URL-encoded double quote)
+        2. Authorization: Token token=TOKEN (note "Token" prefix!)
         """
         if not self.session_token:
             return {}
         
-        # LUXORliving API Documentation (Page 6):
-        # "Authentication for a Request: Either via
-        #  1. cookie user=%22TOKEN%22  (where %22 is URL-encoded ")
-        #  2. or the Authorization header token=TOKEN"
-        #
-        # Trying BOTH for maximum compatibility
+        # URL-encode the cookie value: user="TOKEN" → user=%22TOKEN%22
         import urllib.parse
         encoded_token = urllib.parse.quote(f'"{self.session_token}"')
         
         headers = {
+            # Method 1: Cookie header
             "Cookie": f"user={encoded_token}",
-            "Authorization": f"token={self.session_token}"
+            # Method 2: Authorization header with "Token" prefix (CRITICAL!)
+            "Authorization": f"Token token={self.session_token}"
         }
         
-        _LOGGER.debug(f"Using both Cookie and Authorization headers")
+        _LOGGER.debug(f"Auth headers: Cookie=user=%22...%22, Authorization=Token token=...")
         return headers
     
     @property
