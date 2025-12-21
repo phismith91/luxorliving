@@ -228,18 +228,24 @@ class BAOSRestClient:
                         f"Failed to enable tunneling: Forbidden (403). Check API permissions."
                     )
                 
-                if response.status != 200:
+                # API Documentation Page 12: PUT /rest/device/authtunneling returns 204, not 200!
+                if response.status not in (200, 204):
                     response_text = await response.text()
                     _LOGGER.error(f"Tunneling failed with {response.status}. Response: {response_text}")
                     raise TunnelingError(
                         f"Failed to enable tunneling (status {response.status})"
                     )
                 
-                # Verify tunneling is enabled
+                # Success! With 204 (No Content) there's no response body
+                if response.status == 204:
+                    self.tunneling_enabled = True
+                    _LOGGER.info("✅ KNX Tunneling enabled successfully (204 No Content)")
+                    return True
+                
+                # With 200, verify from response body
                 data = await response.json()
                 self.tunneling_enabled = data.get("enabled", True)
-                
-                _LOGGER.info("KNX Tunneling enabled successfully")
+                _LOGGER.info("✅ KNX Tunneling enabled successfully (200 OK)")
                 return True
         
         except aiohttp.ClientError as e:
