@@ -71,7 +71,7 @@ class TestLuxorLivingSwitch:
         await switch.async_added_to_hass()
         
         # Should request current state from KNX
-        mock_knx_gateway.async_read_group_address.assert_called_once_with("1/3/2")
+        mock_knx_gateway.async_read_group_address.assert_called_once_with("1/3/2", is_initial=True)
 
     @pytest.mark.asyncio
     async def test_async_added_to_hass_no_status_address(self, mock_knx_gateway):
@@ -88,7 +88,7 @@ class TestLuxorLivingSwitch:
         await switch.async_added_to_hass()
         
         # Should fallback to OnOff address for reading
-        mock_knx_gateway.async_read_group_address.assert_called_once_with("1/3/3")
+        mock_knx_gateway.async_read_group_address.assert_called_once_with("1/3/3", is_initial=True)
 
     @pytest.mark.asyncio
     async def test_turn_on(self, mock_mapped_entity, mock_knx_gateway):

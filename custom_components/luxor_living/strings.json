@@ -13,19 +13,28 @@
             },
             "gateway": {
                 "title": "LUXORliving - KNX/IP Gateway",
-                "description": "Configure your KNX/IP gateway connection for project: {project_name}",
+                "description": "Configure your KNX/IP gateway connection and credentials for project: {project_name}",
                 "data": {
                     "host": "Gateway IP Address",
-                    "port": "Gateway Port"
+                    "port": "Gateway Port",
+                    "username": "Username",
+                    "password": "Password",
+                    "connection_type": "Connection Type",
+                    "simulation_mode": "Simulation Mode"
                 },
                 "data_description": {
                     "host": "IP address of your Theben LUXORliving KNX/IP gateway",
-                    "port": "Port number (default: 3671)"
+                    "port": "Port number (default: 3671)",
+                    "username": "REST API username (default: admin)",
+                    "password": "REST API password",
+                    "connection_type": "KNX connection type (tunneling recommended)",
+                    "simulation_mode": "Test mode without real hardware connection"
                 }
             }
         },
         "error": {
             "cannot_connect": "Failed to connect to the gateway",
+            "invalid_auth": "Invalid username or password. Please check your credentials.",
             "file_not_found": "LXP file not found. Please select a valid .lxp file.",
             "invalid_lxp": "Invalid or corrupted LXP file. Please check the file format.",
             "unknown": "Unexpected error occurred"

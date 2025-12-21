@@ -14,7 +14,10 @@ from .const import (
     CONF_LXP_FILE,
     CONF_CONNECTION_TYPE,
     CONF_SIMULATION_MODE,
+    CONF_USERNAME,
+    CONF_PASSWORD,
     DEFAULT_CONNECTION_TYPE,
+    DEFAULT_HTTP_PORT,
     DATA_KNX_GATEWAY,
 )
 from .lxp_parser import LXPParser
@@ -43,6 +46,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     lxp_file = entry.data.get(CONF_LXP_FILE)
     host = entry.data.get(CONF_HOST, "localhost")
     port = entry.data.get(CONF_PORT, 3671)
+    username = entry.data.get(CONF_USERNAME, "admin")
+    password = entry.data.get(CONF_PASSWORD, "admin")
     connection_type = entry.data.get(CONF_CONNECTION_TYPE, DEFAULT_CONNECTION_TYPE)
     simulation_mode = entry.data.get(CONF_SIMULATION_MODE, False)
     
@@ -74,11 +79,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.error("LXP file not found: %s - cannot load entities", lxp_file)
         return False
     
-    # Initialize KNX Gateway
+    # Initialize KNX Gateway with REST API credentials
     knx_gateway = LuxorKNXGateway(
         hass=hass,
         host=host,
         port=port,
+        username=username,
+        password=password,
+        http_port=DEFAULT_HTTP_PORT,
         connection_type=connection_type,
         simulation_mode=simulation_mode,
     )
