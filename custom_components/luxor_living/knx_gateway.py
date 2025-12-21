@@ -199,34 +199,53 @@ class LuxorKNXGateway:
 
     async def _async_load_datapoint_mapping(self) -> None:
         """
-        Load BAOS datapoint URLs from REST API.
+        Load BAOS datapoint mappings from REST API.
         
-        Note: The BAOS REST API doesn't provide GroupAddress mappings directly.
-        We build the GroupAddress → Datapoint-ID mapping from LXP file instead.
-        This method just loads available datapoint URLs for reference.
+        Fetches actual datapoint details to build GroupAddress → Datapoint-ID mapping.
+        This replaces the LXP-based mapping with real BAOS data.
         """
         if not self._rest_client:
             _LOGGER.debug("No REST client available for datapoint mapping")
             return
         
         try:
-            _LOGGER.info("🔍 Loading BAOS datapoint URLs...")
+            _LOGGER.info("🔍 Loading BAOS datapoint mappings from REST API...")
             datapoints = await self._rest_client.async_get_datapoints()
             
             if not datapoints:
                 _LOGGER.warning("No datapoints returned from BAOS REST API")
                 return
             
-            # Store URLs: Datapoint ID → URL
-            for dp in datapoints:
-                if isinstance(dp, dict) and "id" in dp and "url" in dp:
-                    self._datapoint_urls[dp["id"]] = dp["url"]
+            # Each datapoint has: {"id": 1, "url": "/rest/datapoint/1"}
+            # We need to query each one to get the GroupAddress name
+            mapping_count = 0
+            for dp_ref in datapoints[:50]:  # Limit to first 50 to avoid long startup
+                try:
+                    dp_id = dp_ref.get("id")
+                    if not dp_id:
+                        continue
+                    
+                    # Fetch full datapoint details
+                    dp_details = await self._rest_client.async_get_datapoint_details(dp_id)
+                    
+                    if dp_details and "name" in dp_details:
+                        # name field contains GroupAddress like "1/1/0"
+                        group_addr = dp_details["name"]
+                        self._datapoint_mapping[group_addr] = dp_id
+                        self._datapoint_urls[dp_id] = dp_ref.get("url", "")
+                        mapping_count += 1
+                        
+                except Exception as e:
+                    _LOGGER.debug(f"Failed to fetch datapoint {dp_ref}: {e}")
+                    continue
             
-            _LOGGER.info(f"✅ Loaded {len(self._datapoint_urls)} datapoint URLs from BAOS")
-            _LOGGER.debug(f"Sample URLs: {dict(list(self._datapoint_urls.items())[:3])}")
+            _LOGGER.info(f"✅ Loaded {mapping_count} GroupAddress → Datapoint-ID mappings from BAOS")
+            if mapping_count > 0:
+                sample = dict(list(self._datapoint_mapping.items())[:3])
+                _LOGGER.debug(f"Sample mappings: {sample}")
             
         except Exception as e:
-            _LOGGER.error(f"Failed to load datapoint URLs: {e}", exc_info=True)
+            _LOGGER.error(f"Failed to load datapoint mappings: {e}", exc_info=True)
     
     async def async_read_via_rest(self, group_address: str) -> Any | None:
         """

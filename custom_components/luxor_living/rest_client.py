@@ -54,14 +54,18 @@ class BAOSRestClient:
     
     async def __aenter__(self):
         """Context manager entry."""
-        # Create SSL context for BAOS 777 (may use old SSL/TLS)
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
+        # Create SSL context in executor to avoid blocking event loop
+        def create_ssl_context():
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            ssl_context.minimum_version = ssl.TLSVersion.TLSv1
+            ssl_context.set_ciphers('DEFAULT:@SECLEVEL=0')
+            return ssl_context
         
-        # Allow old TLS versions for legacy devices
-        ssl_context.minimum_version = ssl.TLSVersion.TLSv1
-        ssl_context.set_ciphers('DEFAULT:@SECLEVEL=0')
+        import asyncio
+        loop = asyncio.get_event_loop()
+        ssl_context = await loop.run_in_executor(None, create_ssl_context)
         
         connector = aiohttp.TCPConnector(ssl=ssl_context)
         self._session = aiohttp.ClientSession(
@@ -368,6 +372,62 @@ class BAOSRestClient:
         
         except aiohttp.ClientError as e:
             _LOGGER.error(f"Network error fetching datapoints: {e}")
+            return None
+    
+    async def async_get_datapoint_details(self, datapoint_id: int, timeout: float = 2.0) -> Optional[dict]:
+        """
+        Get full details of a specific BAOS datapoint including GroupAddress name.
+        
+        Per BAOS REST API Documentation:
+        GET /rest/datapoint/<id>
+        
+        Returns:
+        {
+            "id": 1,
+            "name": "1/0/0",
+            "value": true,
+            "type": "DPT-1",
+            "room": "Bedroom",
+            "function": "Light"
+        }
+        
+        Args:
+            datapoint_id: BAOS datapoint ID (integer)
+            timeout: Request timeout in seconds (default: 2.0)
+        
+        Returns:
+            Full datapoint dict with name, value, type, etc., or None on error
+        """
+        self._ensure_authenticated()
+        
+        url = f"{self.base_url}/rest/datapoint/{datapoint_id}"
+        headers = self._get_auth_headers()
+        
+        _LOGGER.debug(f"🔍 Fetching datapoint details {datapoint_id} from {url} (timeout={timeout}s)")
+        
+        try:
+            async with asyncio.timeout(timeout):
+                async with self._session.get(url, headers=headers) as response:
+                    if response.status == 401:
+                        _LOGGER.debug(f"Session expired when fetching datapoint {datapoint_id}")
+                        return None
+                    
+                    if response.status == 404:
+                        _LOGGER.debug(f"Datapoint {datapoint_id} not found")
+                        return None
+                    
+                    if response.status != 200:
+                        _LOGGER.debug(f"Failed to fetch datapoint {datapoint_id}: {response.status}")
+                        return None
+                    
+                    datapoint = await response.json()
+                    return datapoint
+        
+        except asyncio.TimeoutError:
+            _LOGGER.debug(f"Timeout fetching datapoint {datapoint_id} after {timeout}s")
+            return None
+        except aiohttp.ClientError as e:
+            _LOGGER.debug(f"Network error fetching datapoint {datapoint_id}: {e}")
             return None
     
     async def async_get_datapoint_value(self, datapoint_id: int, timeout: float = 2.0) -> Optional[Any]:

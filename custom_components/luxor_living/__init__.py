@@ -34,44 +34,6 @@ PLATFORMS: list[Platform] = [
 ]
 
 
-async def _async_build_datapoint_mapping_from_lxp(
-    gateway: LuxorKNXGateway,
-    mapper: EntityMapper
-) -> None:
-    """
-    Build Datapoint ID → GroupAddress mapping from LXP file data.
-    
-    The LXP file contains datapoint IDs like '2304 (1/1/0)'.
-    We extract these to build the mapping for REST API queries.
-    """
-    mapping_count = 0
-    
-    for entity in mapper.entities:
-        # MappedEntity has datapoints as attribute, not dict key
-        # datapoints is dict[str, int] mapping role → address
-        for dp_role, dp_address in entity.datapoints.items():
-            try:
-                # Convert address integer to GroupAddress string
-                # Format: address = (main << 11) | (middle << 8) | sub
-                main = (dp_address >> 11) & 0x1F
-                middle = (dp_address >> 8) & 0x07
-                sub = dp_address & 0xFF
-                group_addr = f"{main}/{middle}/{sub}"
-                
-                # Store mapping: GroupAddress → Datapoint ID
-                gateway._datapoint_mapping[group_addr] = dp_address
-                mapping_count += 1
-                
-            except (ValueError, TypeError) as e:
-                _LOGGER.debug(f"Failed to parse datapoint address {dp_address}: {e}")
-                continue
-    
-    _LOGGER.info(f"✅ Built {mapping_count} GroupAddress → Datapoint-ID mappings from LXP file")
-    if mapping_count > 0:
-        sample = dict(list(gateway._datapoint_mapping.items())[:3])
-        _LOGGER.debug(f"Sample mappings: {sample}")
-
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up LUXORliving from a config entry."""
     _LOGGER.warning("🔥🔥🔥 LUXOR SETUP STARTED 🔥🔥🔥")
@@ -136,8 +98,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if not simulation_mode:
             return False
     
-    # Build Datapoint mapping from LXP data
-    await _async_build_datapoint_mapping_from_lxp(knx_gateway, mapper)
+    # Note: Datapoint mapping is now loaded in knx_gateway.async_setup()
+    # via _async_load_datapoint_mapping() which fetches from REST API
     
     # Store gateway in integration data
     hass.data[DOMAIN][entry.entry_id][DATA_KNX_GATEWAY] = knx_gateway
