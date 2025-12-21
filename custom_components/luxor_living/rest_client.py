@@ -33,19 +33,18 @@ class BAOSRestClient:
     - PUT /rest/device/authtunneling → Enable/Disable Tunneling
     """
     
-    def __init__(self, host: str, port: int = 443):
+    def __init__(self, host: str, port: int = 80):
         """
         Initialize REST API Client.
         
         Args:
             host: IP address of BAOS 777 device
-            port: HTTPS port (default: 443, uses HTTP 80 with redirect)
+            port: HTTP port (default: 80, may redirect to HTTPS:443)
         """
         self.host = host
         self.port = port
-        # BAOS 777 redirects HTTP:80 -> HTTPS:443
-        # Use HTTPS directly with SSL verification disabled
-        self.base_url = f"https://{host}:{port}"
+        # LUXORliving API uses HTTP by default, but may redirect to HTTPS
+        self.base_url = f"http://{host}:{port}"
         
         self.session_token: Optional[str] = None
         self.session_expires: Optional[datetime] = None
@@ -109,7 +108,7 @@ class BAOSRestClient:
                 timeout=aiohttp.ClientTimeout(total=30)
             )
         
-        url = f"{self.base_url}/rest/auth/login"
+        url = f"{self.base_url}/rest/login"
         payload = {
             "username": username,
             "password": password
@@ -127,14 +126,14 @@ class BAOSRestClient:
                         f"Login failed with status {response.status}"
                     )
                 
-                data = await response.json()
+                # Response is a plain cookie string, not JSON
+                cookie = await response.text()
+                cookie = cookie.strip()
                 
-                # Extract session token
-                # NOTE: Exact response format needs to be verified with real device
-                self.session_token = data.get("sessionToken") or data.get("token")
+                if not cookie:
+                    raise AuthenticationError("No session cookie in response")
                 
-                if not self.session_token:
-                    raise AuthenticationError("No session token in response")
+                self.session_token = cookie
                 
                 # Session timeout (default: 1 hour, adjust based on real API)
                 timeout_seconds = data.get("expiresIn", 3600)
@@ -312,8 +311,8 @@ class BAOSRestClient:
         if not self.session_token:
             return {}
         
-        # Try Bearer token first (most common)
-        return {"Authorization": f"Bearer {self.session_token}"}
+        # LUXORliving uses Cookie-based authentication
+        return {"Cookie": self.session_token}
     
     @property
     def is_authenticated(self) -> bool:
