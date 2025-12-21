@@ -6,10 +6,15 @@ DOMAIN = "luxor_living"
 CONF_LXP_FILE = "lxp_file"
 CONF_SIMULATION_MODE = "simulation_mode"
 CONF_CONNECTION_TYPE = "connection_type"
+CONF_USERNAME = "username"
+CONF_PASSWORD = "password"
 
 # Defaults
 DEFAULT_PORT = 3671  # KNX/IP default port
+DEFAULT_HTTP_PORT = 80  # REST API default port
 DEFAULT_CONNECTION_TYPE = "tunneling"
+DEFAULT_USERNAME = "admin"
+DEFAULT_PASSWORD = "admin"
 
 # KNX Connection Types
 CONNECTION_TYPE_TUNNELING = "tunneling"

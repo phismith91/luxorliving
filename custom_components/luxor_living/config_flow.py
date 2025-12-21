@@ -21,12 +21,18 @@ from .const import (
     CONF_LXP_FILE,
     CONF_CONNECTION_TYPE,
     CONF_SIMULATION_MODE,
+    CONF_USERNAME,
+    CONF_PASSWORD,
     DEFAULT_PORT,
+    DEFAULT_HTTP_PORT,
     DEFAULT_CONNECTION_TYPE,
+    DEFAULT_USERNAME,
+    DEFAULT_PASSWORD,
     CONNECTION_TYPE_TUNNELING,
     CONNECTION_TYPE_ROUTING,
 )
 from .lxp_parser import LXPParser
+from .rest_client import BAOSRestClient, AuthenticationError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,10 +58,12 @@ STEP_LXP_DATA_SCHEMA = vol.Schema({
     ),
 })
 
-# Step 2: Gateway configuration
+# Step 2: Gateway configuration with authentication
 STEP_GATEWAY_DATA_SCHEMA = vol.Schema({
     vol.Required(CONF_HOST, default="192.168.1.3"): str,
     vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+    vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
+    vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
     vol.Required(CONF_CONNECTION_TYPE, default=DEFAULT_CONNECTION_TYPE): vol.In([
         CONNECTION_TYPE_TUNNELING,
         CONNECTION_TYPE_ROUTING,
@@ -133,11 +141,38 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            # Validate credentials if not in simulation mode
+            if not user_input.get(CONF_SIMULATION_MODE, False):
+                try:
+                    await self._validate_credentials(
+                        user_input[CONF_HOST],
+                        user_input[CONF_USERNAME],
+                        user_input[CONF_PASSWORD],
+                    )
+                except AuthenticationError as err:
+                    _LOGGER.error("❌ Authentication failed: %s", err)
+                    errors["base"] = "invalid_auth"
+                    return self.async_show_form(
+                        step_id="gateway",
+                        data_schema=STEP_GATEWAY_DATA_SCHEMA,
+                        errors=errors,
+                    )
+                except Exception as err:  # pylint: disable=broad-except
+                    _LOGGER.exception("Connection error: %s", err)
+                    errors["base"] = "cannot_connect"
+                    return self.async_show_form(
+                        step_id="gateway",
+                        data_schema=STEP_GATEWAY_DATA_SCHEMA,
+                        errors=errors,
+                    )
+            
             # Combine LXP file and gateway config
             data = {
                 CONF_LXP_FILE: self._lxp_file,
                 CONF_HOST: user_input[CONF_HOST],
                 CONF_PORT: user_input[CONF_PORT],
+                CONF_USERNAME: user_input[CONF_USERNAME],
+                CONF_PASSWORD: user_input[CONF_PASSWORD],
                 CONF_CONNECTION_TYPE: user_input[CONF_CONNECTION_TYPE],
                 CONF_SIMULATION_MODE: user_input.get(CONF_SIMULATION_MODE, False),
             }
@@ -173,3 +208,19 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         
         _LOGGER.info("✅ Valid LXP file: %s (Project: %s)", lxp_file, project.name)
         return project.name
+    
+    async def _validate_credentials(self, host: str, username: str, password: str) -> None:
+        """
+        Validate credentials by attempting REST API login.
+        
+        Raises:
+            AuthenticationError: If credentials are invalid
+            Exception: If connection fails
+        """
+        _LOGGER.debug("🔐 Validating credentials for %s@%s", username, host)
+        
+        async with BAOSRestClient(host, port=DEFAULT_HTTP_PORT) as client:
+            # Attempt login - will raise AuthenticationError if invalid
+            await client.login(username, password)
+            _LOGGER.info("✅ Credentials validated successfully")
+

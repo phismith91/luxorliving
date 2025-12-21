@@ -30,10 +30,28 @@ Wir haben zwei verschiedene Ansätze zur Integration von LUXORliving-Geräten in
 |---------|---------------|-------------|
 | **KNX Routing** | ❌ Nein | Multicast nicht möglich |
 | **KNX Tunneling** | ⚠️ Blockiert | LuxorPlug belegt Tunnel-Slot |
-| **REST API** | ⚠️ Limitiert | Nur read-only Status |
+| **Tunneling Aktivierung** | ⚠️ **Authentifizierung nötig!** | REST API Login erforderlich |
+| **REST API** | ✅ Vollständig | Login, Tunneling Control, Status |
 | **Binary Protocol** | ✅ Ja | Vollständige Kontrolle via localhost:3671 |
 
-**Kritischer Befund:** BAOS 777 unterstützt kein KNX Routing und der einzige Tunnel-Slot ist durch LuxorPlug belegt. Daher ist die native HA KNX-Integration **physikalisch nicht möglich**.
+**KRITISCHER BEFUND (21. Dez 2025):**
+
+Laut **LUXORliving API Documentation**:
+> **10.2 Activation/deactivation of tunneling**
+> To enable tunneling, a PUT request must be sent to `/rest/device/authtunneling`.
+
+**Das Problem war nie "blockierter Tunnel" - es war fehlende Authentifizierung!**
+
+Die native HA KNX-Integration kann **nicht direkt** Tunneling nutzen, weil:
+1. ❌ Sie macht keinen REST API Login
+2. ❌ Sie aktiviert Tunneling nicht via `/rest/device/authtunneling`
+3. ❌ Der BAOS 777 lehnt unauthentifizierte Tunneling-Verbindungen ab
+
+**LuxorPlug funktioniert**, weil es:
+1. ✅ REST Login macht → Session Token erhält
+2. ✅ `PUT /rest/device/authtunneling {"enabled": true}` sendet
+3. ✅ Dann KNX Tunneling verbindet
+4. ✅ Bei Logout → Tunneling automatisch deaktiviert
 
 ---
 
@@ -109,31 +127,112 @@ lxp_file → lxp_parser.py → entity_definitions.json
 
 ---
 
-## Empfehlung: Hybrid-Ansatz
+## Empfehlung: Hybrid-Ansatz mit REST API Authentifizierung
 
-### Strategie
+### Strategie (AKTUALISIERT 21. Dez 2025)
 
-**1. Primär: IP1 Native API (Ansatz 2)**
-- Custom Component `luxor_living` als Hauptintegration
-- Binary Protocol für vollständige Kontrolle
-- REST API für Status-Updates (wo möglich)
+**1. Primär: REST API + KNX Tunneling**
+- REST API für Authentifizierung und Tunneling-Aktivierung
+- KNX Tunneling für Realtime Control (nach Aktivierung!)
+- Custom Component `luxor_living` orchestriert beide
 
 **2. Unterstützend: LXP-Parser**
 - Automatische Entity-Generierung aus LXP-Datei
 - Mapping von KNX-Adressen zu Namen/Typen
-- **Nicht** für KNX-YAML, sondern für Custom Component Config
+- Entity Discovery beim Setup
 
 ### Implementierungsplan
 
-#### Phase 1: LXP-Parser verbessern
+#### Phase 1: REST API Client
+```python
+# custom_components/luxor_living/rest_client.py
+class BAOSRestClient:
+    """REST API Client für BAOS 777 mit Tunneling-Aktivierung"""
+    
+    async def login(self, username: str, password: str) -> str:
+        """Login via REST API → Session Token"""
+        response = await self.session.post(
+            f"{self.base_url}/rest/auth/login",
+            json={"username": username, "password": password}
+        )
+        data = await response.json()
+        return data["sessionToken"]
+    
+    async def enable_tunneling(self) -> bool:
+        """PUT /rest/device/authtunneling {"enabled": true}"""
+        response = await self.session.put(
+            f"{self.base_url}/rest/device/authtunneling",
+            json={"enabled": True},
+            headers={"Authorization": f"Bearer {self.session_token}"}
+        )
+        return response.status == 200
+    
+    async def disable_tunneling(self):
+        """Deaktiviert bei Logout automatisch"""
+        await self.logout()
+```
+
+#### Phase 2: Gateway Integration
+```python
+# custom_components/luxor_living/knx_gateway.py
+class KNXGateway:
+    def __init__(self, host, username, password):
+        self.rest_client = BAOSRestClient(host)
+        self.knx_client = None
+        self.credentials = (username, password)
+    
+    async def async_setup(self):
+        # 1. REST Login
+        await self.rest_client.login(*self.credentials)
+        
+        # 2. Tunneling aktivieren
+        await self.rest_client.enable_tunneling()
+        
+        # 3. KNX Tunneling verbinden (jetzt erlaubt!)
+        self.knx_client = XknxGateway(
+            host=self.host,
+            port=3671,
+            connection_type="tunneling"
+        )
+        await self.knx_client.start()
+    
+    async def async_shutdown(self):
+        """Cleanup: Logout deaktiviert Tunneling automatisch"""
+        await self.knx_client.stop()
+        await self.rest_client.logout()
+```
+
+#### Phase 3: Config Flow erweitern
+```python
+# custom_components/luxor_living/config_flow.py
+DATA_SCHEMA = vol.Schema({
+    vol.Required(CONF_HOST): str,
+    vol.Required(CONF_PORT, default=3671): int,
+    vol.Required("username", default="admin"): str,
+    vol.Required("password"): str,  # NEU!
+})
+
+async def async_step_user(self, user_input):
+    # Validate: Test REST Login
+    try:
+        rest_client = BAOSRestClient(user_input[CONF_HOST])
+        await rest_client.login(
+            user_input["username"],
+            user_input["password"]
+        )
+        await rest_client.logout()
+    except AuthenticationError:
+        return self.async_show_form(
+            errors={"base": "invalid_auth"}
+        )
+```
+
+#### Phase 4: LXP-Parser Integration
 ```python
 # lxp_parser.py
 def parse_lxp_to_entities(lxp_file: Path) -> dict:
-    """
-    Parse LXP → Entity Definitions für Custom Component
-    
-    Output: entities.json
-    {
+    """Parse LXP → Entity Definitions"""
+    return {
         "light": [
             {
                 "name": "Badlicht",
@@ -143,27 +242,23 @@ def parse_lxp_to_entities(lxp_file: Path) -> dict:
             }
         ]
     }
-    """
-```
 
-#### Phase 2: Custom Component erweitern
-```python
 # custom_components/luxor_living/__init__.py
 async def async_setup_entry(hass, entry):
     # Lade entities.json (generiert aus LXP)
     entities_config = load_entities_from_lxp()
     
-    # Erstelle Entities via Binary Protocol
+    # Setup Gateway mit Auth
+    gateway = KNXGateway(
+        entry.data[CONF_HOST],
+        entry.data["username"],
+        entry.data["password"]
+    )
+    await gateway.async_setup()
+    
+    # Erstelle Entities
     for entity in entities_config["light"]:
-        await async_create_light(hass, entity)
-```
-
-#### Phase 3: Tunneling-Proxy (optional, später)
-Falls KNX-Integration gewünscht:
-```python
-# knx_proxy.py
-# Erstelle localhost KNX Tunnel → Binary Protocol Bridge
-# Dann: HA KNX Integration → localhost:3672 → Proxy → localhost:3671
+        await async_create_light(hass, entity, gateway)
 ```
 
 ---
