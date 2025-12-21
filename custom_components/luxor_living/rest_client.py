@@ -353,15 +353,24 @@ class BAOSRestClient:
                     _LOGGER.error(f"Failed to fetch datapoints: {response.status} - {response_text}")
                     return None
                 
-                datapoints = await response.json()
-                _LOGGER.info(f"✅ Fetched {len(datapoints)} datapoints from BAOS")
-                return datapoints
+                response_data = await response.json()
+                
+                # BAOS API returns {"datapoints": [{"id": 1, "url": "..."}]}
+                if isinstance(response_data, dict) and "datapoints" in response_data:
+                    datapoints = response_data["datapoints"]
+                    _LOGGER.info(f"✅ Fetched {len(datapoints)} datapoint references from BAOS")
+                    _LOGGER.debug(f"🔍 First 3 datapoints: {datapoints[:3]}")
+                    return datapoints
+                else:
+                    _LOGGER.error(f"Unexpected API format: {type(response_data)}")
+                    _LOGGER.debug(f"Response data: {response_data}")
+                    return None
         
         except aiohttp.ClientError as e:
             _LOGGER.error(f"Network error fetching datapoints: {e}")
             return None
     
-    async def async_get_datapoint_value(self, datapoint_id: int) -> Optional[Any]:
+    async def async_get_datapoint_value(self, datapoint_id: int, timeout: float = 2.0) -> Optional[Any]:
         """
         Get current value of a specific BAOS datapoint.
         
@@ -378,6 +387,7 @@ class BAOSRestClient:
         
         Args:
             datapoint_id: BAOS datapoint ID (integer)
+            timeout: Request timeout in seconds (default: 2.0)
         
         Returns:
             Datapoint value, or None on error
@@ -387,30 +397,37 @@ class BAOSRestClient:
         url = f"{self.base_url}/rest/datapoint/{datapoint_id}"
         headers = self._get_auth_headers()
         
-        _LOGGER.debug(f"🔍 Fetching datapoint {datapoint_id} from {url}")
+        _LOGGER.debug(f"🔍 Fetching datapoint {datapoint_id} from {url} (timeout={timeout}s)")
         
         try:
-            async with self._session.get(url, headers=headers) as response:
-                if response.status == 401:
-                    _LOGGER.error(f"Session expired when fetching datapoint {datapoint_id}")
-                    return None
-                
-                if response.status == 404:
-                    _LOGGER.warning(f"Datapoint {datapoint_id} not found")
-                    return None
-                
-                if response.status != 200:
-                    response_text = await response.text()
-                    _LOGGER.error(f"Failed to fetch datapoint {datapoint_id}: {response.status} - {response_text}")
-                    return None
-                
-                datapoint = await response.json()
-                value = datapoint.get("value")
-                _LOGGER.debug(f"✅ Datapoint {datapoint_id} value: {value}")
-                return value
+            async with asyncio.timeout(timeout):
+                async with self._session.get(url, headers=headers) as response:
+                    if response.status == 401:
+                        _LOGGER.error(f"Session expired when fetching datapoint {datapoint_id}")
+                        return None
+                    
+                    if response.status == 404:
+                        _LOGGER.warning(f"Datapoint {datapoint_id} not found")
+                        return None
+                    
+                    if response.status != 200:
+                        response_text = await response.text()
+                        _LOGGER.error(f"Failed to fetch datapoint {datapoint_id}: {response.status} - {response_text}")
+                        return None
+                    
+                    datapoint = await response.json()
+                    value = datapoint.get("value")
+                    _LOGGER.info(f"✅ Datapoint {datapoint_id} value: {value}")
+                    return value
         
+        except asyncio.TimeoutError:
+            _LOGGER.warning(f"⏱️ Timeout fetching datapoint {datapoint_id} after {timeout}s")
+            return None
         except aiohttp.ClientError as e:
-            _LOGGER.error(f"Network error fetching datapoint {datapoint_id}: {e}")
+            _LOGGER.warning(f"❌ Client error fetching datapoint {datapoint_id}: {e}")
+            return None
+        except Exception as e:
+            _LOGGER.error(f"💥 Unexpected error fetching datapoint {datapoint_id}: {e}", exc_info=True)
             return None
     
     def _ensure_authenticated(self):

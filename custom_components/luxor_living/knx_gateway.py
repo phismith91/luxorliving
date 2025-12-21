@@ -55,7 +55,8 @@ class LuxorKNXGateway:
         self._connected = False
         self._tunneling_enabled = False
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
-        self._datapoint_mapping: dict[str, int] = {}  # GroupAddress → Datapoint-ID
+        self._datapoint_mapping: dict[str, int] = {}  # GroupAddress → Datapoint-ID  
+        self._datapoint_urls: dict[int, str] = {}  # Datapoint-ID → REST API URL
         
         # Map connection type string to XKNX enum
         self._connection_type = (
@@ -152,10 +153,6 @@ class LuxorKNXGateway:
                 self._connection_type.name,
             )
             
-            # Step 4 (optional): Load datapoint mappings for REST API fallback
-            if self._rest_client:
-                await self._async_load_datapoint_mapping()
-            
             return True
 
         except Exception as err:
@@ -202,40 +199,34 @@ class LuxorKNXGateway:
 
     async def _async_load_datapoint_mapping(self) -> None:
         """
-        Load BAOS datapoint mapping (GroupAddress → Datapoint-ID).
+        Load BAOS datapoint URLs from REST API.
         
-        This enables REST API queries to get actual datapoint values
-        instead of relying on stale GroupValueRead cache.
+        Note: The BAOS REST API doesn't provide GroupAddress mappings directly.
+        We build the GroupAddress → Datapoint-ID mapping from LXP file instead.
+        This method just loads available datapoint URLs for reference.
         """
         if not self._rest_client:
             _LOGGER.debug("No REST client available for datapoint mapping")
             return
         
         try:
-            _LOGGER.info("🔍 Loading BAOS datapoint mappings...")
+            _LOGGER.info("🔍 Loading BAOS datapoint URLs...")
             datapoints = await self._rest_client.async_get_datapoints()
             
             if not datapoints:
                 _LOGGER.warning("No datapoints returned from BAOS REST API")
                 return
             
-            # Build mapping: GroupAddress string → Datapoint ID
-            mapping_count = 0
+            # Store URLs: Datapoint ID → URL
             for dp in datapoints:
-                dp_id = dp.get("id")
-                dp_name = dp.get("name")  # Usually the GroupAddress like "1/0/0"
-                
-                if dp_id is not None and dp_name:
-                    # Normalize GroupAddress format
-                    group_address = str(dp_name).strip()
-                    self._datapoint_mapping[group_address] = dp_id
-                    mapping_count += 1
+                if isinstance(dp, dict) and "id" in dp and "url" in dp:
+                    self._datapoint_urls[dp["id"]] = dp["url"]
             
-            _LOGGER.info(f"✅ Loaded {mapping_count} datapoint mappings from BAOS")
-            _LOGGER.debug(f"Sample mappings: {dict(list(self._datapoint_mapping.items())[:5])}")
+            _LOGGER.info(f"✅ Loaded {len(self._datapoint_urls)} datapoint URLs from BAOS")
+            _LOGGER.debug(f"Sample URLs: {dict(list(self._datapoint_urls.items())[:3])}")
             
         except Exception as e:
-            _LOGGER.error(f"Failed to load datapoint mappings: {e}", exc_info=True)
+            _LOGGER.error(f"Failed to load datapoint URLs: {e}", exc_info=True)
     
     async def async_read_via_rest(self, group_address: str) -> Any | None:
         """
@@ -261,16 +252,18 @@ class LuxorKNXGateway:
             return None
         
         try:
-            _LOGGER.debug(f"🌐 Reading {group_address} via REST API (datapoint {datapoint_id})")
-            value = await self._rest_client.async_get_datapoint_value(datapoint_id)
+            _LOGGER.info(f"🌐 Trying REST API for {group_address} → DP-{datapoint_id} (timeout=2s)...")
+            value = await self._rest_client.async_get_datapoint_value(datapoint_id, timeout=2.0)
             
             if value is not None:
-                _LOGGER.info(f"✅ REST API read {group_address} = {value}")
+                _LOGGER.info(f"✅ REST API success: {group_address} = {value}")
+            else:
+                _LOGGER.warning(f"⚠️ REST API returned None for {group_address}, falling back to GroupValueRead")
             
             return value
             
         except Exception as e:
-            _LOGGER.error(f"Failed to read {group_address} via REST API: {e}")
+            _LOGGER.warning(f"💥 REST API failed for {group_address}: {e}, falling back to GroupValueRead")
             return None
 
     async def async_send_telegram(

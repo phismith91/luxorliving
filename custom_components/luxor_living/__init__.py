@@ -34,6 +34,51 @@ PLATFORMS: list[Platform] = [
 ]
 
 
+async def _async_build_datapoint_mapping_from_lxp(
+    gateway: LuxorKNXGateway,
+    mapper: EntityMapper
+) -> None:
+    """
+    Build Datapoint ID → GroupAddress mapping from LXP file data.
+    
+    The LXP file contains datapoint IDs like '2304 (1/1/0)'.
+    We extract these to build the mapping for REST API queries.
+    """
+    mapping_count = 0
+    
+    for entity_data in mapper.entities:
+        # Get datapoints dictionary (e.g., {'StatusOnOff': '2304 (1/1/0)', ...})
+        datapoints = entity_data.get("datapoints", {})
+        
+        for dp_name, dp_value in datapoints.items():
+            if not dp_value or not isinstance(dp_value, str):
+                continue
+            
+            # Parse format: "2304 (1/1/0)"
+            try:
+                parts = dp_value.split("(")
+                if len(parts) != 2:
+                    continue
+                
+                dp_id_str = parts[0].strip()
+                group_addr = parts[1].rstrip(")").strip()
+                
+                dp_id = int(dp_id_str)
+                
+                # Store mapping: GroupAddress → Datapoint ID
+                gateway._datapoint_mapping[group_addr] = dp_id
+                mapping_count += 1
+                
+            except (ValueError, IndexError) as e:
+                _LOGGER.debug(f"Failed to parse datapoint '{dp_value}': {e}")
+                continue
+    
+    _LOGGER.info(f"✅ Built {mapping_count} GroupAddress → Datapoint-ID mappings from LXP file")
+    if mapping_count > 0:
+        sample = dict(list(gateway._datapoint_mapping.items())[:3])
+        _LOGGER.debug(f"Sample mappings: {sample}")
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up LUXORliving from a config entry."""
     _LOGGER.warning("🔥🔥🔥 LUXOR SETUP STARTED 🔥🔥🔥")
@@ -97,6 +142,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Continue anyway in simulation mode
         if not simulation_mode:
             return False
+    
+    # Build Datapoint mapping from LXP data
+    await _async_build_datapoint_mapping_from_lxp(knx_gateway, mapper)
     
     # Store gateway in integration data
     hass.data[DOMAIN][entry.entry_id][DATA_KNX_GATEWAY] = knx_gateway
