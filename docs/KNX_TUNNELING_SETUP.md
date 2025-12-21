@@ -171,14 +171,14 @@ Die Integration sendet nun **koordinierte Batch-Reads** beim Start:
 
 ## 📊 Vergleich: Routing vs. Tunneling
 
-| Feature | Routing | Tunneling |
-|---------|---------|-----------|
-| **IP-Adresse** | Multicast (224.0.23.12) | Gateway IP (192.168.1.3) |
-| **Verbindungsart** | Broadcast | Point-to-Point |
-| **Max. Clients** | Unbegrenzt | 1-4 (je nach Gateway) |
-| **Performance** | Höher bei vielen Geräten | Besser für einzelne Clients |
-| **Firewall** | Multicast muss erlaubt sein | Normale TCP-Verbindung |
-| **Empfohlen für** | Große Netzwerke | Kleinere Installationen |
+| Feature            | Routing                     | Tunneling                   |
+| ------------------ | --------------------------- | --------------------------- |
+| **IP-Adresse**     | Multicast (224.0.23.12)     | Gateway IP (192.168.1.3)    |
+| **Verbindungsart** | Broadcast                   | Point-to-Point              |
+| **Max. Clients**   | Unbegrenzt                  | 1-4 (je nach Gateway)       |
+| **Performance**    | Höher bei vielen Geräten    | Besser für einzelne Clients |
+| **Firewall**       | Multicast muss erlaubt sein | Normale TCP-Verbindung      |
+| **Empfohlen für**  | Große Netzwerke             | Kleinere Installationen     |
 
 ---
 

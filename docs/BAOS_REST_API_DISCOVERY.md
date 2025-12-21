@@ -65,12 +65,12 @@ Status: 200 OK
 
 Create a table like this:
 
-| Action | Method | Endpoint | Payload | Response |
-|--------|--------|----------|---------|----------|
-| Get all DPs | GET | /rest/datapoints | - | Array of DP objects |
-| Get DP value | GET | /rest/datapoint/{id} | - | DP object with value |
-| Set DP value | PUT | /rest/datapoint/{id}/value | {"value": ...} | Success status |
-| Get rooms | GET | /rest/rooms | - | Array of rooms |
+| Action       | Method | Endpoint                   | Payload        | Response             |
+| ------------ | ------ | -------------------------- | -------------- | -------------------- |
+| Get all DPs  | GET    | /rest/datapoints           | -              | Array of DP objects  |
+| Get DP value | GET    | /rest/datapoint/{id}       | -              | DP object with value |
+| Set DP value | PUT    | /rest/datapoint/{id}/value | {"value": ...} | Success status       |
+| Get rooms    | GET    | /rest/rooms                | -              | Array of rooms       |
 
 ## Method 2: Network Packet Capture
 
