@@ -26,13 +26,13 @@ Wir haben zwei verschiedene Ansätze zur Integration von LUXORliving-Geräten in
 
 ### 1. Hardware-Constraints (BAOS 777)
 
-| Feature | Unterstützung | Implikation |
-|---------|---------------|-------------|
-| **KNX Routing** | ❌ Nein | Multicast nicht möglich |
-| **KNX Tunneling** | ⚠️ Blockiert | LuxorPlug belegt Tunnel-Slot |
-| **Tunneling Aktivierung** | ⚠️ **Authentifizierung nötig!** | REST API Login erforderlich |
-| **REST API** | ✅ Vollständig | Login, Tunneling Control, Status |
-| **Binary Protocol** | ✅ Ja | Vollständige Kontrolle via localhost:3671 |
+| Feature                   | Unterstützung                  | Implikation                               |
+| ------------------------- | ------------------------------ | ----------------------------------------- |
+| **KNX Routing**           | ❌ Nein                         | Multicast nicht möglich                   |
+| **KNX Tunneling**         | ⚠️ Blockiert                    | LuxorPlug belegt Tunnel-Slot              |
+| **Tunneling Aktivierung** | ⚠️ **Authentifizierung nötig!** | REST API Login erforderlich               |
+| **REST API**              | ✅ Vollständig                  | Login, Tunneling Control, Status          |
+| **Binary Protocol**       | ✅ Ja                           | Vollständige Kontrolle via localhost:3671 |
 
 **KRITISCHER BEFUND (21. Dez 2025):**
 
@@ -265,14 +265,14 @@ async def async_setup_entry(hass, entry):
 
 ## Entscheidungsmatrix
 
-| Kriterium | LXP+KNX (Ansatz 1) | IP1 Native (Ansatz 2) | Hybrid |
-|-----------|-------------------|---------------------|---------|
-| **Funktioniert jetzt** | ❌ Nein | ✅ Ja | ✅ Ja |
-| **Standardintegration** | ✅ Ja (KNX) | ❌ Custom | ⚠️ Custom |
-| **Wartungsaufwand** | ⚠️ Mittel | ⚠️ Mittel | ⚠️ Mittel |
-| **Vollständige Kontrolle** | ❌ Nein (keine Verbindung) | ✅ Ja | ✅ Ja |
-| **Entity-Autodiscovery** | ✅ Ja (aus LXP) | ❌ Manuell | ✅ Ja (aus LXP) |
-| **Hardware-Kompatibilität** | ❌ BAOS 777 nicht kompatibel | ✅ Kompatibel | ✅ Kompatibel |
+| Kriterium                   | LXP+KNX (Ansatz 1)          | IP1 Native (Ansatz 2) | Hybrid         |
+| --------------------------- | --------------------------- | --------------------- | -------------- |
+| **Funktioniert jetzt**      | ❌ Nein                      | ✅ Ja                  | ✅ Ja           |
+| **Standardintegration**     | ✅ Ja (KNX)                  | ❌ Custom              | ⚠️ Custom       |
+| **Wartungsaufwand**         | ⚠️ Mittel                    | ⚠️ Mittel              | ⚠️ Mittel       |
+| **Vollständige Kontrolle**  | ❌ Nein (keine Verbindung)   | ✅ Ja                  | ✅ Ja           |
+| **Entity-Autodiscovery**    | ✅ Ja (aus LXP)              | ❌ Manuell             | ✅ Ja (aus LXP) |
+| **Hardware-Kompatibilität** | ❌ BAOS 777 nicht kompatibel | ✅ Kompatibel          | ✅ Kompatibel   |
 
 **Gewinner: Hybrid-Ansatz (IP1 Native + LXP-Parser)**
 

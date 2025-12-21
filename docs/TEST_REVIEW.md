@@ -10,17 +10,17 @@
 
 ### Bestehende Tests (9 Dateien, ~1682 Zeilen)
 
-| Datei | Status | Kommentar |
-|-------|--------|-----------|
-| `test_config_flow.py` | ⚠️ **VERALTET** | Fehlen Username/Password Tests |
-| `test_knx_gateway.py` | ⚠️ **VERALTET** | Fehlt REST API Integration |
-| `test_light.py` | ✅ **OK** | Platform-Tests noch gültig |
-| `test_switch.py` | ✅ **OK** | Platform-Tests noch gültig |
-| `test_lxp_parser.py` | ✅ **OK** | Parser unverändert |
-| `test_entity_mapper.py` | ✅ **OK** | Mapper unverändert |
-| `test_integration.py` | ⚠️ **VERALTET** | Setup ohne Credentials |
-| `test_knx_tunneling.py` | ⚠️ **SKELETON** | Nur Struktur, keine Implementation |
-| `test_yaml_config.py` | ❌ **IRRELEVANT** | YAML-Ansatz nicht mehr verwendet |
+| Datei                   | Status           | Kommentar                          |
+| ----------------------- | ---------------- | ---------------------------------- |
+| `test_config_flow.py`   | ⚠️ **VERALTET**   | Fehlen Username/Password Tests     |
+| `test_knx_gateway.py`   | ⚠️ **VERALTET**   | Fehlt REST API Integration         |
+| `test_light.py`         | ✅ **OK**         | Platform-Tests noch gültig         |
+| `test_switch.py`        | ✅ **OK**         | Platform-Tests noch gültig         |
+| `test_lxp_parser.py`    | ✅ **OK**         | Parser unverändert                 |
+| `test_entity_mapper.py` | ✅ **OK**         | Mapper unverändert                 |
+| `test_integration.py`   | ⚠️ **VERALTET**   | Setup ohne Credentials             |
+| `test_knx_tunneling.py` | ⚠️ **SKELETON**   | Nur Struktur, keine Implementation |
+| `test_yaml_config.py`   | ❌ **IRRELEVANT** | YAML-Ansatz nicht mehr verwendet   |
 
 ---
 

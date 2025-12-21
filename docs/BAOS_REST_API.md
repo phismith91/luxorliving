@@ -307,14 +307,14 @@ async def main():
 
 ## Comparison: REST vs Binary Protocol
 
-| Feature | REST API | Binary Protocol |
-|---------|----------|-----------------|
-| Documentation | ❌ Not in manual | ✅ SDK available |
-| Port | Unknown (80/443?) | 12004 |
-| Ease of Use | ✅ Simple HTTP | ⚠️ Binary parsing |
-| Performance | ⚠️ HTTP overhead | ✅ Efficient |
-| Authentication | Unknown | Documented |
-| Libraries | Unknown | SDK available |
+| Feature        | REST API          | Binary Protocol  |
+| -------------- | ----------------- | ---------------- |
+| Documentation  | ❌ Not in manual   | ✅ SDK available  |
+| Port           | Unknown (80/443?) | 12004            |
+| Ease of Use    | ✅ Simple HTTP     | ⚠️ Binary parsing |
+| Performance    | ⚠️ HTTP overhead   | ✅ Efficient      |
+| Authentication | Unknown           | Documented       |
+| Libraries      | Unknown           | SDK available    |
 
 ## Practical Discovery Method
 

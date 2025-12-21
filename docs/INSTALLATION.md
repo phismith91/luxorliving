@@ -88,14 +88,14 @@ ha core restart
    
    ![Step 2: Gateway Config](docs/screenshots/step2_gateway_config.png)
    
-   | Feld | Wert | Beschreibung |
-   |------|------|-------------|
-   | **Gateway IP Address** | `192.168.1.3` | IP deines BAOS 777 |
-   | **Gateway Port** | `3671` | Standard KNX/IP Port |
-   | **Username** | `admin` | REST API Username |
-   | **Password** | `admin` | REST API Password |
-   | **Connection Type** | `tunneling` | Empfohlen (mit Auth) |
-   | **Simulation Mode** | `☐` | Nur zum Testen |
+   | Feld                   | Wert          | Beschreibung         |
+   | ---------------------- | ------------- | -------------------- |
+   | **Gateway IP Address** | `192.168.1.3` | IP deines BAOS 777   |
+   | **Gateway Port**       | `3671`        | Standard KNX/IP Port |
+   | **Username**           | `admin`       | REST API Username    |
+   | **Password**           | `admin`       | REST API Password    |
+   | **Connection Type**    | `tunneling`   | Empfohlen (mit Auth) |
+   | **Simulation Mode**    | `☐`           | Nur zum Testen       |
 
 4. **Validierung**
    

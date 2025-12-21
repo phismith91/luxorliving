@@ -52,7 +52,9 @@ class BAOSRestClient:
     
     async def __aenter__(self):
         """Context manager entry."""
-        self._session = aiohttp.ClientSession()
+        # Create session without SSL verification for local HTTP
+        connector = aiohttp.TCPConnector(ssl=False)
+        self._session = aiohttp.ClientSession(connector=connector)
         return self
     
     async def __aexit__(self, *args):
@@ -76,7 +78,9 @@ class BAOSRestClient:
             AuthenticationError: If login fails
         """
         if not self._session:
-            self._session = aiohttp.ClientSession()
+            # Create session without SSL verification for local HTTP
+            connector = aiohttp.TCPConnector(ssl=False)
+            self._session = aiohttp.ClientSession(connector=connector)
         
         url = f"{self.base_url}/rest/auth/login"
         payload = {
