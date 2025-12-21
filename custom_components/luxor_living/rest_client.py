@@ -135,8 +135,8 @@ class BAOSRestClient:
                 
                 self.session_token = cookie
                 
-                # Session timeout (default: 1 hour, adjust based on real API)
-                timeout_seconds = data.get("expiresIn", 3600)
+                # Session timeout: 1 hour (API doesn't send expiresIn in plain cookie response)
+                timeout_seconds = 3600
                 self.session_expires = datetime.now() + timedelta(seconds=timeout_seconds)
                 
                 _LOGGER.info(
