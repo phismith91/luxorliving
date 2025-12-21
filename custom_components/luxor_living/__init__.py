@@ -46,31 +46,24 @@ async def _async_build_datapoint_mapping_from_lxp(
     """
     mapping_count = 0
     
-    for entity_data in mapper.entities:
-        # Get datapoints dictionary (e.g., {'StatusOnOff': '2304 (1/1/0)', ...})
-        datapoints = entity_data.get("datapoints", {})
-        
-        for dp_name, dp_value in datapoints.items():
-            if not dp_value or not isinstance(dp_value, str):
-                continue
-            
-            # Parse format: "2304 (1/1/0)"
+    for entity in mapper.entities:
+        # MappedEntity has datapoints as attribute, not dict key
+        # datapoints is dict[str, int] mapping role → address
+        for dp_role, dp_address in entity.datapoints.items():
             try:
-                parts = dp_value.split("(")
-                if len(parts) != 2:
-                    continue
-                
-                dp_id_str = parts[0].strip()
-                group_addr = parts[1].rstrip(")").strip()
-                
-                dp_id = int(dp_id_str)
+                # Convert address integer to GroupAddress string
+                # Format: address = (main << 11) | (middle << 8) | sub
+                main = (dp_address >> 11) & 0x1F
+                middle = (dp_address >> 8) & 0x07
+                sub = dp_address & 0xFF
+                group_addr = f"{main}/{middle}/{sub}"
                 
                 # Store mapping: GroupAddress → Datapoint ID
-                gateway._datapoint_mapping[group_addr] = dp_id
+                gateway._datapoint_mapping[group_addr] = dp_address
                 mapping_count += 1
                 
-            except (ValueError, IndexError) as e:
-                _LOGGER.debug(f"Failed to parse datapoint '{dp_value}': {e}")
+            except (ValueError, TypeError) as e:
+                _LOGGER.debug(f"Failed to parse datapoint address {dp_address}: {e}")
                 continue
     
     _LOGGER.info(f"✅ Built {mapping_count} GroupAddress → Datapoint-ID mappings from LXP file")
