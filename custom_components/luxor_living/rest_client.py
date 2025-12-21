@@ -2,6 +2,7 @@
 import aiohttp
 import asyncio
 import logging
+import ssl
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 
@@ -54,9 +55,12 @@ class BAOSRestClient:
     
     async def __aenter__(self):
         """Context manager entry."""
-        # Create session without SSL verification for local HTTP
-        # Disable redirects to prevent HTTP->HTTPS redirect issues
-        connector = aiohttp.TCPConnector(ssl=False)
+        # Create SSL context that allows self-signed/invalid certificates
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        
+        connector = aiohttp.TCPConnector(ssl=ssl_context)
         self._session = aiohttp.ClientSession(
             connector=connector,
             connector_owner=True,
@@ -85,9 +89,12 @@ class BAOSRestClient:
             AuthenticationError: If login fails
         """
         if not self._session:
-            # Create session without SSL verification for local HTTP
-            # Disable redirects to prevent HTTP->HTTPS redirect issues
-            connector = aiohttp.TCPConnector(ssl=False)
+            # Create SSL context that allows self-signed/invalid certificates
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
+            connector = aiohttp.TCPConnector(ssl=ssl_context)
             self._session = aiohttp.ClientSession(
                 connector=connector,
                 connector_owner=True,
