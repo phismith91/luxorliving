@@ -408,7 +408,8 @@ class TestLuxorKNXGateway:
         
         assert gateway.connected is False
         mock_xknx.stop.assert_called_once()
-        mock_rest.logout.assert_called_once()
+        # We now call __aexit__ instead of logout directly
+        mock_rest.__aexit__.assert_called_once()
 
     def test_properties(self, mock_hass):
         """Test gateway properties."""

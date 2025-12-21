@@ -163,14 +163,14 @@ class BAOSRestClient:
             _LOGGER.debug("No active session to logout from")
             return
         
-        url = f"{self.base_url}/rest/auth/logout"
+        url = f"{self.base_url}/rest/logout"  # Correct endpoint per API docs
         headers = self._get_auth_headers()
         
         _LOGGER.debug(f"Logging out from {url}")
         
         try:
             async with self._session.post(url, headers=headers) as response:
-                if response.status == 200:
+                if response.status in (200, 204):  # API returns 204 per docs
                     _LOGGER.info("Logout successful. Tunneling auto-deactivated.")
                 else:
                     _LOGGER.warning(f"Logout returned status {response.status}")
@@ -274,14 +274,13 @@ class BAOSRestClient:
                 json=payload,
                 headers=headers
             ) as response:
-                if response.status == 200:
+                if response.status in (200, 204):
                     self.tunneling_enabled = False
-                    _LOGGER.info("KNX Tunneling disabled")
+                    _LOGGER.info(f"KNX Tunneling disabled ({response.status})")
                     return True
                 else:
                     _LOGGER.warning(f"Disable tunneling returned {response.status}")
                     return False
-        
         except aiohttp.ClientError as e:
             _LOGGER.error(f"Error disabling tunneling: {e}")
             return False

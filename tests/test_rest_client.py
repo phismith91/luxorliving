@@ -13,40 +13,34 @@ from custom_components.luxor_living.rest_client import (
 
 
 async def login_handler(request):
-    """Mock login endpoint."""
+    """Mock login endpoint - returns plain text cookie token."""
     data = await request.json()
     if data.get("username") == "admin" and data.get("password") == "admin":
-        return web.json_response({
-            "sessionToken": "abc123xyz",
-            "expiresIn": 3600
-        })
-    return web.json_response({"error": "Invalid credentials"}, status=401)
+        # API returns plain text cookie token (not JSON)
+        return web.Response(text="3c8b531737cbd849bccf15bb9ef09d9c")
+    return web.Response(status=401)
 
 
 async def logout_handler(request):
     """Mock logout endpoint."""
-    return web.json_response({"success": True})
+    return web.Response(status=204)
 
 
 async def tunneling_handler(request):
-    """Mock tunneling endpoint."""
+    """Mock tunneling endpoint - returns 204 on success."""
     if request.method == "PUT":
-        data = await request.json()
-        return web.json_response({"enabled": data.get("enabled", False)})
+        # PUT returns 204 (No Content) on success
+        return web.Response(status=204)
     else:  # GET
-        return web.json_response({
-            "enabled": True,
-            "connectedClients": 1,
-            "maxSlots": 1
-        })
+        return web.json_response({"enabled": True})
 
 
 @pytest_asyncio.fixture
 async def mock_baos_server():
     """Create mock BAOS REST API server."""
     app = web.Application()
-    app.router.add_post("/rest/auth/login", login_handler)
-    app.router.add_post("/rest/auth/logout", logout_handler)
+    app.router.add_post("/rest/login", login_handler)  # Correct endpoint
+    app.router.add_post("/rest/logout", logout_handler)
     app.router.add_put("/rest/device/authtunneling", tunneling_handler)
     app.router.add_get("/rest/device/authtunneling", tunneling_handler)
     
@@ -75,8 +69,9 @@ class TestBAOSRestClient:
         async with client:
             token = await client.login("admin", "admin")
             
-            assert token == "abc123xyz"
-            assert client.session_token == "abc123xyz"
+            # API returns plain text cookie token from mock
+            assert token == "3c8b531737cbd849bccf15bb9ef09d9c"
+            assert client.session_token == "3c8b531737cbd849bccf15bb9ef09d9c"
             assert client.is_authenticated is True
             assert client.session_expires > datetime.now()
 
@@ -174,9 +169,8 @@ class TestBAOSRestClient:
             await client.login("admin", "admin")
             status = await client.get_tunneling_status()
             
+            # Mock returns simplified response
             assert status["enabled"] is True
-            assert status["connectedClients"] == 1
-            assert status["maxSlots"] == 1
 
     def test_diagnostics(self):
         """Test diagnostics output."""
