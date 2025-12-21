@@ -101,10 +101,17 @@ class LuxorLivingSwitch(SwitchEntity):
     def _handle_knx_update(self, group_address: str, value: Any) -> None:
         """Handle KNX status update."""
         # Accept updates from both status and control addresses
-        if group_address in (self._address_status, self._address_on):
+        # Convert integer addresses to strings for comparison
+        valid_addresses = []
+        if self._address_on is not None:
+            valid_addresses.append(str(GroupAddress(self._address_on)))
+        if self._address_status is not None:
+            valid_addresses.append(str(GroupAddress(self._address_status)))
+        
+        if group_address in valid_addresses:
             self._attr_is_on = bool(value)
             self.schedule_update_ha_state()
-            _LOGGER.debug("Updated %s state: %s", self._attr_name, value)
+            _LOGGER.debug("Updated %s state: %s (from %s)", self._attr_name, value, group_address)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
