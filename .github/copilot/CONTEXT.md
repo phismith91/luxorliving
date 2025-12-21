@@ -37,6 +37,52 @@ to automatically discover and map devices.
 
 ---
 
+## Production Environment Architecture
+
+**Physical Setup:**
+```
+Developer PC (Local)
+  ↓ Git Push/Pull
+GitHub/GitLab Repository
+  ↓ Manual Download via HA UI
+Proxmox Server (Madeira, Portugal)
+  └── Home Assistant OS VM
+       ├── Tailscale VPN (Remote Access)
+       ├── Custom Components: /config/custom_components/luxor_living
+       └── Local Network: 192.168.1.x
+            └── LUXORliving IP1 Gateway: 192.168.1.3
+                 ├── KNX/IP Port: 3671
+                 ├── Web UI: Port 80/443
+                 └── Supports: Tunneling + Routing
+```
+
+**Network Considerations:**
+* Remote access via **Tailscale VPN** for UI control
+* KNX Multicast (224.0.23.12) may **not** work over VPN
+* **KNX Tunneling** (direct to 192.168.1.3:3671) recommended for remote setups
+* HA VM and Gateway are in **same local network** → both modes work
+
+**Deployment Workflow:**
+1. Develop & test locally on developer PC
+2. Commit & push to Git repository
+3. Download via HA UI: **Einstellungen → Add-ons → HACS → LUXORliving**
+4. Integration auto-updates in `/config/custom_components/luxor_living`
+5. Restart HA Core to apply changes
+6. Configure via HA UI (no SSH access needed)
+
+**Testing Environment:**
+* **Local:** pytest with mocks & simulation mode
+* **Production:** Real hardware testing on Proxmox VM
+* **Access:** UI-only via Tailscale (no direct SSH to HA OS)
+
+**Important Constraints:**
+* HA OS = **appliance mode** (limited shell access)
+* Deployment via **UI only** (HACS or File Upload)
+* Configuration changes via **HA UI or File Editor add-on**
+* Logs accessible via **Settings → System → Logs**
+
+---
+
 ## Language & Usage Rules
 
 * Copilot agent definitions are written in **English**
