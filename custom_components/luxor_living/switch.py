@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from xknx.telegram.address import GroupAddress
 
 from .const import DOMAIN, DATA_KNX_GATEWAY
 from .knx_gateway import LuxorKNXGateway
@@ -141,7 +142,13 @@ class LuxorLivingSwitch(SwitchEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return extra attributes."""
-        return {
-            "knx_address_on": self._address_on,
-            "knx_address_status": self._address_status,
-        }
+        attrs = {}
+        
+        # Convert integer KNX addresses to group address strings
+        if self._address_on is not None:
+            attrs["knx_address_on"] = str(GroupAddress(self._address_on))
+        
+        if self._address_status is not None:
+            attrs["knx_address_status"] = str(GroupAddress(self._address_status))
+        
+        return attrs

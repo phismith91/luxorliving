@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from xknx.telegram.address import GroupAddress
 
 from .const import DOMAIN, DATA_KNX_GATEWAY
 from .entity_mapper import EntityMapper
@@ -208,6 +209,23 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         else:
             # Fallback to simple on/off
             await super().async_turn_on(**kwargs)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return extra attributes."""
+        attrs = {}
+        
+        # Convert integer KNX addresses to group address strings
+        if self._address_on is not None:
+            attrs["knx_address_on"] = str(GroupAddress(self._address_on))
+        
+        if self._address_status is not None:
+            attrs["knx_address_status"] = str(GroupAddress(self._address_status))
+        
+        if self._address_dim is not None:
+            attrs["knx_address_dim"] = str(GroupAddress(self._address_dim))
+        
+        return attrs
 
     async def async_will_remove_from_hass(self) -> None:
         """Clean up listeners when entity is removed."""

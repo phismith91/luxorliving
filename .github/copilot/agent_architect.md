@@ -27,3 +27,6 @@ Not Allowed:
 
 Authority:
 If other agents provide conflicting advice, this agent has final decision authority.
+
+More Information:
+The context.md describes the "Production Environment Architecture". No testing on local anymore!
