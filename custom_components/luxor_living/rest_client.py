@@ -334,12 +334,20 @@ class BAOSRestClient:
         
         # LUXORliving API Documentation (Page 6):
         # "Authentication for a Request: Either via
-        #  1. cookie user=%22TOKEN%22
+        #  1. cookie user=%22TOKEN%22  (where %22 is URL-encoded ")
         #  2. or the Authorization header token=TOKEN"
         #
-        # Using Authorization header (Option 2) - more reliable with HTTPS redirects
-        _LOGGER.debug(f"Using Authorization header: token=<token>")
-        return {"Authorization": f"token={self.session_token}"}
+        # Trying BOTH for maximum compatibility
+        import urllib.parse
+        encoded_token = urllib.parse.quote(f'"{self.session_token}"')
+        
+        headers = {
+            "Cookie": f"user={encoded_token}",
+            "Authorization": f"token={self.session_token}"
+        }
+        
+        _LOGGER.debug(f"Using both Cookie and Authorization headers")
+        return headers
     
     @property
     def is_authenticated(self) -> bool:
