@@ -55,10 +55,14 @@ class BAOSRestClient:
     
     async def __aenter__(self):
         """Context manager entry."""
-        # Create SSL context that allows self-signed/invalid certificates
+        # Create SSL context for BAOS 777 (may use old SSL/TLS)
         ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
+        
+        # Allow old TLS versions for legacy devices
+        ssl_context.minimum_version = ssl.TLSVersion.TLSv1
+        ssl_context.set_ciphers('DEFAULT:@SECLEVEL=0')
         
         connector = aiohttp.TCPConnector(ssl=ssl_context)
         self._session = aiohttp.ClientSession(
@@ -89,10 +93,14 @@ class BAOSRestClient:
             AuthenticationError: If login fails
         """
         if not self._session:
-            # Create SSL context that allows self-signed/invalid certificates
+            # Create SSL context for BAOS 777 (may use old SSL/TLS)
             ssl_context = ssl.create_default_context()
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
+            
+            # Allow old TLS versions for legacy devices
+            ssl_context.minimum_version = ssl.TLSVersion.TLSv1
+            ssl_context.set_ciphers('DEFAULT:@SECLEVEL=0')
             
             connector = aiohttp.TCPConnector(ssl=ssl_context)
             self._session = aiohttp.ClientSession(

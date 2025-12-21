@@ -218,6 +218,22 @@ Use when:
 
 ---
 
+### ✅ ### ✅ Quality & Community Review
+
+**Agent:** `agent_ssl.md`
+
+Use when:
+
+* Advising on secure HTTP/HTTPS connections to the IP1 controller
+* Validating certificate handling (self-signed vs CA-signed)
+* Ensuring TLS configuration follows best practices
+* Providing guidance for certificate imports or verification issues
+* Warning about potential security pitfalls in remote connections
+
+
+---
+
+
 ## Notes for Contributors
 
 * This integration intentionally avoids ETS-based workflows
