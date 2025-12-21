@@ -326,19 +326,14 @@ class BAOSRestClient:
         if not self.session_token:
             return {}
         
-        # Try different cookie formats - API documentation unclear
-        cookie_value = self.session_token
+        # LUXORliving API Documentation (Page 5):
+        # "The response must then always be sent as a cookie: user=%22YOURTOKEN%22"
+        # %22 = URL-encoded " (double quote)
+        # So Cookie header must be: user="<token>"
+        cookie_value = f'user="{self.session_token}"'
         
-        # OPTION 1: Plain token (most likely based on API docs)
-        # Response from /rest/login is just: "3c8b531737cbd849..."
-        # So maybe that's exactly what Cookie header needs
-        _LOGGER.debug(f"Using cookie format: Plain token (no prefix)")
+        _LOGGER.debug(f"Using cookie format: {cookie_value[:20]}...")
         return {"Cookie": cookie_value}
-        
-        # OPTION 2: Standard format with name (currently disabled)
-        # if "=" not in cookie_value:
-        #     cookie_value = f"sessionid={cookie_value}"
-        # return {"Cookie": cookie_value}
     
     @property
     def is_authenticated(self) -> bool:
