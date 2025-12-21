@@ -91,8 +91,10 @@ class TestLuxorLivingLight:
         
         await light.async_added_to_hass()
         
-        # Should request current state from KNX
-        mock_knx_gateway.async_read_group_address.assert_called_once_with("1/2/4", is_initial=True)
+        # Should request current state from BOTH addresses (STATUS and CONTROL)
+        assert mock_knx_gateway.async_read_group_address.call_count == 2
+        mock_knx_gateway.async_read_group_address.assert_any_call("1/2/4", is_initial=True)  # STATUS
+        mock_knx_gateway.async_read_group_address.assert_any_call("1/2/3", is_initial=True)  # CONTROL
 
     @pytest.mark.asyncio
     async def test_async_added_to_hass_no_status_address(self, mock_knx_gateway):
@@ -191,10 +193,11 @@ class TestLuxorLivingDimmableLight:
         
         await light.async_added_to_hass()
         
-        # Should request both status and brightness
-        assert mock_knx_gateway.async_read_group_address.call_count == 2
+        # Should request status, control, and brightness (3 addresses)
+        assert mock_knx_gateway.async_read_group_address.call_count == 3
         calls = [call.args[0] for call in mock_knx_gateway.async_read_group_address.call_args_list]
         assert "1/2/6" in calls  # Status
+        assert "1/2/5" in calls  # Control (OnOff)
         assert "1/2/7" in calls  # Brightness
 
     @pytest.mark.asyncio

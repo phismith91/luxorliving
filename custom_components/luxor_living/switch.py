@@ -114,16 +114,25 @@ class LuxorLivingSwitch(SwitchEntity):
                 return
         
         # Request current state from KNX bus
-        # Try status address first, fallback to control address
-        read_address = self._address_status or self._address_on
-        if read_address:
+        # Read BOTH addresses to work around stale BAOS StatusOnOff values
+        # StatusOnOff may be stale if light was ON at BAOS startup or switched manually
+        # OnOff reflects actual actuator state more reliably
+        addresses_to_read = []
+        
+        if self._address_status:
+            addresses_to_read.append((self._address_status, "STATUS"))
+        if self._address_on and self._address_on != self._address_status:
+            addresses_to_read.append((self._address_on, "CONTROL"))
+        
+        if addresses_to_read:
             _LOGGER.info(
-                "📖 Switch '%s' requesting initial state from %s (%s)",
+                "📖 Switch '%s' requesting initial state from %d address(es): %s",
                 self._attr_name,
-                GroupAddress(read_address),
-                "STATUS" if read_address == self._address_status else "CONTROL"
+                len(addresses_to_read),
+                ", ".join([f"{GroupAddress(addr)} ({typ})" for addr, typ in addresses_to_read])
             )
-            await self._knx_gateway.async_read_group_address(read_address, is_initial=True)
+            for address, address_type in addresses_to_read:
+                await self._knx_gateway.async_read_group_address(address, is_initial=True)
         else:
             _LOGGER.warning(
                 "⚠️ Switch '%s' has NO read address! Cannot request initial state.",

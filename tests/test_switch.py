@@ -71,8 +71,10 @@ class TestLuxorLivingSwitch:
         
         await switch.async_added_to_hass()
         
-        # Should request current state from KNX
-        mock_knx_gateway.async_read_group_address.assert_called_once_with("1/3/2", is_initial=True)
+        # Should request current state from BOTH addresses (STATUS and CONTROL)
+        assert mock_knx_gateway.async_read_group_address.call_count == 2
+        mock_knx_gateway.async_read_group_address.assert_any_call("1/3/2", is_initial=True)  # STATUS
+        mock_knx_gateway.async_read_group_address.assert_any_call("1/3/1", is_initial=True)  # CONTROL
 
     @pytest.mark.asyncio
     async def test_async_added_to_hass_no_status_address(self, mock_knx_gateway):
