@@ -312,6 +312,107 @@ class BAOSRestClient:
                     "maxSlots": 1
                 }
     
+    async def async_get_datapoints(self) -> Optional[list]:
+        """
+        Get all BAOS datapoints with their current values.
+        
+        Per BAOS REST API Documentation:
+        GET /rest/datapoints
+        
+        Returns list of datapoint objects:
+        [
+            {
+                "id": 1,
+                "name": "1/0/0",
+                "value": true,
+                "type": "DPT-1",
+                "room": "Bedroom",
+                "function": "Light"
+            },
+            ...
+        ]
+        
+        Returns:
+            List of datapoint dicts, or None on error
+        """
+        self._ensure_authenticated()
+        
+        url = f"{self.base_url}/rest/datapoints"
+        headers = self._get_auth_headers()
+        
+        _LOGGER.debug(f"🔍 Fetching all datapoints from {url}")
+        
+        try:
+            async with self._session.get(url, headers=headers) as response:
+                if response.status == 401:
+                    _LOGGER.error("Session expired when fetching datapoints")
+                    return None
+                
+                if response.status != 200:
+                    response_text = await response.text()
+                    _LOGGER.error(f"Failed to fetch datapoints: {response.status} - {response_text}")
+                    return None
+                
+                datapoints = await response.json()
+                _LOGGER.info(f"✅ Fetched {len(datapoints)} datapoints from BAOS")
+                return datapoints
+        
+        except aiohttp.ClientError as e:
+            _LOGGER.error(f"Network error fetching datapoints: {e}")
+            return None
+    
+    async def async_get_datapoint_value(self, datapoint_id: int) -> Optional[Any]:
+        """
+        Get current value of a specific BAOS datapoint.
+        
+        Per BAOS REST API Documentation:
+        GET /rest/datapoint/<id>
+        
+        Returns:
+        {
+            "id": 1,
+            "name": "1/0/0",
+            "value": true,
+            "type": "DPT-1"
+        }
+        
+        Args:
+            datapoint_id: BAOS datapoint ID (integer)
+        
+        Returns:
+            Datapoint value, or None on error
+        """
+        self._ensure_authenticated()
+        
+        url = f"{self.base_url}/rest/datapoint/{datapoint_id}"
+        headers = self._get_auth_headers()
+        
+        _LOGGER.debug(f"🔍 Fetching datapoint {datapoint_id} from {url}")
+        
+        try:
+            async with self._session.get(url, headers=headers) as response:
+                if response.status == 401:
+                    _LOGGER.error(f"Session expired when fetching datapoint {datapoint_id}")
+                    return None
+                
+                if response.status == 404:
+                    _LOGGER.warning(f"Datapoint {datapoint_id} not found")
+                    return None
+                
+                if response.status != 200:
+                    response_text = await response.text()
+                    _LOGGER.error(f"Failed to fetch datapoint {datapoint_id}: {response.status} - {response_text}")
+                    return None
+                
+                datapoint = await response.json()
+                value = datapoint.get("value")
+                _LOGGER.debug(f"✅ Datapoint {datapoint_id} value: {value}")
+                return value
+        
+        except aiohttp.ClientError as e:
+            _LOGGER.error(f"Network error fetching datapoint {datapoint_id}: {e}")
+            return None
+    
     def _ensure_authenticated(self):
         """Raise AuthenticationError if not logged in."""
         if not self.session_token:

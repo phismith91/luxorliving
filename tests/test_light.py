@@ -26,6 +26,7 @@ def mock_knx_gateway():
     gateway = Mock(spec=LuxorKNXGateway)
     gateway.async_send_telegram = AsyncMock(return_value=True)
     gateway.async_read_group_address = AsyncMock(return_value=True)
+    gateway.async_read_via_rest = AsyncMock(return_value=None)  # REST API unavailable by default
     gateway.register_listener = Mock()
     gateway.unregister_listener = Mock()
     return gateway
@@ -87,11 +88,15 @@ class TestLuxorLivingLight:
     async def test_async_added_to_hass(self, mock_mapped_entity, mock_knx_gateway):
         """Test entity added to hass - should request initial state."""
         mock_knx_gateway._connected = True  # KNX is connected
+        mock_knx_gateway.async_read_via_rest = AsyncMock(return_value=None)  # REST API not available
         light = LuxorLivingLight(mock_mapped_entity, mock_knx_gateway)
         
         await light.async_added_to_hass()
         
-        # Should request current state from BOTH addresses (STATUS and CONTROL)
+        # Should first try REST API
+        mock_knx_gateway.async_read_via_rest.assert_called_once_with("1/2/4")
+        
+        # Should fallback to request current state from BOTH addresses (STATUS and CONTROL)
         assert mock_knx_gateway.async_read_group_address.call_count == 2
         mock_knx_gateway.async_read_group_address.assert_any_call("1/2/4", is_initial=True)  # STATUS
         mock_knx_gateway.async_read_group_address.assert_any_call("1/2/3", is_initial=True)  # CONTROL
@@ -100,6 +105,7 @@ class TestLuxorLivingLight:
     async def test_async_added_to_hass_no_status_address(self, mock_knx_gateway):
         """Test entity added when no status address available - should use OnOff as fallback."""
         mock_knx_gateway._connected = True  # KNX is connected
+        mock_knx_gateway.async_read_via_rest = AsyncMock(return_value=None)  # REST API not available
         entity = Mock()
         entity.unique_id = "test_light_no_status"
         entity.name = "Test Light No Status"
@@ -111,6 +117,9 @@ class TestLuxorLivingLight:
         light = LuxorLivingLight(entity, mock_knx_gateway)
         
         await light.async_added_to_hass()
+        
+        # Should first try REST API
+        mock_knx_gateway.async_read_via_rest.assert_called_once_with("1/2/8")
         
         # Should fallback to OnOff address for reading
         mock_knx_gateway.async_read_group_address.assert_called_once_with("1/2/8", is_initial=True)
@@ -189,11 +198,15 @@ class TestLuxorLivingDimmableLight:
     async def test_async_added_to_hass(self, mock_dimmable_entity, mock_knx_gateway):
         """Test dimmable light added to hass - should request initial state."""
         mock_knx_gateway._connected = True  # KNX is connected
+        mock_knx_gateway.async_read_via_rest = AsyncMock(return_value=None)  # REST API not available
         light = LuxorLivingDimmableLight(mock_dimmable_entity, mock_knx_gateway)
         
         await light.async_added_to_hass()
         
-        # Should request status, control, and brightness (3 addresses)
+        # Should first try REST API
+        mock_knx_gateway.async_read_via_rest.assert_called_once_with("1/2/6")
+        
+        # Should fallback to request status, control, and brightness (3 addresses)
         assert mock_knx_gateway.async_read_group_address.call_count == 3
         calls = [call.args[0] for call in mock_knx_gateway.async_read_group_address.call_args_list]
         assert "1/2/6" in calls  # Status
