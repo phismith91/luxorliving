@@ -206,6 +206,8 @@ class BAOSRestClient:
         headers = self._get_auth_headers()
         
         _LOGGER.debug(f"Enabling tunneling at {url}")
+        _LOGGER.debug(f"Tunneling headers: {headers}")
+        _LOGGER.debug(f"Session token: {self.session_token[:10]}..." if self.session_token else "No token")
         
         try:
             async with self._session.put(
@@ -213,10 +215,22 @@ class BAOSRestClient:
                 json=payload, 
                 headers=headers
             ) as response:
+                _LOGGER.debug(f"Tunneling response status: {response.status}")
+                _LOGGER.debug(f"Tunneling response headers: {response.headers}")
+                
                 if response.status == 401:
                     raise AuthenticationError("Session expired or invalid")
                 
+                if response.status == 403:
+                    response_text = await response.text()
+                    _LOGGER.error(f"403 Forbidden when enabling tunneling. Response: {response_text}")
+                    raise TunnelingError(
+                        f"Failed to enable tunneling: Forbidden (403). Check API permissions."
+                    )
+                
                 if response.status != 200:
+                    response_text = await response.text()
+                    _LOGGER.error(f"Tunneling failed with {response.status}. Response: {response_text}")
                     raise TunnelingError(
                         f"Failed to enable tunneling (status {response.status})"
                     )
@@ -306,18 +320,20 @@ class BAOSRestClient:
         """
         Get authentication headers.
         
-        NOTE: Exact header format needs verification with real device.
-        Could be:
-        - Authorization: Bearer <token>
-        - Authorization: Token <token>
-        - Cookie: session=<token>
-        - X-Session-Token: <token>
+        LUXORliving uses Cookie-based authentication.
+        The session cookie returned by /rest/login is sent in subsequent requests.
         """
         if not self.session_token:
             return {}
         
-        # LUXORliving uses Cookie-based authentication
-        return {"Cookie": self.session_token}
+        # Cookie format: sessionid=<token> (standard format)
+        # If API returns just the token value, we need to add the cookie name
+        cookie_value = self.session_token
+        if "=" not in cookie_value:
+            # Token is plain value, add cookie name
+            cookie_value = f"sessionid={cookie_value}"
+        
+        return {"Cookie": cookie_value}
     
     @property
     def is_authenticated(self) -> bool:
