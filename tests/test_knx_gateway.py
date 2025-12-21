@@ -26,6 +26,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             connection_type="tunneling",
             simulation_mode=True,
         )
@@ -33,6 +35,7 @@ class TestLuxorKNXGateway:
         assert gateway.simulation_mode is True
         assert gateway.host == "192.168.1.3"
         assert gateway.port == 3671
+        assert gateway.username == "admin"
         assert gateway._connected is False
 
     def test_init_tunneling_mode(self, mock_hass):
@@ -41,6 +44,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             connection_type="tunneling",
             simulation_mode=False,
         )
@@ -55,6 +60,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="224.0.23.12",
             port=3671,
+            username="admin",
+            password="admin",
             connection_type="routing",
             simulation_mode=False,
         )
@@ -69,6 +76,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=True,
         )
         
@@ -79,9 +88,18 @@ class TestLuxorKNXGateway:
         assert gateway._xknx is None
 
     @pytest.mark.asyncio
+    @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
-    async def test_async_setup_real_mode(self, mock_xknx_class, mock_hass):
-        """Test setup in real mode."""
+    async def test_async_setup_with_rest_auth(self, mock_xknx_class, mock_rest_class, mock_hass):
+        """Test setup with REST API authentication (tunneling)."""
+        # Mock REST Client
+        mock_rest_client = AsyncMock()
+        mock_rest_client.login = AsyncMock(return_value="test_token")
+        mock_rest_client.enable_tunneling = AsyncMock(return_value=True)
+        mock_rest_client.logout = AsyncMock()
+        mock_rest_class.return_value = mock_rest_client
+        
+        # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
@@ -91,20 +109,44 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
+            connection_type="tunneling",
             simulation_mode=False,
         )
         
         result = await gateway.async_setup()
         
+        # Verify REST API login was called
+        mock_rest_client.login.assert_called_once_with("admin", "admin")
+        
+        # Verify tunneling was enabled
+        mock_rest_client.enable_tunneling.assert_called_once()
+        
+        # Verify KNX started
+        mock_xknx.start.assert_called_once()
+        
         assert result is True
         assert gateway.connected is True
+        assert gateway._tunneling_enabled is True
         mock_xknx.start.assert_called_once()
         # In XKNX 3.x, connection happens automatically in start()
 
     @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
-    async def test_async_setup_failure(self, mock_xknx_class, mock_hass):
+    @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
+    async def test_async_setup_failure(self, mock_rest_client_class, mock_xknx_class, mock_hass):
         """Test setup failure."""
+        # Mock REST client success
+        mock_rest = AsyncMock()
+        mock_rest.login = AsyncMock()
+        mock_rest.enable_tunneling = AsyncMock()
+        mock_rest.logout = AsyncMock()
+        mock_rest.__aenter__ = AsyncMock(return_value=mock_rest)
+        mock_rest.__aexit__ = AsyncMock()
+        mock_rest_client_class.return_value = mock_rest
+        
+        # Mock XKNX failure
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock(side_effect=Exception("Connection failed"))
         mock_xknx_class.return_value = mock_xknx
@@ -113,6 +155,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=False,
         )
         
@@ -128,6 +172,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=True,
         )
         await gateway.async_setup()
@@ -143,6 +189,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=False,
         )
         
@@ -151,10 +199,20 @@ class TestLuxorKNXGateway:
         assert result is False
 
     @pytest.mark.asyncio
-    @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
-    async def test_async_send_telegram_binary(self, mock_xknx_class, mock_hass):
+    @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
+    async def test_async_send_telegram_binary(self, mock_rest_client_class, mock_xknx_class, mock_hass):
         """Test sending binary telegram."""
+        # Mock REST client
+        mock_rest = AsyncMock()
+        mock_rest.login = AsyncMock()
+        mock_rest.enable_tunneling = AsyncMock()
+        mock_rest.logout = AsyncMock()
+        mock_rest.__aenter__ = AsyncMock(return_value=mock_rest)
+        mock_rest.__aexit__ = AsyncMock()
+        mock_rest_client_class.return_value = mock_rest
+        
+        # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
         mock_xknx.connection_manager.connect = AsyncMock()
@@ -166,6 +224,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=False,
         )
         await gateway.async_setup()
@@ -177,8 +237,19 @@ class TestLuxorKNXGateway:
 
     @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
-    async def test_async_send_telegram_percent(self, mock_xknx_class, mock_hass):
+    @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
+    async def test_async_send_telegram_percent(self, mock_rest_client_class, mock_xknx_class, mock_hass):
         """Test sending percent telegram."""
+        # Mock REST client
+        mock_rest = AsyncMock()
+        mock_rest.login = AsyncMock()
+        mock_rest.enable_tunneling = AsyncMock()
+        mock_rest.logout = AsyncMock()
+        mock_rest.__aenter__ = AsyncMock(return_value=mock_rest)
+        mock_rest.__aexit__ = AsyncMock()
+        mock_rest_client_class.return_value = mock_rest
+        
+        # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
         mock_xknx.connection_manager.connect = AsyncMock()
@@ -190,6 +261,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=False,
         )
         await gateway.async_setup()
@@ -205,6 +278,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=True,
         )
         
@@ -220,6 +295,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=True,
         )
         
@@ -236,6 +313,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=True,
         )
         
@@ -264,6 +343,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=True,
         )
         
@@ -292,8 +373,20 @@ class TestLuxorKNXGateway:
 
     @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
-    async def test_async_disconnect(self, mock_xknx_class, mock_hass):
+    @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
+    async def test_async_disconnect(self, mock_rest_client_class, mock_xknx_class, mock_hass):
         """Test disconnecting from gateway."""
+        # Mock REST client
+        mock_rest = AsyncMock()
+        mock_rest.login = AsyncMock()
+        mock_rest.enable_tunneling = AsyncMock()
+        mock_rest.disable_tunneling = AsyncMock()
+        mock_rest.logout = AsyncMock()
+        mock_rest.__aenter__ = AsyncMock(return_value=mock_rest)
+        mock_rest.__aexit__ = AsyncMock()
+        mock_rest_client_class.return_value = mock_rest
+        
+        # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
         mock_xknx.connection_manager.connect = AsyncMock()
@@ -305,6 +398,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=False,
         )
         await gateway.async_setup()
@@ -313,6 +408,7 @@ class TestLuxorKNXGateway:
         
         assert gateway.connected is False
         mock_xknx.stop.assert_called_once()
+        mock_rest.logout.assert_called_once()
 
     def test_properties(self, mock_hass):
         """Test gateway properties."""
@@ -320,6 +416,8 @@ class TestLuxorKNXGateway:
             hass=mock_hass,
             host="192.168.1.3",
             port=3671,
+            username="admin",
+            password="admin",
             simulation_mode=True,
         )
         

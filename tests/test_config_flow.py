@@ -147,12 +147,15 @@ class TestLuxorLivingConfigFlow:
         flow._lxp_file = "/test.lxp"
         flow._project_name = "Test Project"
         
-        result = await flow.async_step_gateway({
-            "host": "192.168.1.3",
-            "port": 3671,
-            CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
-            CONF_SIMULATION_MODE: False,
-        })
+        with patch.object(flow, '_validate_credentials', return_value=True):
+            result = await flow.async_step_gateway({
+                "host": "192.168.1.3",
+                "port": 3671,
+                "username": "admin",
+                "password": "admin",
+                CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
+                CONF_SIMULATION_MODE: False,
+            })
         
         assert result["type"] == "create_entry"
         assert result["title"] == "LUXORliving (Test Project)"
@@ -167,12 +170,15 @@ class TestLuxorLivingConfigFlow:
         flow._lxp_file = "/test.lxp"
         flow._project_name = "Test Project"
         
-        result = await flow.async_step_gateway({
-            "host": "224.0.23.12",
-            "port": 3671,
-            CONF_CONNECTION_TYPE: CONNECTION_TYPE_ROUTING,
-            CONF_SIMULATION_MODE: False,
-        })
+        with patch.object(flow, '_validate_credentials', return_value=True):
+            result = await flow.async_step_gateway({
+                "host": "224.0.23.12",
+                "port": 3671,
+                "username": "admin",
+                "password": "admin",
+                CONF_CONNECTION_TYPE: CONNECTION_TYPE_ROUTING,
+                CONF_SIMULATION_MODE: False,
+            })
         
         assert result["type"] == "create_entry"
         assert result["data"][CONF_CONNECTION_TYPE] == CONNECTION_TYPE_ROUTING
@@ -188,6 +194,8 @@ class TestLuxorLivingConfigFlow:
         result = await flow.async_step_gateway({
             "host": "localhost",
             "port": 3671,
+            "username": "admin",
+            "password": "admin",
             CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
             CONF_SIMULATION_MODE: True,
         })
@@ -218,12 +226,15 @@ class TestLuxorLivingConfigFlow:
         assert result["step_id"] == "gateway"
         
         # Step 3: Submit gateway config
-        result = await flow.async_step_gateway({
-            "host": "192.168.1.3",
-            "port": 3671,
-            CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
-            CONF_SIMULATION_MODE: False,
-        })
+        with patch.object(flow, '_validate_credentials', return_value=True):
+            result = await flow.async_step_gateway({
+                "host": "192.168.1.3",
+                "port": 3671,
+                "username": "admin",
+                "password": "admin",
+                CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
+                CONF_SIMULATION_MODE: False,
+            })
         
         assert result["type"] == "create_entry"
         assert result["title"] == "LUXORliving (Test Project)"
