@@ -400,7 +400,7 @@ class BAOSRestClient:
         """
         self._ensure_authenticated()
         
-        url = f"{self.base_url}/rest/datapoint/{datapoint_id}"
+        url = f"{self.base_url}/rest/datapoints/{datapoint_id}"
         headers = self._get_auth_headers()
         
         _LOGGER.debug(f"🔍 Fetching datapoint details {datapoint_id} from {url} (timeout={timeout}s)")
