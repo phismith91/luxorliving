@@ -153,6 +153,10 @@ class LuxorKNXGateway:
                 self._connection_type.name,
             )
             
+            # Load datapoint mappings from REST API (if available)
+            if self._rest_client:
+                await self._async_load_datapoint_mapping()
+            
             return True
 
         except Exception as err:
