@@ -8,9 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0-beta.3] - 2025-12-23
 
 ### Fixed
+- **Entity Unique ID Generation**: Use MappedEntity's unique_id directly
+  - Previous implementation only used device_name and name, causing collisions
+  - Now uses guaranteed-unique unique_id from MappedEntity
+  - Fixes: "Platform luxor_living does not generate unique IDs" errors
+
 - **Entity Base Class Type Handling**: Fixed MappedEntity attribute access
   - Changed mapped_entity parameter from dict to MappedEntity dataclass
-  - Updated _create_unique_id() and name property to use getattr() for attributes
+  - Updated name property to use getattr() for attributes
   - Fixed 'MappedEntity' object has no attribute 'get' errors in all platforms
 
 - **Coordinator Architecture Simplified**: Changed from broken polling model to event-driven passive state model
@@ -28,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Testing
 - All 74 tests passing with zero regressions
+- Entity unique_id properly derived from MappedEntity
 - Entity base class properly handles MappedEntity objects
 - Coordinator architecture corrected to match actual KNX event-driven model
 - All platforms properly handle missing or invalid integration data
