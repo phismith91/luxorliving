@@ -12,6 +12,7 @@ from homeassistant.helpers.entity import Entity
 
 from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
+from .entity_mapper import MappedEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,19 +32,14 @@ class LuxorLivingEntity(Entity):
         self,
         coordinator: LuxorLivingCoordinator,
         config_entry: ConfigEntry,
-        mapped_entity: dict[str, Any],
+        mapped_entity: MappedEntity,
     ) -> None:
         """Initialize the entity.
 
         Args:
             coordinator: Data coordinator instance
             config_entry: Config entry for this integration
-            mapped_entity: Entity mapping dictionary containing:
-                - name: Entity name
-                - room: Room name
-                - function: Function name
-                - group_address: KNX group address
-                - dpt: Data Point Type
+            mapped_entity: MappedEntity object containing entity information
         """
         self.coordinator = coordinator
         self._config_entry = config_entry
@@ -51,21 +47,20 @@ class LuxorLivingEntity(Entity):
         self._attr_unique_id: str = self._create_unique_id(mapped_entity)
         self._attr_translation_key: str | None = None
 
-    def _create_unique_id(self, mapped_entity: dict[str, Any]) -> str:
+    def _create_unique_id(self, mapped_entity: MappedEntity) -> str:
         """Create unique ID for this entity.
 
         Args:
-            mapped_entity: Entity mapping dictionary
+            mapped_entity: MappedEntity object
 
         Returns:
             Unique ID combining device identifier and entity name
         """
         device_id = self._config_entry.entry_id
-        room = mapped_entity.get("room", "unknown")
-        function = mapped_entity.get("function", "unknown")
-        name = mapped_entity.get("name", "unknown")
+        device_name = getattr(mapped_entity, "device_name", "unknown")
+        name = getattr(mapped_entity, "name", "unknown")
 
-        return f"{DOMAIN}_{device_id}_{room}_{function}_{name}".replace(" ", "_").lower()
+        return f"{DOMAIN}_{device_id}_{device_name}_{name}".replace(" ", "_").lower()
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -89,7 +84,7 @@ class LuxorLivingEntity(Entity):
     @property
     def name(self) -> str:
         """Return entity name."""
-        return self._mapped_entity.get("name", "Unknown")
+        return getattr(self._mapped_entity, "name", "Unknown")
 
     @property
     def available(self) -> bool:
