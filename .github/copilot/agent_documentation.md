@@ -72,7 +72,7 @@ How to use created entities, available services.
 ## Troubleshooting
 
 | Problem | Solution |
-|---------|----------|
+| ------- | -------- |
 | Issue 1 | Fix 1    |
 
 ## FAQ

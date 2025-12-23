@@ -13,6 +13,7 @@ Responsibilities:
 * Ensure long-term maintainability
 * Generating Releases and Pre-Releases with Github Token
 * Ensure that all agents are informed about the Context.MD.The context.md describes the "Production Environment Architecture". No testing on local anymore!
+* Clean-Up Repoistory
 
 Allowed:
 
