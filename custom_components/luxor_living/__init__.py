@@ -98,8 +98,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if not simulation_mode:
             return False
     
+    # Note: Datapoint mapping is now loaded in knx_gateway.async_setup()
+    # via _async_load_datapoint_mapping() which fetches from REST API
+    
     # Store gateway in integration data
     hass.data[DOMAIN][entry.entry_id][DATA_KNX_GATEWAY] = knx_gateway
+
+    # Provide GA→labels to gateway for log enrichment (Name + ID)
+    try:
+        ga_label_map = mapper.get_group_address_label_map()
+        ia_label_map = mapper.get_individual_address_label_map()
+        knx_gateway.set_group_address_labels(ga_label_map)
+        knx_gateway.set_individual_address_labels(ia_label_map)
+    except Exception as err:
+        _LOGGER.debug("Could not build GA/IA label maps: %s", err)
     
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

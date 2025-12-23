@@ -1,3 +1,41 @@
+## 📝 Version & Release Info
+
+**Aktuelle Version:** 0.2.12 (Stable Release)  
+**Release-Datum:** 23. Dezember 2025  
+**Status:** ✅ Production Ready
+
+### Release-Highlights v0.2.12
+
+- ✨ **Log-Labeling**: GroupAddress→Entity und IndividualAddress→Device Namen in Logs
+- 🔆 **Dimmbare Lichter**: Status% (2/3/0) Brightness initial read und kontinuierliches Listening
+- 🔄 **Robustes Event Handling**: HA-Loop Safe Callbacks mit Test-Time Fallback
+- ✅ **58/58 Tests Passing**: Vollständige Testabdeckung für neue Features
+
+### Logs verstehen (v0.2.12+)
+
+Logs enthalten nun enriched Labels für bessere Traceability:
+
+**Beispiel-Log-Ausgabe:**
+```
+📥 Received KNX telegram:
+   Source IA: 9.0.12 (Device "Wohnzimmer Leuchten")
+   Destination GA: 5/0/1 (Entity "light.badlicht")
+   Payload: GroupValueWrite, Value: 1 (ON)
+```
+
+**Log-Struktur:**
+- `Source IA (9.0.12)` = Welches Gerät sendet
+- `Entity Name (light.badlicht)` = Welche Entity empfängt/beeinflusst wird
+- `Payload: GroupValueWrite, Value` = Was wird gesendet
+
+**In configuration.yaml für Debug-Logs:**
+```yaml
+logger:
+  default: info
+  logs:
+    custom_components.luxor_living: debug
+    custom_components.luxor_living.knx_gateway: debug
+```
 # LUXORliving Home Assistant Integration - Quickstart Guide
 
 > **Status:** ✅ Production Ready für Light & Switch Plattformen  
@@ -376,7 +414,7 @@ pytest tests/ -v --tb=short
 
 **Viel Erfolg mit deiner LUXORliving Integration! 🏠✨**
 
-*Zuletzt aktualisiert: 18. Dezember 2025*
+*Zuletzt aktualisiert: 23. Dezember 2025 (v0.2.12)*
 
 ## 🚀 So startest du die Integration in Home Assistant
 

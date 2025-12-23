@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.const import Platform
+from xknx.telegram.address import GroupAddress
 
 from .lxp_parser import LXPActuator, LXPDevice, LXPProject, LXPSensor
 
@@ -86,6 +87,15 @@ class EntityMapper:
         """Map an actuator to entities."""
         # Collect datapoints by role
         datapoints = {dp.role: dp.address for dp in actuator.datapoints}
+        
+        # Debug: Log extracted datapoints
+        if datapoints:
+            _LOGGER.debug(
+                "📋 Actuator '%s' datapoints: %s",
+                actuator.name,
+                {role: f"{addr} ({addr >> 11}/{(addr >> 8) & 0x7}/{addr & 0xFF})" 
+                 for role, addr in datapoints.items()}
+            )
 
         # Determine platform based on primary roles
         platform = self._determine_platform(datapoints)
@@ -208,3 +218,39 @@ class EntityMapper:
             if entity.unique_id == unique_id:
                 return entity
         return None
+
+    def get_group_address_label_map(self) -> dict[str, list[str]]:
+        """Build a map of KNX group address string → list of labels 'Name (ID)'.
+
+        This is used to enrich KNX logs with human-friendly names.
+        """
+        ga_labels: dict[str, list[str]] = {}
+        for entity in self.entities:
+            label = f"{entity.name} ({entity.unique_id})"
+            for role, addr in entity.datapoints.items():
+                try:
+                    ga_str = str(GroupAddress(addr))
+                except Exception:
+                    # Fallback: derive GA via bit masks (main/line/group)
+                    ga_str = f"{addr >> 11}/{(addr >> 8) & 0x7}/{addr & 0xFF}"
+                if ga_str not in ga_labels:
+                    ga_labels[ga_str] = []
+                if label not in ga_labels[ga_str]:
+                    ga_labels[ga_str].append(label)
+        return ga_labels
+
+    def get_individual_address_label_map(self) -> dict[str, list[str]]:
+        """Build a map of KNX individual address (IA) → labels 'DeviceName (DeviceID)'."""
+        ia_labels: dict[str, list[str]] = {}
+        for entity in self.entities:
+            # Device-level label
+            dev_label = f"{entity.device_name} ({entity.device_id})"
+            ia = entity.attributes.get("knx_address")
+            if not ia:
+                continue
+            ia_str = str(ia)
+            if ia_str not in ia_labels:
+                ia_labels[ia_str] = []
+            if dev_label not in ia_labels[ia_str]:
+                ia_labels[ia_str].append(dev_label)
+        return ia_labels

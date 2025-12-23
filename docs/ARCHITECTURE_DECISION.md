@@ -1,8 +1,27 @@
 # Architekturentscheidung: IP1 vs. LXP-Parser Ansatz
 
-**Datum:** 21. Dezember 2025  
-**Branch:** `feature/ip1-native-approach`  
-**Entscheidung:** Bewertung zweier konkurrierender Ansätze
+**Datum:** 21.-23. Dezember 2025  
+**Branch:** `main` (merged)  
+**Finale Entscheidung:** Native Integration mit KNX Tunneling + REST API Authentication
+
+## Updates
+
+### 23. Dezember 2025 - Beta 7.7 Repository Cleanup
+**BAOS REST API Datapoint Mapping entfernt:**
+- Beta 7.3-7.6 Versuch: BAOS Datapoints → GroupAddresses mappen
+- **Erkenntnisse:** BAOS Datapoints sind NICHT GroupAddresses!
+  - Datapoints: Wetterstation, Jalousien, Szenen (nicht Lights)
+  - Namen: "Windstärke", "Außentemperatur" (nicht "1/1/0")
+- **Lösung:** GroupValueRead ist korrekt (BAOS-Cache antwortet schnell)
+- Siehe: [BAOS_REST_API_LIMITATIONS.md](BAOS_REST_API_LIMITATIONS.md)
+
+**Code bereinigt:**
+- ❌ `_async_load_datapoint_mapping()` entfernt
+- ❌ `async_read_via_rest()` entfernt
+- ✅ REST API nur für Tunneling-Authentication
+- ✅ GroupValueRead für Initial States (30ms pro Light)
+
+---
 
 ## Kontext
 

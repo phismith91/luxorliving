@@ -55,6 +55,8 @@ class LuxorKNXGateway:
         self._connected = False
         self._tunneling_enabled = False
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
+        self._ga_label_map: dict[str, list[str]] = {}
+        self._ia_label_map: dict[str, list[str]] = {}
         
         # Map connection type string to XKNX enum
         self._connection_type = (
@@ -150,6 +152,7 @@ class LuxorKNXGateway:
                 self.port,
                 self._connection_type.name,
             )
+            
             return True
 
         except Exception as err:
@@ -297,7 +300,11 @@ class LuxorKNXGateway:
                 self._initial_read_pending.add(group_address)
             
             await self._xknx.telegrams.put(telegram)
-            _LOGGER.debug("📖 Sent read request to %s%s", group_address, " (initial)" if is_initial else "")
+            _LOGGER.info(
+                "📤 Sent GroupValueRead to %s%s",
+                group_address,
+                " (INITIAL READ)" if is_initial else ""
+            )
             return True
 
         except Exception as err:
@@ -308,31 +315,59 @@ class LuxorKNXGateway:
 
     def register_listener(
         self,
-        group_address: str,
+        group_address: str | int,
         callback: Callable[[str, Any], None],
     ) -> None:
         """Register a callback for incoming telegrams to a specific group address.
         
         Args:
-            group_address: KNX group address to listen to
+            group_address: KNX group address to listen to (int or "x/y/z")
             callback: Callback function that receives (group_address, value)
         """
-        if group_address not in self._listeners:
-            self._listeners[group_address] = []
+        # Normalize key to consistent string form "x/y/z"
+        try:
+            normalized = str(GroupAddress(group_address))
+        except Exception:
+            normalized = str(group_address)
+
+        if normalized not in self._listeners:
+            self._listeners[normalized] = []
         
-        self._listeners[group_address].append(callback)
-        _LOGGER.debug("Registered listener for KNX address %s", group_address)
+        self._listeners[normalized].append(callback)
+        _LOGGER.debug(
+            "Registered listener for KNX address %s",
+            normalized,
+        )
+
+    def set_group_address_labels(self, label_map: dict[str, list[str]]) -> None:
+        """Provide a GA→labels map to enrich KNX logs with names.
+
+        Args:
+            label_map: Mapping of 'x/y/z' → ['Name (ID)', ...]
+        """
+        self._ga_label_map = label_map or {}
+        _LOGGER.debug("Loaded %d GA labels for log enrichment", len(self._ga_label_map))
+
+    def set_individual_address_labels(self, label_map: dict[str, list[str]]) -> None:
+        """Provide an IA→labels map to enrich KNX logs with source device names."""
+        self._ia_label_map = label_map or {}
+        _LOGGER.debug("Loaded %d IA labels for log enrichment", len(self._ia_label_map))
 
     def unregister_listener(
         self,
-        group_address: str,
+        group_address: str | int,
         callback: Callable[[str, Any], None],
     ) -> None:
         """Unregister a callback for a group address."""
-        if group_address in self._listeners:
+        try:
+            normalized = str(GroupAddress(group_address))
+        except Exception:
+            normalized = str(group_address)
+
+        if normalized in self._listeners:
             try:
-                self._listeners[group_address].remove(callback)
-                _LOGGER.debug("Unregistered listener for %s", group_address)
+                self._listeners[normalized].remove(callback)
+                _LOGGER.debug("Unregistered listener for %s", normalized)
             except ValueError:
                 pass
 
@@ -378,30 +413,52 @@ class LuxorKNXGateway:
                 self._initial_read_pending.discard(group_address)
             
             telegram_type = "Response" if isinstance(telegram.payload, GroupValueResponse) else "Write"
-            _LOGGER.debug(
-                "📥 Received KNX %s: %s=%s (type: %s)%s",
+            # Enrich with labels if known
+            labels = self._ga_label_map.get(group_address)
+            labels_str = f" | {', '.join(labels)}" if labels else ""
+            # Source device enrichment via individual address
+            try:
+                source_addr = str(telegram.source_address)
+            except Exception:
+                source_addr = "?"
+            src_labels = self._ia_label_map.get(source_addr)
+            src_str = f" ← from {source_addr} ({', '.join(src_labels)})" if src_labels else f" ← from {source_addr}"
+            _LOGGER.info(
+                "📥 Received KNX %s: %s=%s (DPT: %s)%s%s%s",
                 telegram_type,
                 group_address,
                 value,
                 type(payload_value).__name__,
-                " ✅ initial" if was_initial else "",
+                " ✅ INITIAL READ RESPONSE" if was_initial else "",
+                labels_str,
+                src_str,
             )
             
             # Notify listeners
             if group_address in self._listeners:
                 # Create snapshot to avoid modification during iteration
                 callbacks = list(self._listeners[group_address])
+                _LOGGER.debug(
+                    "🔔 Notifying %d listener(s) for address %s",
+                    len(callbacks),
+                    group_address
+                )
                 for callback in callbacks:
                     # Check if still registered (could be removed during iteration)
                     if callback not in self._listeners.get(group_address, []):
                         continue
                     try:
-                        await self.hass.async_add_executor_job(
-                            callback, group_address, value
-                        )
+                        # Ensure callbacks run in HA event loop thread to avoid thread-safety issues.
+                        # In tests or simulation, hass may not provide a loop; fallback to direct call.
+                        loop = getattr(self.hass, "loop", None)
+                        call_in_loop = getattr(loop, "call_soon_threadsafe", None) if loop else None
+                        if callable(call_in_loop):
+                            call_in_loop(callback, group_address, value)
+                        else:
+                            callback(group_address, value)
                     except Exception as err:
                         _LOGGER.error(
-                            "Error in listener callback for %s: %s",
+                            "Error scheduling listener callback for %s: %s",
                             group_address,
                             err,
                         )

@@ -38,6 +38,20 @@ wheels/
 *.log
 logs/
 
+# Test artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Temporary files
+*.backup
+*.backup.*
+*MISSION*
+*DEBUG_REPORT*
+*CRITICAL_SETUP*
+create_beta*.sh
+
 # Data
 data/temp/
 data/cache/

@@ -11,6 +11,8 @@ Responsibilities:
 * Define responsibilities between parser, mapping, config flow, and KNX layers
 * Decide how simulation / dry-run mode is integrated
 * Ensure long-term maintainability
+* Generating Releases and Pre-Releases with Github Token
+* Ensure that all agents are informed about the Context.MD.The context.md describes the "Production Environment Architecture". No testing on local anymore!
 
 Allowed:
 
@@ -27,3 +29,5 @@ Not Allowed:
 
 Authority:
 If other agents provide conflicting advice, this agent has final decision authority.
+
+
