@@ -32,14 +32,14 @@
 
 ## ✅ Was funktioniert
 
-| Feature | Status | Performance |
-|---------|--------|-------------|
-| **Light Control** | ✅ Production | On/Off + Dimming |
-| **Switch Control** | ✅ Production | On/Off |
-| **Binary Sensors** | ✅ Production | Status Updates |
-| **Initial States** | ✅ Optimized | ~30ms/Light (GroupValueRead) |
-| **Live Updates** | ✅ Working | <1s via KNX Tunneling |
-| **Tests** | ✅ 58/58 passing | 100% success rate |
+| Feature            | Status          | Performance                  |
+| ------------------ | --------------- | ---------------------------- |
+| **Light Control**  | ✅ Production    | On/Off + Dimming             |
+| **Switch Control** | ✅ Production    | On/Off                       |
+| **Binary Sensors** | ✅ Production    | Status Updates               |
+| **Initial States** | ✅ Optimized     | ~30ms/Light (GroupValueRead) |
+| **Live Updates**   | ✅ Working       | <1s via KNX Tunneling        |
+| **Tests**          | ✅ 58/58 passing | 100% success rate            |
 
 ---
 
@@ -179,13 +179,13 @@ pytest tests/ -v
 
 ## 📊 Repository Statistiken
 
-| Metrik | Vorher (Beta 7.6) | Nachher (Beta 7.7) | Δ |
-|--------|-------------------|--------------------|----|
-| **Dateien** | 45 | 39 | -6 |
-| **Code-Zeilen** | ~12,000 | ~9,500 | -2,555 |
-| **Dokumentation** | Duplikate | Konsolidiert | ✅ |
-| **Tests** | 58/58 | 58/58 | ✅ |
-| **Debug-Files** | 6 | 0 | ✅ |
+| Metrik            | Vorher (Beta 7.6) | Nachher (Beta 7.7) | Δ      |
+| ----------------- | ----------------- | ------------------ | ------ |
+| **Dateien**       | 45                | 39                 | -6     |
+| **Code-Zeilen**   | ~12,000           | ~9,500             | -2,555 |
+| **Dokumentation** | Duplikate         | Konsolidiert       | ✅      |
+| **Tests**         | 58/58             | 58/58              | ✅      |
+| **Debug-Files**   | 6                 | 0                  | ✅      |
 
 ---
 

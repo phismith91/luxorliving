@@ -33,15 +33,15 @@ Die BAOS 777 REST API **kann keine GroupAddress-Mappings** für Licht- und Schal
 
 **Tatsächlicher Inhalt der 196 BAOS Datapoints:**
 
-| Datapoint IDs | Typ | Zweck |
-|--------------|-----|-------|
-| 1-13 | Wetterstation | Windstärke, Temperatur, Helligkeit, Alarme |
-| 14-16 | Zentral | Zentral ein/aus, Panik, Auf/Ab |
-| 17-28 | Jalousien | Fassade 1-4 Höhe/Lamelle/Sperre |
-| 29-31 | Automatik | Morgens/Abends, Urlaub |
-| 32-39 | Schwellwerte | Konfigurationswerte |
-| 40-41 | Status | Wettersensor, Shelly |
-| 42-50 | Szenen | Unbenutzte Szenen 1-9 |
+| Datapoint IDs | Typ           | Zweck                                      |
+| ------------- | ------------- | ------------------------------------------ |
+| 1-13          | Wetterstation | Windstärke, Temperatur, Helligkeit, Alarme |
+| 14-16         | Zentral       | Zentral ein/aus, Panik, Auf/Ab             |
+| 17-28         | Jalousien     | Fassade 1-4 Höhe/Lamelle/Sperre            |
+| 29-31         | Automatik     | Morgens/Abends, Urlaub                     |
+| 32-39         | Schwellwerte  | Konfigurationswerte                        |
+| 40-41         | Status        | Wettersensor, Shelly                       |
+| 42-50         | Szenen        | Unbenutzte Szenen 1-9                      |
 
 **Keine einzige GroupAddress für Lights (1/1/0, 1/1/1, etc.)!**
 

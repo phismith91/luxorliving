@@ -8,15 +8,15 @@
 
 ## 📊 Cleanup-Statistiken
 
-| Metrik | Wert |
-|--------|------|
-| **Gelöschte Dateien** | 10 |
-| **Neue Dateien** | 4 |
-| **Modifizierte Dateien** | 5 |
-| **Gelöschte Zeilen** | -2981 |
-| **Hinzugefügte Zeilen** | +426 |
-| **Netto-Reduktion** | -2555 Zeilen |
-| **Tests** | ✅ 58/58 passing |
+| Metrik                   | Wert            |
+| ------------------------ | --------------- |
+| **Gelöschte Dateien**    | 10              |
+| **Neue Dateien**         | 4               |
+| **Modifizierte Dateien** | 5               |
+| **Gelöschte Zeilen**     | -2981           |
+| **Hinzugefügte Zeilen**  | +426            |
+| **Netto-Reduktion**      | -2555 Zeilen    |
+| **Tests**                | ✅ 58/58 passing |
 
 ---
 
