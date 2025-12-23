@@ -1,4 +1,5 @@
 """Constants for the LUXORliving integration."""
+
 from __future__ import annotations
 
 DOMAIN = "luxor_living"

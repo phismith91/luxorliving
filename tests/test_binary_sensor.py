@@ -1,12 +1,14 @@
 """Tests for LUXORliving binary sensor platform."""
-import pytest
+
 from unittest.mock import Mock
+
+import pytest
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 
 from custom_components.luxor_living.binary_sensor import (
-    async_setup_entry,
     LuxorLivingBinarySensor,
+    async_setup_entry,
 )
 from custom_components.luxor_living.coordinator import LuxorLivingCoordinator
 
@@ -67,7 +69,7 @@ class TestLuxorLivingBinarySensor:
     def test_init_motion(self, mock_coordinator, mock_config_entry, mock_motion_entity):
         """Test motion sensor initialization."""
         sensor = LuxorLivingBinarySensor(mock_coordinator, mock_config_entry, mock_motion_entity)
-        
+
         assert sensor.coordinator == mock_coordinator
         assert sensor.is_on is False
         assert sensor.device_class == BinarySensorDeviceClass.MOTION
@@ -75,7 +77,7 @@ class TestLuxorLivingBinarySensor:
     def test_init_window(self, mock_coordinator, mock_config_entry, mock_window_entity):
         """Test window sensor initialization."""
         sensor = LuxorLivingBinarySensor(mock_coordinator, mock_config_entry, mock_window_entity)
-        
+
         assert sensor.coordinator == mock_coordinator
         assert sensor.is_on is False
         assert sensor.device_class == BinarySensorDeviceClass.OPENING
@@ -90,7 +92,7 @@ class TestLuxorLivingBinarySensor:
         entity.entity_type = "motion"
         entity.datapoints = {"OnOff": "1/2/3"}
         entity.attributes = {}
-        
+
         sensor = LuxorLivingBinarySensor(mock_coordinator, mock_config_entry, entity)
         assert sensor.device_class == BinarySensorDeviceClass.MOTION
 
@@ -104,13 +106,13 @@ class TestLuxorLivingBinarySensor:
         entity.entity_type = "binary_input"
         entity.datapoints = {"OnOff": "1/2/3"}
         entity.attributes = {}
-        
+
         sensor = LuxorLivingBinarySensor(mock_coordinator, mock_config_entry, entity)
         assert sensor.device_class == BinarySensorDeviceClass.OPENING
 
     def test_extra_state_attributes(self, mock_coordinator, mock_config_entry, mock_motion_entity):
         """Test extra state attributes."""
         sensor = LuxorLivingBinarySensor(mock_coordinator, mock_config_entry, mock_motion_entity)
-        
+
         attrs = sensor.extra_state_attributes
         assert "knx_address" in attrs or len(attrs) >= 0  # Optional attributes

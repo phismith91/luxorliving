@@ -1,23 +1,24 @@
 """Base entity for LUXORliving integration."""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.const import CONF_HOST
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_HOST
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import Entity
 
-from .coordinator import LuxorLivingCoordinator
 from .const import DOMAIN
+from .coordinator import LuxorLivingCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class LuxorLivingEntity(Entity):
     """Base entity for LUXORliving integration.
-    
+
     Provides common functionality for all LUXORliving entities:
     - Device registry integration
     - Coordinator listener management
@@ -33,7 +34,7 @@ class LuxorLivingEntity(Entity):
         mapped_entity: dict[str, Any],
     ) -> None:
         """Initialize the entity.
-        
+
         Args:
             coordinator: Data coordinator instance
             config_entry: Config entry for this integration
@@ -52,10 +53,10 @@ class LuxorLivingEntity(Entity):
 
     def _create_unique_id(self, mapped_entity: dict[str, Any]) -> str:
         """Create unique ID for this entity.
-        
+
         Args:
             mapped_entity: Entity mapping dictionary
-            
+
         Returns:
             Unique ID combining device identifier and entity name
         """
@@ -63,18 +64,18 @@ class LuxorLivingEntity(Entity):
         room = mapped_entity.get("room", "unknown")
         function = mapped_entity.get("function", "unknown")
         name = mapped_entity.get("name", "unknown")
-        
+
         return f"{DOMAIN}_{device_id}_{room}_{function}_{name}".replace(" ", "_").lower()
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for the gateway.
-        
+
         Returns:
             DeviceInfo for BAOS 777 gateway
         """
         host = self._config_entry.data.get(CONF_HOST, "unknown")
-        
+
         return DeviceInfo(
             identifiers={(DOMAIN, self._config_entry.entry_id)},
             name="Luxor Living Gateway",
@@ -97,16 +98,14 @@ class LuxorLivingEntity(Entity):
 
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to Home Assistant.
-        
+
         Set up coordinator listener for data updates.
         """
         await super().async_added_to_hass()
-        
+
         # Subscribe to coordinator updates
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self._handle_coordinator_update)
-        )
-        
+        self.async_on_remove(self.coordinator.async_add_listener(self._handle_coordinator_update))
+
         # If coordinator hasn't fetched yet, do it now
         if self.coordinator.last_update_success is False:
             await self.coordinator.async_request_refresh()
@@ -117,7 +116,7 @@ class LuxorLivingEntity(Entity):
 
     async def async_update(self) -> None:
         """Update the entity state.
-        
+
         Called by Home Assistant when needed. We use coordinator updates instead,
         but this ensures compatibility with manual refresh requests.
         """

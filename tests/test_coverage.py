@@ -1,6 +1,9 @@
 """Additional integration tests to improve code coverage."""
-import pytest
+
 from unittest.mock import Mock, patch
+
+import pytest
+
 from custom_components.luxor_living.const import DOMAIN
 
 
@@ -10,11 +13,13 @@ class TestLXPParserBasic:
     def test_lxp_parser_import(self):
         """Test LXPParser can be imported."""
         from custom_components.luxor_living.lxp_parser import LXPParser
+
         assert LXPParser is not None
 
     def test_entity_mapper_import(self):
         """Test EntityMapper can be imported."""
         from custom_components.luxor_living.entity_mapper import EntityMapper
+
         assert EntityMapper is not None
 
     def test_domain_constant(self):
@@ -25,6 +30,7 @@ class TestLXPParserBasic:
         """Test RESTClient can be imported."""
         try:
             from custom_components.luxor_living.rest_client import RESTClient
+
             assert RESTClient is not None
         except Exception:
             # May require additional dependencies
@@ -37,11 +43,13 @@ class TestCoordinatorBasic:
     def test_coordinator_import(self):
         """Test coordinator can be imported."""
         from custom_components.luxor_living.coordinator import LuxorLivingCoordinator
+
         assert LuxorLivingCoordinator is not None
 
     def test_entity_import(self):
         """Test entity can be imported."""
         from custom_components.luxor_living.entity import LuxorLivingEntity
+
         assert LuxorLivingEntity is not None
 
 
@@ -50,24 +58,27 @@ class TestPlatformImports:
 
     def test_light_platform_import(self):
         """Test light platform imports."""
-        from custom_components.luxor_living.light import LuxorLivingLight
-        from custom_components.luxor_living.light import LuxorLivingDimmableLight
+        from custom_components.luxor_living.light import LuxorLivingDimmableLight, LuxorLivingLight
+
         assert LuxorLivingLight is not None
         assert LuxorLivingDimmableLight is not None
 
     def test_switch_platform_import(self):
         """Test switch platform imports."""
         from custom_components.luxor_living.switch import LuxorLivingSwitch
+
         assert LuxorLivingSwitch is not None
 
     def test_binary_sensor_platform_import(self):
         """Test binary sensor platform imports."""
         from custom_components.luxor_living.binary_sensor import LuxorLivingBinarySensor
+
         assert LuxorLivingBinarySensor is not None
 
     def test_config_flow_import(self):
         """Test config flow imports."""
         from custom_components.luxor_living.config_flow import LuxorLivingConfigFlow
+
         assert LuxorLivingConfigFlow is not None
 
 
@@ -77,6 +88,7 @@ class TestKNXGatewayStructure:
     def test_knx_gateway_import(self):
         """Test KNX gateway can be imported."""
         from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
+
         assert LuxorKNXGateway is not None
 
 
@@ -86,9 +98,11 @@ class TestConstantsDefinition:
     def test_domain_constant_defined(self):
         """Test DOMAIN constant."""
         from custom_components.luxor_living.const import DOMAIN
+
         assert DOMAIN == "luxor_living"
 
     def test_data_coordinator_constant(self):
         """Test DATA_COORDINATOR constant."""
         from custom_components.luxor_living.const import DATA_COORDINATOR
+
         assert DATA_COORDINATOR is not None

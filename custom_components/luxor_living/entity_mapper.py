@@ -1,4 +1,5 @@
 """Entity mapper for LUXORliving integration."""
+
 from __future__ import annotations
 
 import logging
@@ -87,22 +88,22 @@ class EntityMapper:
         """Map an actuator to entities."""
         # Collect datapoints by role
         datapoints = {dp.role: dp.address for dp in actuator.datapoints}
-        
+
         # Debug: Log extracted datapoints
         if datapoints:
             _LOGGER.debug(
                 "📋 Actuator '%s' datapoints: %s",
                 actuator.name,
-                {role: f"{addr} ({addr >> 11}/{(addr >> 8) & 0x7}/{addr & 0xFF})" 
-                 for role, addr in datapoints.items()}
+                {
+                    role: f"{addr} ({addr >> 11}/{(addr >> 8) & 0x7}/{addr & 0xFF})"
+                    for role, addr in datapoints.items()
+                },
             )
 
         # Determine platform based on primary roles
         platform = self._determine_platform(datapoints)
         if platform is None:
-            _LOGGER.debug(
-                "Skipping actuator %s - no mappable roles", actuator.name
-            )
+            _LOGGER.debug("Skipping actuator %s - no mappable roles", actuator.name)
             return
 
         # Determine entity type
@@ -140,9 +141,7 @@ class EntityMapper:
         )
 
         self.entities.append(entity)
-        _LOGGER.debug(
-            "Mapped %s actuator '%s' to %s", entity_type, name, platform
-        )
+        _LOGGER.debug("Mapped %s actuator '%s' to %s", entity_type, name, platform)
 
     def _map_sensor(self, device: LXPDevice, sensor: LXPSensor) -> None:
         """Map a sensor to entities."""
@@ -206,9 +205,7 @@ class EntityMapper:
 
         return None
 
-    def get_entities_by_platform(
-        self, platform: Platform
-    ) -> list[MappedEntity]:
+    def get_entities_by_platform(self, platform: Platform) -> list[MappedEntity]:
         """Get all entities for a specific platform."""
         return [e for e in self.entities if e.platform == platform]
 

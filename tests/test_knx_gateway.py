@@ -1,4 +1,5 @@
 """Tests for KNX Gateway."""
+
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -31,7 +32,7 @@ class TestLuxorKNXGateway:
             connection_type="tunneling",
             simulation_mode=True,
         )
-        
+
         assert gateway.simulation_mode is True
         assert gateway.host == "192.168.1.3"
         assert gateway.port == 3671
@@ -49,9 +50,10 @@ class TestLuxorKNXGateway:
             connection_type="tunneling",
             simulation_mode=False,
         )
-        
+
         assert gateway.simulation_mode is False
         from xknx.io import ConnectionType
+
         assert gateway._connection_type == ConnectionType.TUNNELING
 
     def test_init_routing_mode(self, mock_hass):
@@ -65,8 +67,9 @@ class TestLuxorKNXGateway:
             connection_type="routing",
             simulation_mode=False,
         )
-        
+
         from xknx.io import ConnectionType
+
         assert gateway._connection_type == ConnectionType.ROUTING
 
     @pytest.mark.asyncio
@@ -80,9 +83,9 @@ class TestLuxorKNXGateway:
             password="admin",
             simulation_mode=True,
         )
-        
+
         result = await gateway.async_setup()
-        
+
         assert result is True
         assert gateway.connected is True
         assert gateway._xknx is None
@@ -98,13 +101,13 @@ class TestLuxorKNXGateway:
         mock_rest_client.enable_tunneling = AsyncMock(return_value=True)
         mock_rest_client.logout = AsyncMock()
         mock_rest_class.return_value = mock_rest_client
-        
+
         # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
         mock_xknx_class.return_value = mock_xknx
-        
+
         gateway = LuxorKNXGateway(
             hass=mock_hass,
             host="192.168.1.3",
@@ -114,18 +117,18 @@ class TestLuxorKNXGateway:
             connection_type="tunneling",
             simulation_mode=False,
         )
-        
+
         result = await gateway.async_setup()
-        
+
         # Verify REST API login was called
         mock_rest_client.login.assert_called_once_with("admin", "admin")
-        
+
         # Verify tunneling was enabled
         mock_rest_client.enable_tunneling.assert_called_once()
-        
+
         # Verify KNX started
         mock_xknx.start.assert_called_once()
-        
+
         assert result is True
         assert gateway.connected is True
         assert gateway._tunneling_enabled is True
@@ -145,12 +148,12 @@ class TestLuxorKNXGateway:
         mock_rest.__aenter__ = AsyncMock(return_value=mock_rest)
         mock_rest.__aexit__ = AsyncMock()
         mock_rest_client_class.return_value = mock_rest
-        
+
         # Mock XKNX failure
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock(side_effect=Exception("Connection failed"))
         mock_xknx_class.return_value = mock_xknx
-        
+
         gateway = LuxorKNXGateway(
             hass=mock_hass,
             host="192.168.1.3",
@@ -159,9 +162,9 @@ class TestLuxorKNXGateway:
             password="admin",
             simulation_mode=False,
         )
-        
+
         result = await gateway.async_setup()
-        
+
         assert result is False
         assert gateway.connected is False
 
@@ -177,9 +180,9 @@ class TestLuxorKNXGateway:
             simulation_mode=True,
         )
         await gateway.async_setup()
-        
+
         result = await gateway.async_send_telegram("1/2/3", True, "binary")
-        
+
         assert result is True
 
     @pytest.mark.asyncio
@@ -193,15 +196,17 @@ class TestLuxorKNXGateway:
             password="admin",
             simulation_mode=False,
         )
-        
+
         result = await gateway.async_send_telegram("1/2/3", True, "binary")
-        
+
         assert result is False
 
     @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
     @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
-    async def test_async_send_telegram_binary(self, mock_rest_client_class, mock_xknx_class, mock_hass):
+    async def test_async_send_telegram_binary(
+        self, mock_rest_client_class, mock_xknx_class, mock_hass
+    ):
         """Test sending binary telegram."""
         # Mock REST client
         mock_rest = AsyncMock()
@@ -211,7 +216,7 @@ class TestLuxorKNXGateway:
         mock_rest.__aenter__ = AsyncMock(return_value=mock_rest)
         mock_rest.__aexit__ = AsyncMock()
         mock_rest_client_class.return_value = mock_rest
-        
+
         # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
@@ -219,7 +224,7 @@ class TestLuxorKNXGateway:
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
         mock_xknx.telegrams.put = AsyncMock()
         mock_xknx_class.return_value = mock_xknx
-        
+
         gateway = LuxorKNXGateway(
             hass=mock_hass,
             host="192.168.1.3",
@@ -229,16 +234,18 @@ class TestLuxorKNXGateway:
             simulation_mode=False,
         )
         await gateway.async_setup()
-        
+
         result = await gateway.async_send_telegram("1/2/3", True, "binary")
-        
+
         assert result is True
         mock_xknx.telegrams.put.assert_called_once()
 
     @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
     @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
-    async def test_async_send_telegram_percent(self, mock_rest_client_class, mock_xknx_class, mock_hass):
+    async def test_async_send_telegram_percent(
+        self, mock_rest_client_class, mock_xknx_class, mock_hass
+    ):
         """Test sending percent telegram."""
         # Mock REST client
         mock_rest = AsyncMock()
@@ -248,7 +255,7 @@ class TestLuxorKNXGateway:
         mock_rest.__aenter__ = AsyncMock(return_value=mock_rest)
         mock_rest.__aexit__ = AsyncMock()
         mock_rest_client_class.return_value = mock_rest
-        
+
         # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
@@ -256,7 +263,7 @@ class TestLuxorKNXGateway:
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
         mock_xknx.telegrams.put = AsyncMock()
         mock_xknx_class.return_value = mock_xknx
-        
+
         gateway = LuxorKNXGateway(
             hass=mock_hass,
             host="192.168.1.3",
@@ -266,9 +273,9 @@ class TestLuxorKNXGateway:
             simulation_mode=False,
         )
         await gateway.async_setup()
-        
+
         result = await gateway.async_send_telegram("1/2/3", 50, "percent")
-        
+
         assert result is True
         mock_xknx.telegrams.put.assert_called_once()
 
@@ -282,10 +289,10 @@ class TestLuxorKNXGateway:
             password="admin",
             simulation_mode=True,
         )
-        
+
         callback = MagicMock()
         gateway.register_listener("1/2/3", callback)
-        
+
         assert "1/2/3" in gateway._listeners
         assert callback in gateway._listeners["1/2/3"]
 
@@ -299,11 +306,11 @@ class TestLuxorKNXGateway:
             password="admin",
             simulation_mode=True,
         )
-        
+
         callback = MagicMock()
         gateway.register_listener("1/2/3", callback)
         gateway.unregister_listener("1/2/3", callback)
-        
+
         assert callback not in gateway._listeners.get("1/2/3", [])
 
     @pytest.mark.asyncio
@@ -317,23 +324,23 @@ class TestLuxorKNXGateway:
             password="admin",
             simulation_mode=True,
         )
-        
+
         callback = MagicMock()
         gateway.register_listener("1/2/3", callback)
-        
+
         # Mock telegram
-        from xknx.telegram import Telegram
-        from xknx.telegram.apci import GroupValueWrite
-        from xknx.telegram.address import GroupAddress
         from xknx.dpt import DPTBinary
-        
+        from xknx.telegram import Telegram
+        from xknx.telegram.address import GroupAddress
+        from xknx.telegram.apci import GroupValueWrite
+
         mock_telegram = MagicMock(spec=Telegram)
         mock_telegram.destination_address = GroupAddress("1/2/3")
         mock_telegram.payload = MagicMock(spec=GroupValueWrite)
         mock_telegram.payload.value = DPTBinary(True)
-        
+
         await gateway._telegram_received_callback(mock_telegram)
-        
+
         callback.assert_called_once_with("1/2/3", True)
 
     @pytest.mark.asyncio
@@ -347,24 +354,24 @@ class TestLuxorKNXGateway:
             password="admin",
             simulation_mode=True,
         )
-        
+
         callback = MagicMock()
         gateway.register_listener("1/2/4", callback)
-        
+
         # Mock telegram with DPT 5.001 (percent)
-        from xknx.telegram import Telegram
-        from xknx.telegram.apci import GroupValueWrite
-        from xknx.telegram.address import GroupAddress
         from xknx.dpt import DPTArray
-        
+        from xknx.telegram import Telegram
+        from xknx.telegram.address import GroupAddress
+        from xknx.telegram.apci import GroupValueWrite
+
         mock_telegram = MagicMock(spec=Telegram)
         mock_telegram.destination_address = GroupAddress("1/2/4")
         mock_telegram.payload = MagicMock(spec=GroupValueWrite)
         mock_telegram.payload.value = MagicMock(spec=DPTArray)
         mock_telegram.payload.value.value = [127]  # 50% (127/255)
-        
+
         await gateway._telegram_received_callback(mock_telegram)
-        
+
         # Should decode to ~50% (127 * 100 / 255 = 49.8...)
         callback.assert_called_once()
         args = callback.call_args[0]
@@ -385,7 +392,7 @@ class TestLuxorKNXGateway:
         mock_rest.__aenter__ = AsyncMock(return_value=mock_rest)
         mock_rest.__aexit__ = AsyncMock()
         mock_rest_client_class.return_value = mock_rest
-        
+
         # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
@@ -393,7 +400,7 @@ class TestLuxorKNXGateway:
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
         mock_xknx.stop = AsyncMock()
         mock_xknx_class.return_value = mock_xknx
-        
+
         gateway = LuxorKNXGateway(
             hass=mock_hass,
             host="192.168.1.3",
@@ -403,9 +410,9 @@ class TestLuxorKNXGateway:
             simulation_mode=False,
         )
         await gateway.async_setup()
-        
+
         await gateway.async_disconnect()
-        
+
         assert gateway.connected is False
         mock_xknx.stop.assert_called_once()
         # We now call __aexit__ instead of logout directly
@@ -421,10 +428,10 @@ class TestLuxorKNXGateway:
             password="admin",
             simulation_mode=True,
         )
-        
+
         assert gateway.connected is False
         assert gateway.xknx is None
-        
+
         # After setup
         asyncio.run(gateway.async_setup())
         assert gateway.connected is True
