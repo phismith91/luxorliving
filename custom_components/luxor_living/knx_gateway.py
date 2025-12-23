@@ -313,31 +313,45 @@ class LuxorKNXGateway:
 
     def register_listener(
         self,
-        group_address: str,
+        group_address: str | int,
         callback: Callable[[str, Any], None],
     ) -> None:
         """Register a callback for incoming telegrams to a specific group address.
         
         Args:
-            group_address: KNX group address to listen to
+            group_address: KNX group address to listen to (int or "x/y/z")
             callback: Callback function that receives (group_address, value)
         """
-        if group_address not in self._listeners:
-            self._listeners[group_address] = []
+        # Normalize key to consistent string form "x/y/z"
+        try:
+            normalized = str(GroupAddress(group_address))
+        except Exception:
+            normalized = str(group_address)
+
+        if normalized not in self._listeners:
+            self._listeners[normalized] = []
         
-        self._listeners[group_address].append(callback)
-        _LOGGER.debug("Registered listener for KNX address %s", group_address)
+        self._listeners[normalized].append(callback)
+        _LOGGER.debug(
+            "Registered listener for KNX address %s",
+            normalized,
+        )
 
     def unregister_listener(
         self,
-        group_address: str,
+        group_address: str | int,
         callback: Callable[[str, Any], None],
     ) -> None:
         """Unregister a callback for a group address."""
-        if group_address in self._listeners:
+        try:
+            normalized = str(GroupAddress(group_address))
+        except Exception:
+            normalized = str(group_address)
+
+        if normalized in self._listeners:
             try:
-                self._listeners[group_address].remove(callback)
-                _LOGGER.debug("Unregistered listener for %s", group_address)
+                self._listeners[normalized].remove(callback)
+                _LOGGER.debug("Unregistered listener for %s", normalized)
             except ValueError:
                 pass
 
@@ -406,12 +420,11 @@ class LuxorKNXGateway:
                     if callback not in self._listeners.get(group_address, []):
                         continue
                     try:
-                        await self.hass.async_add_executor_job(
-                            callback, group_address, value
-                        )
+                        # Ensure callbacks run in HA event loop thread to avoid thread-safety issues
+                        self.hass.loop.call_soon_threadsafe(callback, group_address, value)
                     except Exception as err:
                         _LOGGER.error(
-                            "Error in listener callback for %s: %s",
+                            "Error scheduling listener callback for %s: %s",
                             group_address,
                             err,
                         )

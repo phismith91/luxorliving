@@ -196,11 +196,12 @@ class LuxorLivingLight(LightEntity):
 
     async def async_will_remove_from_hass(self) -> None:
         """Clean up listener when entity is removed."""
-        if hasattr(self, '_listen_address'):
-            self._knx_gateway.unregister_listener(
-                self._listen_address,
-                self._handle_knx_update
-            )
+        if hasattr(self, '_listen_addresses') and self._listen_addresses:
+            for addr in list(self._listen_addresses):
+                self._knx_gateway.unregister_listener(
+                    addr,
+                    self._handle_knx_update
+                )
         await super().async_will_remove_from_hass()
 
 
@@ -237,7 +238,7 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
 
     def _handle_brightness_update(self, group_address: str, value: Any) -> None:
         """Handle KNX brightness update."""
-        if group_address == self._address_dim:
+        if self._address_dim is not None and group_address == str(GroupAddress(self._address_dim)):
             # Convert percentage (0-100) to brightness (0-255)
             if isinstance(value, (int, float)):
                 self._attr_brightness = int(value * 255 / 100)
