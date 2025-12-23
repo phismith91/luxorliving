@@ -106,8 +106,9 @@ If agents provide conflicting advice, resolve it in this order:
 
 1. agent_architect
 2. agent_luxor_expert
-3. Functional agent (parser / mapping / config flow / testing)
-4. Review agents (HACS / Quality Auditor)
+3. agent_knx_protocol (for KNX protocol specifics)
+4. Functional agent (parser / mapping / config flow / testing / release)
+5. agent_troubleshooting
 
 ---
 
@@ -139,7 +140,22 @@ Use when:
 
 ---
 
-### 📂 LXP Project Import
+### � KNX Protocol & Telegram Handling
+
+**Agent:** `agent_knx_protocol.md`
+
+Use when:
+
+* Analyzing KNX telegrams (GroupValueWrite, GroupValueRead, GroupValueResponse)
+* Decoding DPT (Datapoint Type) payloads (Binary, Percent, Temperature, etc.)
+* Validating GroupAddress formats and conversions
+* Debugging KNX/IP communication issues
+* Working with XKNX library integration
+* Understanding telegram flow and timing
+
+---
+
+### �📂 LXP Project Import
 
 **Agent:** `agent_lxp_import.md`
 
@@ -179,6 +195,21 @@ Use when:
 
 ---
 
+### 🚀 Release Management & Automation
+
+**Agent:** `agent_release_manager.md`
+
+Use when:
+
+* Preparing stable or beta releases
+* Validating pre-release readiness (tests, manifest, changelog)
+* Managing version bumps and tags
+* Creating GitHub releases with artifacts
+* Coordinating post-release tasks
+* Ensuring release consistency and quality
+
+---
+
 ### 🧪 Simulation, Testing & Diagnostics
 
 **Agent:** `agent_testing.md`
@@ -192,44 +223,34 @@ Use when:
 
 ---
 
-### 📦 HACS & Home Assistant Compliance
+### � Troubleshooting & Diagnostics
 
-**Agent:** `agent_hacs.md`
+**Agent:** `agent_troubleshooting.md`
 
 Use when:
 
-* Preparing releases
-* Reviewing `manifest.json` and `hacs.json`
-* Ensuring README meets HACS requirements
-* Checking versioning and metadata
+* Diagnosing runtime issues and errors
+* Analyzing log files and error patterns
+* Providing debugging guidance
+* Investigating integration failures
 
 ---
 
-### ✅ Quality & Community Review
+## Archived Agents
 
-**Agent:** `agent_quality_auditor.md`
+The following agents are archived in `.github/copilot/archive/` and can be reactivated if needed:
 
-Use when:
-
-* Reviewing code readability and maintainability
-* Improving documentation clarity
-* Preparing pull requests for community review
-* Evaluating long-term project health
+* **agent_hacs.md** – HACS compliance checking (HACS requirements are stable)
+* **agent_quality_auditor.md** – Code quality review (IDE tools provide similar functionality)
 
 ---
 
-### ✅ ### ✅ Quality & Community Review
+## Removed Agents
 
-**Agent:** `agent_ssl.md`
+The following agents were deleted as they are no longer needed:
 
-Use when:
-
-* Advising on secure HTTP/HTTPS connections to the IP1 controller
-* Validating certificate handling (self-signed vs CA-signed)
-* Ensuring TLS configuration follows best practices
-* Providing guidance for certificate imports or verification issues
-* Warning about potential security pitfalls in remote connections
-
+* **agent_yaml_generator.md** – Obsolete (integration uses XKNX directly, no YAML generation)
+* **agent_ssl.md** – Resolved (SSL blocking issues permanently fixed via executor pattern)
 
 ---
 
