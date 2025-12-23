@@ -91,7 +91,7 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         # Debug: Log extracted addresses
         _LOGGER.debug(
             "💡 Light '%s' addresses: ON=%s, STATUS=%s",
-            self._attr_name,
+            self.name,
             f"{self._address_on} ({GroupAddress(self._address_on)})" if self._address_on else "None",
             f"{self._address_status} ({GroupAddress(self._address_status)})" if self._address_status else "None",
         )
@@ -122,17 +122,17 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         
         # Wait for KNX connection to be ready (max 5 seconds)
         if not self._knx_gateway._connected:
-            _LOGGER.debug("⏳ Waiting for KNX connection for light '%s'...", self._attr_name)
+            _LOGGER.debug("⏳ Waiting for KNX connection for light '%s'...", self.name)
             for i in range(50):
                 if self._knx_gateway._connected:
-                    _LOGGER.debug("✅ KNX connected after %.1fs for '%s'", i * 0.1, self._attr_name)
+                    _LOGGER.debug("✅ KNX connected after %.1fs for '%s'", i * 0.1, self.name)
                     break
                 await asyncio.sleep(0.1)
             
             if not self._knx_gateway._connected:
                 _LOGGER.error(
                     "KNX not connected after 5s for light '%s', skipping initial read!",
-                    self._attr_name,
+                    self.name,
                 )
                 return
         
@@ -152,7 +152,7 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         if addresses_to_read:
             _LOGGER.info(
                 "💡 Light '%s' requesting initial state from %d address(es): %s",
-                self._attr_name,
+                self.name,
                 len(addresses_to_read),
                 ", ".join([f"{GroupAddress(addr)} ({typ})" for addr, typ in addresses_to_read]),
             )
@@ -161,7 +161,7 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         else:
             _LOGGER.warning(
                 "⚠️ Light '%s' has NO read address! Cannot request initial state.",
-                self._attr_name,
+                self.name,
             )
 
     def _handle_knx_update(self, group_address: str, value: Any) -> None:
@@ -182,7 +182,7 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         if group_address in valid_addresses:
             self._attr_is_on = bool(value)
             self.async_write_ha_state()
-            _LOGGER.debug("Updated %s state: %s (from %s)", self._attr_name, value, group_address)
+            _LOGGER.debug("Updated %s state: %s (from %s)", self.name, value, group_address)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on.
@@ -277,7 +277,7 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         if self._address_dim_status:
             _LOGGER.debug(
                 "Requesting initial brightness for %s from %s",
-                self._attr_name,
+                self.name,
                 self._address_dim_status,
             )
             await self._knx_gateway.async_read_group_address(
@@ -287,7 +287,7 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         if self._address_dim:
             _LOGGER.debug(
                 "Requesting initial brightness for %s from %s",
-                self._attr_name,
+                self.name,
                 self._address_dim,
             )
             await self._knx_gateway.async_read_group_address(
@@ -315,7 +315,7 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
                 self.async_write_ha_state()
                 _LOGGER.debug(
                     "Updated %s brightness: %d%%",
-                    self._attr_name,
+                    self.name,
                     value,
                 )
 
