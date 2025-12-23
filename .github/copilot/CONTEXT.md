@@ -108,7 +108,6 @@ If agents provide conflicting advice, resolve it in this order:
 2. agent_luxor_expert
 3. agent_knx_protocol (for KNX protocol specifics)
 4. Functional agent (parser / mapping / config flow / testing / release)
-5. agent_troubleshooting
 
 ---
 
@@ -220,19 +219,6 @@ Use when:
 * Writing or improving tests
 * Debugging without physical KNX hardware
 * Enhancing logging and diagnostics
-
----
-
-### � Troubleshooting & Diagnostics
-
-**Agent:** `agent_troubleshooting.md`
-
-Use when:
-
-* Diagnosing runtime issues and errors
-* Analyzing log files and error patterns
-* Providing debugging guidance
-* Investigating integration failures
 
 ---
 
