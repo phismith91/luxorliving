@@ -117,33 +117,9 @@ class LuxorLivingLight(LightEntity):
                 _LOGGER.error("❌ KNX not connected after 5s for light '%s', skipping initial read!", self._attr_name)
                 return
         
-        # BETA 6: Try REST API first for accurate initial state
-        # GroupValueRead returns stale BAOS cache values
-        # REST API queries actual BAOS datapoint values
-        rest_value = None
-        read_address = self._address_status or self._address_on
-        
-        if read_address:
-            group_address_str = str(GroupAddress(read_address))
-            rest_value = await self._knx_gateway.async_read_via_rest(group_address_str)
-            
-            if rest_value is not None:
-                _LOGGER.info(
-                    "🌐 Light '%s' initial state from REST API: %s=%s",
-                    self._attr_name,
-                    group_address_str,
-                    rest_value
-                )
-                self._attr_is_on = bool(rest_value)
-                self.async_write_ha_state()
-                return  # Success via REST API, no need for GroupValueRead
-            else:
-                _LOGGER.debug(
-                    "⚠️ REST API unavailable for '%s', falling back to GroupValueRead",
-                    self._attr_name
-                )
-        
-        # Fallback: Request current state from KNX bus via GroupValueRead
+        # BETA 7.7: Use KNX GroupValueRead for initial state
+        # REST API mapping removed (BAOS Datapoints ≠ GroupAddresses)
+        # Request current state from KNX bus via GroupValueRead
         # Read BOTH addresses to work around stale BAOS StatusOnOff values
         # StatusOnOff may be stale if light was ON at BAOS startup or switched manually
         # OnOff reflects actual actuator state more reliably
