@@ -90,15 +90,25 @@ class LuxorLivingLight(LightEntity):
             "model": "LUXORliving",
         }
         
-        # Register listener for status updates
-        # Listen on status address if available, otherwise on control address
-        listen_address = self._address_status or self._address_on
-        if listen_address:
+        # Register listeners for BOTH status AND control addresses
+        # GroupValueResponse can come on either address!
+        # STATUS address: for state updates from other devices
+        # CONTROL address: for GroupValueResponse to our GroupValueRead
+        self._listen_addresses = []
+        
+        if self._address_status:
             self._knx_gateway.register_listener(
-                listen_address,
+                self._address_status,
                 self._handle_knx_update
             )
-            self._listen_address = listen_address  # Store for cleanup
+            self._listen_addresses.append(self._address_status)
+        
+        if self._address_on and self._address_on != self._address_status:
+            self._knx_gateway.register_listener(
+                self._address_on,
+                self._handle_knx_update
+            )
+            self._listen_addresses.append(self._address_on)
 
     async def async_added_to_hass(self) -> None:
         """Entity added to hass - request current state from KNX."""
