@@ -8,15 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0-beta.3] - 2025-12-23
 
 ### Fixed
-- **Entity Unique ID Generation**: Use MappedEntity's unique_id directly
-  - Previous implementation only used device_name and name, causing collisions
-  - Now uses guaranteed-unique unique_id from MappedEntity
-  - Fixes: "Platform luxor_living does not generate unique IDs" errors
+- **Entity Mapper Unique ID Generation**: Use KNX addresses instead of actuator/sensor IDs
+  - Multiple actuators/sensors with same name but different addresses now get unique IDs
+  - Use control address (OnOff, SchaltenOnOff, Dimmen%, UpDown) for actuators
+  - Use first datapoint address for sensors
+  - **Critical Fix**: Resolves "Platform luxor_living does not generate unique IDs" errors
+  - Example: Two "Reserve Deckenlampe" at addresses 2074 and 2075 now generate different IDs
 
 - **Entity Base Class Type Handling**: Fixed MappedEntity attribute access
   - Changed mapped_entity parameter from dict to MappedEntity dataclass
   - Updated name property to use getattr() for attributes
   - Fixed 'MappedEntity' object has no attribute 'get' errors in all platforms
+
+- **Entity Unique ID Usage**: Use MappedEntity's address-based unique_id directly
+  - Platform implementations now use unique_id from MappedEntity
+  - Guarantees unique entity registration in Home Assistant
+  - Prevents "already exists" errors when registering multiple entities
 
 - **Coordinator Architecture Simplified**: Changed from broken polling model to event-driven passive state model
   - Removed invalid XKNX device polling logic (`.devices.items()` and `resolve_state()` calls)
@@ -33,10 +40,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Testing
 - All 74 tests passing with zero regressions
-- Entity unique_id properly derived from MappedEntity
+- Entity unique IDs properly derived from KNX addresses (guaranteed unique)
+- Multiple actuators/sensors with same name now work correctly
 - Entity base class properly handles MappedEntity objects
 - Coordinator architecture corrected to match actual KNX event-driven model
 - All platforms properly handle missing or invalid integration data
+
+### Known Limitations
+- Release notes: Address-based unique_id may differ from previous beta versions; entities will re-register with new IDs in Home Assistant
 
 ---
 
