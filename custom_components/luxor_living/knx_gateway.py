@@ -238,6 +238,9 @@ class LuxorKNXGateway:
                         self._datapoint_mapping[group_addr] = dp_id
                         self._datapoint_urls[dp_id] = dp_ref.get("url", "")
                         mapping_count += 1
+                        _LOGGER.debug(f"✅ Mapped {group_addr} → DP-ID {dp_id}")
+                    else:
+                        _LOGGER.warning(f"❌ Datapoint {dp_id} has no 'name' field: {dp_details}")
                         
                 except Exception as e:
                     _LOGGER.debug(f"Failed to fetch datapoint {dp_ref}: {e}")

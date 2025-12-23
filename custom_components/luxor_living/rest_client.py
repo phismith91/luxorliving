@@ -421,6 +421,7 @@ class BAOSRestClient:
                         return None
                     
                     datapoint = await response.json()
+                    _LOGGER.info(f"📁 Datapoint {datapoint_id} response: {datapoint}")
                     return datapoint
         
         except asyncio.TimeoutError:
