@@ -84,13 +84,13 @@ entities:
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| Integration not loading | Check logs: `tail -f /config/home-assistant.log \| grep luxor_living` |
-| LXP file not found | Use absolute path (e.g., `/config/luxor/project.lxp`) |
-| Gateway unreachable | Verify IP address and port 3671, check firewall |
-| Entities not created | Check LXP file contains group addresses, restart HA |
-| Tunneling connection fails | Try Routing mode or check BAOS authentication |
+| Problem                    | Solution                                                              |
+| -------------------------- | --------------------------------------------------------------------- |
+| Integration not loading    | Check logs: `tail -f /config/home-assistant.log \| grep luxor_living` |
+| LXP file not found         | Use absolute path (e.g., `/config/luxor/project.lxp`)                 |
+| Gateway unreachable        | Verify IP address and port 3671, check firewall                       |
+| Entities not created       | Check LXP file contains group addresses, restart HA                   |
+| Tunneling connection fails | Try Routing mode or check BAOS authentication                         |
 
 **Enable debug logging:**
 ```yaml

@@ -31,3 +31,4 @@ ATTR_DEVICE = "device"
 
 # KNX Gateway
 DATA_KNX_GATEWAY = "knx_gateway"
+DATA_COORDINATOR = "coordinator"
