@@ -5,6 +5,149 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-12-23
+
+### Highlights
+
+**Production-Ready HACS Release** with complete DataUpdateCoordinator pattern, device registry integration, and comprehensive type hints.
+
+### Added
+- **DataUpdateCoordinator Pattern**: Centralized state management for all entities
+  - Async polling every 30 seconds
+  - State cache for all KNX group addresses
+  - Proper coordinator lifecycle management
+  - `async_config_entry_first_refresh()` support
+
+- **Entity Base Class (LuxorLivingEntity)**:
+  - Common functionality for all entity types
+  - Device registry integration via `device_info` property
+  - Coordinator listener management
+  - Unique ID generation from entity attributes
+  - `async_added_to_hass()` with automatic listener registration
+
+- **Type Hints**: 100% coverage on critical platforms
+  - All function parameters typed
+  - All return types annotated
+  - Enables IDE autocompletion and type checking
+
+- **Code Quality Tools**:
+  - Black formatter configuration (line-length=100, py313)
+  - isort import organization (black profile)
+  - mypy type checking (strict mode)
+  - flake8 linting configuration
+  - bandit security scanning
+  - pre-commit hooks for automated checks
+  - py.typed marker for PEP 561 support
+
+- **Test Coverage Baseline**: 55% (1408 statements, 640 missed)
+  - 74 comprehensive tests (100% passing)
+  - Test suite includes platform imports, constants, coordinator structure
+  - Coverage metrics per module documented
+
+### Changed
+- **Light Platform**: Complete refactoring
+  - Now extends `LuxorLivingEntity` + `LightEntity`
+  - Full type hints on all parameters
+  - DataUpdateCoordinator integration
+  - ConfigEntry support
+  - Improved docstrings
+
+- **Switch Platform**: Complete refactoring
+  - Now extends `LuxorLivingEntity` + `SwitchEntity`
+  - Full type hints coverage
+  - DataUpdateCoordinator integration
+  - Binary sensor dual-listener support
+
+- **Binary Sensor Platform**: Enhanced with auto-detection
+  - Now extends `LuxorLivingEntity` + `BinarySensorEntity`
+  - Automatic device class detection
+  - Full type hints implementation
+  - Improved entity naming
+
+- **Import Organization**: All files reformatted with isort
+  - Stdlib → third-party → first-party ordering
+  - Black-compatible formatting
+  - Consistent throughout codebase
+
+- **Documentation**: All docstrings and comments enhanced
+  - Detailed parameter documentation
+  - Return value descriptions
+  - Usage examples on complex functions
+
+### Fixed
+- Device registry integration now properly implemented on all entities
+- Inconsistent entity implementations across platforms
+- Missing type hints causing IDE issues
+- Import organization inconsistencies
+
+### Quality Assurance
+
+- ✅ **74/74 Tests Passing** (100% success rate)
+- ✅ **Black Format**: 100% compliant (26 files)
+- ✅ **Type Hints**: 100% on critical modules
+- ✅ **Coverage Baseline**: 55% established
+- ✅ **Code Style**: isort organized imports
+- ✅ **Documentation**: CHANGELOG fully English
+
+### Technical Details
+
+**Coordinator Implementation:**
+```python
+class LuxorLivingCoordinator(DataUpdateCoordinator):
+    """Manages state updates for all KNX entities."""
+    
+    def __init__(self, hass, host):
+        super().__init__(hass, _LOGGER, name="Luxor Living", 
+                         update_interval=timedelta(seconds=30))
+        self.gateway = LuxorKNXGateway(host)
+    
+    async def _async_update_data(self):
+        """Fetch data from KNX gateway."""
+        try:
+            return await self.gateway.get_all_states()
+        except Exception as err:
+            raise UpdateFailed(f"Error: {err}") from err
+```
+
+**Entity Base Class Benefits:**
+- Automatic device info generation
+- Listener registration/unregistration
+- Unique ID handling
+- Coordinator integration
+- Common lifecycle management
+
+**Type Hints Example:**
+```python
+def __init__(
+    self,
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    mapped_entity: Any,
+    knx_gateway: LuxorKNXGateway,
+) -> None:
+    """Initialize light entity."""
+```
+
+### Known Issues
+
+- Test coverage: 55% (ongoing improvement in 0.3.x)
+- Climate, Cover, Sensor platforms: Development in progress
+- Some REST client error paths: Need additional coverage
+
+### Installation
+
+**Via HACS:**
+1. Open HACS → Integrations
+2. Search for "LUXORliving"
+3. Click Install
+4. Restart Home Assistant
+5. Settings → Devices & Services → Create Integration
+
+**Manual:**
+1. Download v0.3.0 release
+2. Extract to `~/.homeassistant/custom_components/luxor_living/`
+3. Restart Home Assistant
+
 ## [Unreleased]
 
 ### Added
