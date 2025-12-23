@@ -115,8 +115,12 @@ class EntityMapper:
         else:
             entity_type = platform.value
 
-        # Generate unique ID
-        unique_id = f"{device.id}_{actuator.id}"
+        # Generate unique ID - use control address to ensure uniqueness
+        # Different actuators can have same name but different addresses
+        control_address = datapoints.get("OnOff") or datapoints.get("SchaltenOnOff") or \
+                         datapoints.get("UpDown") or datapoints.get("Dimmen%") or \
+                         list(datapoints.values())[0] if datapoints else "unknown"
+        unique_id = f"{device.id}_{control_address}"
 
         # Generate friendly name
         name = actuator.name or f"{device.name} Ch{actuator.channel}"
@@ -168,8 +172,10 @@ class EntityMapper:
             _LOGGER.debug("Skipping sensor %s - no mappable roles", sensor.name)
             return
 
-        # Generate unique ID
-        unique_id = f"{device.id}_{sensor.id}"
+        # Generate unique ID - use the first datapoint address to ensure uniqueness
+        # Different sensors can have same name but different addresses
+        address = list(datapoints.values())[0] if datapoints else "unknown"
+        unique_id = f"{device.id}_{address}"
 
         # Generate friendly name
         name = sensor.name or f"{device.name} Ch{sensor.channel}"
