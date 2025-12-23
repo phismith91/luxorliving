@@ -50,21 +50,25 @@ class LuxorLivingEntity(Entity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Return device info for the gateway.
+        """Return device info for this entity's device.
 
         Returns:
-            DeviceInfo for BAOS 777 gateway
+            DeviceInfo for the LXP device this entity belongs to.
+            Creates individual devices for S16, B6, iON4, etc.
         """
-        host = self._config_entry.data.get(CONF_HOST, "unknown")
-
+        # Get device name and ID from the mapped entity
+        device_name = getattr(self._mapped_entity, "device_name", "Unknown Device")
+        device_id = getattr(self._mapped_entity, "device_id", "unknown")
+        
+        # Use device_id as the unique identifier (e.g., "_92a56b99254740dcbceaa3db595863b9" for S16-1)
+        # This creates separate Home Assistant devices for each LXP device
         return DeviceInfo(
-            identifiers={(DOMAIN, self._config_entry.entry_id)},
-            name="Luxor Living Gateway",
+            identifiers={(DOMAIN, device_id)},
+            name=device_name,
             manufacturer="Theben",
-            model="BAOS 777",
+            model="LUXORliving",
             hw_version="1.0",
-            sw_version="7.x",
-            configuration_url=f"http://{host}:80",
+            sw_version="1.0",
         )
 
     @property
