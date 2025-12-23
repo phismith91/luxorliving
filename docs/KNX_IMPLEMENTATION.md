@@ -1,83 +1,61 @@
-# KNX Communication Implementation
+# KNX Protocol Details
 
-## Übersicht
+Technical reference for KNX/IP communication implementation.
 
-Die XKNX-Integration wurde erfolgreich implementiert. Die Integration kommuniziert jetzt direkt mit dem **LUXORliving IP1 Gateway** über KNX/IP.
+## Overview
 
----
+LUXORliving integration uses **XKNX library** for native KNX/IP protocol communication with BAOS 777 gateways.
 
-## Neue Komponenten
+**Key features:**
+- Tunneling and Routing connection modes
+- Real-time telegram listening
+- GroupValueRead for initial states
+- Automatic reconnection on network issues
 
-### 1. KNX Gateway Manager (`knx_gateway.py`)
+## Connection Modes
 
-Zentrale Komponente für die KNX-Kommunikation:
+### Tunneling (Recommended)
 
-**Features:**
-- ✅ KNX/IP Tunneling Support
-- ✅ KNX/IP Routing Support  
-- ✅ Automatisches Reconnect
-- ✅ Telegram Senden (GroupValueWrite)
-- ✅ Telegram Empfangen (Listener System)
-- ✅ Simulation Mode (für Tests ohne Hardware)
+**How it works:**
+- Point-to-point connection between HA and gateway
+- Requires REST API authentication (username/password)
+- Port 3671/UDP
+- Maximum 4 simultaneous tunneling connections per gateway
 
-**Methoden:**
-```python
-async_setup()                    # Verbindung aufbauen
-async_disconnect()               # Verbindung trennen
-async_send_telegram()            # KNX Telegram senden
-async_read_group_address()       # Status lesen
-register_listener()              # Status-Updates empfangen
+**When to use:**
+- Single Home Assistant instance
+- Stable, authenticated connection required
+- Default mode for most users
+
+### Routing
+
+**How it works:**
+- Multicast UDP communication (224.0.23.12)
+- No authentication required
+- All devices on network see KNX telegrams
+- Works with multiple KNX clients simultaneously
+
+**When to use:**
+- Multiple Home Assistant instances
+- Testing/debugging with ETS running parallel
+- Firewall issues with tunneling
+
+**Firewall requirements:**
+- Allow multicast group 224.0.23.12
+- UDP port 3671
+
+## KNX Telegram Types
+
+### GroupValueWrite
+
+**Purpose:** Send commands to KNX devices
+
+**Example:** Turn on light
 ```
-
-### 2. Erweiterte Konstanten (`const.py`)
-
-**Neue Konfigurationsoptionen:**
-- `CONF_CONNECTION_TYPE` - Tunneling oder Routing
-- `CONF_SIMULATION_MODE` - Dry-Run ohne echte Hardware
-- `DATA_KNX_GATEWAY` - Schlüssel für Gateway-Instanz
-
----
-
-## Config Flow Erweiterungen
-
-Der Setup-Assistent unterstützt jetzt:
-
-### Schritt 1: LXP-Datei (unverändert)
-- Pfad zur `.lxp` Projektdatei
-
-### Schritt 2: Gateway-Konfiguration (erweitert)
-- **Host**: IP-Adresse des IP1 Gateways
-- **Port**: KNX/IP Port (Standard: 3671)
-- **Connection Type**: 
-  - `tunneling` (Empfohlen) - Punkt-zu-Punkt Verbindung
-  - `routing` - Multicast für mehrere Clients
-- **Simulation Mode**: Aktiviert Dry-Run ohne echte Kommunikation
-
----
-
-## Entity-Plattformen
-
-### Lights (`light.py`)
-
-**Features:**
-- ✅ KNX Telegram senden (Ein/Aus)
-- ✅ KNX Status empfangen (automatische Updates)
-- ✅ Dimmen mit Prozent-Werten (DPT 5.001)
-- ✅ Listener für Helligkeits-Updates
-
-**Dimmbare Lichter:**
-```python
-async_turn_on(brightness=128)  # Dimmt auf 50%
-```
-
-### Switches (`switch.py`)
-
-**Features:**
-- ✅ KNX Telegram senden (Ein/Aus)
-- ✅ KNX Status empfangen (automatische Updates)
-- ✅ Listener für Status-Updates
-
----
+Telegram: GroupValueWrite
+Destination: 1/2/3 (Light living room)
+Value: 1 (On)
+DPT: 1.001 (Binary)
 
 ## KNX/IP Modi
 
@@ -101,75 +79,89 @@ Connection Type: tunneling
 Connection Type: routing
 ```
 
----
+**Used by:** Light on/off, switch control
 
-## Simulation Mode
+### GroupValueRead
 
-Für Tests ohne echte Hardware:
+**Purpose:** Request current state from KNX device
 
-**Aktivierung:**
+**Example:** Read light status
+```
+Telegram: GroupValueRead
+Destination: 1/2/3
+Response: GroupValueResponse with current value
+```
+
+**Used by:** Initial state reading on integration startup (~30ms per entity)
+
+### GroupValueResponse
+
+**Purpose:** Automatic state updates from physical switches
+
+**Example:** Wall switch pressed
+```
+Telegram: GroupValueResponse
+Source: Physical switch
+Destination: 1/2/3
+Value: 1 (On)
+```
+
+**Used by:** Real-time entity updates in Home Assistant
+
+## Supported Data Types (DPT)
+
+| DPT | Type | Range | Usage |
+|-----|------|-------|-------|
+| 1.001 | Binary | On/Off | Switches, lights |
+| 5.001 | Percent | 0-100% | Dimmer, brightness |
+| 5.003 | Angle | 0-360° | Blinds position |
+| 9.001 | Temperature | -273°C - +670°C | Sensors |
+
+Additional DPTs can be added in `knx_gateway.py`.
+
+## Performance
+
+**Startup time:**
+- Initial state reading: ~30ms per entity (GroupValueRead)
+- Example: 27 lights = ~800ms total
+- Parallel reads not used to avoid KNX bus congestion
+
+**Real-time updates:**
+- Physical switch → HA update: <1 second
+- HA command → Physical device: <500ms
+
+**Connection stability:**
+- Automatic reconnection on network issues
+- XKNX handles connection lifecycle
+- Graceful shutdown on HA restart
+
+## Troubleshooting
+
+**No telegrams received:**
+- Check firewall allows UDP 3671
+- Verify group addresses in LXP file match ETS configuration
+- Enable debug logging to see telegram traffic
+
+**Slow entity updates:**
+- GroupValueRead takes ~30ms per entity (KNX protocol limitation)
+- Consider reducing number of entities if startup is too slow
+- Initial states are cached after first read
+
+**Connection drops:**
+- Tunneling: Max 4 simultaneous connections (check if ETS or other clients connected)
+- Routing: Verify multicast routing enabled on network switches
+- Check gateway uptime (may need reboot)
+
+**Debug logging:**
 ```yaml
-Simulation Mode: true
+logger:
+  default: info
+  logs:
+    custom_components.luxor_living.knx_gateway: debug
+    xknx: debug
 ```
 
-**Verhalten:**
-- ✅ Alle Entities funktionieren
-- ✅ State-Changes werden geloggt
-- ❌ Keine echten KNX Telegramme
-- ✅ Perfekt für Entwicklung
-
-**Log-Beispiel:**
-```
-🔥 SIMULATION: Would send binary=True to KNX address 1/2/3
-```
-
----
-
-## Datentypen (DPT)
-
-### Unterstützte DPT-Typen:
-
-| Typ             | DPT       | Beschreibung | Verwendung        |
-| --------------- | --------- | ------------ | ----------------- |
-| **binary**      | DPT 1.001 | On/Off       | Schalter, Lichter |
-| **percent**     | DPT 5.001 | 0-100%       | Dimmer, Jalousien |
-| **temperature** | DPT 9.001 | Temperatur   | Sensoren          |
-
-**Erweiterbar** für weitere DPT-Typen in `knx_gateway.py`
-
----
-
-## Architektur
-
-```
-┌──────────────────────────────────────────┐
-│         Home Assistant                   │
-│                                          │
-│  ┌────────────────────────────────────┐  │
-│  │  LUXORliving Integration           │  │
-│  │                                    │  │
-│  │  ┌──────────────┐  ┌────────────┐ │  │
-│  │  │ LXP Parser   │  │ EntityMapper│ │  │
-│  │  └──────────────┘  └────────────┘ │  │
-│  │                                    │  │
-│  │  ┌──────────────────────────────┐ │  │
-│  │  │   KNX Gateway Manager        │ │  │
-│  │  │   - XKNX Integration         │ │  │
-│  │  │   - Tunneling/Routing        │ │  │
-│  │  │   - Telegram Send/Receive    │ │  │
-│  │  └──────────────────────────────┘ │  │
-│  │           │                        │  │
-│  │  ┌────────┴────────┬─────────┐    │  │
-│  │  │                 │         │    │  │
-│  │  │ Lights     Switches  Sensors   │  │
-│  │  │                 │         │    │  │
-│  │  └─────────────────┴─────────┘    │  │
-│  └────────────────────────────────────┘  │
-└──────────────────┬───────────────────────┘
-                   │
-                   │ KNX/IP (UDP 3671)
-                   │
-      ┌────────────▼────────────┐
+Shows all KNX telegrams sent/received with full details.
       │  LUXORliving IP1        │
       │  (Weinzel Gateway)      │
       │                         │

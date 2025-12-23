@@ -1,103 +1,77 @@
-# LUXORliving v0.2.0 - Installation & Setup Guide
+# Installation Guide
 
-## 🎯 Was ist neu in v0.2.0?
+Step-by-step installation and configuration for LUXORliving integration.
 
-**Wichtige Änderung:** KNX Tunneling funktioniert jetzt mit REST API Authentifizierung!
+## Prerequisites
 
-### Neue Features
+Before installation, ensure you have:
 
-- ✅ **REST API Integration**: Login erforderlich für KNX Tunneling
-- ✅ **LXP File Upload**: Direkt in der UI hochladen
-- ✅ **Username/Password**: Konfiguration über die UI
-- ✅ **Automatische Tunneling-Aktivierung**: Via `/rest/device/authtunneling`
-- ✅ **Graceful Shutdown**: Logout deaktiviert Tunneling automatisch
+- **Theben LUXORliving IP1 Gateway** (BAOS 777) connected to your network
+- **LXP project file** exported from Theben LUXORPlug software
+- **Home Assistant** ≥ 2024.12.0
+- Network access to gateway (verify with `ping <gateway-ip>`)
 
----
+## Installation
 
-## 📋 Voraussetzungen
+### HACS (Recommended)
 
-### Hardware
+1. Open **HACS** → **Integrations**
+2. Click **⋮** (top right) → **Custom repositories**
+3. Add repository:
+   - URL: `https://github.com/phismith91/luxorliving`
+   - Category: **Integration**
+4. Click **Download**
+5. Restart Home Assistant
 
-- **Theben LUXORliving IP1 Gateway** (BAOS 777)
-- KNX-Installation mit LUXORliving-System
-- Netzwerkzugriff auf das Gateway
+### Manual Installation
 
-### Software
-
-- Home Assistant 2024.12.0 oder neuer
-- LXP-Projektdatei (aus Theben LUXORPlug)
-
----
-
-## 🚀 Installation
-
-### Methode 1: HACS (Empfohlen)
-
-1. **HACS installieren** (falls noch nicht vorhanden)
+1. SSH to Home Assistant server
+2. Navigate to config directory:
+   ```bash
+   cd /config/custom_components
    ```
-   https://hacs.xyz/docs/setup/download
+3. Download integration:
+   ```bash
+   wget https://github.com/phismith91/luxorliving/releases/latest/download/luxor_living.zip
+   unzip luxor_living.zip
    ```
+4. Restart Home Assistant
 
-2. **Custom Repository hinzufügen**
-   - HACS → Integrationen → ⋮ (oben rechts) → Custom repositories
-   - Repository: `https://github.com/phismith91/luxorliving`
-   - Category: Integration
-   - Klick: "Add"
+## Configuration
 
-3. **Integration installieren**
-   - HACS → Integrationen → Suche "LUXORliving"
-   - Klick: "Download"
-   - Home Assistant neu starten
+### Step 1: Add Integration
 
-### Methode 2: Manuell
+**Settings** → **Devices & Services** → **Add Integration** → Search **"LUXORliving"**
 
-```bash
-# Via SSH auf dem HA Server
-cd /config/custom_components
-git clone https://github.com/phismith91/luxorliving.git luxor_living
+### Step 2: Upload LXP File
 
-# Oder: ZIP herunterladen und entpacken
-# Struktur: /config/custom_components/luxor_living/
+**Option A: File Upload (recommended)**
+- Click **Choose File** → Select your `.lxp` project file
+- File is automatically copied to Home Assistant config
 
-# Home Assistant neu starten
-ha core restart
-```
+**Option B: Manual Path**
+- Copy LXP file to `/config/luxor/` directory
+- Enter path: `/config/luxor/project.lxp`
 
----
+**Exporting LXP from LUXORPlug:**
+1. Open Theben LUXORPlug software
+2. **File** → **Export** → Save as `.lxp`
+3. Transfer file to Home Assistant (e.g., via Samba share)
 
-## ⚙️ Einrichtung
+### Step 3: Gateway Configuration
 
-### Schritt 1: Integration hinzufügen
+| Field | Value | Notes |
+|-------|-------|-------|
+| Gateway IP | `192.168.1.3` | Find in LUXORPlug or router DHCP table |
+| Connection Type | **Tunneling** | Recommended (authenticated, stable) |
+| Username | `admin` | BAOS REST API credentials |
+| Password | `admin` | Default: admin/admin |
 
-1. **Home Assistant UI öffnen**
-   - Einstellungen → Geräte & Dienste → Integration hinzufügen
-   - Suche: "LUXORliving"
+**Connection Types:**
+- **Tunneling**: Point-to-point connection, requires authentication (recommended)
+- **Routing**: Multicast, no authentication, may have firewall issues
 
-2. **LXP-Datei hochladen**
-   
-   ![Step 1: LXP Upload](docs/screenshots/step1_lxp_upload.png)
-   
-   - Klick: "Choose File"
-   - Datei auswählen: z.B. `familie_schmidt.lxp`
-   - Die Datei bekommst du aus Theben LUXORPlug:
-     ```
-     LUXORPlug → Projekt speichern → Downloads/projekt.lxp
-     ```
-
-3. **Gateway konfigurieren**
-   
-   ![Step 2: Gateway Config](docs/screenshots/step2_gateway_config.png)
-   
-   | Feld                   | Wert          | Beschreibung         |
-   | ---------------------- | ------------- | -------------------- |
-   | **Gateway IP Address** | `192.168.1.3` | IP deines BAOS 777   |
-   | **Gateway Port**       | `3671`        | Standard KNX/IP Port |
-   | **Username**           | `admin`       | REST API Username    |
-   | **Password**           | `admin`       | REST API Password    |
-   | **Connection Type**    | `tunneling`   | Empfohlen (mit Auth) |
-   | **Simulation Mode**    | `☐`           | Nur zum Testen       |
-
-4. **Validierung**
+### Step 4: Verify Setup
    
    Die Integration testet automatisch:
    - ✅ REST API Login
@@ -123,107 +97,117 @@ Wenn die Standard-Credentials nicht funktionieren:
 1. **Via ETS konfiguriert**
    - In ETS nachschauen (Application → Settings)
    - Oder: ETS-Projekt-Datei durchsuchen
+**Check integration:**
+1. **Settings** → **Devices & Services** → **LUXORliving**
+2. Verify entities created (lights, switches, sensors)
+3. Test first entity:
+   - **Developer Tools** → **Services**
+   - Service: `light.turn_on`
+   - Target: Select any light entity
+   - Click **Call Service**
 
-2. **Via Web-Interface**
-   ```
-   http://192.168.1.3
-   # Versuche Login mit verschiedenen Credentials
-   # Browser DevTools → Network Tab → Request Headers
-   ```
+**Expected result:** Physical light turns on, entity state updates in HA.
 
-3. **Reset auf Werkseinstellungen**
-   - Siehe BAOS 777 Handbuch
-   - ⚠️ Achtung: Alle Konfigurationen gehen verloren!
+## Troubleshooting
 
----
+### Integration Not Loading
 
-## 📁 LXP-Datei bekommen
-
-### Option 1: Aus LUXORPlug exportieren
-
-1. **LUXORPlug öffnen** (Windows VM)
-2. **Projekt laden**
-3. **Datei → Projekt speichern**
-4. Datei: `C:\Users\...\Downloads\projekt.lxp`
-
-### Option 2: Vom Projektleiter
-
-- LXP-Datei vom Elektriker/Installateur anfragen
-- Dateiname: z.B. `familie_schmidt.lxp` oder `wohnung_madeira.lxp`
-
-### Option 3: Von bestehendem System
-
-Falls LuxorPlug läuft:
+**Check logs:**
 ```bash
-# Auf dem LuxorPlug Windows System
-# Projektdatei liegt meist in:
-%APPDATA%\Theben\LUXORPlug\projects\
-```
-
----
-
-## 🧪 Testen der Installation
-
-### 1. Entities prüfen
-
-Nach erfolgreichem Setup:
-
-```
-Einstellungen → Geräte & Dienste → LUXORliving
-```
-
-Du solltest sehen:
-- ✅ **Geräte**: 1 (LUXORliving Gateway)
-- ✅ **Entities**: z.B. 36 (27 Lights, 9 Switches)
-
-### 2. Erstes Licht schalten
-
-```
-Entwicklerwerkzeuge → Dienste
-
-Dienst: light.turn_on
-Ziel: light.badlicht
-```
-
-**Erwartetes Verhalten:**
-- ✅ Licht geht an
-- ✅ Status wird aktualisiert
-- ✅ Logs zeigen KNX-Telegramme
-
-### 3. Logs checken
-
-```bash
-# Via SSH
 tail -f /config/home-assistant.log | grep luxor_living
-
-# Oder in UI:
-Einstellungen → System → Protokolle → Suche "luxor_living"
 ```
 
-**Erfolgreiche Verbindung:**
+**Common causes:**
+- Invalid LXP file path → Use absolute path `/config/luxor/project.lxp`
+- File permissions → `chmod 644 /config/luxor/project.lxp`
+- Integration not installed → Verify `/config/custom_components/luxor_living/` exists
+
+### Gateway Unreachable
+
+**Verify connectivity:**
+```bash
+ping <gateway-ip>
+nmap -p 3671 <gateway-ip>
 ```
-2025-12-21 INFO custom_components.luxor_living 🔐 Step 1/3: REST API Login...
-2025-12-21 INFO custom_components.luxor_living ✅ REST API login successful
-2025-12-21 INFO custom_components.luxor_living 🔧 Step 2/3: Enabling KNX Tunneling...
-2025-12-21 INFO custom_components.luxor_living ✅ KNX Tunneling enabled
-2025-12-21 INFO custom_components.luxor_living 🔌 Step 3/3: Connecting KNX...
-2025-12-21 INFO custom_components.luxor_living ✅ Successfully connected to KNX Gateway 192.168.1.3:3671
+
+**Common causes:**
+- Wrong IP address → Check router DHCP table
+- Firewall blocking port 3671 → Allow UDP 3671
+- Gateway offline → Check physical connection
+
+### Authentication Failed
+
+**Error:** "Invalid username or password"
+
+**Solutions:**
+1. Try default credentials: `admin` / `admin`
+2. Check BAOS web interface: `http://<gateway-ip>`
+3. Reset gateway to factory defaults (see BAOS manual)
+
+### No Entities Created
+
+**Causes:**
+- LXP file contains no group addresses
+- Wrong file format (must be `.lxp`)
+- Parsing error
+
+**Solutions:**
+1. Verify LXP file in LUXORPlug software
+2. Check debug logs: Set logger to debug level
+3. Re-export LXP file
+
+## Advanced
+
+### Debug Logging
+
+Enable detailed logs in `configuration.yaml`:
+
+```yaml
+logger:
+  default: info
+  logs:
+    custom_components.luxor_living: debug
+    xknx: debug
 ```
 
----
+Restart Home Assistant, then check logs for detailed KNX telegram information.
 
-## 🐛 Troubleshooting
+### Simulation Mode
 
-### Problem: "Invalid username or password"
+Test without physical gateway:
 
-**Ursache:** Falsche REST API Credentials
+1. **Settings** → **Devices & Services** → **LUXORliving** → **Options**
+2. Enable **Simulation Mode**
+3. Submit
 
-**Lösung:**
-1. Prüfe Standard: `admin` / `admin`
-2. Falls geändert: ETS-Projekt prüfen
-3. Web-Interface testen: `http://192.168.1.3`
+All KNX operations are logged but not sent to gateway. Useful for development and testing.
 
-### Problem: "Cannot connect"
+### Multiple Gateways
+
+Configure multiple LUXORliving gateways:
+
+1. Add first integration (gateway A)
+2. **Add Integration** again → **LUXORliving**
+3. Configure gateway B with different IP
+4. Each gateway creates separate entities with unique IDs
+
+## Uninstall
+
+### Remove Integration
+
+1. **Settings** → **Devices & Services**
+2. Find **LUXORliving** → **⋮** → **Delete**
+3. Confirm deletion
+
+All entities are removed automatically.
+
+### Remove Files
+
+```bash
+rm -rf /config/custom_components/luxor_living
+```
+
+Restart Home Assistant.
 
 **Ursache:** Netzwerkverbindung zum Gateway
 

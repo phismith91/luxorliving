@@ -1,103 +1,91 @@
-# Port Configuration Analysis – History & Architecture Decision
+# Port Configuration - Technical Reference
 
-## 🔍 Issue Summary
+## Overview
 
-The LUXORliving IP1 Gateway (BAOS 777) REST API has caused multiple port configuration issues throughout development. The following analysis documents the evolution and final correct configuration.
+This document explains the port configuration for BAOS 777 REST API communication and resolves common confusion about HTTP/HTTPS ports.
 
----
+## Current Configuration
 
-## 📊 Port Configuration Timeline
+**REST API:**
+- Entry point: HTTP port 80
+- Auto-redirect: HTTPS port 443 (via HTTP 308 redirect)
+- SSL context handles self-signed certificates
 
-### Phase 1: Initial HTTP:80 (v0.1.x)
-**Commit:** `0debd30`  
-**Config:** `DEFAULT_HTTP_PORT = 80`  
-**Result:** ❌ **HTTP:80 → 308 Redirect Loop**
+**KNX/IP:**
+- Fixed port: 3671 (UDP)
+- Separate from REST API ports
 
-**Problem:**
-- BAOS 777 redirects HTTP:80 → HTTPS:443 (HTTP 308 Permanent Redirect)
-- aiohttp didn't follow redirects by default
-- Caused connection failures
+## Why HTTP:80 (Not HTTPS:443)?
 
----
+**The BAOS 777 requires this sequence:**
+1. Client connects to `http://<ip>:80/rest/login`
+2. Gateway responds with HTTP 308 redirect to `https://<ip>:443/rest/login`
+3. Client follows redirect with SSL context configured
+4. Login succeeds
 
-### Phase 2: Direct HTTPS:443 Attempt (21. Dec 2025)
-**Commits:** `bf2d0eb`, `738d9be`  
-**Config:** `DEFAULT_HTTP_PORT = 443`  
-**Result:** ❌ **HTTPS:443 Still Failing**
+**Attempting direct HTTPS:443 fails** because the gateway expects the HTTP→HTTPS redirect flow.
 
-**Problem:**
-- Changed to HTTPS directly: `base_url = f"https://{host}:{port}"`
-- Device still rejected connections
-- SSL context configuration was incomplete
+## Implementation
 
-**Evidence from Commit bf2d0eb:**
-```
-Problem: BAOS 777 antwortet mit 308 Redirect von HTTP:80 zu HTTPS:443
-Lösung: Verwende direkt HTTPS:443 mit ssl=False
-```
-
----
-
-### Phase 3: Final Solution – HTTP:80 with SSL Context (21. Dec 2025)
-**Commit:** `860cf4b` ✅ **WORKING**  
-**Config:** `DEFAULT_HTTP_PORT = 80`  
-**Result:** ✅ **Connected Successfully**
-
-**Solution:**
-```
-base_url = "http://{host}:{80}"  ← Start with HTTP
-SSL-Context configured for redirect handling
-allow_redirects = True (default)
-
-Flow:
-1. POST http://IP:80/rest/login
-2. 308 Redirect → https://IP:443/rest/login
-3. SSL-Context accepts self-signed cert
-4. Login successful ✓
-```
-
-**Key Configuration (rest_client.py):**
 ```python
-self.base_url = f"http://{host}:{port}"  # port=80 by default
+# rest_client.py
+self.base_url = f"http://{host}:{port}"  # port defaults to 80
 
-# SSL Context handles the redirect:
+# SSL context for redirect handling
 ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
-ssl_context.verify_mode = ssl.CERT_NONE
-ssl_context.minimum_version = ssl.TLSv1_2  # (upgraded in v0.3.0-beta.1)
+ssl_context.verify_mode = ssl.CERT_NONE  # Accept self-signed cert
+ssl_context.minimum_version = ssl.TLSv1_2
 ```
 
----
+## Constants
 
-## 🏗️ Architectural Decision
-
-### Why HTTP:80 Instead of HTTPS:443?
-
-**✅ Correct Approach:**
-1. **Follow BAOS API Documentation**
-   - Official docs specify: `POST http://IP/rest/login`
-   - Not `https://IP:443`
-
-2. **Let aiohttp Handle Redirects**
-   - HTTP client libraries are designed for this
-   - HTTPS 308 redirects are standard protocol
-   - SSL context manages the encrypted connection
-
-3. **Single Configuration**
-   - Users only need: `host = 192.168.1.3`
-   - REST API port defaults to 80 → auto-redirects to 443
-   - KNX/IP port always 3671 (separate from HTTP)
-
-### Constants (const.py)
 ```python
-DEFAULT_PORT = 3671  # KNX/IP tunneling (fixed, user-configurable in theory)
-DEFAULT_HTTP_PORT = 80  # REST API (fixed, auto-redirects to 443)
+# const.py
+DEFAULT_PORT = 3671          # KNX/IP tunneling (UDP)
+DEFAULT_HTTP_PORT = 80       # REST API entry point
 ```
 
-### Why NOT Direct HTTPS:443?
+## User Configuration
 
-❌ **Problems with Direct HTTPS:**
-- Device rejects connections to 443 that don't start with HTTP redirect flow
+**Users only configure:**
+- Gateway IP address (e.g., `192.168.1.3`)
+- Username/password for REST API
+
+**Automatic:**
+- Port 80 used for REST API (redirects to 443)
+- Port 3671 used for KNX/IP tunneling
+- SSL context handles self-signed certificates
+
+## Common Questions
+
+**Q: Why not use HTTPS:443 directly?**  
+A: BAOS 777 firmware requires HTTP→HTTPS redirect flow. Direct HTTPS connections are rejected.
+
+**Q: Is HTTP:80 insecure?**  
+A: No. Initial request immediately redirects to HTTPS:443 with TLS 1.2+ encryption.
+
+**Q: Can I change the port?**  
+A: No. Ports are hardcoded per BAOS API specification.
+
+**Q: What about self-signed certificates?**  
+A: SSL context configured with `verify_mode = CERT_NONE` to accept BAOS self-signed certs.
+
+## Troubleshooting
+
+**Cannot connect to REST API:**
+1. Verify gateway responds on port 80: `curl -v http://<ip>/rest/login`
+2. Check for HTTP 308 redirect in response
+3. Verify port 443 accessible: `openssl s_client -connect <ip>:443`
+
+**Connection refused on port 80:**
+- Gateway may be offline
+- Firewall blocking port 80
+- Wrong IP address
+
+**SSL errors:**
+- Ensure `verify_mode = CERT_NONE` in SSL context
+- Check minimum TLS version (should be 1.2+)
 - Documentation explicitly shows HTTP endpoints
 - SSL context negotiation was incomplete
 - More complex for users (would need `https://` config)
@@ -156,11 +144,11 @@ http_port = DEFAULT_HTTP_PORT    # 80 for REST API (redirects to 443)
 
 ### Which Port Actually Works?
 
-| Port | Protocol | Purpose | Status |
-|------|----------|---------|--------|
-| **80** | HTTP | REST API (entry point) | ✅ **CORRECT** |
-| **443** | HTTPS | REST API (after redirect) | ✅ Auto-handled |
-| **3671** | KNX/IP | Tunneling | ✅ **CORRECT** |
+| Port     | Protocol | Purpose                   | Status         |
+| -------- | -------- | ------------------------- | -------------- |
+| **80**   | HTTP     | REST API (entry point)    | ✅ **CORRECT**  |
+| **443**  | HTTPS    | REST API (after redirect) | ✅ Auto-handled |
+| **3671** | KNX/IP   | Tunneling                 | ✅ **CORRECT**  |
 
 ### Architecture is Sound
 
