@@ -10,7 +10,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.components.file_upload import process_uploaded_file
-from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.data_entry_flow import FlowResult
@@ -61,7 +61,6 @@ STEP_LXP_DATA_SCHEMA = vol.Schema({
 # Step 2: Gateway configuration with authentication
 STEP_GATEWAY_DATA_SCHEMA = vol.Schema({
     vol.Required(CONF_HOST, default="192.168.1.3"): str,
-    vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
     vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
     vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
     vol.Required(CONF_CONNECTION_TYPE, default=DEFAULT_CONNECTION_TYPE): vol.In([
@@ -170,7 +169,6 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data = {
                 CONF_LXP_FILE: self._lxp_file,
                 CONF_HOST: user_input[CONF_HOST],
-                CONF_PORT: user_input[CONF_PORT],
                 CONF_USERNAME: user_input[CONF_USERNAME],
                 CONF_PASSWORD: user_input[CONF_PASSWORD],
                 CONF_CONNECTION_TYPE: user_input[CONF_CONNECTION_TYPE],

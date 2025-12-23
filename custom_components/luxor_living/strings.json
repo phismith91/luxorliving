@@ -16,7 +16,6 @@
                 "description": "Configure your KNX/IP gateway connection and credentials for project: {project_name}",
                 "data": {
                     "host": "Gateway IP Address",
-                    "port": "Gateway Port",
                     "username": "Username",
                     "password": "Password",
                     "connection_type": "Connection Type",
@@ -24,7 +23,6 @@
                 },
                 "data_description": {
                     "host": "IP address of your Theben LUXORliving KNX/IP gateway",
-                    "port": "Port number (default: 3671)",
                     "username": "REST API username (default: admin)",
                     "password": "REST API password",
                     "connection_type": "KNX connection type (tunneling recommended)",

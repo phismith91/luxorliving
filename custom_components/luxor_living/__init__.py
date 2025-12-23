@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform, CONF_HOST, CONF_PORT
+from homeassistant.const import Platform, CONF_HOST
 from homeassistant.core import HomeAssistant
 
 from .const import (
@@ -45,7 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Get configuration
     lxp_file = entry.data.get(CONF_LXP_FILE)
     host = entry.data.get(CONF_HOST, "localhost")
-    port = entry.data.get(CONF_PORT, 3671)
+    port = DEFAULT_PORT  # Always use KNX/IP default port 3671
     username = entry.data.get(CONF_USERNAME, "admin")
     password = entry.data.get(CONF_PASSWORD, "admin")
     connection_type = entry.data.get(CONF_CONNECTION_TYPE, DEFAULT_CONNECTION_TYPE)
