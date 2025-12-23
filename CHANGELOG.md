@@ -5,6 +5,30 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0-beta.3] - 2025-12-23
+
+### Fixed
+- **Coordinator Architecture Simplified**: Changed from broken polling model to event-driven passive state model
+  - Removed invalid XKNX device polling logic (`.devices.items()` and `resolve_state()` calls)
+  - Coordinator now acts as passive cache holder instead of active poller
+  - State updates come from KNX telegram listeners (push-based)
+  - Properly aligns with KNX event-driven architecture
+  - Code simplified: -16 lines (20 removed, 4 added)
+
+- **Platform Defensive Checks**: Added robust error handling for integration data access
+  - Light, Switch, and Binary Sensor platforms now validate integration data
+  - Type checking with `isinstance(integration_data, dict)`
+  - Try/except blocks around data access
+  - Graceful degradation with meaningful error messages
+  - Fixed 'MappedEntity' object has no attribute 'get' errors
+
+### Testing
+- All 74 tests passing with zero regressions
+- Coordinator architecture corrected to match actual KNX event-driven model
+- All platforms properly handle missing or invalid integration data
+
+---
+
 ## [0.3.0-beta.2] - 2025-12-23
 
 ### Fixed
