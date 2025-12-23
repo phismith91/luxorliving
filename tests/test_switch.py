@@ -58,9 +58,14 @@ class TestLuxorLivingSwitch:
         assert switch._address_on == "1/3/1"
         assert switch._address_status == "1/3/2"
         
-        # Should register listener for status updates
-        mock_knx_gateway.register_listener.assert_called_once_with(
+        # Should register listeners for status AND control addresses
+        assert mock_knx_gateway.register_listener.call_count == 2
+        mock_knx_gateway.register_listener.assert_any_call(
             "1/3/2",
+            switch._handle_knx_update
+        )
+        mock_knx_gateway.register_listener.assert_any_call(
+            "1/3/1",
             switch._handle_knx_update
         )
 
@@ -73,10 +78,7 @@ class TestLuxorLivingSwitch:
         
         await switch.async_added_to_hass()
         
-        # Should first try REST API
-        mock_knx_gateway.async_read_via_rest.assert_called_once_with("1/3/2")
-        
-        # Should fallback to request current state from BOTH addresses (STATUS and CONTROL)
+        # Request current state from BOTH addresses (STATUS und CONTROL)
         assert mock_knx_gateway.async_read_group_address.call_count == 2
         mock_knx_gateway.async_read_group_address.assert_any_call("1/3/2", is_initial=True)  # STATUS
         mock_knx_gateway.async_read_group_address.assert_any_call("1/3/1", is_initial=True)  # CONTROL
@@ -97,10 +99,7 @@ class TestLuxorLivingSwitch:
         
         await switch.async_added_to_hass()
         
-        # Should first try REST API
-        mock_knx_gateway.async_read_via_rest.assert_called_once_with("1/3/3")
-        
-        # Should fallback to OnOff address for reading
+        # Should use OnOff address for reading when no status exists
         mock_knx_gateway.async_read_group_address.assert_called_once_with("1/3/3", is_initial=True)
 
     @pytest.mark.asyncio
@@ -176,7 +175,13 @@ class TestLuxorLivingSwitch:
         
         await switch.async_will_remove_from_hass()
         
-        mock_knx_gateway.unregister_listener.assert_called_once_with(
+        # Should unregister BOTH listeners (status and control)
+        assert mock_knx_gateway.unregister_listener.call_count == 2
+        mock_knx_gateway.unregister_listener.assert_any_call(
             "1/3/2",
+            switch._handle_knx_update
+        )
+        mock_knx_gateway.unregister_listener.assert_any_call(
+            "1/3/1",
             switch._handle_knx_update
         )

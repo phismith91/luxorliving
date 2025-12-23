@@ -78,9 +78,14 @@ class TestLuxorLivingLight:
         assert light._address_on == "1/2/3"
         assert light._address_status == "1/2/4"
         
-        # Should register listener for status updates
-        mock_knx_gateway.register_listener.assert_called_once_with(
+        # Should register listeners for status AND control addresses
+        assert mock_knx_gateway.register_listener.call_count == 2
+        mock_knx_gateway.register_listener.assert_any_call(
             "1/2/4",
+            light._handle_knx_update
+        )
+        mock_knx_gateway.register_listener.assert_any_call(
+            "1/2/3",
             light._handle_knx_update
         )
 
@@ -93,10 +98,7 @@ class TestLuxorLivingLight:
         
         await light.async_added_to_hass()
         
-        # Should first try REST API
-        mock_knx_gateway.async_read_via_rest.assert_called_once_with("1/2/4")
-        
-        # Should fallback to request current state from BOTH addresses (STATUS and CONTROL)
+        # Request current state from BOTH addresses (STATUS und CONTROL)
         assert mock_knx_gateway.async_read_group_address.call_count == 2
         mock_knx_gateway.async_read_group_address.assert_any_call("1/2/4", is_initial=True)  # STATUS
         mock_knx_gateway.async_read_group_address.assert_any_call("1/2/3", is_initial=True)  # CONTROL
@@ -118,10 +120,7 @@ class TestLuxorLivingLight:
         
         await light.async_added_to_hass()
         
-        # Should first try REST API
-        mock_knx_gateway.async_read_via_rest.assert_called_once_with("1/2/8")
-        
-        # Should fallback to OnOff address for reading
+        # Should use OnOff address for reading when no status exists
         mock_knx_gateway.async_read_group_address.assert_called_once_with("1/2/8", is_initial=True)
 
     @pytest.mark.asyncio
@@ -173,8 +172,14 @@ class TestLuxorLivingLight:
         
         await light.async_will_remove_from_hass()
         
-        mock_knx_gateway.unregister_listener.assert_called_once_with(
+        # Should unregister BOTH listeners (status and control)
+        assert mock_knx_gateway.unregister_listener.call_count == 2
+        mock_knx_gateway.unregister_listener.assert_any_call(
             "1/2/4",
+            light._handle_knx_update
+        )
+        mock_knx_gateway.unregister_listener.assert_any_call(
+            "1/2/3",
             light._handle_knx_update
         )
 
@@ -191,8 +196,11 @@ class TestLuxorLivingDimmableLight:
         assert light.brightness == 255
         assert light._address_dim == "1/2/7"
         
-        # Should register listeners for status and brightness
-        assert mock_knx_gateway.register_listener.call_count == 2
+        # Should register listeners for status, control and brightness
+        assert mock_knx_gateway.register_listener.call_count == 3
+        mock_knx_gateway.register_listener.assert_any_call("1/2/6", light._handle_knx_update)
+        mock_knx_gateway.register_listener.assert_any_call("1/2/5", light._handle_knx_update)
+        mock_knx_gateway.register_listener.assert_any_call("1/2/7", light._handle_brightness_update)
 
     @pytest.mark.asyncio
     async def test_async_added_to_hass(self, mock_dimmable_entity, mock_knx_gateway):
@@ -203,10 +211,7 @@ class TestLuxorLivingDimmableLight:
         
         await light.async_added_to_hass()
         
-        # Should first try REST API
-        mock_knx_gateway.async_read_via_rest.assert_called_once_with("1/2/6")
-        
-        # Should fallback to request status, control, and brightness (3 addresses)
+        # Should request status, control, and brightness (3 addresses)
         assert mock_knx_gateway.async_read_group_address.call_count == 3
         calls = [call.args[0] for call in mock_knx_gateway.async_read_group_address.call_args_list]
         assert "1/2/6" in calls  # Status

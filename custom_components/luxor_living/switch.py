@@ -189,11 +189,12 @@ class LuxorLivingSwitch(SwitchEntity):
 
     async def async_will_remove_from_hass(self) -> None:
         """Clean up listener when entity is removed."""
-        if hasattr(self, '_listen_address'):
-            self._knx_gateway.unregister_listener(
-                self._listen_address,
-                self._handle_knx_update
-            )
+        if hasattr(self, '_listen_addresses') and self._listen_addresses:
+            for addr in list(self._listen_addresses):
+                self._knx_gateway.unregister_listener(
+                    addr,
+                    self._handle_knx_update
+                )
         await super().async_will_remove_from_hass()
 
     @property

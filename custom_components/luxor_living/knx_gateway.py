@@ -55,6 +55,8 @@ class LuxorKNXGateway:
         self._connected = False
         self._tunneling_enabled = False
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
+        self._ga_label_map: dict[str, list[str]] = {}
+        self._ia_label_map: dict[str, list[str]] = {}
         
         # Map connection type string to XKNX enum
         self._connection_type = (
@@ -337,6 +339,20 @@ class LuxorKNXGateway:
             normalized,
         )
 
+    def set_group_address_labels(self, label_map: dict[str, list[str]]) -> None:
+        """Provide a GA→labels map to enrich KNX logs with names.
+
+        Args:
+            label_map: Mapping of 'x/y/z' → ['Name (ID)', ...]
+        """
+        self._ga_label_map = label_map or {}
+        _LOGGER.debug("Loaded %d GA labels for log enrichment", len(self._ga_label_map))
+
+    def set_individual_address_labels(self, label_map: dict[str, list[str]]) -> None:
+        """Provide an IA→labels map to enrich KNX logs with source device names."""
+        self._ia_label_map = label_map or {}
+        _LOGGER.debug("Loaded %d IA labels for log enrichment", len(self._ia_label_map))
+
     def unregister_listener(
         self,
         group_address: str | int,
@@ -397,13 +413,25 @@ class LuxorKNXGateway:
                 self._initial_read_pending.discard(group_address)
             
             telegram_type = "Response" if isinstance(telegram.payload, GroupValueResponse) else "Write"
+            # Enrich with labels if known
+            labels = self._ga_label_map.get(group_address)
+            labels_str = f" | {', '.join(labels)}" if labels else ""
+            # Source device enrichment via individual address
+            try:
+                source_addr = str(telegram.source_address)
+            except Exception:
+                source_addr = "?"
+            src_labels = self._ia_label_map.get(source_addr)
+            src_str = f" ← from {source_addr} ({', '.join(src_labels)})" if src_labels else f" ← from {source_addr}"
             _LOGGER.info(
-                "📥 Received KNX %s: %s=%s (DPT: %s)%s",
+                "📥 Received KNX %s: %s=%s (DPT: %s)%s%s%s",
                 telegram_type,
                 group_address,
                 value,
                 type(payload_value).__name__,
                 " ✅ INITIAL READ RESPONSE" if was_initial else "",
+                labels_str,
+                src_str,
             )
             
             # Notify listeners
@@ -420,8 +448,14 @@ class LuxorKNXGateway:
                     if callback not in self._listeners.get(group_address, []):
                         continue
                     try:
-                        # Ensure callbacks run in HA event loop thread to avoid thread-safety issues
-                        self.hass.loop.call_soon_threadsafe(callback, group_address, value)
+                        # Ensure callbacks run in HA event loop thread to avoid thread-safety issues.
+                        # In tests or simulation, hass may not provide a loop; fallback to direct call.
+                        loop = getattr(self.hass, "loop", None)
+                        call_in_loop = getattr(loop, "call_soon_threadsafe", None) if loop else None
+                        if callable(call_in_loop):
+                            call_in_loop(callback, group_address, value)
+                        else:
+                            callback(group_address, value)
                     except Exception as err:
                         _LOGGER.error(
                             "Error scheduling listener callback for %s: %s",

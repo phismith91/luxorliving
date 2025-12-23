@@ -219,11 +219,17 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         # Additional datapoints for dimming
         self._address_dim = mapped_entity.datapoints.get("Dimmen%")
         self._address_dim_rel = mapped_entity.datapoints.get("DimmenRel")
+        self._address_dim_status = mapped_entity.datapoints.get("Status%")
         
-        # Register listener for brightness status
+        # Register listeners for brightness updates (status and control)
         if self._address_dim:
             self._knx_gateway.register_listener(
                 self._address_dim,
+                self._handle_brightness_update
+            )
+        if self._address_dim_status:
+            self._knx_gateway.register_listener(
+                self._address_dim_status,
                 self._handle_brightness_update
             )
 
@@ -232,13 +238,22 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         await super().async_added_to_hass()
         
         # Request current brightness from KNX bus
+        # Prefer reading Status% (current brightness), also read Dimmen% for completeness
+        if self._address_dim_status:
+            _LOGGER.debug("Requesting initial brightness for %s from %s", self._attr_name, self._address_dim_status)
+            await self._knx_gateway.async_read_group_address(self._address_dim_status, is_initial=True)
         if self._address_dim:
             _LOGGER.debug("Requesting initial brightness for %s from %s", self._attr_name, self._address_dim)
             await self._knx_gateway.async_read_group_address(self._address_dim, is_initial=True)
 
     def _handle_brightness_update(self, group_address: str, value: Any) -> None:
         """Handle KNX brightness update."""
-        if self._address_dim is not None and group_address == str(GroupAddress(self._address_dim)):
+        valid_brightness_addresses = []
+        if self._address_dim is not None:
+            valid_brightness_addresses.append(str(GroupAddress(self._address_dim)))
+        if self._address_dim_status is not None:
+            valid_brightness_addresses.append(str(GroupAddress(self._address_dim_status)))
+        if group_address in valid_brightness_addresses:
             # Convert percentage (0-100) to brightness (0-255)
             if isinstance(value, (int, float)):
                 self._attr_brightness = int(value * 255 / 100)
@@ -285,6 +300,8 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         
         if self._address_dim is not None:
             attrs["knx_address_dim"] = str(GroupAddress(self._address_dim))
+        if self._address_dim_status is not None:
+            attrs["knx_address_dim_status"] = str(GroupAddress(self._address_dim_status))
         
         return attrs
 
@@ -293,6 +310,11 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         if self._address_dim:
             self._knx_gateway.unregister_listener(
                 self._address_dim,
+                self._handle_brightness_update
+            )
+        if self._address_dim_status:
+            self._knx_gateway.unregister_listener(
+                self._address_dim_status,
                 self._handle_brightness_update
             )
         await super().async_will_remove_from_hass()
