@@ -5,6 +5,22 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0-beta.2] - 2025-12-23
+
+### Fixed
+- **Coordinator Data Update**: Fixed 'Devices' object iteration error
+  - XKNX devices collection is not dict-like, requires direct iteration
+  - Properly extracts `group_address_state` from each device
+  - Added fallback to `group_address` if state address unavailable
+  - Improved error logging with device names instead of addresses
+
+### Testing
+- All 74 tests passing after fix
+- No regressions introduced
+- Coordinator properly handles XKNX Devices collection
+
+---
+
 ## [0.3.0] - 2025-12-23
 
 ### Highlights

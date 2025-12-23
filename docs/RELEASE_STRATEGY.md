@@ -111,21 +111,40 @@ Nach Überprüfung der HACS- und Core-Compliance-Anforderungen zeigt sich:
 
 ## 3. Versioning Strategy
 
-### 3.1 Semantic Versioning (SemVer)
+### 3.1 Semantic Versioning (SemVer) with Feature Branch Workflow
 
-**Aktuell:** Mischung aus beta- und final releases  
-**Problem:** Inkonsistente Tag-Struktur (v0.2.1-beta.4, v0.2.12, v0.3.0-beta.1)
+**Strategy:** Two-phase release model
 
-**Empfehlung:** Strikte SemVer 2.0.0 Implementierung
+1. **Pre-Release Phase (Feature Branch)**
+   - `v0.4.0-beta.1` on feature/core-integration
+   - Community testing and feedback
+   - No tests required for pre-release creation
+   - Manual installation only
+
+2. **Release Phase (Main Branch)**
+   - `v0.4.0` on main branch
+   - ALL tests must pass (74/74+)
+   - Coverage ≥ 55%
+   - HACS deployment ready
+
+**Empfehlung:** Strikte SemVer 2.0.0 Implementierung mit Feature-Branch Pre-Releases
 
 ```
 MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
-Beispiele:
-- 0.3.0          (HACS Stable Release)
-- 1.0.0-rc.1     (Core Candidate)
-- 1.0.0          (Core Production)
+Feature Branch Beispiele:
+- v0.4.0-beta.1          (Early testing)
+- v0.4.0-beta.2          (Refinements)
+- v0.4.0-rc.1            (Release Candidate)
+- v0.4.0-rc.2            (RC with fixes)
+
+Main Branch Beispiele:
+- 0.4.0                   (Stable Release)
+- 0.4.1                   (Patch Release)
+- 1.0.0                   (Core Production)
 ```
+
+**⭐ NEW:** See [FEATURE_BRANCH_RELEASE_STRATEGY.md](FEATURE_BRANCH_RELEASE_STRATEGY.md) for detailed workflow
 
 ### 3.2 Release Timeline
 
