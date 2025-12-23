@@ -55,26 +55,10 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Fetch current state of all known group addresses
             state_updates: dict[str, Any] = {}
 
-            # Get states from gateway's internal cache
-            if self.gateway._xknx:
-                # In XKNX, devices is a list/iterable of Device objects
-                for device in self.gateway._xknx.devices:
-                    try:
-                        # Get the group address from the device
-                        if hasattr(device, 'group_address_state') and device.group_address_state:
-                            address = device.group_address_state
-                        else:
-                            address = getattr(device, 'group_address', None)
-                        
-                        if address:
-                            state = device.resolve_state()
-                            state_updates[str(address)] = state
-                    except Exception as err:
-                        _LOGGER.warning(
-                            "Could not read state for device %s: %s",
-                            getattr(device, 'name', 'unknown'),
-                            err,
-                        )
+            # For now, coordinator just returns an empty cache
+            # Real state updates come from KNX telegrams via listeners
+            # The coordinator is a placeholder for future polling implementation
+            # when Home Assistant adds group read request support to XKNX
 
             # Update cache
             self._state_cache.update(state_updates)
