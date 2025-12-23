@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0-beta.3] - 2025-12-23
 
 ### Fixed
+- **Entity Base Class Type Handling**: Fixed MappedEntity attribute access
+  - Changed mapped_entity parameter from dict to MappedEntity dataclass
+  - Updated _create_unique_id() and name property to use getattr() for attributes
+  - Fixed 'MappedEntity' object has no attribute 'get' errors in all platforms
+
 - **Coordinator Architecture Simplified**: Changed from broken polling model to event-driven passive state model
   - Removed invalid XKNX device polling logic (`.devices.items()` and `resolve_state()` calls)
   - Coordinator now acts as passive cache holder instead of active poller
@@ -20,10 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Type checking with `isinstance(integration_data, dict)`
   - Try/except blocks around data access
   - Graceful degradation with meaningful error messages
-  - Fixed 'MappedEntity' object has no attribute 'get' errors
 
 ### Testing
 - All 74 tests passing with zero regressions
+- Entity base class properly handles MappedEntity objects
 - Coordinator architecture corrected to match actual KNX event-driven model
 - All platforms properly handle missing or invalid integration data
 
