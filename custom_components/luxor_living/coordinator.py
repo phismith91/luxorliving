@@ -57,14 +57,22 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             # Get states from gateway's internal cache
             if self.gateway._xknx:
-                for address, device in self.gateway._xknx.devices.items():
+                # In XKNX, devices is a list/iterable of Device objects
+                for device in self.gateway._xknx.devices:
                     try:
-                        state = device.resolve_state()
-                        state_updates[str(address)] = state
+                        # Get the group address from the device
+                        if hasattr(device, 'group_address_state') and device.group_address_state:
+                            address = device.group_address_state
+                        else:
+                            address = getattr(device, 'group_address', None)
+                        
+                        if address:
+                            state = device.resolve_state()
+                            state_updates[str(address)] = state
                     except Exception as err:
                         _LOGGER.warning(
-                            "Could not read state for %s: %s",
-                            address,
+                            "Could not read state for device %s: %s",
+                            getattr(device, 'name', 'unknown'),
                             err,
                         )
 
