@@ -31,8 +31,16 @@ async def async_setup_entry(
     _LOGGER.info("Setting up LUXORliving binary sensors")
 
     # Get coordinator and mapper from integration data
-    coordinator: LuxorLivingCoordinator = hass.data[DOMAIN][entry.entry_id].get("coordinator")
-    mapper: EntityMapper = hass.data[DOMAIN][entry.entry_id].get("mapper")
+    try:
+        integration_data = hass.data[DOMAIN][entry.entry_id]
+        if not isinstance(integration_data, dict):
+            _LOGGER.error("Integration data is not a dictionary: %s", type(integration_data))
+            return
+        coordinator: LuxorLivingCoordinator = integration_data.get("coordinator")
+        mapper: EntityMapper = integration_data.get("mapper")
+    except (KeyError, AttributeError) as err:
+        _LOGGER.error("Failed to get integration data: %s", err)
+        return
 
     if not mapper:
         _LOGGER.warning("No mapper found, skipping binary sensor setup")
