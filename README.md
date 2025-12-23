@@ -7,11 +7,24 @@
 ![Test Coverage](https://img.shields.io/badge/Coverage-35%25-yellow)
 ![Tests](https://img.shields.io/badge/Tests-23%2F23%20passing-brightgreen)
 
-Home Assistant Integration für **Theben LUXORliving KNX/IP Gateways** mit automatischer Geräteerkennung aus LXP-Projektdateien.
+Home Assistant Integration für **Theben LUXORliving KNX/IP Gateways** (BAOS 777) mit automatischer Geräteerkennung aus LXP-Projektdateien.
 
-> ⚠️ **Beta Status**: Diese Integration ist funktionsfähig, aber noch in aktiver Entwicklung. Sensor-, Climate- und Cover-Plattformen sind noch nicht vollständig implementiert.
+> ✅ **Production-Ready**: Voll funktionsfähig für Light & Switch Plattformen. 23/23 Tests passing, Quality Score 8.5/10.
 > 
-> ✅ **Getestet**: 23/23 Tests passing, Quality Score 8.5/10, Production-ready für Light & Switch Plattformen
+> ⚠️ **Partial Beta**: Sensor-, Climate- und Cover-Plattformen noch in Entwicklung.
+
+---
+
+## 🎉 Neuigkeiten (v0.2.6)
+
+### Beta 7.7 - Repository Cleanup (23. Dez 2025)
+- 🧹 **Code Cleanup:** REST API Datapoint Mapping entfernt (funktionierte nicht)
+- 📚 **Dokumentation:** BAOS REST API Limitationen dokumentiert
+- ⚡ **Performance:** Optimiert für schnelle Initial States via GroupValueRead
+- 🔒 **Security:** .gitignore erweitert für Debug-Dateien
+
+**Wichtige Erkenntnis:** BAOS Datapoints ≠ KNX GroupAddresses!  
+Siehe [BAOS_REST_API_LIMITATIONS.md](docs/BAOS_REST_API_LIMITATIONS.md)
 
 ---
 
@@ -115,11 +128,41 @@ Siehe [QUICKSTART.md](docs/QUICKSTART.md) für detaillierte Fehlerbehebung.
 
 ## 📚 Dokumentation
 
-- 📖 [Schnellstart-Anleitung](docs/QUICKSTART.md) – Komplettes Setup & Troubleshooting
-- 🔧 [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technische Details
-- 📊 [Test Report](docs/TEST_REPORT.md) – Test-Status & Coverage
-- 🔍 [Quality Audit](docs/QUALITY_AUDIT.md) – Code-Qualitätsanalyse
-- 🐞 [Issue Tracker](https://github.com/phismith91/luxorliving/issues) – Bugs & Feature Requests
+### Hauptdokumentation
+- 📖 [Installation & Setup](docs/INSTALLATION.md) – HACS, Manuelle Installation, Config Flow
+- 🚀 [Schnellstart V2](docs/QUICKSTART_V2.md) – Komplettes Setup mit Best Practices
+- 🔧 [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technische KNX-Details
+
+### Architektur & Entscheidungen
+- 🏗️ [Architecture Decision](docs/ARCHITECTURE_DECISION.md) – Warum Native Integration?
+- ⚠️ [BAOS REST API Limitations](docs/BAOS_REST_API_LIMITATIONS.md) – Beta 7.x Erkenntnisse
+- 📡 [BAOS REST API Discovery](docs/BAOS_REST_API_DISCOVERY.md) – API Dokumentation
+- 🔐 [Tunneling Authentication](docs/TUNNELING_AUTHENTICATION.md) – BAOS 777 Setup
+
+### Quality & Tests
+- ✅ [Test Review](docs/TEST_REVIEW.md) – 23/23 Tests passing
+- 🔍 [Quality Audit](docs/QUALITY_AUDIT.md) – Code Score 8.5/10
+- 🎯 [Agent Reviews](docs/AGENT_REVIEWS.md) – Development Insights
+
+---
+
+## 🔧 Technische Highlights
+
+### KNX Kommunikation
+- **Tunneling Mode** mit REST API Authentication (BAOS 777)
+- **XKNX Library** v3.11.0 für KNX/IP Protokoll
+- **GroupValueRead** für Initial States (~30ms pro Light)
+- **Telegram Listener** für Live-Updates
+
+### REST API Integration
+- ✅ Login & Session Management
+- ✅ Tunneling Control (`/rest/device/authtunneling`)
+- ❌ ~~Datapoint Mapping~~ (siehe BAOS_REST_API_LIMITATIONS.md)
+
+### Performance
+- **Startup:** ~800ms für 27 Lights (GroupValueRead)
+- **Live Updates:** <1s für physische Schalter-Events
+- **BAOS Cache:** Keine Bus-Belastung
 
 ---
 
