@@ -9,22 +9,22 @@
 
 Home Assistant Integration für **Theben LUXORliving KNX/IP Gateways** (BAOS 777) mit automatischer Geräteerkennung aus LXP-Projektdateien.
 
-> ✅ **Production-Ready**: Voll funktionsfähig für Light & Switch Plattformen. 23/23 Tests passing, Quality Score 8.5/10.
+> ✅ **Production-Ready**: Voll funktionsfähig für Light & Switch Plattformen. 58/58 Tests passing, Quality Score 8.5/10, 52% Coverage.
 > 
 > ⚠️ **Partial Beta**: Sensor-, Climate- und Cover-Plattformen noch in Entwicklung.
 
 ---
 
-## 🎉 Neuigkeiten (v0.2.6)
+## 🎉 Neuigkeiten (v0.3.0-beta.1)
 
-### Beta 7.7 - Repository Cleanup (23. Dez 2025)
-- 🧹 **Code Cleanup:** REST API Datapoint Mapping entfernt (funktionierte nicht)
-- 📚 **Dokumentation:** BAOS REST API Limitationen dokumentiert
-- ⚡ **Performance:** Optimiert für schnelle Initial States via GroupValueRead
-- 🔒 **Security:** .gitignore erweitert für Debug-Dateien
+### Beta 1.0 - Quality Audit Improvements (23. Dez 2025)
+- 🔒 **Security:** TLS 1.2+ (deprecated TLSv1 entfernt)
+- ✅ **Code Quality:** Exception Handling spezifischer (18 → 0 broad exceptions)
+- 📊 **Testing:** Coverage Measurement aktiviert (52% baseline)
+- ⚡ **UX:** Routing-Mode Validierung in Config Flow
+- 🧹 **Logging:** Emojis nur noch in Debug-Level (Production-Logs sauber)
 
-**Wichtige Erkenntnis:** BAOS Datapoints ≠ KNX GroupAddresses!  
-Siehe [BAOS_REST_API_LIMITATIONS.md](docs/BAOS_REST_API_LIMITATIONS.md)
+Siehe [QUALITY_IMPROVEMENTS.md](docs/QUALITY_IMPROVEMENTS.md) für Details.
 
 ---
 
