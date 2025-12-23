@@ -1,5 +1,7 @@
 {
     "name": "LUXORliving",
+    "content_in_root": false,
+    "filename": "luxor_living.zip",
     "render_readme": true,
     "homeassistant": "2025.12.0"
 }
