@@ -44,23 +44,9 @@ class LuxorLivingEntity(Entity):
         self.coordinator = coordinator
         self._config_entry = config_entry
         self._mapped_entity = mapped_entity
-        self._attr_unique_id: str = self._create_unique_id(mapped_entity)
+        # Use the unique_id from MappedEntity which is already guaranteed to be unique
+        self._attr_unique_id: str = getattr(mapped_entity, "unique_id", "unknown")
         self._attr_translation_key: str | None = None
-
-    def _create_unique_id(self, mapped_entity: MappedEntity) -> str:
-        """Create unique ID for this entity.
-
-        Args:
-            mapped_entity: MappedEntity object
-
-        Returns:
-            Unique ID combining device identifier and entity name
-        """
-        device_id = self._config_entry.entry_id
-        device_name = getattr(mapped_entity, "device_name", "unknown")
-        name = getattr(mapped_entity, "name", "unknown")
-
-        return f"{DOMAIN}_{device_id}_{device_name}_{name}".replace(" ", "_").lower()
 
     @property
     def device_info(self) -> DeviceInfo:
