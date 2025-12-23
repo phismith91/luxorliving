@@ -120,7 +120,7 @@ class LuxorLivingSwitch(SwitchEntity):
                 await asyncio.sleep(0.1)
             
             if not self._knx_gateway._connected:
-                _LOGGER.error("❌ KNX not connected after 5s for switch '%s', skipping initial read!", self._attr_name)
+                _LOGGER.error("KNX not connected after 5s for switch '%s', skipping initial read!", self._attr_name)
                 return
         # Request current state from KNX bus via GroupValueRead
         # Read BOTH addresses to work around stale BAOS StatusOnOff values

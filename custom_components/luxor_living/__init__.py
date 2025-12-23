@@ -36,7 +36,7 @@ PLATFORMS: list[Platform] = [
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up LUXORliving from a config entry."""
-    _LOGGER.warning("🔥🔥🔥 LUXOR SETUP STARTED 🔥🔥🔥")
+    _LOGGER.debug("LUXORliving setup started")
     
     # Store integration data
     hass.data.setdefault(DOMAIN, {})
@@ -67,13 +67,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Create entity mapper
             mapper = EntityMapper(project)
             entity_count = len(mapper.entities)
-            _LOGGER.warning("🔥 Mapped %d entities from LXP project", entity_count)
+            _LOGGER.warning("Mapped %d entities from LXP project", entity_count)
             
             # Store mapper and config in integration data
             hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
             hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
+        except FileNotFoundError as err:
+            _LOGGER.error("LXP file not found: %s", lxp_path)
+            return False
         except Exception as err:
-            _LOGGER.exception("Failed to parse LXP file %s: %s", lxp_path, err)
+            _LOGGER.exception("Failed to parse LXP file %s", lxp_path)
             return False
     else:
         _LOGGER.error("LXP file not found: %s - cannot load entities", lxp_file)
@@ -110,7 +113,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ia_label_map = mapper.get_individual_address_label_map()
         knx_gateway.set_group_address_labels(ga_label_map)
         knx_gateway.set_individual_address_labels(ia_label_map)
-    except Exception as err:
+    except (AttributeError, KeyError) as err:
         _LOGGER.debug("Could not build GA/IA label maps: %s", err)
     
     # Forward setup to platforms

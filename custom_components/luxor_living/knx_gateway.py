@@ -86,14 +86,14 @@ class LuxorKNXGateway:
             True if setup was successful
         """
         if self.simulation_mode:
-            _LOGGER.warning("🔥 KNX Gateway in SIMULATION MODE - no real communication")
+            _LOGGER.warning("KNX Gateway in SIMULATION MODE - no real communication")
             self._connected = True
             return True
 
         try:
             # Step 1: REST API Login (only for tunneling)
             if self._connection_type == ConnectionType.TUNNELING:
-                _LOGGER.info("🔐 Step 1/3: REST API Login...")
+                _LOGGER.debug("Step 1/3: REST API Login...")
                 
                 # Create REST client and enter async context
                 self._rest_client = BAOSRestClient(self.host, port=self.http_port)
@@ -101,27 +101,27 @@ class LuxorKNXGateway:
                 
                 try:
                     await self._rest_client.login(self.username, self.password)
-                    _LOGGER.info("✅ REST API login successful")
+                    _LOGGER.debug("REST API login successful")
                 except AuthenticationError as err:
-                    _LOGGER.error("❌ Authentication failed: %s", err)
+                    _LOGGER.error("Authentication failed: %s", err)
                     await self._rest_client.__aexit__(None, None, None)
                     self._rest_client = None
                     return False
                 
                 # Step 2: Enable KNX Tunneling
-                _LOGGER.info("🔧 Step 2/3: Enabling KNX Tunneling...")
+                _LOGGER.debug("Step 2/3: Enabling KNX Tunneling...")
                 try:
                     await self._rest_client.enable_tunneling()
                     self._tunneling_enabled = True
-                    _LOGGER.info("✅ KNX Tunneling enabled")
+                    _LOGGER.debug("KNX Tunneling enabled")
                 except TunnelingError as err:
-                    _LOGGER.error("❌ Failed to enable tunneling: %s", err)
+                    _LOGGER.error("Failed to enable tunneling: %s", err)
                     await self._rest_client.__aexit__(None, None, None)
                     self._rest_client = None
                     return False
             
             # Step 3: Connect KNX
-            _LOGGER.info("🔌 Step 3/3: Connecting KNX...")
+            _LOGGER.debug("Step 3/3: Connecting KNX...")
             
             # Configure connection BEFORE creating XKNX instance
             connection_config = ConnectionConfig(
@@ -147,7 +147,7 @@ class LuxorKNXGateway:
             
             self._connected = True
             _LOGGER.info(
-                "✅ Successfully connected to KNX Gateway %s:%s (%s mode)",
+                "Successfully connected to KNX Gateway %s:%s (%s mode)",
                 self.host,
                 self.port,
                 self._connection_type.name,
@@ -187,7 +187,7 @@ class LuxorKNXGateway:
             try:
                 # Properly exit async context (calls logout + closes session)
                 await self._rest_client.__aexit__(None, None, None)
-                _LOGGER.info("✅ Logged out from REST API (tunneling auto-deactivated)")
+                _LOGGER.info("Logged out from REST API (tunneling auto-deactivated)")
             except Exception as err:
                 _LOGGER.error("Error logging out from REST API: %s", err)
             finally:

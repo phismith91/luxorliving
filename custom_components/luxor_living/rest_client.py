@@ -1,4 +1,6 @@
 """REST API Client for BAOS 777 with Tunneling Activation."""
+from __future__ import annotations
+
 import aiohttp
 import asyncio
 import logging
@@ -59,7 +61,7 @@ class BAOSRestClient:
             ssl_context = ssl.create_default_context()
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
-            ssl_context.minimum_version = ssl.TLSVersion.TLSv1
+            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
             ssl_context.set_ciphers('DEFAULT:@SECLEVEL=0')
             return ssl_context
         
@@ -102,8 +104,8 @@ class BAOSRestClient:
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = ssl.CERT_NONE
                 
-                # Allow old TLS versions for legacy devices
-                ssl_context.minimum_version = ssl.TLSVersion.TLSv1
+                # TLS 1.2+ for security (legacy devices may need fallback)
+                ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
                 ssl_context.set_ciphers('DEFAULT:@SECLEVEL=0')
                 return ssl_context
             
@@ -249,13 +251,13 @@ class BAOSRestClient:
                 # Success! With 204 (No Content) there's no response body
                 if response.status == 204:
                     self.tunneling_enabled = True
-                    _LOGGER.info("✅ KNX Tunneling enabled successfully (204 No Content)")
+                    _LOGGER.debug("KNX Tunneling enabled successfully (204 No Content)")
                     return True
                 
                 # With 200, verify from response body
                 data = await response.json()
                 self.tunneling_enabled = data.get("enabled", True)
-                _LOGGER.info("✅ KNX Tunneling enabled successfully (200 OK)")
+                _LOGGER.debug("KNX Tunneling enabled successfully (200 OK)")
                 return True
         
         except aiohttp.ClientError as e:
@@ -368,7 +370,7 @@ class BAOSRestClient:
                 # BAOS API returns {"datapoints": [{"id": 1, "url": "..."}]}
                 if isinstance(response_data, dict) and "datapoints" in response_data:
                     datapoints = response_data["datapoints"]
-                    _LOGGER.info(f"✅ Fetched {len(datapoints)} datapoint references from BAOS")
+                    _LOGGER.debug(f"Fetched {len(datapoints)} datapoint references from BAOS")
                     _LOGGER.debug(f"🔍 First 3 datapoints: {datapoints[:3]}")
                     return datapoints
                 else:
@@ -484,14 +486,14 @@ class BAOSRestClient:
                     
                     datapoint = await response.json()
                     value = datapoint.get("value")
-                    _LOGGER.info(f"✅ Datapoint {datapoint_id} value: {value}")
+                    _LOGGER.debug(f"Datapoint {datapoint_id} value: {value}")
                     return value
         
         except asyncio.TimeoutError:
-            _LOGGER.warning(f"⏱️ Timeout fetching datapoint {datapoint_id} after {timeout}s")
+            _LOGGER.warning(f"Timeout fetching datapoint {datapoint_id} after {timeout}s")
             return None
         except aiohttp.ClientError as e:
-            _LOGGER.warning(f"❌ Client error fetching datapoint {datapoint_id}: {e}")
+            _LOGGER.warning(f"Client error fetching datapoint {datapoint_id}: {e}")
             return None
         except Exception as e:
             _LOGGER.error(f"💥 Unexpected error fetching datapoint {datapoint_id}: {e}", exc_info=True)

@@ -84,9 +84,9 @@ class TestLuxorLivingConfigFlow:
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
         
-        # Mock process_uploaded_file to raise exception
+        # Mock process_uploaded_file to raise OSError (more specific exception)
         with patch("custom_components.luxor_living.config_flow.process_uploaded_file") as mock_upload:
-            mock_upload.side_effect = Exception("File not found")
+            mock_upload.side_effect = OSError("File not found")
             
             result = await flow.async_step_user({CONF_LXP_FILE: "019b336bd0ef4a4b"})
         
@@ -114,8 +114,8 @@ class TestLuxorLivingConfigFlow:
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
         
-        # Make parser raise exception
-        mock_lxp_parser.return_value.parse.side_effect = Exception("Invalid XML")
+        # Make parser raise ValueError (more specific exception)
+        mock_lxp_parser.return_value.parse.side_effect = ValueError("Invalid XML")
         
         with patch("custom_components.luxor_living.config_flow.shutil.copy"):
             with patch("pathlib.Path.exists", return_value=True):
@@ -170,7 +170,7 @@ class TestLuxorLivingConfigFlow:
         flow._lxp_file = "/test.lxp"
         flow._project_name = "Test Project"
         
-        with patch.object(flow, '_validate_credentials', return_value=True):
+        with patch("socket.create_connection"):
             result = await flow.async_step_gateway({
                 "host": "224.0.23.12",
                 "port": 3671,

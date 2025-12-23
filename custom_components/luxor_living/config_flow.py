@@ -47,7 +47,7 @@ def save_uploaded_lxp_file(hass: HomeAssistant, uploaded_file_id: str) -> str:
         # Copy uploaded file to permanent storage
         shutil.copy(file_path, storage_path)
     
-    _LOGGER.info("📂 Saved uploaded file to: %s", storage_path)
+    _LOGGER.debug("Saved uploaded file to: %s", storage_path)
     return storage_path
 
 
@@ -98,10 +98,10 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     save_uploaded_lxp_file, self.hass, lxp_file_id
                 )
                 
-                _LOGGER.info("📂 Resolved file path: %s", lxp_file)
+                _LOGGER.info("Resolved file path: %s", lxp_file)
                 
-            except Exception as err:
-                _LOGGER.error("❌ Failed to save uploaded file: %s", err)
+            except (OSError, PermissionError) as err:
+                _LOGGER.error("Failed to save uploaded file: %s", err)
                 errors["base"] = "file_not_found"
                 return self.async_show_form(
                     step_id="user",
@@ -115,16 +115,16 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._lxp_file = lxp_file
                 self._project_name = project_name
                 
-                _LOGGER.info("✅ LXP file selected: %s (Project: %s)", lxp_file, project_name)
+                _LOGGER.info("LXP file selected: %s (Project: %s)", lxp_file, project_name)
                 
                 # Proceed to gateway configuration
                 return await self.async_step_gateway()
                 
             except FileNotFoundError as err:
-                _LOGGER.error("❌ File not found: %s", err)
+                _LOGGER.error("File not found: %s", err)
                 errors["base"] = "file_not_found"
-            except Exception as err:  # pylint: disable=broad-except
-                _LOGGER.exception("Error parsing LXP file: %s", err)
+            except ValueError as err:
+                _LOGGER.error("Invalid LXP file: %s", err)
                 errors["base"] = "invalid_lxp"
 
         return self.async_show_form(
@@ -142,28 +142,46 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # Validate credentials if not in simulation mode
             if not user_input.get(CONF_SIMULATION_MODE, False):
-                try:
-                    await self._validate_credentials(
-                        user_input[CONF_HOST],
-                        user_input[CONF_USERNAME],
-                        user_input[CONF_PASSWORD],
-                    )
-                except AuthenticationError as err:
-                    _LOGGER.error("❌ Authentication failed: %s", err)
-                    errors["base"] = "invalid_auth"
-                    return self.async_show_form(
-                        step_id="gateway",
-                        data_schema=STEP_GATEWAY_DATA_SCHEMA,
-                        errors=errors,
-                    )
-                except Exception as err:  # pylint: disable=broad-except
-                    _LOGGER.exception("Connection error: %s", err)
-                    errors["base"] = "cannot_connect"
-                    return self.async_show_form(
-                        step_id="gateway",
-                        data_schema=STEP_GATEWAY_DATA_SCHEMA,
-                        errors=errors,
-                    )
+                connection_type = user_input.get(CONF_CONNECTION_TYPE, DEFAULT_CONNECTION_TYPE)
+                
+                # For Tunneling: validate REST API credentials
+                if connection_type == CONNECTION_TYPE_TUNNELING:
+                    try:
+                        await self._validate_credentials(
+                            user_input[CONF_HOST],
+                            user_input[CONF_USERNAME],
+                            user_input[CONF_PASSWORD],
+                        )
+                    except AuthenticationError as err:
+                        _LOGGER.error("Authentication failed: %s", err)
+                        errors["base"] = "invalid_auth"
+                        return self.async_show_form(
+                            step_id="gateway",
+                            data_schema=STEP_GATEWAY_DATA_SCHEMA,
+                            errors=errors,
+                        )
+                    except (ConnectionError, TimeoutError) as err:
+                        _LOGGER.error("Connection error: %s", err)
+                        errors["base"] = "cannot_connect"
+                        return self.async_show_form(
+                            step_id="gateway",
+                            data_schema=STEP_GATEWAY_DATA_SCHEMA,
+                            errors=errors,
+                        )
+                else:
+                    # For Routing: validate gateway is reachable (ping check)
+                    try:
+                        import socket
+                        socket.create_connection((user_input[CONF_HOST], 3671), timeout=2)
+                    except (ConnectionRefusedError, TimeoutError, OSError) as err:
+                        _LOGGER.error("Cannot reach KNX/IP gateway at %s:%s - %s", 
+                                    user_input[CONF_HOST], 3671, err)
+                        errors["base"] = "cannot_connect"
+                        return self.async_show_form(
+                            step_id="gateway",
+                            data_schema=STEP_GATEWAY_DATA_SCHEMA,
+                            errors=errors,
+                        )
             
             # Combine LXP file and gateway config
             data = {
@@ -204,7 +222,7 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         parser = LXPParser(str(file_path))
         project = await parser.parse()
         
-        _LOGGER.info("✅ Valid LXP file: %s (Project: %s)", lxp_file, project.name)
+        _LOGGER.debug("Valid LXP file: %s (Project: %s)", lxp_file, project.name)
         return project.name
     
     async def _validate_credentials(self, host: str, username: str, password: str) -> None:
@@ -220,5 +238,5 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         async with BAOSRestClient(host, port=DEFAULT_HTTP_PORT) as client:
             # Attempt login - will raise AuthenticationError if invalid
             await client.login(username, password)
-            _LOGGER.info("✅ Credentials validated successfully")
+            _LOGGER.debug("Credentials validated successfully")
 

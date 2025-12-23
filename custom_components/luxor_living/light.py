@@ -124,7 +124,7 @@ class LuxorLivingLight(LightEntity):
                 await asyncio.sleep(0.1)
             
             if not self._knx_gateway._connected:
-                _LOGGER.error("❌ KNX not connected after 5s for light '%s', skipping initial read!", self._attr_name)
+                _LOGGER.error("KNX not connected after 5s for light '%s', skipping initial read!", self._attr_name)
                 return
         
         # BETA 7.7: Use KNX GroupValueRead for initial state
