@@ -5,6 +5,33 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1-beta.1] - 2025-12-24
+
+### 🎉 New Features
+- **Sensor Platform**: Full implementation of Home Assistant sensor platform for float/string values
+  - Automatic detection of sensor types: Temperature, Humidity, Pressure, CO2, Brightness, WindSpeed, RainVolume, AirQuality
+  - Proper unit of measurement handling (°C, %, hPa, ppm, lux, m/s, mm)
+  - Device class mapping for proper Home Assistant integration (temperature, humidity, pressure, illuminance, precipitation)
+  - Initial state reading from KNX via `async_read_group_value`
+  - Real-time updates via KNX telegram listeners
+
+### ✨ Improvements
+- **EntityMapper Extension**: Added sensor role detection and unit mapping
+  - `ROLE_TO_UNIT`: Maps sensor roles to HA units
+  - `ROLE_TO_DEVICE_CLASS`: Maps sensor roles to HA device classes
+  - Priority-based role detection (sensors first, then binary/switches)
+
+### 🧪 Testing
+- Added comprehensive sensor platform tests (11 new test cases)
+- Test coverage for entity initialization, KNX state reading, telegram updates
+- All 85 tests passing (74 existing + 11 new)
+
+### 📋 Known Limitations
+- Climate platform: Not yet implemented (no actuators in current projects)
+- Cover platform: Not yet implemented (no actuators in current projects)
+
+---
+
 ## [0.3.0] - 2025-12-24
 
 This is the first stable release of the LUXORliving Home Assistant integration. All critical issues from beta testing have been resolved.
