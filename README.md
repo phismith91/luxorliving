@@ -14,8 +14,8 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 - **Config Flow UI** – Setup in <2 minutes via HA interface
 - **HACS compatible** – One-click installation
 
-**Working platforms:** Light, Switch, Binary Sensor  
-**In development:** Sensor, Climate, Cover
+**Working platforms:** Light, Switch, Binary Sensor, Sensor (NEW!)  
+**In development:** Climate, Cover
 
 ---
 
@@ -142,12 +142,13 @@ Each gateway creates separate entities.
 
 - [Installation Guide](docs/INSTALLATION.md) – Detailed setup instructions
 - [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technical protocol details
+- [Sensor Platform](docs/SENSOR_PLATFORM.md) – Temperature, Humidity, Pressure sensors (v0.3.1+)
 - [Quality Improvements](docs/QUALITY_IMPROVEMENTS.md) – v0.3.0 changes
 - [Port Configuration](docs/PORT_CONFIGURATION_ANALYSIS.md) – Architecture decisions
 
 **For developers:**
 - [Contributing Guide](docs/QUICKSTART.md) – Development setup
-- [Test Report](docs/TEST_REPORT.md) – 58/58 tests (52% coverage)
+- [Test Report](docs/TEST_REPORT.md) – 85/85 tests (improved coverage)
 - [Architecture](docs/ARCHITECTURE_DECISION.md) – Design decisions
 
 ---
