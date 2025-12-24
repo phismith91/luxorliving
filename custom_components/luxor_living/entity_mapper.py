@@ -47,14 +47,46 @@ class EntityMapper:
         "status@UpDown": None,  # Status only
         # Binary sensor roles
         "MasterSlave": Platform.BINARY_SENSOR,
-        # Climate-related (future)
+        # Sensor roles (Temperature, Humidity, Pressure, etc.)
         "Temperature": Platform.SENSOR,
+        "Humidity": Platform.SENSOR,
+        "Pressure": Platform.SENSOR,
+        "CO2": Platform.SENSOR,
+        "Brightness": Platform.SENSOR,
+        "WindSpeed": Platform.SENSOR,
+        "RainVolume": Platform.SENSOR,
+        "AirQuality": Platform.SENSOR,
+        # Climate-related (future)
         "Setpoint": Platform.CLIMATE,
         # Scene (future)
         "Scene": Platform.SCENE,
         # Generic
         "ZentralAus": None,  # Central off, not an entity
         "Panik": None,  # Panic mode, not an entity
+    }
+
+    # Unit of measurement mapping for sensor roles
+    ROLE_TO_UNIT = {
+        "Temperature": "°C",
+        "Humidity": "%",
+        "Pressure": "hPa",
+        "CO2": "ppm",
+        "Brightness": "lux",
+        "WindSpeed": "m/s",
+        "RainVolume": "mm",
+        "AirQuality": "ppm",
+    }
+
+    # Sensor device class mapping
+    ROLE_TO_DEVICE_CLASS = {
+        "Temperature": "temperature",
+        "Humidity": "humidity",
+        "Pressure": "pressure",
+        "CO2": None,  # No standard device class for CO2
+        "Brightness": "illuminance",
+        "WindSpeed": None,  # No standard device class for wind speed
+        "RainVolume": "precipitation",
+        "AirQuality": None,
     }
 
     def __init__(self, project: LXPProject) -> None:
@@ -152,23 +184,43 @@ class EntityMapper:
         # Collect datapoints by role
         datapoints = {dp.role: dp.address for dp in sensor.datapoints}
 
-        # Sensors are typically binary_sensors or switches
-        # Determine based on roles
-        if "status@OnOff" in datapoints and "OnOff" not in datapoints:
-            # Pure status sensor -> binary_sensor
-            platform = Platform.BINARY_SENSOR
-            entity_type = "binary_sensor"
-        elif "OnOff" in datapoints:
-            # Control sensor -> could be switch or binary_sensor
-            # For now, treat motion sensors as binary_sensor
-            if "MasterSlave" in datapoints or sensor.sensor_type == 1:
+        if not datapoints:
+            _LOGGER.debug("Skipping sensor %s - no datapoints", sensor.name)
+            return
+
+        # Determine platform based on sensor roles
+        # Priority 1: Check for sensor types (Temperature, Humidity, etc.)
+        platform = None
+        entity_type = None
+        device_class = None
+        unit_of_measurement = None
+
+        for role, unit_map in self.ROLE_TO_UNIT.items():
+            if role in datapoints:
+                platform = Platform.SENSOR
+                entity_type = role.lower()
+                device_class = self.ROLE_TO_DEVICE_CLASS.get(role)
+                unit_of_measurement = self.ROLE_TO_UNIT.get(role)
+                break
+
+        # Priority 2: Check for binary control/status
+        if platform is None:
+            if "status@OnOff" in datapoints and "OnOff" not in datapoints:
+                # Pure status sensor -> binary_sensor
                 platform = Platform.BINARY_SENSOR
-                entity_type = "motion"
-            else:
-                # Regular switch sensor -> switch platform
-                platform = Platform.SWITCH
-                entity_type = "switch"
-        else:
+                entity_type = "binary_sensor"
+            elif "OnOff" in datapoints:
+                # Control sensor -> could be switch or binary_sensor
+                # For now, treat motion sensors as binary_sensor
+                if "MasterSlave" in datapoints or sensor.sensor_type == 1:
+                    platform = Platform.BINARY_SENSOR
+                    entity_type = "motion"
+                else:
+                    # Regular switch sensor -> switch platform
+                    platform = Platform.SWITCH
+                    entity_type = "switch"
+
+        if platform is None:
             _LOGGER.debug("Skipping sensor %s - no mappable roles", sensor.name)
             return
 
@@ -180,7 +232,20 @@ class EntityMapper:
         # Generate friendly name
         name = sensor.name or f"{device.name} Ch{sensor.channel}"
 
-        # Create mapped entity
+        # Create mapped entity with sensor-specific attributes
+        attributes = {
+            "channel": sensor.channel,
+            "sensor_type": sensor.sensor_type,
+            "serial_number": device.serial_number,
+            "knx_address": device.address,
+        }
+
+        # Add sensor-specific attributes
+        if device_class:
+            attributes["device_class"] = device_class
+        if unit_of_measurement:
+            attributes["unit_of_measurement"] = unit_of_measurement
+
         entity = MappedEntity(
             platform=platform,
             unique_id=unique_id,
@@ -189,16 +254,17 @@ class EntityMapper:
             device_id=device.id,
             entity_type=entity_type,
             datapoints=datapoints,
-            attributes={
-                "channel": sensor.channel,
-                "sensor_type": sensor.sensor_type,
-                "serial_number": device.serial_number,
-                "knx_address": device.address,
-            },
+            attributes=attributes,
         )
 
         self.entities.append(entity)
-        _LOGGER.debug("Mapped sensor '%s' to %s", name, platform)
+        _LOGGER.debug(
+            "Mapped sensor '%s' to %s (type=%s, unit=%s)",
+            name,
+            platform,
+            entity_type,
+            unit_of_measurement,
+        )
 
     def _determine_platform(self, datapoints: dict[str, int]) -> Platform | None:
         """Determine the platform based on datapoint roles."""

@@ -280,15 +280,15 @@ LuxorLivingDimmableLight (REFACTORED)
 
 ## Code Quality Status
 
-| Aspect | Status | Details |
-|--------|--------|---------|
-| Code Formatting | ✅ | Black 25.12.0 (100% compliance) |
-| Import Organization | ✅ | isort 7.0.0 (black profile) |
-| Type Hints | ✅ | py.typed marker + mypy config |
-| Documentation | ✅ | CHANGELOG.md (English, complete) |
-| Test Coverage | 🔄 | 55% (target: 80%+) |
-| Pre-commit Hooks | ✅ | .pre-commit-config.yaml ready |
-| Config Files | ✅ | pyproject.toml, .flake8, requirements_style.txt |
+| Aspect              | Status | Details                                         |
+| ------------------- | ------ | ----------------------------------------------- |
+| Code Formatting     | ✅      | Black 25.12.0 (100% compliance)                 |
+| Import Organization | ✅      | isort 7.0.0 (black profile)                     |
+| Type Hints          | ✅      | py.typed marker + mypy config                   |
+| Documentation       | ✅      | CHANGELOG.md (English, complete)                |
+| Test Coverage       | 🔄      | 55% (target: 80%+)                              |
+| Pre-commit Hooks    | ✅      | .pre-commit-config.yaml ready                   |
+| Config Files        | ✅      | pyproject.toml, .flake8, requirements_style.txt |
 
 **Code Style Enforcement Tools Configured:**
 - ✅ Black (automatic code formatting)
@@ -298,14 +298,14 @@ LuxorLivingDimmableLight (REFACTORED)
 - ✅ bandit (security scanning)
 - ✅ pre-commit (automated checks)
 
-| Metric | Before | After | Target |
-|--------|--------|-------|--------|
-| Type Hints | Partial | 100% | 100% ✅ |
-| Tests Passing | 58/58 | 57/57 | 57/57 ✅ |
-| Coordinator Pattern | ❌ | ✅ | ✅ ✅ |
-| Device Registry | ❌ | ✅ | ✅ ✅ |
-| Docstrings | Partial | Full | Full ✅ |
-| Code Style | Inconsistent | Consistent | Black-formatted (Pending) |
+| Metric              | Before       | After      | Target                    |
+| ------------------- | ------------ | ---------- | ------------------------- |
+| Type Hints          | Partial      | 100%       | 100% ✅                    |
+| Tests Passing       | 58/58        | 57/57      | 57/57 ✅                   |
+| Coordinator Pattern | ❌            | ✅          | ✅ ✅                       |
+| Device Registry     | ❌            | ✅          | ✅ ✅                       |
+| Docstrings          | Partial      | Full       | Full ✅                    |
+| Code Style          | Inconsistent | Consistent | Black-formatted (Pending) |
 
 ---
 
