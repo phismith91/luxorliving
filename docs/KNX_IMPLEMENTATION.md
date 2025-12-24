@@ -110,12 +110,12 @@ Value: 1 (On)
 
 ## Supported Data Types (DPT)
 
-| DPT | Type | Range | Usage |
-|-----|------|-------|-------|
-| 1.001 | Binary | On/Off | Switches, lights |
-| 5.001 | Percent | 0-100% | Dimmer, brightness |
-| 5.003 | Angle | 0-360° | Blinds position |
-| 9.001 | Temperature | -273°C - +670°C | Sensors |
+| DPT   | Type        | Range           | Usage              |
+| ----- | ----------- | --------------- | ------------------ |
+| 1.001 | Binary      | On/Off          | Switches, lights   |
+| 5.001 | Percent     | 0-100%          | Dimmer, brightness |
+| 5.003 | Angle       | 0-360°          | Blinds position    |
+| 9.001 | Temperature | -273°C - +670°C | Sensors            |
 
 Additional DPTs can be added in `knx_gateway.py`.
 

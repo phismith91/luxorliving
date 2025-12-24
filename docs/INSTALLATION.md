@@ -60,12 +60,12 @@ Before installation, ensure you have:
 
 ### Step 3: Gateway Configuration
 
-| Field | Value | Notes |
-|-------|-------|-------|
-| Gateway IP | `192.168.1.3` | Find in LUXORPlug or router DHCP table |
-| Connection Type | **Tunneling** | Recommended (authenticated, stable) |
-| Username | `admin` | BAOS REST API credentials |
-| Password | `admin` | Default: admin/admin |
+| Field           | Value         | Notes                                  |
+| --------------- | ------------- | -------------------------------------- |
+| Gateway IP      | `192.168.1.3` | Find in LUXORPlug or router DHCP table |
+| Connection Type | **Tunneling** | Recommended (authenticated, stable)    |
+| Username        | `admin`       | BAOS REST API credentials              |
+| Password        | `admin`       | Default: admin/admin                   |
 
 **Connection Types:**
 - **Tunneling**: Point-to-point connection, requires authentication (recommended)
