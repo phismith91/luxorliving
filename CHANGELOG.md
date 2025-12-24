@@ -5,6 +5,15 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1-beta.2] - 2025-12-24
+
+### 🛠️ Fixed
+- **Sensor Platform Registration**: `Platform.SENSOR` zur `PLATFORMS`-Liste in `__init__.py` hinzugefügt.
+  - Behebt, dass die Sensor-Plattform nicht geladen wurde und keine Sensor-Entities erstellt wurden.
+  - Sichtbare Logs nach Fix: "Setting up LUXORliving sensors" und "Creating N sensor entities".
+
+---
+
 ## [0.3.1-beta.1] - 2025-12-24
 
 ### 🎉 New Features
