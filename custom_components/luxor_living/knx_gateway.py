@@ -1,19 +1,19 @@
 """KNX Gateway Manager for LUXORliving IP1 with REST API Authentication."""
+
 from __future__ import annotations
 
 import logging
-from typing import Callable, Any
-
-from xknx import XKNX
-from xknx.io import ConnectionConfig, ConnectionType
-from xknx.telegram import Telegram
-from xknx.telegram.apci import GroupValueWrite, GroupValueRead, GroupValueResponse
-from xknx.telegram.address import GroupAddress
-from xknx.dpt import DPTBinary, DPTArray
+from typing import Any, Callable
 
 from homeassistant.core import HomeAssistant
+from xknx import XKNX
+from xknx.dpt import DPTArray, DPTBinary
+from xknx.io import ConnectionConfig, ConnectionType
+from xknx.telegram import Telegram
+from xknx.telegram.address import GroupAddress
+from xknx.telegram.apci import GroupValueRead, GroupValueResponse, GroupValueWrite
 
-from .rest_client import BAOSRestClient, AuthenticationError, TunnelingError
+from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 class LuxorKNXGateway:
     """
     Manages KNX/IP connection to LUXORliving IP1 Gateway.
-    
+
     Requires REST API authentication to enable KNX Tunneling:
     1. REST Login → Session Token
     2. PUT /rest/device/authtunneling {"enabled": true}
@@ -48,7 +48,7 @@ class LuxorKNXGateway:
         self.password = password
         self.http_port = http_port
         self.simulation_mode = simulation_mode
-        
+
         self._xknx: XKNX | None = None
         self._rest_client: BAOSRestClient | None = None
         self._listeners: dict[str, list[Callable]] = {}
@@ -57,14 +57,14 @@ class LuxorKNXGateway:
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
-        
+
         # Map connection type string to XKNX enum
         self._connection_type = (
             ConnectionType.TUNNELING
             if connection_type.lower() == "tunneling"
             else ConnectionType.ROUTING
         )
-        
+
         _LOGGER.info(
             "Initializing LUXORliving KNX Gateway: %s:%s (mode: %s, simulation: %s)",
             host,
@@ -76,12 +76,12 @@ class LuxorKNXGateway:
     async def async_setup(self) -> bool:
         """
         Set up the KNX connection with REST API authentication.
-        
+
         Steps:
         1. REST API Login
         2. Enable KNX Tunneling
         3. Connect KNX
-        
+
         Returns:
             True if setup was successful
         """
@@ -94,11 +94,11 @@ class LuxorKNXGateway:
             # Step 1: REST API Login (only for tunneling)
             if self._connection_type == ConnectionType.TUNNELING:
                 _LOGGER.debug("Step 1/3: REST API Login...")
-                
+
                 # Create REST client and enter async context
                 self._rest_client = BAOSRestClient(self.host, port=self.http_port)
                 await self._rest_client.__aenter__()
-                
+
                 try:
                     await self._rest_client.login(self.username, self.password)
                     _LOGGER.debug("REST API login successful")
@@ -107,7 +107,7 @@ class LuxorKNXGateway:
                     await self._rest_client.__aexit__(None, None, None)
                     self._rest_client = None
                     return False
-                
+
                 # Step 2: Enable KNX Tunneling
                 _LOGGER.debug("Step 2/3: Enabling KNX Tunneling...")
                 try:
@@ -119,10 +119,10 @@ class LuxorKNXGateway:
                     await self._rest_client.__aexit__(None, None, None)
                     self._rest_client = None
                     return False
-            
+
             # Step 3: Connect KNX
             _LOGGER.debug("Step 3/3: Connecting KNX...")
-            
+
             # Configure connection BEFORE creating XKNX instance
             connection_config = ConnectionConfig(
                 connection_type=self._connection_type,
@@ -131,20 +131,20 @@ class LuxorKNXGateway:
                 auto_reconnect=True,
                 auto_reconnect_wait=3,
             )
-            
+
             # Create XKNX instance with connection config
             self._xknx = XKNX(connection_config=connection_config)
-            
+
             # Start XKNX with configured connection
             await self._xknx.start()
-            
+
             # Register telegram callback (wrap async callback)
             def _sync_callback(telegram: Telegram) -> None:
                 """Sync wrapper for async telegram callback."""
                 self.hass.async_create_task(self._telegram_received_callback(telegram))
-            
+
             self._xknx.telegram_queue.register_telegram_received_cb(_sync_callback)
-            
+
             self._connected = True
             _LOGGER.info(
                 "Successfully connected to KNX Gateway %s:%s (%s mode)",
@@ -152,26 +152,26 @@ class LuxorKNXGateway:
                 self.port,
                 self._connection_type.name,
             )
-            
+
             return True
 
         except Exception as err:
             _LOGGER.error("Failed to connect to KNX Gateway: %s", err, exc_info=True)
             self._connected = False
-            
+
             # Cleanup REST session on failure
             if self._rest_client:
                 try:
                     await self._rest_client.logout()
                 except Exception:
                     pass
-            
+
             return False
 
     async def async_disconnect(self) -> None:
         """
         Disconnect from KNX gateway and cleanup REST session.
-        
+
         NOTE: Logout automatically deactivates tunneling!
         """
         # Disconnect KNX
@@ -181,7 +181,7 @@ class LuxorKNXGateway:
                 _LOGGER.info("Disconnected from KNX Gateway")
             except Exception as err:
                 _LOGGER.error("Error disconnecting from KNX: %s", err)
-        
+
         # Logout from REST API (deactivates tunneling)
         if self._rest_client:
             try:
@@ -192,7 +192,7 @@ class LuxorKNXGateway:
                 _LOGGER.error("Error logging out from REST API: %s", err)
             finally:
                 self._rest_client = None
-        
+
         self._connected = False
         self._tunneling_enabled = False
         self._xknx = None
@@ -204,12 +204,12 @@ class LuxorKNXGateway:
         value_type: str = "binary",
     ) -> bool:
         """Send a KNX telegram to a group address.
-        
+
         Args:
             group_address: KNX group address (e.g., "1/2/3")
             value: Value to send
             value_type: Type of value ("binary", "percent", "temperature", etc.)
-            
+
         Returns:
             True if successful, False otherwise
         """
@@ -229,7 +229,7 @@ class LuxorKNXGateway:
         try:
             # Convert group address
             ga = GroupAddress(group_address)
-            
+
             # Create payload based on value type
             if value_type == "binary":
                 payload = GroupValueWrite(DPTBinary(int(value)))
@@ -241,16 +241,18 @@ class LuxorKNXGateway:
                 payload = GroupValueWrite(DPTArray([byte_value]))
             else:
                 # For now, treat unknown types as raw bytes
-                payload = GroupValueWrite(DPTArray(value if isinstance(value, (list, bytes)) else [int(value)]))
-            
+                payload = GroupValueWrite(
+                    DPTArray(value if isinstance(value, (list, bytes)) else [int(value)])
+                )
+
             # Create and send telegram
             telegram = Telegram(
                 destination_address=ga,
                 payload=payload,
             )
-            
+
             await self._xknx.telegrams.put(telegram)
-            
+
             _LOGGER.debug(
                 "✅ Sent KNX telegram: %s=%s to %s",
                 value_type,
@@ -270,11 +272,11 @@ class LuxorKNXGateway:
 
     async def async_read_group_address(self, group_address: str, is_initial: bool = False) -> bool:
         """Send a read request to a KNX group address.
-        
+
         Args:
             group_address: KNX group address to read
             is_initial: Whether this is an initial read after startup
-            
+
         Returns:
             True if request was sent successfully
         """
@@ -295,15 +297,15 @@ class LuxorKNXGateway:
                 destination_address=ga,
                 payload=GroupValueRead(),
             )
-            
+
             if is_initial:
                 self._initial_read_pending.add(group_address)
-            
+
             await self._xknx.telegrams.put(telegram)
             _LOGGER.info(
                 "📤 Sent GroupValueRead to %s%s",
                 group_address,
-                " (INITIAL READ)" if is_initial else ""
+                " (INITIAL READ)" if is_initial else "",
             )
             return True
 
@@ -319,7 +321,7 @@ class LuxorKNXGateway:
         callback: Callable[[str, Any], None],
     ) -> None:
         """Register a callback for incoming telegrams to a specific group address.
-        
+
         Args:
             group_address: KNX group address to listen to (int or "x/y/z")
             callback: Callback function that receives (group_address, value)
@@ -332,7 +334,7 @@ class LuxorKNXGateway:
 
         if normalized not in self._listeners:
             self._listeners[normalized] = []
-        
+
         self._listeners[normalized].append(callback)
         _LOGGER.debug(
             "Registered listener for KNX address %s",
@@ -379,14 +381,14 @@ class LuxorKNXGateway:
         try:
             # Get group address as string
             group_address = str(telegram.destination_address)
-            
+
             # Extract value from payload
             payload_value = telegram.payload.value
-            
+
             if payload_value is None:
                 _LOGGER.debug("Received telegram with None value for %s", group_address)
                 return
-            
+
             # Handle different DPT types
             value: bool | int | float | bytes | tuple | list
             if isinstance(payload_value, DPTBinary):
@@ -396,7 +398,11 @@ class LuxorKNXGateway:
                 raw_value = payload_value.value
                 if isinstance(raw_value, (list, bytes)) and len(raw_value) == 1:
                     # DPT 5.001 (percent): 0-255 → 0-100
-                    byte_val = int(raw_value[0]) if isinstance(raw_value, (list, bytes)) else int(raw_value)
+                    byte_val = (
+                        int(raw_value[0])
+                        if isinstance(raw_value, (list, bytes))
+                        else int(raw_value)
+                    )
                     value = int(byte_val * 100 / 255)
                 else:
                     # Unknown DPT - return raw value
@@ -406,13 +412,15 @@ class LuxorKNXGateway:
                 value = bool(payload_value)
             else:
                 value = payload_value
-            
+
             # Track initial read completion
             was_initial = group_address in self._initial_read_pending
             if was_initial:
                 self._initial_read_pending.discard(group_address)
-            
-            telegram_type = "Response" if isinstance(telegram.payload, GroupValueResponse) else "Write"
+
+            telegram_type = (
+                "Response" if isinstance(telegram.payload, GroupValueResponse) else "Write"
+            )
             # Enrich with labels if known
             labels = self._ga_label_map.get(group_address)
             labels_str = f" | {', '.join(labels)}" if labels else ""
@@ -422,7 +430,11 @@ class LuxorKNXGateway:
             except Exception:
                 source_addr = "?"
             src_labels = self._ia_label_map.get(source_addr)
-            src_str = f" ← from {source_addr} ({', '.join(src_labels)})" if src_labels else f" ← from {source_addr}"
+            src_str = (
+                f" ← from {source_addr} ({', '.join(src_labels)})"
+                if src_labels
+                else f" ← from {source_addr}"
+            )
             _LOGGER.info(
                 "📥 Received KNX %s: %s=%s (DPT: %s)%s%s%s",
                 telegram_type,
@@ -433,15 +445,13 @@ class LuxorKNXGateway:
                 labels_str,
                 src_str,
             )
-            
+
             # Notify listeners
             if group_address in self._listeners:
                 # Create snapshot to avoid modification during iteration
                 callbacks = list(self._listeners[group_address])
                 _LOGGER.debug(
-                    "🔔 Notifying %d listener(s) for address %s",
-                    len(callbacks),
-                    group_address
+                    "🔔 Notifying %d listener(s) for address %s", len(callbacks), group_address
                 )
                 for callback in callbacks:
                     # Check if still registered (could be removed during iteration)
@@ -480,36 +490,36 @@ class LuxorKNXGateway:
         self, addresses: list[str], delay_ms: int = 50
     ) -> int:
         """Send batch read requests with small delay between each.
-        
+
         Args:
             addresses: List of KNX group addresses to read
             delay_ms: Delay in milliseconds between reads (default: 50ms)
-            
+
         Returns:
             Number of successfully sent read requests
         """
         import asyncio
-        
+
         if not addresses:
             return 0
-        
+
         _LOGGER.info("📖 Starting batch read of %d addresses", len(addresses))
-        
+
         success_count = 0
         for i, address in enumerate(addresses):
             if await self.async_read_group_address(address, is_initial=True):
                 success_count += 1
-            
+
             # Small delay to avoid overwhelming the bus
             if i < len(addresses) - 1:  # Skip delay after last address
                 await asyncio.sleep(delay_ms / 1000.0)
-        
+
         _LOGGER.info(
             "📖 Batch read completed: %d/%d successful",
             success_count,
             len(addresses),
         )
-        
+
         return success_count
 
     @property

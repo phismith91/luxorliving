@@ -1,20 +1,21 @@
 """Tests for config flow."""
-from contextlib import contextmanager
-from unittest.mock import AsyncMock, MagicMock, patch
-from pathlib import Path
+
 import tempfile
+from contextlib import contextmanager
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from custom_components.luxor_living.const import (
-    DOMAIN,
-    CONF_LXP_FILE,
-    CONF_CONNECTION_TYPE,
-    CONF_SIMULATION_MODE,
-    CONNECTION_TYPE_TUNNELING,
-    CONNECTION_TYPE_ROUTING,
-)
 from custom_components.luxor_living.config_flow import LuxorLivingConfigFlow
+from custom_components.luxor_living.const import (
+    CONF_CONNECTION_TYPE,
+    CONF_LXP_FILE,
+    CONF_SIMULATION_MODE,
+    CONNECTION_TYPE_ROUTING,
+    CONNECTION_TYPE_TUNNELING,
+    DOMAIN,
+)
 
 
 @pytest.fixture
@@ -23,12 +24,12 @@ def mock_lxp_parser():
     with patch("custom_components.luxor_living.config_flow.LXPParser") as mock:
         parser_instance = MagicMock()
         parser_instance.parse = AsyncMock()
-        
+
         # Mock project
         mock_project = MagicMock()
         mock_project.name = "Test Project"
         parser_instance.parse.return_value = mock_project
-        
+
         mock.return_value = parser_instance
         yield mock
 
@@ -45,18 +46,22 @@ def mock_hass():
 @pytest.fixture
 def mock_file_upload():
     """Mock file upload context manager."""
+
     @contextmanager
     def mock_process_uploaded_file(hass, file_id):
         # Create a temporary file to simulate the uploaded file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.lxp', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".lxp", delete=False) as f:
             f.write('<?xml version="1.0"?><Project name="Test"><Functions/></Project>')
             temp_path = f.name
         try:
             yield Path(temp_path)
         finally:
             Path(temp_path).unlink(missing_ok=True)
-    
-    with patch("custom_components.luxor_living.config_flow.process_uploaded_file", mock_process_uploaded_file):
+
+    with patch(
+        "custom_components.luxor_living.config_flow.process_uploaded_file",
+        mock_process_uploaded_file,
+    ):
         yield
 
 
@@ -68,9 +73,9 @@ class TestLuxorLivingConfigFlow:
         """Test showing user form with file selector."""
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
-        
+
         result = await flow.async_step_user()
-        
+
         assert result["type"] == "form"
         assert result["step_id"] == "user"
         assert CONF_LXP_FILE in result["data_schema"].schema
@@ -83,13 +88,15 @@ class TestLuxorLivingConfigFlow:
         """Test user step with file upload error."""
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
-        
+
         # Mock process_uploaded_file to raise OSError (more specific exception)
-        with patch("custom_components.luxor_living.config_flow.process_uploaded_file") as mock_upload:
+        with patch(
+            "custom_components.luxor_living.config_flow.process_uploaded_file"
+        ) as mock_upload:
             mock_upload.side_effect = OSError("File not found")
-            
+
             result = await flow.async_step_user({CONF_LXP_FILE: "019b336bd0ef4a4b"})
-        
+
         assert result["type"] == "form"
         assert result["errors"]["base"] == "file_not_found"
 
@@ -98,12 +105,12 @@ class TestLuxorLivingConfigFlow:
         """Test user step with valid LXP file upload."""
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
-        
+
         with patch("custom_components.luxor_living.config_flow.shutil.copy"):
             with patch("pathlib.Path.exists", return_value=True):
                 with patch("pathlib.Path.is_file", return_value=True):
                     result = await flow.async_step_user({CONF_LXP_FILE: "019b336bd0ef4a4b"})
-        
+
         assert result["type"] == "form"
         assert result["step_id"] == "gateway"
         assert flow._project_name == "Test Project"
@@ -113,15 +120,15 @@ class TestLuxorLivingConfigFlow:
         """Test user step with invalid LXP file content."""
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
-        
+
         # Make parser raise ValueError (more specific exception)
         mock_lxp_parser.return_value.parse.side_effect = ValueError("Invalid XML")
-        
+
         with patch("custom_components.luxor_living.config_flow.shutil.copy"):
             with patch("pathlib.Path.exists", return_value=True):
                 with patch("pathlib.Path.is_file", return_value=True):
                     result = await flow.async_step_user({CONF_LXP_FILE: "019b336bd0ef4a4b"})
-        
+
         assert result["type"] == "form"
         assert result["errors"]["base"] == "invalid_lxp"
 
@@ -132,9 +139,9 @@ class TestLuxorLivingConfigFlow:
         flow.hass = mock_hass
         flow._lxp_file = "/test.lxp"
         flow._project_name = "Test Project"
-        
+
         result = await flow.async_step_gateway()
-        
+
         assert result["type"] == "form"
         assert result["step_id"] == "gateway"
         assert "host" in result["data_schema"].schema
@@ -146,17 +153,19 @@ class TestLuxorLivingConfigFlow:
         flow.hass = mock_hass
         flow._lxp_file = "/test.lxp"
         flow._project_name = "Test Project"
-        
-        with patch.object(flow, '_validate_credentials', return_value=True):
-            result = await flow.async_step_gateway({
-                "host": "192.168.1.3",
-                "port": 3671,
-                "username": "admin",
-                "password": "admin",
-                CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
-                CONF_SIMULATION_MODE: False,
-            })
-        
+
+        with patch.object(flow, "_validate_credentials", return_value=True):
+            result = await flow.async_step_gateway(
+                {
+                    "host": "192.168.1.3",
+                    "port": 3671,
+                    "username": "admin",
+                    "password": "admin",
+                    CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
+                    CONF_SIMULATION_MODE: False,
+                }
+            )
+
         assert result["type"] == "create_entry"
         assert result["title"] == "LUXORliving (Test Project)"
         assert result["data"]["host"] == "192.168.1.3"
@@ -169,17 +178,19 @@ class TestLuxorLivingConfigFlow:
         flow.hass = mock_hass
         flow._lxp_file = "/test.lxp"
         flow._project_name = "Test Project"
-        
+
         with patch("socket.create_connection"):
-            result = await flow.async_step_gateway({
-                "host": "224.0.23.12",
-                "port": 3671,
-                "username": "admin",
-                "password": "admin",
-                CONF_CONNECTION_TYPE: CONNECTION_TYPE_ROUTING,
-                CONF_SIMULATION_MODE: False,
-            })
-        
+            result = await flow.async_step_gateway(
+                {
+                    "host": "224.0.23.12",
+                    "port": 3671,
+                    "username": "admin",
+                    "password": "admin",
+                    CONF_CONNECTION_TYPE: CONNECTION_TYPE_ROUTING,
+                    CONF_SIMULATION_MODE: False,
+                }
+            )
+
         assert result["type"] == "create_entry"
         assert result["data"][CONF_CONNECTION_TYPE] == CONNECTION_TYPE_ROUTING
 
@@ -190,16 +201,18 @@ class TestLuxorLivingConfigFlow:
         flow.hass = mock_hass
         flow._lxp_file = "/test.lxp"
         flow._project_name = "Test Project"
-        
-        result = await flow.async_step_gateway({
-            "host": "localhost",
-            "port": 3671,
-            "username": "admin",
-            "password": "admin",
-            CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
-            CONF_SIMULATION_MODE: True,
-        })
-        
+
+        result = await flow.async_step_gateway(
+            {
+                "host": "localhost",
+                "port": 3671,
+                "username": "admin",
+                "password": "admin",
+                CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
+                CONF_SIMULATION_MODE: True,
+            }
+        )
+
         assert result["type"] == "create_entry"
         assert result["data"][CONF_SIMULATION_MODE] is True
 
@@ -208,33 +221,35 @@ class TestLuxorLivingConfigFlow:
         """Test complete flow from file upload to entry creation."""
         flow = LuxorLivingConfigFlow()
         flow.hass = mock_hass
-        
+
         # Step 1: Show user form
         result = await flow.async_step_user()
         assert result["type"] == "form"
         assert result["step_id"] == "user"
-        
+
         # Step 2: Submit file upload (with file ID from FileSelector)
         with patch("custom_components.luxor_living.config_flow.shutil.copy"):
             with patch("pathlib.Path.exists", return_value=True):
                 with patch("pathlib.Path.is_file", return_value=True):
-                    result = await flow.async_step_user({
-                        CONF_LXP_FILE: "019b336bd0ef4a4b4b3318d08a60e437"
-                    })
-        
+                    result = await flow.async_step_user(
+                        {CONF_LXP_FILE: "019b336bd0ef4a4b4b3318d08a60e437"}
+                    )
+
         assert result["type"] == "form"
         assert result["step_id"] == "gateway"
-        
+
         # Step 3: Submit gateway config
-        with patch.object(flow, '_validate_credentials', return_value=True):
-            result = await flow.async_step_gateway({
-                "host": "192.168.1.3",
-                "port": 3671,
-                "username": "admin",
-                "password": "admin",
-                CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
-                CONF_SIMULATION_MODE: False,
-            })
-        
+        with patch.object(flow, "_validate_credentials", return_value=True):
+            result = await flow.async_step_gateway(
+                {
+                    "host": "192.168.1.3",
+                    "port": 3671,
+                    "username": "admin",
+                    "password": "admin",
+                    CONF_CONNECTION_TYPE: CONNECTION_TYPE_TUNNELING,
+                    CONF_SIMULATION_MODE: False,
+                }
+            )
+
         assert result["type"] == "create_entry"
         assert result["title"] == "LUXORliving (Test Project)"

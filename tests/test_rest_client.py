@@ -1,13 +1,15 @@
 """Tests for BAOS REST API Client."""
+
+from datetime import datetime, timedelta
+
 import pytest
 import pytest_asyncio
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
-from datetime import datetime, timedelta
 
 from custom_components.luxor_living.rest_client import (
-    BAOSRestClient,
     AuthenticationError,
+    BAOSRestClient,
     TunnelingError,
 )
 
@@ -43,10 +45,10 @@ async def mock_baos_server():
     app.router.add_post("/rest/logout", logout_handler)
     app.router.add_put("/rest/device/authtunneling", tunneling_handler)
     app.router.add_get("/rest/device/authtunneling", tunneling_handler)
-    
+
     server = TestServer(app)
     client = TestClient(server)
-    
+
     await client.start_server()
     yield client
     await client.close()
@@ -60,15 +62,15 @@ class TestBAOSRestClient:
     async def test_login_success(self, mock_baos_server):
         """Test successful login."""
         # Use real server URL
-        base_url = str(mock_baos_server.server.make_url(''))
-        host = base_url.replace('http://', '').split(':')[0]
-        port = int(base_url.split(':')[-1].rstrip('/'))
-        
+        base_url = str(mock_baos_server.server.make_url(""))
+        host = base_url.replace("http://", "").split(":")[0]
+        port = int(base_url.split(":")[-1].rstrip("/"))
+
         client = BAOSRestClient(host, port=port)
-        
+
         async with client:
             token = await client.login("admin", "admin")
-            
+
             # API returns plain text cookie token from mock
             assert token == "3c8b531737cbd849bccf15bb9ef09d9c"
             assert client.session_token == "3c8b531737cbd849bccf15bb9ef09d9c"
@@ -78,12 +80,12 @@ class TestBAOSRestClient:
     @pytest.mark.asyncio
     async def test_login_invalid_credentials(self, mock_baos_server):
         """Test login with invalid credentials."""
-        base_url = str(mock_baos_server.server.make_url(''))
-        host = base_url.replace('http://', '').split(':')[0]
-        port = int(base_url.split(':')[-1].rstrip('/'))
-        
+        base_url = str(mock_baos_server.server.make_url(""))
+        host = base_url.replace("http://", "").split(":")[0]
+        port = int(base_url.split(":")[-1].rstrip("/"))
+
         client = BAOSRestClient(host, port=port)
-        
+
         async with client:
             with pytest.raises(AuthenticationError, match="Invalid username or password"):
                 await client.login("admin", "wrong")
@@ -91,16 +93,16 @@ class TestBAOSRestClient:
     @pytest.mark.asyncio
     async def test_enable_tunneling_success(self, mock_baos_server):
         """Test enabling tunneling."""
-        base_url = str(mock_baos_server.server.make_url(''))
-        host = base_url.replace('http://', '').split(':')[0]
-        port = int(base_url.split(':')[-1].rstrip('/'))
-        
+        base_url = str(mock_baos_server.server.make_url(""))
+        host = base_url.replace("http://", "").split(":")[0]
+        port = int(base_url.split(":")[-1].rstrip("/"))
+
         client = BAOSRestClient(host, port=port)
-        
+
         async with client:
             await client.login("admin", "admin")
             result = await client.enable_tunneling()
-            
+
             assert result is True
             assert client.tunneling_enabled is True
 
@@ -108,7 +110,7 @@ class TestBAOSRestClient:
     async def test_enable_tunneling_not_authenticated(self):
         """Test enabling tunneling without login."""
         client = BAOSRestClient("192.168.1.3")
-        
+
         with pytest.raises(AuthenticationError, match="Not logged in"):
             await client.enable_tunneling()
 
@@ -118,40 +120,40 @@ class TestBAOSRestClient:
         client = BAOSRestClient("192.168.1.3")
         client.session_token = "expired_token"
         client.session_expires = datetime.now() - timedelta(minutes=1)  # Expired
-        
+
         with pytest.raises(AuthenticationError, match="Session expired"):
             await client.enable_tunneling()
 
     @pytest.mark.asyncio
     async def test_disable_tunneling(self, mock_baos_server):
         """Test disabling tunneling."""
-        base_url = str(mock_baos_server.server.make_url(''))
-        host = base_url.replace('http://', '').split(':')[0]
-        port = int(base_url.split(':')[-1].rstrip('/'))
-        
+        base_url = str(mock_baos_server.server.make_url(""))
+        host = base_url.replace("http://", "").split(":")[0]
+        port = int(base_url.split(":")[-1].rstrip("/"))
+
         client = BAOSRestClient(host, port=port)
-        
+
         async with client:
             await client.login("admin", "admin")
             await client.enable_tunneling()
             result = await client.disable_tunneling()
-            
+
             assert result is True
             assert client.tunneling_enabled is False
 
     @pytest.mark.asyncio
     async def test_logout(self, mock_baos_server):
         """Test logout."""
-        base_url = str(mock_baos_server.server.make_url(''))
-        host = base_url.replace('http://', '').split(':')[0]
-        port = int(base_url.split(':')[-1].rstrip('/'))
-        
+        base_url = str(mock_baos_server.server.make_url(""))
+        host = base_url.replace("http://", "").split(":")[0]
+        port = int(base_url.split(":")[-1].rstrip("/"))
+
         client = BAOSRestClient(host, port=port)
-        
+
         async with client:
             await client.login("admin", "admin")
             await client.logout()
-            
+
             assert client.session_token is None
             assert client.session_expires is None
             assert client.tunneling_enabled is False
@@ -159,16 +161,16 @@ class TestBAOSRestClient:
     @pytest.mark.asyncio
     async def test_get_tunneling_status(self, mock_baos_server):
         """Test getting tunneling status."""
-        base_url = str(mock_baos_server.server.make_url(''))
-        host = base_url.replace('http://', '').split(':')[0]
-        port = int(base_url.split(':')[-1].rstrip('/'))
-        
+        base_url = str(mock_baos_server.server.make_url(""))
+        host = base_url.replace("http://", "").split(":")[0]
+        port = int(base_url.split(":")[-1].rstrip("/"))
+
         client = BAOSRestClient(host, port=port)
-        
+
         async with client:
             await client.login("admin", "admin")
             status = await client.get_tunneling_status()
-            
+
             # Mock returns simplified response
             assert status["enabled"] is True
 
@@ -178,9 +180,9 @@ class TestBAOSRestClient:
         client.session_token = "test_token"
         client.session_expires = datetime.now() + timedelta(hours=1)
         client.tunneling_enabled = True
-        
+
         diag = client.get_diagnostics()
-        
+
         assert diag["host"] == "192.168.1.3"
         assert diag["port"] == 80
         assert diag["authenticated"] is True
@@ -197,7 +199,7 @@ class TestBAOSRestClient:
         client = BAOSRestClient("192.168.1.3")
         client.session_token = "test_token"
         client.session_expires = datetime.now() - timedelta(minutes=1)
-        
+
         assert client.is_authenticated is False
 
     def test_is_authenticated_valid(self):
@@ -205,5 +207,5 @@ class TestBAOSRestClient:
         client = BAOSRestClient("192.168.1.3")
         client.session_token = "test_token"
         client.session_expires = datetime.now() + timedelta(hours=1)
-        
+
         assert client.is_authenticated is True

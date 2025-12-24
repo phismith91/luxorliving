@@ -1,18 +1,21 @@
 """Light platform for LUXORliving integration."""
+
 from __future__ import annotations
 
 import asyncio
 import logging
 from typing import Any
 
-from homeassistant.components.light import LightEntity, ColorMode, ATTR_BRIGHTNESS
+from homeassistant.components.light import ATTR_BRIGHTNESS, ColorMode, LightEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from xknx.telegram.address import GroupAddress
 
-from .const import DOMAIN, DATA_KNX_GATEWAY
+from .const import DOMAIN
+from .coordinator import LuxorLivingCoordinator
+from .entity import LuxorLivingEntity
 from .entity_mapper import EntityMapper
 from .knx_gateway import LuxorKNXGateway
 
@@ -26,169 +29,209 @@ async def async_setup_entry(
 ) -> None:
     """Set up LUXORliving lights from a config entry."""
     _LOGGER.info("Setting up LUXORliving lights")
-    
-    # Get mapper and KNX gateway from integration data
-    mapper: EntityMapper = hass.data[DOMAIN][entry.entry_id].get("mapper")
-    knx_gateway: LuxorKNXGateway = hass.data[DOMAIN][entry.entry_id].get(DATA_KNX_GATEWAY)
-    
+
+    # Get coordinator, mapper and KNX gateway from integration data
+    try:
+        integration_data = hass.data[DOMAIN][entry.entry_id]
+        if not isinstance(integration_data, dict):
+            _LOGGER.error("Integration data is not a dictionary: %s", type(integration_data))
+            return
+        coordinator: LuxorLivingCoordinator = integration_data.get("coordinator")
+        mapper: EntityMapper = integration_data.get("mapper")
+        knx_gateway: LuxorKNXGateway = integration_data.get("knx_gateway")
+    except (KeyError, AttributeError) as err:
+        _LOGGER.error("Failed to get integration data: %s", err)
+        return
+
     if not mapper:
         _LOGGER.warning("No mapper found, skipping light setup")
         return
-    
-    if not knx_gateway:
-        _LOGGER.error("No KNX gateway found, skipping light setup")
+
+    if not coordinator:
+        _LOGGER.error("No coordinator found, skipping light setup")
         return
-    
+
     # Get all light entities
     light_entities = mapper.get_entities_by_platform(Platform.LIGHT)
     _LOGGER.info("Creating %d light entities", len(light_entities))
-    
+
     entities: list[LightEntity] = []
     for mapped_entity in light_entities:
         entity: LightEntity
         if mapped_entity.entity_type == "dimmable_light":
-            entity = LuxorLivingDimmableLight(mapped_entity, knx_gateway)
+            entity = LuxorLivingDimmableLight(coordinator, entry, mapped_entity, knx_gateway)
         else:
-            entity = LuxorLivingLight(mapped_entity, knx_gateway)
+            entity = LuxorLivingLight(coordinator, entry, mapped_entity, knx_gateway)
         entities.append(entity)
-    
+
     async_add_entities(entities)
 
 
-class LuxorLivingLight(LightEntity):
+class LuxorLivingLight(LuxorLivingEntity, LightEntity):
     """Representation of a LUXORliving light."""
 
-    _attr_has_entity_name = True
-    _attr_color_mode = ColorMode.ONOFF
-    _attr_supported_color_modes = {ColorMode.ONOFF}
+    _attr_color_mode: ColorMode = ColorMode.ONOFF
+    _attr_supported_color_modes: set[ColorMode] = {ColorMode.ONOFF}
 
-    def __init__(self, mapped_entity: Any, knx_gateway: LuxorKNXGateway) -> None:
-        """Initialize the light."""
-        self._mapped = mapped_entity
+    def __init__(
+        self,
+        coordinator: LuxorLivingCoordinator,
+        entry: ConfigEntry,
+        mapped_entity: Any,
+        knx_gateway: LuxorKNXGateway,
+    ) -> None:
+        """Initialize the light.
+
+        Args:
+            coordinator: Data coordinator instance
+            entry: Config entry for this integration
+            mapped_entity: Mapped entity data from LXP file
+            knx_gateway: KNX gateway instance
+        """
+        super().__init__(coordinator, entry, mapped_entity)
+
         self._knx_gateway = knx_gateway
-        self._attr_unique_id = mapped_entity.unique_id
-        self._attr_name = mapped_entity.name
         self._attr_is_on = False
-        
+
         # Store datapoint addresses
-        self._address_on = mapped_entity.datapoints.get("OnOff") or mapped_entity.datapoints.get("SchaltenOnOff")
-        self._address_status = mapped_entity.datapoints.get("StatusOnOff") or mapped_entity.datapoints.get("status@OnOff")
-        
+        self._address_on: str | None = mapped_entity.datapoints.get(
+            "OnOff"
+        ) or mapped_entity.datapoints.get("SchaltenOnOff")
+        self._address_status: str | None = mapped_entity.datapoints.get(
+            "StatusOnOff"
+        ) or mapped_entity.datapoints.get("status@OnOff")
+
         # Debug: Log extracted addresses
         _LOGGER.debug(
             "💡 Light '%s' addresses: ON=%s, STATUS=%s",
-            self._attr_name,
-            f"{self._address_on} ({GroupAddress(self._address_on)})" if self._address_on else "None",
-            f"{self._address_status} ({GroupAddress(self._address_status)})" if self._address_status else "None"
+            self.name,
+            (
+                f"{self._address_on} ({GroupAddress(self._address_on)})"
+                if self._address_on
+                else "None"
+            ),
+            (
+                f"{self._address_status} ({GroupAddress(self._address_status)})"
+                if self._address_status
+                else "None"
+            ),
         )
-        
-        # Device info
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, mapped_entity.device_id)},
-            "name": mapped_entity.device_name,
-            "manufacturer": "Theben",
-            "model": "LUXORliving",
-        }
-        
+
         # Register listeners for BOTH status AND control addresses
         # GroupValueResponse can come on either address!
         # STATUS address: for state updates from other devices
         # CONTROL address: for GroupValueResponse to our GroupValueRead
-        self._listen_addresses = []
-        
+        self._listen_addresses: list[str] = []
+
         if self._address_status:
             self._knx_gateway.register_listener(
                 self._address_status,
-                self._handle_knx_update
+                self._handle_knx_update,
             )
             self._listen_addresses.append(self._address_status)
-        
+
         if self._address_on and self._address_on != self._address_status:
             self._knx_gateway.register_listener(
                 self._address_on,
-                self._handle_knx_update
+                self._handle_knx_update,
             )
             self._listen_addresses.append(self._address_on)
 
     async def async_added_to_hass(self) -> None:
         """Entity added to hass - request current state from KNX."""
         await super().async_added_to_hass()
-        
+
         # Wait for KNX connection to be ready (max 5 seconds)
         if not self._knx_gateway._connected:
-            _LOGGER.debug("⏳ Waiting for KNX connection for light '%s'...", self._attr_name)
+            _LOGGER.debug("⏳ Waiting for KNX connection for light '%s'...", self.name)
             for i in range(50):
                 if self._knx_gateway._connected:
-                    _LOGGER.debug("✅ KNX connected after %.1fs for '%s'", i * 0.1, self._attr_name)
+                    _LOGGER.debug("✅ KNX connected after %.1fs for '%s'", i * 0.1, self.name)
                     break
                 await asyncio.sleep(0.1)
-            
+
             if not self._knx_gateway._connected:
-                _LOGGER.error("KNX not connected after 5s for light '%s', skipping initial read!", self._attr_name)
+                _LOGGER.error(
+                    "KNX not connected after 5s for light '%s', skipping initial read!",
+                    self.name,
+                )
                 return
-        
+
         # BETA 7.7: Use KNX GroupValueRead for initial state
         # REST API mapping removed (BAOS Datapoints ≠ GroupAddresses)
         # Request current state from KNX bus via GroupValueRead
         # Read BOTH addresses to work around stale BAOS StatusOnOff values
         # StatusOnOff may be stale if light was ON at BAOS startup or switched manually
         # OnOff reflects actual actuator state more reliably
-        addresses_to_read = []
-        
+        addresses_to_read: list[tuple[str, str]] = []
+
         if self._address_status:
             addresses_to_read.append((self._address_status, "STATUS"))
         if self._address_on and self._address_on != self._address_status:
             addresses_to_read.append((self._address_on, "CONTROL"))
-        
+
         if addresses_to_read:
             _LOGGER.info(
                 "💡 Light '%s' requesting initial state from %d address(es): %s",
-                self._attr_name,
+                self.name,
                 len(addresses_to_read),
-                ", ".join([f"{GroupAddress(addr)} ({typ})" for addr, typ in addresses_to_read])
+                ", ".join([f"{GroupAddress(addr)} ({typ})" for addr, typ in addresses_to_read]),
             )
             for address, address_type in addresses_to_read:
                 await self._knx_gateway.async_read_group_address(address, is_initial=True)
         else:
             _LOGGER.warning(
                 "⚠️ Light '%s' has NO read address! Cannot request initial state.",
-                self._attr_name
+                self.name,
             )
 
     def _handle_knx_update(self, group_address: str, value: Any) -> None:
-        """Handle KNX status update."""
+        """Handle KNX status update.
+
+        Args:
+            group_address: KNX group address that was updated
+            value: New value from KNX bus
+        """
         # Accept updates from both status and control addresses
         # Convert integer addresses to strings for comparison
-        valid_addresses = []
+        valid_addresses: list[str] = []
         if self._address_on is not None:
             valid_addresses.append(str(GroupAddress(self._address_on)))
         if self._address_status is not None:
             valid_addresses.append(str(GroupAddress(self._address_status)))
-        
+
         if group_address in valid_addresses:
             self._attr_is_on = bool(value)
-            self.schedule_update_ha_state()
-            _LOGGER.debug("Updated %s state: %s (from %s)", self._attr_name, value, group_address)
+            self.async_write_ha_state()
+            _LOGGER.debug("Updated %s state: %s (from %s)", self.name, value, group_address)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn the light on."""
+        """Turn the light on.
+
+        Args:
+            **kwargs: Additional keyword arguments (brightness, etc.)
+        """
         if self._address_on:
             success = await self._knx_gateway.async_send_telegram(
                 self._address_on,
                 True,
-                "binary"
+                "binary",
             )
             if success:
                 self._attr_is_on = True
                 self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn the light off."""
+        """Turn the light off.
+
+        Args:
+            **kwargs: Additional keyword arguments
+        """
         if self._address_on:
             success = await self._knx_gateway.async_send_telegram(
                 self._address_on,
                 False,
-                "binary"
+                "binary",
             )
             if success:
                 self._attr_is_on = False
@@ -196,11 +239,11 @@ class LuxorLivingLight(LightEntity):
 
     async def async_will_remove_from_hass(self) -> None:
         """Clean up listener when entity is removed."""
-        if hasattr(self, '_listen_addresses') and self._listen_addresses:
+        if hasattr(self, "_listen_addresses") and self._listen_addresses:
             for addr in list(self._listen_addresses):
                 self._knx_gateway.unregister_listener(
                     addr,
-                    self._handle_knx_update
+                    self._handle_knx_update,
                 )
         await super().async_will_remove_from_hass()
 
@@ -208,47 +251,79 @@ class LuxorLivingLight(LightEntity):
 class LuxorLivingDimmableLight(LuxorLivingLight):
     """Representation of a dimmable LUXORliving light."""
 
-    _attr_color_mode = ColorMode.BRIGHTNESS
-    _attr_supported_color_modes = {ColorMode.BRIGHTNESS}
+    _attr_color_mode: ColorMode = ColorMode.BRIGHTNESS
+    _attr_supported_color_modes: set[ColorMode] = {ColorMode.BRIGHTNESS}
 
-    def __init__(self, mapped_entity: Any, knx_gateway: LuxorKNXGateway) -> None:
-        """Initialize the dimmable light."""
-        super().__init__(mapped_entity, knx_gateway)
+    def __init__(
+        self,
+        coordinator: LuxorLivingCoordinator,
+        entry: ConfigEntry,
+        mapped_entity: Any,
+        knx_gateway: LuxorKNXGateway,
+    ) -> None:
+        """Initialize the dimmable light.
+
+        Args:
+            coordinator: Data coordinator instance
+            entry: Config entry for this integration
+            mapped_entity: Mapped entity data from LXP file
+            knx_gateway: KNX gateway instance
+        """
+        super().__init__(coordinator, entry, mapped_entity, knx_gateway)
         self._attr_brightness = 255
-        
+
         # Additional datapoints for dimming
-        self._address_dim = mapped_entity.datapoints.get("Dimmen%")
-        self._address_dim_rel = mapped_entity.datapoints.get("DimmenRel")
-        self._address_dim_status = mapped_entity.datapoints.get("Status%")
-        
+        self._address_dim: str | None = mapped_entity.datapoints.get("Dimmen%")
+        self._address_dim_rel: str | None = mapped_entity.datapoints.get("DimmenRel")
+        self._address_dim_status: str | None = mapped_entity.datapoints.get("Status%")
+
         # Register listeners for brightness updates (status and control)
         if self._address_dim:
             self._knx_gateway.register_listener(
                 self._address_dim,
-                self._handle_brightness_update
+                self._handle_brightness_update,
             )
         if self._address_dim_status:
             self._knx_gateway.register_listener(
                 self._address_dim_status,
-                self._handle_brightness_update
+                self._handle_brightness_update,
             )
 
     async def async_added_to_hass(self) -> None:
         """Entity added to hass - request current state from KNX."""
         await super().async_added_to_hass()
-        
+
         # Request current brightness from KNX bus
         # Prefer reading Status% (current brightness), also read Dimmen% for completeness
         if self._address_dim_status:
-            _LOGGER.debug("Requesting initial brightness for %s from %s", self._attr_name, self._address_dim_status)
-            await self._knx_gateway.async_read_group_address(self._address_dim_status, is_initial=True)
+            _LOGGER.debug(
+                "Requesting initial brightness for %s from %s",
+                self.name,
+                self._address_dim_status,
+            )
+            await self._knx_gateway.async_read_group_address(
+                self._address_dim_status,
+                is_initial=True,
+            )
         if self._address_dim:
-            _LOGGER.debug("Requesting initial brightness for %s from %s", self._attr_name, self._address_dim)
-            await self._knx_gateway.async_read_group_address(self._address_dim, is_initial=True)
+            _LOGGER.debug(
+                "Requesting initial brightness for %s from %s",
+                self.name,
+                self._address_dim,
+            )
+            await self._knx_gateway.async_read_group_address(
+                self._address_dim,
+                is_initial=True,
+            )
 
     def _handle_brightness_update(self, group_address: str, value: Any) -> None:
-        """Handle KNX brightness update."""
-        valid_brightness_addresses = []
+        """Handle KNX brightness update.
+
+        Args:
+            group_address: KNX group address that was updated
+            value: New brightness value (0-100)
+        """
+        valid_brightness_addresses: list[str] = []
         if self._address_dim is not None:
             valid_brightness_addresses.append(str(GroupAddress(self._address_dim)))
         if self._address_dim_status is not None:
@@ -258,17 +333,21 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
             if isinstance(value, (int, float)):
                 self._attr_brightness = int(value * 255 / 100)
                 self._attr_is_on = self._attr_brightness > 0
-                self.schedule_update_ha_state()
+                self.async_write_ha_state()
                 _LOGGER.debug(
                     "Updated %s brightness: %d%%",
-                    self._attr_name,
-                    value
+                    self.name,
+                    value,
                 )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn the light on."""
+        """Turn the light on.
+
+        Args:
+            **kwargs: Additional keyword arguments (brightness, etc.)
+        """
         brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
-        
+
         # Send brightness value if dimming address exists
         if self._address_dim:
             # Convert brightness (0-255) to percentage (0-100)
@@ -276,7 +355,7 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
             success = await self._knx_gateway.async_send_telegram(
                 self._address_dim,
                 percent,
-                "percent"
+                "percent",
             )
             if success:
                 self._attr_is_on = True
@@ -288,21 +367,25 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return extra attributes."""
-        attrs = {}
-        
+        """Return extra attributes.
+
+        Returns:
+            Dictionary of extra state attributes
+        """
+        attrs: dict[str, Any] = {}
+
         # Convert integer KNX addresses to group address strings
         if self._address_on is not None:
             attrs["knx_address_on"] = str(GroupAddress(self._address_on))
-        
+
         if self._address_status is not None:
             attrs["knx_address_status"] = str(GroupAddress(self._address_status))
-        
+
         if self._address_dim is not None:
             attrs["knx_address_dim"] = str(GroupAddress(self._address_dim))
         if self._address_dim_status is not None:
             attrs["knx_address_dim_status"] = str(GroupAddress(self._address_dim_status))
-        
+
         return attrs
 
     async def async_will_remove_from_hass(self) -> None:
@@ -310,11 +393,11 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         if self._address_dim:
             self._knx_gateway.unregister_listener(
                 self._address_dim,
-                self._handle_brightness_update
+                self._handle_brightness_update,
             )
         if self._address_dim_status:
             self._knx_gateway.unregister_listener(
                 self._address_dim_status,
-                self._handle_brightness_update
+                self._handle_brightness_update,
             )
         await super().async_will_remove_from_hass()

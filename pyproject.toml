@@ -1,0 +1,114 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "luxor-living"
+version = "0.3.0-beta.1"
+description = "Theben LUXORliving integration for Home Assistant"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Phil", email = "phil@example.com"}
+]
+requires-python = ">=3.13"
+dependencies = [
+    "xknx>=3.11.0",
+    "aiohttp>=3.10.0",
+]
+keywords = ["home-assistant", "knx", "luxorliving", "theben"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Home Assistant",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Home Automation",
+]
+
+[project.urls]
+Homepage = "https://github.com/phil/luxorliving"
+Documentation = "https://github.com/phil/luxorliving/docs"
+Repository = "https://github.com/phil/luxorliving.git"
+Issues = "https://github.com/phil/luxorliving/issues"
+
+[tool.black]
+line-length = 100
+target-version = ['py313']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+py_version = "313"
+skip_gitignore = true
+known_first_party = ["custom_components"]
+known_third_party = ["homeassistant", "xknx"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+asyncio_mode = "strict"
+addopts = "--strict-markers -ra"
+markers = [
+    "asyncio: marks tests as async",
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["custom_components/luxor_living"]
+omit = [
+    "*/__init__.py",
+    "*/tests/*",
+    "*/test_*.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+    "homeassistant.*",
+    "xknx.*",
+]
+ignore_missing_imports = true

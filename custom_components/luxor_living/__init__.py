@@ -1,4 +1,5 @@
 """The LUXORliving integration."""
+
 from __future__ import annotations
 
 import logging
@@ -6,24 +7,25 @@ from pathlib import Path
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform, CONF_HOST
+from homeassistant.const import CONF_HOST, Platform
 from homeassistant.core import HomeAssistant
 
 from .const import (
-    DOMAIN,
-    CONF_LXP_FILE,
     CONF_CONNECTION_TYPE,
+    CONF_LXP_FILE,
+    CONF_PASSWORD,
     CONF_SIMULATION_MODE,
     CONF_USERNAME,
-    CONF_PASSWORD,
-    DEFAULT_PORT,
+    DATA_KNX_GATEWAY,
     DEFAULT_CONNECTION_TYPE,
     DEFAULT_HTTP_PORT,
-    DATA_KNX_GATEWAY,
+    DEFAULT_PORT,
+    DOMAIN,
 )
-from .lxp_parser import LXPParser
+from .coordinator import LuxorLivingCoordinator
 from .entity_mapper import EntityMapper
 from .knx_gateway import LuxorKNXGateway
+from .lxp_parser import LXPParser
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,11 +40,11 @@ PLATFORMS: list[Platform] = [
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up LUXORliving from a config entry."""
     _LOGGER.debug("LUXORliving setup started")
-    
+
     # Store integration data
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {}
-    
+
     # Get configuration
     lxp_file = entry.data.get(CONF_LXP_FILE)
     host = entry.data.get(CONF_HOST, "localhost")
@@ -51,25 +53,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     password = entry.data.get(CONF_PASSWORD, "admin")
     connection_type = entry.data.get(CONF_CONNECTION_TYPE, DEFAULT_CONNECTION_TYPE)
     simulation_mode = entry.data.get(CONF_SIMULATION_MODE, False)
-    
+
     if not lxp_file:
         _LOGGER.error("No LXP file configured - setup cannot continue")
         return False
-    
+
     # Parse LXP file
     lxp_path = Path(lxp_file).expanduser()
-    
+
     if lxp_path and lxp_path.exists():
         _LOGGER.info("Parsing LXP file: %s", lxp_path)
         try:
             parser = LXPParser(str(lxp_path))
             project = await parser.parse()
-            
+
             # Create entity mapper
             mapper = EntityMapper(project)
             entity_count = len(mapper.entities)
             _LOGGER.warning("Mapped %d entities from LXP project", entity_count)
-            
+
             # Store mapper and config in integration data
             hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
             hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
@@ -82,7 +84,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     else:
         _LOGGER.error("LXP file not found: %s - cannot load entities", lxp_file)
         return False
-    
+
     # Initialize KNX Gateway with REST API credentials
     knx_gateway = LuxorKNXGateway(
         hass=hass,
@@ -94,17 +96,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         connection_type=connection_type,
         simulation_mode=simulation_mode,
     )
-    
+
     # Connect to gateway
     if not await knx_gateway.async_setup():
         _LOGGER.error("Failed to connect to KNX gateway")
         # Continue anyway in simulation mode
         if not simulation_mode:
             return False
-    
+
     # Note: Datapoint mapping is now loaded in knx_gateway.async_setup()
     # via _async_load_datapoint_mapping() which fetches from REST API
-    
+
     # Store gateway in integration data
     hass.data[DOMAIN][entry.entry_id][DATA_KNX_GATEWAY] = knx_gateway
 
@@ -116,25 +118,34 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         knx_gateway.set_individual_address_labels(ia_label_map)
     except (AttributeError, KeyError) as err:
         _LOGGER.debug("Could not build GA/IA label maps: %s", err)
-    
+
+    # Initialize Data Coordinator
+    coordinator = LuxorLivingCoordinator(hass, knx_gateway)
+
+    # Fetch initial data
+    await coordinator.async_config_entry_first_refresh()
+
+    # Store coordinator in integration data
+    hass.data[DOMAIN][entry.entry_id]["coordinator"] = coordinator
+
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    
+
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.info("Unloading LUXORliving integration")
-    
+
     # Disconnect KNX gateway
     knx_gateway = hass.data[DOMAIN][entry.entry_id].get(DATA_KNX_GATEWAY)
     if knx_gateway:
         await knx_gateway.async_disconnect()
-    
+
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    
+
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
-    
+
     return unload_ok

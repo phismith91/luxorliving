@@ -1,4 +1,5 @@
 """Constants for the LUXORliving integration."""
+
 from __future__ import annotations
 
 DOMAIN = "luxor_living"
@@ -31,3 +32,4 @@ ATTR_DEVICE = "device"
 
 # KNX Gateway
 DATA_KNX_GATEWAY = "knx_gateway"
+DATA_COORDINATOR = "coordinator"

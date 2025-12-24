@@ -1,4 +1,5 @@
 """Cover platform for LUXORliving integration."""
+
 from __future__ import annotations
 
 import logging
@@ -17,8 +18,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up LUXORliving covers from a config entry."""
     _LOGGER.info("Setting up LUXORliving covers")
-    
+
     # TODO: Parse LXP file and create cover entities
     entities: list = []
-    
+
     async_add_entities(entities)
