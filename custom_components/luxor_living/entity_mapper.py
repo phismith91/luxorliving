@@ -68,11 +68,16 @@ class EntityMapper:
     # Unit of measurement mapping for sensor roles
     ROLE_TO_UNIT = {
         "Temperature": "°C",
+        "Temperatur": "°C",  # German variant
         "Humidity": "%",
         "Pressure": "hPa",
         "CO2": "ppm",
         "Brightness": "lux",
+        "HelligkeitMitte": "lux",  # German variant
+        "HelligkeitLinks": "lux",
+        "HelligkeitRechts": "lux",
         "WindSpeed": "m/s",
+        "Windgeschwindigkeit": "km/h",  # German variant, km/h as per Wetterstation
         "RainVolume": "mm",
         "AirQuality": "ppm",
     }
@@ -80,11 +85,16 @@ class EntityMapper:
     # Sensor device class mapping
     ROLE_TO_DEVICE_CLASS = {
         "Temperature": "temperature",
+        "Temperatur": "temperature",  # German variant
         "Humidity": "humidity",
         "Pressure": "pressure",
         "CO2": None,  # No standard device class for CO2
         "Brightness": "illuminance",
+        "HelligkeitMitte": "illuminance",  # German variant
+        "HelligkeitLinks": "illuminance",
+        "HelligkeitRechts": "illuminance",
         "WindSpeed": None,  # No standard device class for wind speed
+        "Windgeschwindigkeit": None,  # German variant
         "RainVolume": "precipitation",
         "AirQuality": None,
     }
@@ -193,6 +203,11 @@ class EntityMapper:
 
         if not datapoints:
             _LOGGER.debug("Skipping sensor %s - no datapoints", sensor.name)
+            return
+
+        # Special handling for Wetterstation: extract individual sensor entities
+        if "wetterstation" in device.name.lower():
+            self._map_wetterstation_sensor(device, sensor, datapoints)
             return
 
         # Determine platform based on sensor roles
@@ -335,6 +350,67 @@ class EntityMapper:
             if dev_label not in ia_labels[ia_str]:
                 ia_labels[ia_str].append(dev_label)
         return ia_labels
+
+    # --- Wetterstation special handling ---
+    def _map_wetterstation_sensor(
+        self, device: LXPDevice, sensor: LXPSensor, datapoints: dict[str, int]
+    ) -> None:
+        """Create individual sensor entities from Wetterstation datapoints.
+        
+        Wetterstation sensors have multiple roles (Temperatur, HelligkeitMitte, etc.)
+        but are marked affected=0. We create separate entities for each role.
+        """
+        # Role -> (entity_name_suffix, device_class, unit)
+        wetterstation_roles = {
+            "Temperatur": ("Außentemperatur", "temperature", "°C"),
+            "Windgeschwindigkeit": ("Windgeschwindigkeit", None, "km/h"),
+            "HelligkeitMitte": ("Helligkeit Mitte", "illuminance", "lux"),
+            "HelligkeitLinks": ("Helligkeit Links", "illuminance", "lux"),
+            "HelligkeitRechts": ("Helligkeit Rechts", "illuminance", "lux"),
+            "Regen": ("Regen", None, None),  # Binary/status
+        }
+
+        for role, (name_suffix, dev_class, unit) in wetterstation_roles.items():
+            if role not in datapoints:
+                continue
+
+            addr = datapoints[role]
+            unique_id = f"{device.id}_{addr}"
+
+            # Check if already exists (avoid duplicates)
+            if any(e.unique_id == unique_id for e in self.entities):
+                continue
+
+            # Skip non-sensor roles
+            if role == "Regen":
+                # Regen is binary (OnOff), skip for now
+                continue
+
+            entity = MappedEntity(
+                platform=Platform.SENSOR,
+                unique_id=unique_id,
+                name=f"{device.name} {name_suffix}",
+                device_name=device.name,
+                device_id=device.id,
+                entity_type=role.lower(),
+                datapoints={role: addr},
+                attributes={
+                    "device_class": dev_class,
+                    "unit_of_measurement": unit,
+                    "channel": sensor.channel,
+                    "sensor_type": sensor.sensor_type,
+                    "serial_number": device.serial_number,
+                    "knx_address": device.address,
+                },
+            )
+
+            self.entities.append(entity)
+            _LOGGER.debug(
+                "Mapped Wetterstation sensor '%s' (%s) at address %s",
+                entity.name,
+                role,
+                addr,
+            )
 
     # --- Overrides support ---
     def _apply_overrides(self) -> None:
