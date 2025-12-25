@@ -396,14 +396,16 @@ class LuxorKNXGateway:
             elif isinstance(payload_value, DPTArray):
                 # Decode DPT arrays based on length
                 raw_value = payload_value.value
-                if isinstance(raw_value, (list, bytes)) and len(raw_value) == 1:
+                if isinstance(raw_value, (list, tuple, bytes)) and len(raw_value) == 1:
                     # DPT 5.001 (percent): 0-255 → 0-100
-                    byte_val = (
-                        int(raw_value[0])
-                        if isinstance(raw_value, (list, bytes))
-                        else int(raw_value)
-                    )
+                    byte_val = int(raw_value[0])
                     value = int(byte_val * 100 / 255)
+                elif isinstance(raw_value, (list, tuple, bytes)) and len(raw_value) == 2:
+                    # 2-byte float (DPT 9.xxx), used by Wetterstation (Temp, Wind, Lux)
+                    try:
+                        value = DPT2ByteFloat().from_knx(bytes(raw_value))
+                    except Exception:
+                        value = raw_value
                 else:
                     # Unknown DPT - return raw value
                     value = raw_value
