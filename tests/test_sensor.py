@@ -196,6 +196,23 @@ class TestLuxorLivingSensor:
         assert sensor.native_value == 0
         mock_write.assert_called_once()
 
+    def test_on_telegram_tuple_value(
+        self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+    ):
+        """Test handling incoming telegram with tuple payload (2-byte DPT)."""
+        from xknx.dpt import DPT2ByteFloat, DPTArray
+
+        sensor = LuxorLivingSensor(
+            mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+        )
+
+        with patch.object(sensor, "async_write_ha_state") as mock_write:
+            sensor._on_telegram("1/2/3", (5, 110))
+
+        expected = DPT2ByteFloat().from_knx(DPTArray((5, 110)))
+        assert sensor.native_value == expected
+        mock_write.assert_called_once()
+
 
 class TestAsyncSetupEntry:
     """Test async_setup_entry function."""
@@ -233,7 +250,7 @@ class TestAsyncSetupEntry:
         }
 
         # Setup async_add_entities callback
-        async_add_entities = AsyncMock()
+        async_add_entities = Mock()
 
         # Call setup
         await async_setup_entry(mock_hass, mock_config_entry, async_add_entities)
@@ -263,7 +280,7 @@ class TestAsyncSetupEntry:
         }
 
         # Setup async_add_entities callback
-        async_add_entities = AsyncMock()
+        async_add_entities = Mock()
 
         # Call setup
         await async_setup_entry(mock_hass, mock_config_entry, async_add_entities)
@@ -285,7 +302,7 @@ class TestAsyncSetupEntry:
             "knx_gateway": mock_knx_gateway,
         }
 
-        async_add_entities = AsyncMock()
+        async_add_entities = Mock()
 
         # Should return early without error
         await async_setup_entry(mock_hass, mock_config_entry, async_add_entities)

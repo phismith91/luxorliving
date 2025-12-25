@@ -16,6 +16,7 @@ from xknx.telegram.address import GroupAddress
 from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
+from xknx.dpt import DPT2ByteFloat, DPTArray
 from .entity_mapper import EntityMapper
 from .knx_gateway import LuxorKNXGateway
 
@@ -182,13 +183,38 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
             group_address: KNX group address that was updated
             value: New value from KNX telegram
         """
+        # Normalize common raw payloads (e.g., tuple-of-bytes from Wetterstation)
+        normalized = self._normalize_value(value)
+
         _LOGGER.debug(
-            "Received telegram for sensor '%s' from %s: %s %s",
+            "Received telegram for sensor '%s' from %s: %s → %s %s",
             self.name,
             group_address,
             value,
+            normalized,
             self._attr_native_unit_of_measurement or "",
         )
+
+        if normalized is None:
+            _LOGGER.debug("Skipping state update for %s - normalized value is None", self.name)
+            return
+
+        self._attr_native_value = normalized
+        self.async_write_ha_state()
+
+    @staticmethod
+    def _normalize_value(value: Any) -> Any:
+        """Convert raw KNX payloads into HA-friendly numeric values."""
+        # Handle tuple/list of two bytes (common for DPT 2-byte float)
+        if isinstance(value, (list, tuple)) and len(value) == 2:
+            try:
+                return DPT2ByteFloat().from_knx(DPTArray(value))
+            except Exception:
+                # Fall through to raw value if decoding fails
+                return value
+
+        # Pass through other value types unchanged
+        return value
 
         self._attr_native_value = value
         self.async_write_ha_state()
