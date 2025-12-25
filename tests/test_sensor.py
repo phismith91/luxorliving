@@ -177,7 +177,7 @@ class TestLuxorLivingSensor:
         )
 
         with patch.object(sensor, "async_write_ha_state") as mock_write:
-            sensor._on_telegram(23.5)
+            sensor._on_telegram("1/2/3", 23.5)
 
         assert sensor.native_value == 23.5
         mock_write.assert_called_once()
@@ -191,7 +191,7 @@ class TestLuxorLivingSensor:
         )
 
         with patch.object(sensor, "async_write_ha_state") as mock_write:
-            sensor._on_telegram(0)
+            sensor._on_telegram("1/2/4", 0)
 
         assert sensor.native_value == 0
         mock_write.assert_called_once()

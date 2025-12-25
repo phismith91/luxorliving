@@ -175,11 +175,17 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
         except Exception as err:
             _LOGGER.error("Error reading state for sensor '%s': %s", self.name, err)
 
-    def _on_telegram(self, value: Any) -> None:
-        """Handle incoming KNX telegram for this sensor."""
+    def _on_telegram(self, group_address: str, value: Any) -> None:
+        """Handle incoming KNX telegram for this sensor.
+        
+        Args:
+            group_address: KNX group address that was updated
+            value: New value from KNX telegram
+        """
         _LOGGER.debug(
-            "Received telegram for sensor '%s': %s %s",
+            "Received telegram for sensor '%s' from %s: %s %s",
             self.name,
+            group_address,
             value,
             self._attr_native_unit_of_measurement or "",
         )
