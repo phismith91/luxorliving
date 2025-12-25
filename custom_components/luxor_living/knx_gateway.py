@@ -409,6 +409,12 @@ class LuxorKNXGateway:
                 else:
                     # Unknown DPT - return raw value
                     value = raw_value
+            elif isinstance(payload_value, (list, tuple)) and len(payload_value) == 2:
+                # Some telegrams surface the raw tuple directly, handle as 2-byte float
+                try:
+                    value = DPT2ByteFloat().from_knx(bytes(payload_value))
+                except Exception:
+                    value = payload_value
             elif isinstance(payload_value, int):
                 # Direct integer value (common for binary/switch)
                 value = bool(payload_value)
