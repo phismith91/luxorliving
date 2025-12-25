@@ -144,7 +144,7 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
 
         # Register for KNX telegram updates
         if self._knx_gateway and self._datapoint_address is not None:
-            self._knx_gateway.register_telegram_listener(
+            self._knx_gateway.register_listener(
                 self._datapoint_address, self._on_telegram
             )
 
@@ -152,7 +152,7 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
         """Run when entity will be removed from Home Assistant."""
         # Unregister from KNX telegram updates
         if self._knx_gateway and self._datapoint_address is not None:
-            self._knx_gateway.unregister_telegram_listener(
+            self._knx_gateway.unregister_listener(
                 self._datapoint_address, self._on_telegram
             )
         await super().async_will_remove_from_hass()

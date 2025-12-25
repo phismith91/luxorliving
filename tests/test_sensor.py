@@ -138,7 +138,7 @@ class TestLuxorLivingSensor:
         mock_knx_gateway.async_read_group_value.assert_called_with("1/2/3")
 
         # Verify telegram listener was registered
-        mock_knx_gateway.register_telegram_listener.assert_called_once()
+        mock_knx_gateway.register_listener.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_async_added_to_hass_read_success(
@@ -167,7 +167,7 @@ class TestLuxorLivingSensor:
         await sensor.async_will_remove_from_hass()
 
         # Verify telegram listener was unregistered
-        mock_knx_gateway.unregister_telegram_listener.assert_called_once()
+        mock_knx_gateway.unregister_listener.assert_called_once()
 
     def test_on_telegram_update(
         self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
