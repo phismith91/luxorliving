@@ -163,16 +163,15 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
             return
 
         try:
-            value = await self._knx_gateway.async_read_group_value(self._datapoint_address)
-            if value is not None:
-                self._attr_native_value = value
-                _LOGGER.debug(
-                    "Read state for sensor '%s': %s %s",
-                    self.name,
-                    value,
-                    self._attr_native_unit_of_measurement or "",
-                )
-                self.async_write_ha_state()
+            # Send read request - value will arrive via telegram callback
+            await self._knx_gateway.async_read_group_address(
+                self._datapoint_address, is_initial=True
+            )
+            _LOGGER.debug(
+                "Sent read request for sensor '%s' to address %s",
+                self.name,
+                self._datapoint_address,
+            )
         except Exception as err:
             _LOGGER.error("Error reading state for sensor '%s': %s", self.name, err)
 

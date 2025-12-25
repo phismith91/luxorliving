@@ -134,8 +134,8 @@ class TestLuxorLivingSensor:
         with patch.object(sensor, "async_write_ha_state"):
             await sensor.async_added_to_hass()
 
-        # Verify initial state was read
-        mock_knx_gateway.async_read_group_value.assert_called_with("1/2/3")
+        # Verify initial state read request was sent
+        mock_knx_gateway.async_read_group_address.assert_called_with("1/2/3", is_initial=True)
 
         # Verify telegram listener was registered
         mock_knx_gateway.register_listener.assert_called_once()
@@ -144,16 +144,15 @@ class TestLuxorLivingSensor:
     async def test_async_added_to_hass_read_success(
         self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
     ):
-        """Test reading initial state succeeds."""
+        """Test reading initial state sends request."""
         sensor = LuxorLivingSensor(
             mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
         )
 
-        with patch.object(sensor, "async_write_ha_state") as mock_write:
-            await sensor.async_added_to_hass()
+        await sensor.async_added_to_hass()
 
-        assert sensor.native_value == 22.5
-        mock_write.assert_called()
+        # Verify read request was sent
+        mock_knx_gateway.async_read_group_address.assert_called_with("1/2/3", is_initial=True)
 
     @pytest.mark.asyncio
     async def test_async_will_remove_from_hass(
