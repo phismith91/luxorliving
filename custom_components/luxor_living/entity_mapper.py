@@ -89,10 +89,11 @@ class EntityMapper:
         "AirQuality": None,
     }
 
-    def __init__(self, project: LXPProject) -> None:
+    def __init__(self, project: LXPProject, overrides: dict[str, Any] | None = None) -> None:
         """Initialize the mapper."""
         self.project = project
         self.entities: list[MappedEntity] = []
+        self._overrides = overrides or {}
         # Automatically map all entities on init
         self.map_all()
 
@@ -102,6 +103,12 @@ class EntityMapper:
 
         for device in self.project.devices:
             self._map_device(device)
+
+        # Apply overrides to add/adjust entities
+        try:
+            self._apply_overrides()
+        except Exception as err:
+            _LOGGER.error("Failed applying overrides: %s", err)
 
         _LOGGER.info("Mapped %d entities total", len(self.entities))
         return self.entities
@@ -205,6 +212,7 @@ class EntityMapper:
 
         # Priority 2: Check for binary control/status
         if platform is None:
+            map_onoff_to_binary = bool(self._overrides.get("map_onoff_to_binary", False))
             if "status@OnOff" in datapoints and "OnOff" not in datapoints:
                 # Pure status sensor -> binary_sensor
                 platform = Platform.BINARY_SENSOR
@@ -217,8 +225,12 @@ class EntityMapper:
                     entity_type = "motion"
                 else:
                     # Regular switch sensor -> switch platform
-                    platform = Platform.SWITCH
-                    entity_type = "switch"
+                    if map_onoff_to_binary:
+                        platform = Platform.BINARY_SENSOR
+                        entity_type = "binary_sensor"
+                    else:
+                        platform = Platform.SWITCH
+                        entity_type = "switch"
 
         if platform is None:
             _LOGGER.debug("Skipping sensor %s - no mappable roles", sensor.name)
@@ -323,3 +335,74 @@ class EntityMapper:
             if dev_label not in ia_labels[ia_str]:
                 ia_labels[ia_str].append(dev_label)
         return ia_labels
+
+    # --- Overrides support ---
+    def _apply_overrides(self) -> None:
+        sensors = self._overrides.get("sensors", [])
+        if not sensors:
+            return
+
+        for ov in sensors:
+            try:
+                role = ov.get("role")
+                address = ov.get("address")
+                name = ov.get("name") or role
+                device_name = ov.get("device_name") or ov.get("device") or "Overrides"
+                device_id = ov.get("device_id") or "overrides"
+
+                if not role or not address:
+                    _LOGGER.warning("Override entry missing role/address: %s", ov)
+                    continue
+
+                # Normalize address to int
+                addr_int = self._normalize_address(address)
+                if addr_int is None:
+                    _LOGGER.warning("Invalid override address: %s", address)
+                    continue
+
+                # Map sensor role
+                # Allow override of unit/device_class
+                unit = ov.get("unit") if ov.get("unit") else self.ROLE_TO_UNIT.get(role)
+                device_class = ov.get("device_class") if ov.get("device_class") else self.ROLE_TO_DEVICE_CLASS.get(role)
+
+                entity = MappedEntity(
+                    platform=Platform.SENSOR,
+                    unique_id=f"{device_id}_{addr_int}",
+                    name=name,
+                    device_name=device_name,
+                    device_id=device_id,
+                    entity_type=role.lower(),
+                    datapoints={role: addr_int},
+                    attributes={
+                        "device_class": device_class,
+                        "unit_of_measurement": unit,
+                        "channel": ov.get("channel"),
+                        "serial_number": ov.get("serial_number"),
+                        "knx_address": ov.get("individual_address"),
+                    },
+                )
+
+                self.entities.append(entity)
+                _LOGGER.debug("Applied override sensor '%s' (%s) at %s", name, role, address)
+            except Exception as err:
+                _LOGGER.error("Failed to apply override %s: %s", ov, err)
+
+    @staticmethod
+    def _normalize_address(addr: Any) -> int | None:
+        """Convert GA string 'M/L/G' or int-like to int encoding used in LXP.
+        Returns None if invalid.
+        """
+        try:
+            if isinstance(addr, int):
+                return addr
+            s = str(addr).strip()
+            if "/" in s:
+                parts = s.split("/")
+                if len(parts) != 3:
+                    return None
+                m, l, g = (int(p) for p in parts)
+                return (m << 11) | (l << 8) | g
+            # Decimal string
+            return int(s)
+        except Exception:
+            return None

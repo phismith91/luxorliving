@@ -24,6 +24,7 @@ from .const import (
 )
 from .coordinator import LuxorLivingCoordinator
 from .entity_mapper import EntityMapper
+from .overrides import load_overrides
 from .knx_gateway import LuxorKNXGateway
 from .lxp_parser import LXPParser
 
@@ -65,17 +66,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if lxp_path and lxp_path.exists():
         _LOGGER.info("Parsing LXP file: %s", lxp_path)
         try:
-            parser = LXPParser(str(lxp_path))
+            # Optional: include_unaffected controlled via overrides 'include_unaffected'
+            config_dir = Path(hass.config.path(""))
+            overrides = load_overrides(config_dir)
+            include_unaffected = bool(overrides.get("include_unaffected", False))
+
+            parser = LXPParser(str(lxp_path), include_unaffected=include_unaffected)
             project = await parser.parse()
 
             # Create entity mapper
-            mapper = EntityMapper(project)
+            mapper = EntityMapper(project, overrides=overrides)
             entity_count = len(mapper.entities)
             _LOGGER.warning("Mapped %d entities from LXP project", entity_count)
 
             # Store mapper and config in integration data
             hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
             hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
+            hass.data[DOMAIN][entry.entry_id]["overrides"] = overrides
         except FileNotFoundError as err:
             _LOGGER.error("LXP file not found: %s", lxp_path)
             return False

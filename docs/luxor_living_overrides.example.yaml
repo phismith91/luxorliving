@@ -1,0 +1,36 @@
+# Example overrides for LUXORliving
+# Place this file in your Home Assistant config directory as 'luxor_living_overrides.yaml'.
+# Adjust addresses and names as needed.
+
+include_unaffected: true
+map_onoff_to_binary: true
+
+sensors:
+  # Wetterstation 1
+  - name: "Außentemperatur"
+    device_name: "Wetterstation 1"
+    device_id: "wetterstation_1"
+    role: Temperature
+    address: "5/0/2"
+    unit: "°C"
+  - name: "Windgeschwindigkeit"
+    device_name: "Wetterstation 1"
+    device_id: "wetterstation_1"
+    role: WindSpeed
+    address: "5/0/1"
+    unit: "km/h"  # Override default 'm/s'
+  - name: "Helligkeit vorne"
+    device_name: "Wetterstation 1"
+    device_id: "wetterstation_1"
+    role: Brightness
+    address: "5/0/3"
+  - name: "Helligkeit links"
+    device_name: "Wetterstation 1"
+    device_id: "wetterstation_1"
+    role: Brightness
+    address: "5/0/4"
+  - name: "Helligkeit rechts"
+    device_name: "Wetterstation 1"
+    device_id: "wetterstation_1"
+    role: Brightness
+    address: "5/0/5"

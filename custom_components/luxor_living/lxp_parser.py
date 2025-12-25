@@ -85,11 +85,13 @@ class LXPProject:
 class LXPParser:
     """Parser for LUXORliving .lxp XML files."""
 
-    def __init__(self, file_path: str | Path) -> None:
+    def __init__(self, file_path: str | Path, include_unaffected: bool = False) -> None:
         """Initialize the parser."""
         self.file_path = Path(file_path)
         self.tree: ET.ElementTree | None = None
         self.root: ET.Element | None = None
+        # When true, sensors/actuators with affected="0" are also parsed (advanced/testing)
+        self.include_unaffected = include_unaffected
 
     async def parse(self) -> LXPProject:
         """Parse the LXP file and return a project object."""
@@ -200,8 +202,8 @@ class LXPParser:
         sensor_id = sensor_elem.get("id", "")
         affected = sensor_elem.get("affected", "0") == "1"
 
-        # Skip unaffected sensors
-        if not affected:
+        # Skip unaffected sensors unless explicitly included
+        if not affected and not self.include_unaffected:
             return None
 
         # Get sensor type from parameter
@@ -235,8 +237,8 @@ class LXPParser:
         on_icon = actuator_elem.get("onIcon", "Default_ON")
         off_icon = actuator_elem.get("offIcon", "Default_OFF")
 
-        # Skip unaffected actuators
-        if not affected:
+        # Skip unaffected actuators unless explicitly included
+        if not affected and not self.include_unaffected:
             return None
 
         # Get use case from parameter
