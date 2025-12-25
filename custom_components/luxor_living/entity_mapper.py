@@ -72,10 +72,10 @@ class EntityMapper:
         "Humidity": "%",
         "Pressure": "hPa",
         "CO2": "ppm",
-        "Brightness": "lux",
-        "HelligkeitMitte": "lux",  # German variant
-        "HelligkeitLinks": "lux",
-        "HelligkeitRechts": "lux",
+        "Brightness": "lx",
+        "HelligkeitMitte": "lx",  # German variant
+        "HelligkeitLinks": "lx",
+        "HelligkeitRechts": "lx",
         "WindSpeed": "m/s",
         "Windgeschwindigkeit": "km/h",  # German variant, km/h as per Wetterstation
         "RainVolume": "mm",
@@ -364,9 +364,9 @@ class EntityMapper:
         wetterstation_roles = {
             "Temperatur": ("Außentemperatur", "temperature", "°C"),
             "Windgeschwindigkeit": ("Windgeschwindigkeit", None, "km/h"),
-            "HelligkeitMitte": ("Helligkeit Mitte", "illuminance", "lux"),
-            "HelligkeitLinks": ("Helligkeit Links", "illuminance", "lux"),
-            "HelligkeitRechts": ("Helligkeit Rechts", "illuminance", "lux"),
+            "HelligkeitMitte": ("Helligkeit Mitte", "illuminance", "lx"),
+            "HelligkeitLinks": ("Helligkeit Links", "illuminance", "lx"),
+            "HelligkeitRechts": ("Helligkeit Rechts", "illuminance", "lx"),
             "Regen": ("Regen", None, None),  # Binary/status
         }
 
