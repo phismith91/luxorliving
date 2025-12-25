@@ -207,6 +207,11 @@ climate.wohnzimmer  # Thermostat with setpoint control
 
 Wenn LuxorPlug die Sensor-Rollen nicht exportiert (oder `affected="0"` bleibt), kannst du die Sensor-Erzeugung über eine Override-Datei erzwingen:
 
+Hinweis zu `include_unaffected`:
+- Bedeutung: Der Parser nimmt auch Elemente mit `affected="0"` auf (normalerweise werden diese ausgelassen).
+- Wetterstation: Geräte mit Namen wie „Wetterstation“ werden jetzt automatisch berücksichtigt – auch wenn `affected="0"` ist. Du brauchst `include_unaffected` hierfür nicht.
+- Nutzung: Für andere Spezialfälle weiterhin hilfreich (z. B. wenn ein Sensor bewusst auf „nicht wirksam“ steht, aber dennoch aus KNX gelesen werden soll).
+
 - Datei im Home Assistant Config-Verzeichnis anlegen: `luxor_living_overrides.yaml` (oder `.json`)
 - Beispiel YAML:
 
