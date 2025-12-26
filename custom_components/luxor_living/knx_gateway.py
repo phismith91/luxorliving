@@ -8,6 +8,7 @@ from typing import Any, Callable
 from homeassistant.core import HomeAssistant
 from xknx import XKNX
 from xknx.dpt import DPTArray, DPTBinary
+from xknx.dpt.dpt_9 import DPT2ByteFloat
 from xknx.io import ConnectionConfig, ConnectionType
 from xknx.telegram import Telegram
 from xknx.telegram.address import GroupAddress
