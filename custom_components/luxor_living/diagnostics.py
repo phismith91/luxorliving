@@ -65,14 +65,20 @@ async def async_get_config_entry_diagnostics(
     # Entity mapper info
     if mapper:
         try:
+            entities = getattr(mapper, "entities", [])
             diagnostics["entities"] = {
-                "total": len(getattr(mapper, "entities", [])),
+                "total": len(entities),
                 "by_platform": {},
             }
 
             # Count entities by platform
-            for entity in getattr(mapper, "entities", []):
-                platform = entity.get("platform", "unknown")
+            for entity in entities:
+                # Handle both dict and object entities
+                if isinstance(entity, dict):
+                    platform = entity.get("platform", "unknown")
+                else:
+                    platform = getattr(entity, "platform", "unknown")
+                    
                 diagnostics["entities"]["by_platform"][platform] = (
                     diagnostics["entities"]["by_platform"].get(platform, 0) + 1
                 )
