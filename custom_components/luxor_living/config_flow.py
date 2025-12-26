@@ -22,12 +22,16 @@ from .const import (
     CONF_PASSWORD,
     CONF_SIMULATION_MODE,
     CONF_USERNAME,
+    CONF_SCAN_INTERVAL,
+    CONF_LOG_LEVEL,
     CONNECTION_TYPE_ROUTING,
     CONNECTION_TYPE_TUNNELING,
     DEFAULT_CONNECTION_TYPE,
     DEFAULT_HTTP_PORT,
     DEFAULT_PASSWORD,
     DEFAULT_PORT,
+    DEFAULT_SCAN_INTERVAL,
+    DEFAULT_LOG_LEVEL,
     DEFAULT_USERNAME,
     DOMAIN,
 )
@@ -266,12 +270,26 @@ class LuxorLivingOptionsFlow(OptionsFlow):
     ) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
+            # Update log level if changed
+            if CONF_LOG_LEVEL in user_input:
+                await self._async_update_log_level(user_input[CONF_LOG_LEVEL])
+            
             return self.async_create_entry(title="", data=user_input)
 
         # Get current values from config_entry (provided by OptionsFlow base class)
         current_simulation_mode = self.config_entry.options.get(
             CONF_SIMULATION_MODE,
             self.config_entry.data.get(CONF_SIMULATION_MODE, False),
+        )
+        
+        current_scan_interval = self.config_entry.options.get(
+            CONF_SCAN_INTERVAL,
+            self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+        )
+        
+        current_log_level = self.config_entry.options.get(
+            CONF_LOG_LEVEL,
+            self.config_entry.data.get(CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL),
         )
 
         options_schema = vol.Schema(
@@ -280,7 +298,35 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                     CONF_SIMULATION_MODE,
                     default=current_simulation_mode,
                 ): bool,
+                vol.Optional(
+                    CONF_SCAN_INTERVAL,
+                    default=current_scan_interval,
+                ): vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
+                vol.Optional(
+                    CONF_LOG_LEVEL,
+                    default=current_log_level,
+                ): vol.In(["debug", "info", "warning", "error"]),
             }
         )
 
-        return self.async_show_form(step_id="init", data_schema=options_schema)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=options_schema,
+            description_placeholders={
+                "scan_interval_description": "Update interval in seconds (5-300)",
+                "log_level_description": "Logging verbosity for troubleshooting",
+            },
+        )
+
+    async def _async_update_log_level(self, log_level: str) -> None:
+        """Update the log level for the integration."""
+        import logging
+        
+        logger = logging.getLogger(f"custom_components.{DOMAIN}")
+        level_map = {
+            "debug": logging.DEBUG,
+            "info": logging.INFO,
+            "warning": logging.WARNING,
+            "error": logging.ERROR,
+        }
+        logger.setLevel(level_map.get(log_level, logging.INFO))

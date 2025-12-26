@@ -26,21 +26,24 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self,
         hass: HomeAssistant,
         gateway: LuxorKNXGateway,
+        scan_interval: int = 30,
     ) -> None:
         """Initialize the coordinator.
 
         Args:
             hass: Home Assistant instance
             gateway: LuxorKNXGateway instance
+            scan_interval: Update interval in seconds (default: 30)
         """
         super().__init__(
             hass,
             _LOGGER,
             name="Luxor Living",
-            update_interval=timedelta(seconds=30),
+            update_interval=timedelta(seconds=scan_interval),
         )
         self.gateway = gateway
         self._state_cache: dict[str, Any] = {}
+        self._scan_interval = scan_interval
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from the KNX gateway.

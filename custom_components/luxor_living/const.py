@@ -10,6 +10,8 @@ CONF_SIMULATION_MODE = "simulation_mode"
 CONF_CONNECTION_TYPE = "connection_type"
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
+CONF_SCAN_INTERVAL = "scan_interval"
+CONF_LOG_LEVEL = "log_level"
 
 # Defaults
 DEFAULT_PORT = 3671  # KNX/IP default port
@@ -17,6 +19,8 @@ DEFAULT_HTTP_PORT = 80  # REST API HTTP port (per LUXORliving API documentation)
 DEFAULT_CONNECTION_TYPE = "tunneling"
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin"
+DEFAULT_SCAN_INTERVAL = 30  # seconds
+DEFAULT_LOG_LEVEL = "info"
 
 # KNX Connection Types
 CONNECTION_TYPE_TUNNELING = "tunneling"

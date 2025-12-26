@@ -46,8 +46,16 @@
         "step": {
             "init": {
                 "title": "LUXORliving Options",
+                "description": "Configure LUXORliving integration behavior",
                 "data": {
-                    "simulation_mode": "Simulation Mode (Dry-run)"
+                    "simulation_mode": "Simulation Mode (Dry-run)",
+                    "scan_interval": "Polling Interval (seconds)",
+                    "log_level": "Debug Level"
+                },
+                "data_description": {
+                    "simulation_mode": "Enable simulation mode for testing without hardware",
+                    "scan_interval": "How often to poll the gateway for updates (5-300 seconds)",
+                    "log_level": "Logging verbosity for troubleshooting"
                 }
             }
         }
