@@ -1,255 +1,327 @@
-# Copilot Context – luxor_living
+# LUXORliving Integration - Project Context
 
-This repository contains a Home Assistant integration for
-**Theben LUXORliving IP1**, based on **KNX/IP**.
-
-The integration is designed to be:
-
-* HACS-ready
-* Community-friendly
-* Maintainable long-term
-* Independent of ETS or `.knxproj` files
-
-Instead of ETS, it optionally uses **LUXORliving project exports (`.lxp`, XML)**
-to automatically discover and map devices.
+**Last Updated:** 2025-12-26  
+**Version:** v0.3.3 → v0.3.4  
+**Status:** Active Development (Private Repository)
 
 ---
 
-## Core Principles
+## 🎯 Project Overview
 
-* No ETS dependency
-* KNX/IP via LUXORliving IP1 (Weinzierl-based)
-* `.lxp` project files are optional but preferred
-* Deterministic auto-mapping based on datapoint roles
-* Simulation / Dry-Run mode is a first-class feature
-* HACS-first, but written close to Home Assistant Core standards
+**LUXORliving** ist eine Home Assistant Custom Integration für Theben LUXORliving KNX-Systeme über das IP1 Interface.
+
+### Key Features
+- KNX-Kommunikation via REST API (BAOS Web Services)
+- LXP-Import für automatisches Entity-Mapping
+- Unterstützte Plattformen: Light, Switch, Climate, Cover, Binary Sensor, Sensor
+- Config Flow für UI-basierte Konfiguration
+- Options Flow für Runtime-Anpassungen (scan_interval, etc.)
+- Diagnostics mit sensiblen Daten-Redaktion
+
+### Integration Design Principles
+- **No ETS dependency** - verwendet LXP-Dateien statt ETS/knxproj
+- **HACS-ready** - Community-friendly, maintainable long-term
+- **Simulation Mode** - First-class support für Testing ohne Hardware
+- **Deterministic Mapping** - Role-based auto-mapping aus LXP-Daten
+
+### Current Version Status
+- **Stable:** v0.3.3
+- **Next Release:** v0.3.4 (Critical fixes + enhanced diagnostics)
+- **Roadmap:** v0.4.0 (Coordinator polling strategy, HACS prep)
 
 ---
 
-## High-Level Architecture
+## 🏗️ Production Environment
 
-* KNX/IP communication is abstracted
-* Luxor Living specifics are isolated from HA logic
-* `.lxp` parsing is independent from Home Assistant code
-* Mapping logic is role-based and predictable
-* Fallback behavior exists when no project file is available
-* Simulation mode must never affect production behavior
+### Remote-First Development
 
----
+**WICHTIG:** Development und Testing erfolgt remote via SSH!
 
-## Production Environment Architecture
+- **Production HA:** 100.97.159.88 (via Tailscale VPN)
+- **User:** phil
+- **SSH Auth:** Key-based (`~/.ssh/id_rsa`) - passwortlos
+- **Integration Path:** `/config/custom_components/luxor_living/`
+- **Ownership:** root (benötigt `sudo` für File-Operationen)
 
-**Physical Setup:**
-```
-Developer PC (Local)
-  ↓ Git Push/Pull
-GitHub/GitLab Repository
-  ↓ Manual Download via HA UI
-Proxmox Server (Madeira, Portugal)
-  └── Home Assistant OS VM
-       ├── Tailscale VPN (Remote Access)
-       ├── Custom Components: /config/custom_components/luxor_living
-       └── Local Network: 192.168.1.x
-            └── LUXORliving IP1 Gateway: 192.168.1.3
-                 ├── KNX/IP Port: 3671
-                 ├── Web UI: Port 80/443
-                 └── Supports: Tunneling + Routing
+### SSH Configuration
+
+**Problem:** Lokale `~/.ssh/config` hat ungültige Einträge
+
+**Solution:** Immer `-F /dev/null` verwenden:
+```bash
+ssh -F /dev/null phil@100.97.159.88 "command"
+GIT_SSH_COMMAND='ssh -F /dev/null' git push
 ```
 
-**Network Considerations:**
-* Remote access via **Tailscale VPN** for UI control
-* KNX Multicast (224.0.23.12) may **not** work over VPN
-* **KNX Tunneling** (direct to 192.168.1.3:3671) recommended for remote setups
-* HA VM and Gateway are in **same local network** → both modes work
+### Pre-Release Deployment Workflow
 
-**Deployment Workflow:**
-1. Develop & test locally on developer PC
-2. Commit & push to Git repository
-3. Download via HA UI: **Einstellungen → Add-ons → HACS → LUXORliving**
-4. Integration auto-updates in `/config/custom_components/luxor_living`
-5. Restart HA Core to apply changes
-6. Configure via HA UI (no SSH access needed)
+1. **Sync zu Temp:**
+   ```bash
+   ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
+   rsync -avz --exclude="__pycache__" \
+     -e "ssh -F /dev/null" \
+     custom_components/luxor_living/ \
+     phil@100.97.159.88:/tmp/luxor_deploy/
+   ```
 
-**Testing Environment:**
-* **Local:** pytest with mocks & simulation mode
-* **Production:** Real hardware testing on Proxmox VM
-* **Access:** UI-only via Tailscale (no direct SSH to HA OS)
+2. **Copy mit sudo:**
+   ```bash
+   ssh -F /dev/null phil@100.97.159.88 \
+     "sudo cp -r /tmp/luxor_deploy/* /config/custom_components/luxor_living/ && \
+      rm -rf /tmp/luxor_deploy"
+   ```
 
-**Important Constraints:**
-* HA OS = **appliance mode** (limited shell access)
-* Deployment via **UI only** (HACS or File Upload)
-* Configuration changes via **HA UI or File Editor add-on**
-* Logs accessible via **Settings → System → Logs**
+3. **HA Restart:** Manuell via UI (http://100.97.159.88:8123)
+   - Einstellungen → System → Neustart
+   - **Note:** SSH restart funktioniert nicht!
 
----
+### Official Release Deployment
+- Users installieren via HACS (planned for v1.0.0)
+- Manual download via GitHub Releases
+- File upload to `/config/custom_components/`
 
-## Language & Usage Rules
+### Hardware Setup (Production)
+```
+Developer PC (Local) ──SSH──> Home Assistant (100.97.159.88)
+         ↓                           ↓
+    GitHub Repo                LAN: 192.168.1.x
+                                     ↓
+                            LUXORliving IP1: 192.168.1.3
+                                ├── KNX/IP: 3671
+                                ├── Web UI: 80/443
+                                └── REST API (BAOS)
+```
 
-* Copilot agent definitions are written in **English**
-* User prompts may be **German or English**
-* All generated code, identifiers, comments, and documentation must be **English**
-* Agents define *how* Copilot should behave
-* This file defines *when* each agent must be used
-
----
-
-## Agent Interaction Rules (IMPORTANT)
-
-* Only **agent_architect** may make architectural or structural decisions
-* Luxor/KNX domain assumptions come exclusively from **agent_luxor_expert**
-* Parsing, mapping, UX, compliance, and quality concerns are strictly separated
-* Review agents must not introduce new features or redesigns
-
-### Conflict Resolution Order
-
-If agents provide conflicting advice, resolve it in this order:
-
-1. agent_architect
-2. agent_luxor_expert
-3. agent_knx_protocol (for KNX protocol specifics)
-4. Functional agent (parser / mapping / config flow / testing / release)
+**Network:**
+- Remote access via Tailscale VPN
+- HA und IP1 im selben LAN (192.168.1.x)
+- KNX Tunneling + Routing supported
+- REST API bevorzugt (kein direktes Tunneling aktuell)
 
 ---
 
-## Agent Usage Guide
+## 📦 Repository Structure
 
-### 🧠 Architecture & Structure
-
-**Agent:** `agent_architect.md`
-
-Use when:
-
-* Designing or refactoring overall architecture
-* Defining module boundaries and data flow
-* Introducing or restructuring subsystems
-* Resolving conflicts between agent recommendations
-
----
-
-### 🔌 Luxor Living & IP1 Domain Knowledge
-
-**Agent:** `agent_luxor_expert.md`
-
-Use when:
-
-* Working with Luxor Living–specific behavior
-* Handling differences between standard KNX and Luxor proprietary KNX
-* Evaluating IP1 controller capabilities or limitations
-* Assessing feasibility or constraints
-
----
-
-### � KNX Protocol & Telegram Handling
-
-**Agent:** `agent_knx_protocol.md`
-
-Use when:
-
-* Analyzing KNX telegrams (GroupValueWrite, GroupValueRead, GroupValueResponse)
-* Decoding DPT (Datapoint Type) payloads (Binary, Percent, Temperature, etc.)
-* Validating GroupAddress formats and conversions
-* Debugging KNX/IP communication issues
-* Working with XKNX library integration
-* Understanding telegram flow and timing
+```
+luxorliving/
+├── custom_components/luxor_living/
+│   ├── __init__.py          # Entry point, coordinator setup
+│   ├── config_flow.py       # UI configuration
+│   ├── diagnostics.py       # Debug data export
+│   ├── entity_mapper.py     # LXP → HA entity mapping
+│   ├── knx_gateway.py       # KNX protocol handler
+│   ├── lxp_parser.py        # LXP file parser
+│   ├── rest_client.py       # BAOS REST API client
+│   └── [platform].py        # Platform implementations
+├── tests/
+│   ├── conftest.py          # Shared fixtures
+│   └── test_*.py            # Unit tests (86 passing)
+├── docs/                    # Documentation
+├── scripts/                 # Utility scripts
+├── .github/
+│   ├── copilot/
+│   │   ├── CONTEXT.md      # This file (project context)
+│   │   ├── README.md       # Agent documentation
+│   │   └── agent_*.md      # Specialized agents
+│   └── copilot-instructions.md  # Copilot global instructions
+└── [config files]
+```
 
 ---
 
-### �📂 LXP Project Import
+## 🔧 Development Stack
 
-**Agent:** `agent_lxp_import.md`
+### Python Environment
+- **Python:** 3.13.9
+- **Home Assistant:** 2025.12.4 (OS)
+- **Test Framework:** pytest 9.0.0
+- **pytest-homeassistant-custom-component:** 0.13.300
+- **Venv:** `/home/phil/gitlab_github/luxorliving/venv/`
 
-Use when:
+### Key Dependencies
+- `homeassistant` - Core HA
+- `aiohttp` - Async HTTP client
+- `voluptuous` - Schema validation
+- `pytest`, `pytest-homeassistant-custom-component` - Testing
+- `black`, `isort`, `mypy` - Code quality
 
-* Parsing `.lxp` (LuxorPlug XML) project files
-* Handling namespaces, versions, and schema changes
-* Extracting devices, channels, sensors, actuators, and datapoints
-* Improving robustness of project import
-
----
-
-### 🔁 Luxor → Home Assistant Mapping
-
-**Agent:** `agent_mapping.md`
-
-Use when:
-
-* Creating Home Assistant entities
-* Mapping Luxor datapoint roles to HA platforms
-* Generating entity IDs, names, and device groupings
-* Implementing fallback mappings
+### Quality Gates
+- ✅ All tests passing (`python -m pytest tests/ -v`)
+- ✅ Code formatted (black, isort)
+- ✅ Type checking (mypy)
+- ✅ Optional: Pre-Release Testing auf Remote HA
 
 ---
 
-### 🔄 Config Flow & User Experience
+## 🏛️ Architecture
 
-**Agent:** `agent_config_flow.md`
+### High-Level Architecture
+```
+┌─────────────────────────────────────────┐
+│         Config Flow (UI)                │
+├─────────────────────────────────────────┤
+│    Entity Mapper (LXP → HA Entities)    │
+├─────────────────────────────────────────┤
+│  Coordinator (State Management)         │
+├─────────────────────────────────────────┤
+│   KNX Gateway (Protocol Handler)        │
+├─────────────────────────────────────────┤
+│    REST Client (HTTP Communication)     │
+└─────────────────────────────────────────┘
+```
 
-Use when:
+### Core Design Decisions
 
-* Implementing or refining `config_flow.py`
-* Designing onboarding flows
-* Handling `.lxp` file uploads
-* Improving error handling and user guidance
-* Supporting simulation / dry-run setup
-
----
-
-### 🚀 Release Management & Automation
-
-**Agent:** `agent_release_manager.md`
-
-Use when:
-
-* Preparing stable or beta releases
-* Validating pre-release readiness (tests, manifest, changelog)
-* Managing version bumps and tags
-* Creating GitHub releases with artifacts
-* Coordinating post-release tasks
-* Ensuring release consistency and quality
-
----
-
-### 🧪 Simulation, Testing & Diagnostics
-
-**Agent:** `agent_testing.md`
-
-Use when:
-
-* Implementing simulation or dry-run mode
-* Writing or improving tests
-* Debugging without physical KNX hardware
-* Enhancing logging and diagnostics
+1. **Simulation Mode:** Dateibasierter Offline-Betrieb ohne Hardware
+2. **LXP-First:** Entity-Mapping aus LXP-Export (nicht manuell)
+3. **REST over Tunneling:** BAOS REST API statt direktem KNX Tunneling
+4. **Polling Strategy:** Coordinator polling (event-based in backlog)
+5. **Type Safety:** Type hints für alle öffentlichen APIs
+6. **Error Handling:** Specific exceptions, kein `except:` ohne Type
+7. **Separation of Concerns:** Klare Layer-Trennung (siehe Diagramm)
 
 ---
 
-## Archived Agents
+## 📊 Current Development Status
 
-The following agents are archived in `.github/copilot/archive/` and can be reactivated if needed:
+### v0.3.4 (Ready for Release)
 
-* **agent_hacs.md** – HACS compliance checking (HACS requirements are stable)
-* **agent_quality_auditor.md** – Code quality review (IDE tools provide similar functionality)
+**Critical Fixes:**
+- ✅ Test fixtures fehlen → `conftest.py` mit MockConfigEntry
+- ✅ Options Flow reload → Verifiziert (bereits korrekt)
+
+**High Priority:**
+- ✅ Passwords in diagnostics → Redacted (`**REDACTED**`)
+- ✅ Entity handling → Enhanced mit detailed list + summary
+- ✅ CONF_SCAN_INTERVAL → Konsistent verwendet
+
+**Agent Reorganization:**
+- ✅ Created `agent_defect_tracker.md`
+- ✅ Expanded `agent_architect.md` mit code quality
+- ✅ Archived 6 obsolete agents (12 → 7 active)
+- ✅ Created `.github/copilot/README.md`
+
+**Status:**
+- ✅ 86/86 tests passing
+- ✅ Deployed to remote HA
+- ⏳ Awaiting HA restart + manual testing
+- ⏳ Git commit pending
+
+### v0.4.0 (Planned)
+- ⏳ Coordinator polling strategy evaluation
+- ⏳ HACS submission preparation
+- ⏳ Core integration readiness
+
+### Known Limitations
+
+1. **No Tunneling:** REST API only (kein direktes KNX Tunneling)
+2. **No Events:** Polling-based updates (keine Bus-Events)
+3. **IP1 Dependency:** Benötigt Theben IP1 Interface
+4. **LXP Required:** Automatisches Mapping benötigt LXP-Export
+5. **Manual Restart:** HA Restart via SSH funktioniert nicht
 
 ---
 
-## Removed Agents
+## 🚀 Release Process
 
-The following agents were deleted as they are no longer needed:
+### Semantic Versioning
 
-* **agent_yaml_generator.md** – Obsolete (integration uses XKNX directly, no YAML generation)
-* **agent_ssl.md** – Resolved (SSL blocking issues permanently fixed via executor pattern)
+- **MAJOR (X.0.0):** Breaking changes
+- **MINOR (0.X.0):** New features, backward compatible
+- **PATCH (0.0.X):** Bug fixes, enhancements
+
+### Release Checklist
+
+1. `python -m pytest tests/ -v` (all passing)
+2. Optional: Deploy + Test auf Remote HA
+3. Bump `manifest.json` "version"
+4. Update `CHANGELOG.md`
+5. Git commit, tag, push (siehe copilot-instructions.md)
+6. Create GitHub Release with `gh release create`
+
+**Siehe `.github/copilot-instructions.md` für detaillierte Release-Commands**
 
 ---
 
+## 🔒 Security
 
-## Notes for Contributors
+### SSH Key Authentication
+- Local: `~/.ssh/id_rsa`
+- Remote: `/etc/ssh/authorized_keys`
+- No Passwords in code!
 
-* This integration intentionally avoids ETS-based workflows
-* `.lxp` files are the primary source for automation metadata
-* Simulation mode must always remain functional
-* Simplicity and clarity are prioritized over feature completeness
-* Community expectations and maintainability matter as much as functionality
+### Credentials Management
+
+**NEVER commit:** Passwords, tokens, keys, credentials
+
+**Bei versehentlichem Commit:** Siehe copilot-instructions.md für Recovery
+
+### Diagnostics Redaction
+- `CONF_PASSWORD` → `**REDACTED**`
+- `CONF_LXP_FILE` → `**REDACTED**`
 
 ---
 
-This file provides **context and behavioral guidance** for GitHub Copilot
-and contributors. It has **no runtime impact** on the integration.
+## 🤖 Agent Coordination
+
+**See [README.md](README.md) for complete agent documentation.**
+
+### Active Agents (7)
+
+1. **agent_architect.md** - Architecture & Code Quality (Primary Authority)
+2. **agent_defect_tracker.md** - Bug Management & QA
+3. **agent_release_manager.md** - Release Coordination
+4. **agent_testing.md** - Test Strategy & CI/CD
+5. **agent_hacs_compliance.md** - HACS & HA Core Standards
+6. **agent_knx_protocol.md** - KNX Protocol Expert
+7. **agent_luxor_expert.md** - LUXORliving Hardware Specialist
+
+### Decision Hierarchy
+
+1. **agent_architect** - Final authority
+2. **agent_luxor_expert** - Domain authority
+3. **agent_knx_protocol** - KNX specifics
+4. **Functional agents** - Domain implementations
+
+### All Agents Must:
+
+1. ✅ Respect production environment (Remote SSH)
+2. ✅ Use `ssh -F /dev/null` (lokale config defekt)
+3. ✅ Follow architecture principles
+4. ✅ Maintain quality (type hints, tests, reviews)
+5. ✅ Track bugs via agent_defect_tracker
+6. ✅ **Read CONTEXT.md first** (Single Source of Truth)
+
+---
+
+## Language Rules
+
+- Copilot agents: **English**
+- User prompts: **German or English**
+- Code, comments, docs: **English only**
+
+---
+
+## 🔗 Important Links
+
+- **Repository:** https://github.com/phismith91/luxorliving
+- **Issues:** https://github.com/phismith91/luxorliving/issues
+- **HA Docs:** https://developers.home-assistant.io/
+- **HACS:** https://hacs.xyz/docs/publish/integration
+
+---
+
+## 📝 Notes
+
+- `.lxp` files are primary automation metadata source
+- Simulation mode must always work
+- Simplicity > feature completeness
+- Community standards matter
+- See `copilot-instructions.md` for operational workflows
+
+---
+
+**This file is the Single Source of Truth for all Copilot Agents.**  
+**Bei Widersprüchen hat CONTEXT.md Priorität.**  
+**For agent invocation syntax, see [README.md](README.md).**
+

@@ -6,8 +6,15 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 
-from .const import DATA_KNX_GATEWAY, DOMAIN
+from .const import (
+    CONF_CONNECTION_TYPE,
+    CONF_LXP_FILE,
+    CONF_SIMULATION_MODE,
+    DATA_KNX_GATEWAY,
+    DOMAIN,
+)
 
 
 async def async_get_config_entry_diagnostics(
@@ -31,12 +38,15 @@ async def async_get_config_entry_diagnostics(
             "version": entry.version,
             "domain": entry.domain,
             "state": entry.state.value if entry.state else "unknown",
-        },
-        "config": {
-            "host": entry.data.get("host"),
-            "connection_type": entry.data.get("connection_type"),
-            "simulation_mode": entry.data.get("simulation_mode", False),
-            # Exclude sensitive data (username, password, lxp_file path)
+            "data": {
+                CONF_HOST: entry.data.get(CONF_HOST),
+                CONF_USERNAME: entry.data.get(CONF_USERNAME),
+                CONF_PASSWORD: "**REDACTED**",
+                CONF_CONNECTION_TYPE: entry.data.get(CONF_CONNECTION_TYPE),
+                CONF_SIMULATION_MODE: entry.data.get(CONF_SIMULATION_MODE),
+                CONF_LXP_FILE: "**REDACTED**",  # May contain sensitive paths
+            },
+            "options": entry.options,
         },
         "overrides": {
             "count": len(overrides),
@@ -66,21 +76,29 @@ async def async_get_config_entry_diagnostics(
     if mapper:
         try:
             entities = getattr(mapper, "entities", [])
-            diagnostics["entities"] = {
+            diagnostics["entities"] = []
+
+            # Collect entity details (limit to 50 for performance)
+            for entity in entities[:50]:
+                # EntityConfig objects have attributes, not dict keys
+                entity_info = {
+                    "id": getattr(entity, "id", "unknown"),
+                    "name": getattr(entity, "name", "unknown"),
+                    "platform": getattr(entity, "platform", "unknown"),
+                    "group_address": getattr(entity, "address", "unknown"),
+                }
+                diagnostics["entities"].append(entity_info)
+
+            # Summary
+            diagnostics["entity_summary"] = {
                 "total": len(entities),
                 "by_platform": {},
             }
-
-            # Count entities by platform
+            
             for entity in entities:
-                # Handle both dict and object entities
-                if isinstance(entity, dict):
-                    platform = entity.get("platform", "unknown")
-                else:
-                    platform = getattr(entity, "platform", "unknown")
-                    
-                diagnostics["entities"]["by_platform"][platform] = (
-                    diagnostics["entities"]["by_platform"].get(platform, 0) + 1
+                platform = getattr(entity, "platform", "unknown")
+                diagnostics["entity_summary"]["by_platform"][platform] = (
+                    diagnostics["entity_summary"]["by_platform"].get(platform, 0) + 1
                 )
 
             # Devices info (anonymized)
@@ -105,7 +123,9 @@ async def async_get_config_entry_diagnostics(
         try:
             diagnostics["coordinator"] = {
                 "last_update_success": getattr(coordinator, "last_update_success", None),
-                "update_interval": str(coordinator.update_interval) if hasattr(coordinator, "update_interval") else None,
+                "last_exception": str(coordinator.last_exception) if getattr(coordinator, "last_exception", None) else None,
+                "update_interval_seconds": coordinator.update_interval.total_seconds() if hasattr(coordinator, "update_interval") else None,
+                "scan_interval_configured": getattr(coordinator, "_scan_interval", None),
             }
         except Exception as err:
             diagnostics["coordinator"] = {"error": str(err)}
