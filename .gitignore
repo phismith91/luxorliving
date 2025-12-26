@@ -48,6 +48,9 @@ htmlcov/
 *.backup
 *.backup.*
 *MISSION*
+
+# LXP project files (contain user data)
+*.lxp
 *DEBUG_REPORT*
 *CRITICAL_SETUP*
 create_beta*.sh

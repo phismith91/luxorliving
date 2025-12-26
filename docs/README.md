@@ -1,52 +1,49 @@
-# LUXORliving Documentation
+# LUXORliving Home Assistant Integration - Documentation
 
-Dieser Ordner enthält alle technischen Dokumentationen, Audits und Reports für das LUXORliving Home Assistant Integration Projekt.
+Welcome to the LUXORliving integration documentation!
 
-## 📚 Dokumentationsübersicht
+## 📖 User Guides
 
-### Benutzer-Dokumentation
-- **[QUICKSTART.md](QUICKSTART.md)** - Schnellstart-Anleitung für die Installation und Konfiguration
+### Getting Started
+- **[INSTALLATION.md](INSTALLATION.md)** - Complete installation and setup guide
+- **[SENSOR_PLATFORM.md](SENSOR_PLATFORM.md)** - Wetterstation sensor platform usage
+- **[luxor_living_overrides.example.yaml](luxor_living_overrides.example.yaml)** - Example configuration for custom sensor overrides
 
-### Entwickler-Dokumentation
-- **[KNX_IMPLEMENTATION.md](KNX_IMPLEMENTATION.md)** - Technische Dokumentation der KNX/IP Implementierung
-  - Gateway Manager Architektur
-  - Tunneling & Routing Modi
-  - XKNX Integration
-  - DPT Encoding/Decoding
+### ION Temperature Sensors
+- **[ION_TEMPERATURE_HA_LOGGING.md](ION_TEMPERATURE_HA_LOGGING.md)** - ⭐ Recommended: Discover ION temperatures via Home Assistant logs
+- **[ION_TEMPERATURE_DISCOVERY_GUIDE.md](ION_TEMPERATURE_DISCOVERY_GUIDE.md)** - Alternative: Standalone monitoring script
+- **[ION_TEMPERATURE_SENSOR_ANALYSIS.md](ION_TEMPERATURE_SENSOR_ANALYSIS.md)** - Technical analysis and limitations
 
-### Quality Assurance
-- **[QUALITY_AUDIT.md](QUALITY_AUDIT.md)** - Umfassender Quality Audit Report
-  - Code Quality Analyse
-  - Architecture Review
-  - Security Assessment
-  - Performance Evaluation
-  - Gesamtscore: 8.5/10
+## 🔧 Technical Documentation
 
-- **[CRITICAL_FIXES.md](CRITICAL_FIXES.md)** - Dokumentation der kritischen Bugfixes
-  - 5 kritische Issues behoben
-  - Memory Leaks
-  - DPT Encoding Bugs
-  - Race Conditions
-  - Error Handling
+### KNX Integration
+- **[KNX_IMPLEMENTATION.md](KNX_IMPLEMENTATION.md)** - KNX protocol implementation details
+- **[KNX_TUNNELING_SETUP.md](KNX_TUNNELING_SETUP.md)** - KNX tunneling configuration
+- **[TUNNELING_AUTHENTICATION.md](TUNNELING_AUTHENTICATION.md)** - Tunneling authentication methods
 
-### Testing
-- **[TEST_REPORT.md](TEST_REPORT.md)** - Aktueller Test Report
-  - 23/23 Tests PASSED (100%)
-  - Coverage: 35% (88% config_flow, 77% knx_gateway)
-  - Quality Gates Status
+### BAOS REST API
+- **[BAOS_REST_API_DISCOVERY.md](BAOS_REST_API_DISCOVERY.md)** - BAOS REST API exploration
+- **[BAOS_REST_API_LIMITATIONS.md](BAOS_REST_API_LIMITATIONS.md)** - Known API limitations
+- **[ARCHITECTURE_DECISION.md](ARCHITECTURE_DECISION.md)** - REST vs tunneling architecture decision
 
-- **[TESTS.md](TESTS.md)** - Test-Dokumentation und Guidelines
+### Reference Materials
+- **[LUXORliving_API_Documentation_EN.pdf](LUXORliving_API_Documentation_EN.pdf)** - Official LUXORliving API documentation
+- **[weinzierl-777-knx-ip-baos-5193-manual-de.pdf](weinzierl-777-knx-ip-baos-5193-manual-de.pdf)** - Weinzierl BAOS manual
 
-## 📊 Status Overview
+## 🧪 Testing & Development
 
-| Dokument              | Letzte Aktualisierung | Status          |
-| --------------------- | --------------------- | --------------- |
-| QUICKSTART.md         | 18.12.2025            | ✅ Aktuell       |
-| KNX_IMPLEMENTATION.md | 18.12.2025            | ✅ Aktuell       |
-| QUALITY_AUDIT.md      | 18.12.2025            | ✅ Aktuell       |
-| CRITICAL_FIXES.md     | 18.12.2025            | ✅ Abgeschlossen |
-| TEST_REPORT.md        | 18.12.2025            | ✅ Aktuell       |
-| TESTS.md              | 18.12.2025            | ✅ Aktuell       |
+- **[TESTS.md](TESTS.md)** - Test suite documentation
+- **[RELEASE_OPERATIONS.md](RELEASE_OPERATIONS.md)** - Release process and operations
+
+## 📦 Archive
+
+Older development documents have been moved to [archive/](archive/) for historical reference.
+
+## 🚀 Quick Links
+
+- Main README: [../README.md](../README.md)
+- Changelog: [../CHANGELOG.md](../CHANGELOG.md)
+- GitHub Releases: https://github.com/phismith91/luxorliving/releases
 
 ## 🔄 Changelog
 
