@@ -10,9 +10,9 @@ from typing import Any
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.file_upload import process_uploaded_file
-from homeassistant.config_entries import ConfigFlowResult
+from homeassistant.config_entries import ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_HOST
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
@@ -248,3 +248,49 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Attempt login - will raise AuthenticationError if invalid
             await client.login(username, password)
             _LOGGER.debug("Credentials validated successfully")
+
+
+class LuxorLivingOptionsFlow(OptionsFlow):
+    """Handle options flow for LUXORliving integration."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        # Get current values
+        current_simulation_mode = self.config_entry.options.get(
+            CONF_SIMULATION_MODE,
+            self.config_entry.data.get(CONF_SIMULATION_MODE, False),
+        )
+
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_SIMULATION_MODE,
+                    default=current_simulation_mode,
+                ): bool,
+            }
+        )
+
+        return self.async_show_form(step_id="init", data_schema=options_schema)
+
+
+# Register options flow
+@staticmethod
+@callback
+def async_get_options_flow(
+    config_entry: config_entries.ConfigEntry,
+) -> LuxorLivingOptionsFlow:
+    """Get the options flow for this handler."""
+    return LuxorLivingOptionsFlow(config_entry)
+
+
+# Add options flow support to ConfigFlow class
+LuxorLivingConfigFlow.async_get_options_flow = async_get_options_flow

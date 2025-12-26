@@ -8,7 +8,8 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import device_registry as dr
 
 from .const import (
     CONF_CONNECTION_TYPE,
@@ -138,6 +139,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Register device with configuration URL
+    device_registry = dr.async_get(hass)
+    device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, entry.entry_id)},
+        manufacturer="Theben",
+        model="LUXORliving",
+        name="LUXORliving Gateway",
+        configuration_url="https://github.com/phismith91/luxorliving/blob/main/docs/README.md",
+    )
+
+    # Register reload service
+    async def async_reload_entry(call: ServiceCall) -> None:
+        """Reload the config entry."""
+        await hass.config_entries.async_reload(entry.entry_id)
+
+    hass.services.async_register(DOMAIN, "reload", async_reload_entry)
 
     return True
 
