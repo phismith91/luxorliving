@@ -381,6 +381,7 @@ class LuxorKNXGateway:
         try:
             # Get group address as string
             group_address = str(telegram.destination_address)
+            source_address = str(telegram.source_address) if telegram.source_address else "unknown"
 
             # Extract value from payload
             payload_value = telegram.payload.value
@@ -396,17 +397,25 @@ class LuxorKNXGateway:
             elif isinstance(payload_value, DPTArray):
                 # Decode DPT arrays based on length
                 raw_value = payload_value.value
-                if isinstance(raw_value, (list, bytes)) and len(raw_value) == 1:
+                if isinstance(raw_value, (list, tuple, bytes)) and len(raw_value) == 1:
                     # DPT 5.001 (percent): 0-255 → 0-100
-                    byte_val = (
-                        int(raw_value[0])
-                        if isinstance(raw_value, (list, bytes))
-                        else int(raw_value)
-                    )
+                    byte_val = int(raw_value[0])
                     value = int(byte_val * 100 / 255)
+                elif isinstance(raw_value, (list, tuple, bytes)) and len(raw_value) == 2:
+                    # 2-byte float (DPT 9.xxx), used by Wetterstation (Temp, Wind, Lux)
+                    try:
+                        value = DPT2ByteFloat().from_knx(bytes(raw_value))
+                    except Exception:
+                        value = raw_value
                 else:
                     # Unknown DPT - return raw value
                     value = raw_value
+            elif isinstance(payload_value, (list, tuple)) and len(payload_value) == 2:
+                # Some telegrams surface the raw tuple directly, handle as 2-byte float
+                try:
+                    value = DPT2ByteFloat().from_knx(bytes(payload_value))
+                except Exception:
+                    value = payload_value
             elif isinstance(payload_value, int):
                 # Direct integer value (common for binary/switch)
                 value = bool(payload_value)
@@ -421,6 +430,24 @@ class LuxorKNXGateway:
             telegram_type = (
                 "Response" if isinstance(telegram.payload, GroupValueResponse) else "Write"
             )
+
+            # Log temperature telegrams at INFO level for easy monitoring
+            if isinstance(value, float) and -50 <= value <= 100:
+                _LOGGER.info(
+                    "🌡️  KNX Temperature: %s → %s = %.1f°C (%s)",
+                    source_address,
+                    group_address,
+                    value,
+                    telegram_type
+                )
+            else:
+                _LOGGER.debug(
+                    "KNX Telegram: %s → %s = %s (%s)",
+                    source_address,
+                    group_address,
+                    value,
+                    telegram_type
+                )
             # Enrich with labels if known
             labels = self._ga_label_map.get(group_address)
             labels_str = f" | {', '.join(labels)}" if labels else ""

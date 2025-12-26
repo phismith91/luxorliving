@@ -68,11 +68,16 @@ class EntityMapper:
     # Unit of measurement mapping for sensor roles
     ROLE_TO_UNIT = {
         "Temperature": "°C",
+        "Temperatur": "°C",  # German variant
         "Humidity": "%",
         "Pressure": "hPa",
         "CO2": "ppm",
-        "Brightness": "lux",
+        "Brightness": "lx",
+        "HelligkeitMitte": "lx",  # German variant
+        "HelligkeitLinks": "lx",
+        "HelligkeitRechts": "lx",
         "WindSpeed": "m/s",
+        "Windgeschwindigkeit": "km/h",  # German variant, km/h as per Wetterstation
         "RainVolume": "mm",
         "AirQuality": "ppm",
     }
@@ -80,19 +85,25 @@ class EntityMapper:
     # Sensor device class mapping
     ROLE_TO_DEVICE_CLASS = {
         "Temperature": "temperature",
+        "Temperatur": "temperature",  # German variant
         "Humidity": "humidity",
         "Pressure": "pressure",
         "CO2": None,  # No standard device class for CO2
         "Brightness": "illuminance",
+        "HelligkeitMitte": "illuminance",  # German variant
+        "HelligkeitLinks": "illuminance",
+        "HelligkeitRechts": "illuminance",
         "WindSpeed": None,  # No standard device class for wind speed
+        "Windgeschwindigkeit": None,  # German variant
         "RainVolume": "precipitation",
         "AirQuality": None,
     }
 
-    def __init__(self, project: LXPProject) -> None:
+    def __init__(self, project: LXPProject, overrides: dict[str, Any] | None = None) -> None:
         """Initialize the mapper."""
         self.project = project
         self.entities: list[MappedEntity] = []
+        self._overrides = overrides or {}
         # Automatically map all entities on init
         self.map_all()
 
@@ -102,6 +113,12 @@ class EntityMapper:
 
         for device in self.project.devices:
             self._map_device(device)
+
+        # Apply overrides to add/adjust entities
+        try:
+            self._apply_overrides()
+        except Exception as err:
+            _LOGGER.error("Failed applying overrides: %s", err)
 
         _LOGGER.info("Mapped %d entities total", len(self.entities))
         return self.entities
@@ -188,6 +205,11 @@ class EntityMapper:
             _LOGGER.debug("Skipping sensor %s - no datapoints", sensor.name)
             return
 
+        # Special handling for Wetterstation: extract individual sensor entities
+        if "wetterstation" in device.name.lower():
+            self._map_wetterstation_sensor(device, sensor, datapoints)
+            return
+
         # Determine platform based on sensor roles
         # Priority 1: Check for sensor types (Temperature, Humidity, etc.)
         platform = None
@@ -205,6 +227,7 @@ class EntityMapper:
 
         # Priority 2: Check for binary control/status
         if platform is None:
+            map_onoff_to_binary = bool(self._overrides.get("map_onoff_to_binary", False))
             if "status@OnOff" in datapoints and "OnOff" not in datapoints:
                 # Pure status sensor -> binary_sensor
                 platform = Platform.BINARY_SENSOR
@@ -217,8 +240,12 @@ class EntityMapper:
                     entity_type = "motion"
                 else:
                     # Regular switch sensor -> switch platform
-                    platform = Platform.SWITCH
-                    entity_type = "switch"
+                    if map_onoff_to_binary:
+                        platform = Platform.BINARY_SENSOR
+                        entity_type = "binary_sensor"
+                    else:
+                        platform = Platform.SWITCH
+                        entity_type = "switch"
 
         if platform is None:
             _LOGGER.debug("Skipping sensor %s - no mappable roles", sensor.name)
@@ -323,3 +350,135 @@ class EntityMapper:
             if dev_label not in ia_labels[ia_str]:
                 ia_labels[ia_str].append(dev_label)
         return ia_labels
+
+    # --- Wetterstation special handling ---
+    def _map_wetterstation_sensor(
+        self, device: LXPDevice, sensor: LXPSensor, datapoints: dict[str, int]
+    ) -> None:
+        """Create individual sensor entities from Wetterstation datapoints.
+        
+        Wetterstation sensors have multiple roles (Temperatur, HelligkeitMitte, etc.)
+        but are marked affected=0. We create separate entities for each role.
+        """
+        # Role -> (entity_name_suffix, device_class, unit)
+        wetterstation_roles = {
+            "Temperatur": ("Außentemperatur", "temperature", "°C"),
+            "Windgeschwindigkeit": ("Windgeschwindigkeit", None, "km/h"),
+            "HelligkeitMitte": ("Helligkeit Mitte", "illuminance", "lx"),
+            "HelligkeitLinks": ("Helligkeit Links", "illuminance", "lx"),
+            "HelligkeitRechts": ("Helligkeit Rechts", "illuminance", "lx"),
+            "Regen": ("Regen", None, None),  # Binary/status
+        }
+
+        for role, (name_suffix, dev_class, unit) in wetterstation_roles.items():
+            if role not in datapoints:
+                continue
+
+            addr = datapoints[role]
+            unique_id = f"{device.id}_{addr}"
+
+            # Check if already exists (avoid duplicates)
+            if any(e.unique_id == unique_id for e in self.entities):
+                continue
+
+            # Skip non-sensor roles
+            if role == "Regen":
+                # Regen is binary (OnOff), skip for now
+                continue
+
+            entity = MappedEntity(
+                platform=Platform.SENSOR,
+                unique_id=unique_id,
+                name=f"{device.name} {name_suffix}",
+                device_name=device.name,
+                device_id=device.id,
+                entity_type=role.lower(),
+                datapoints={role: addr},
+                attributes={
+                    "device_class": dev_class,
+                    "unit_of_measurement": unit,
+                    "channel": sensor.channel,
+                    "sensor_type": sensor.sensor_type,
+                    "serial_number": device.serial_number,
+                    "knx_address": device.address,
+                },
+            )
+
+            self.entities.append(entity)
+            _LOGGER.debug(
+                "Mapped Wetterstation sensor '%s' (%s) at address %s",
+                entity.name,
+                role,
+                addr,
+            )
+
+    # --- Overrides support ---
+    def _apply_overrides(self) -> None:
+        sensors = self._overrides.get("sensors", [])
+        if not sensors:
+            return
+
+        for ov in sensors:
+            try:
+                role = ov.get("role")
+                address = ov.get("address")
+                name = ov.get("name") or role
+                device_name = ov.get("device_name") or ov.get("device") or "Overrides"
+                device_id = ov.get("device_id") or "overrides"
+
+                if not role or not address:
+                    _LOGGER.warning("Override entry missing role/address: %s", ov)
+                    continue
+
+                # Normalize address to int
+                addr_int = self._normalize_address(address)
+                if addr_int is None:
+                    _LOGGER.warning("Invalid override address: %s", address)
+                    continue
+
+                # Map sensor role
+                # Allow override of unit/device_class
+                unit = ov.get("unit") if ov.get("unit") else self.ROLE_TO_UNIT.get(role)
+                device_class = ov.get("device_class") if ov.get("device_class") else self.ROLE_TO_DEVICE_CLASS.get(role)
+
+                entity = MappedEntity(
+                    platform=Platform.SENSOR,
+                    unique_id=f"{device_id}_{addr_int}",
+                    name=name,
+                    device_name=device_name,
+                    device_id=device_id,
+                    entity_type=role.lower(),
+                    datapoints={role: addr_int},
+                    attributes={
+                        "device_class": device_class,
+                        "unit_of_measurement": unit,
+                        "channel": ov.get("channel"),
+                        "serial_number": ov.get("serial_number"),
+                        "knx_address": ov.get("individual_address"),
+                    },
+                )
+
+                self.entities.append(entity)
+                _LOGGER.debug("Applied override sensor '%s' (%s) at %s", name, role, address)
+            except Exception as err:
+                _LOGGER.error("Failed to apply override %s: %s", ov, err)
+
+    @staticmethod
+    def _normalize_address(addr: Any) -> int | None:
+        """Convert GA string 'M/L/G' or int-like to int encoding used in LXP.
+        Returns None if invalid.
+        """
+        try:
+            if isinstance(addr, int):
+                return addr
+            s = str(addr).strip()
+            if "/" in s:
+                parts = s.split("/")
+                if len(parts) != 3:
+                    return None
+                m, l, g = (int(p) for p in parts)
+                return (m << 11) | (l << 8) | g
+            # Decimal string
+            return int(s)
+        except Exception:
+            return None

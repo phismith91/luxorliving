@@ -16,6 +16,7 @@ from xknx.telegram.address import GroupAddress
 from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
+from xknx.dpt import DPT2ByteFloat, DPTArray
 from .entity_mapper import EntityMapper
 from .knx_gateway import LuxorKNXGateway
 
@@ -144,7 +145,7 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
 
         # Register for KNX telegram updates
         if self._knx_gateway and self._datapoint_address is not None:
-            self._knx_gateway.register_telegram_listener(
+            self._knx_gateway.register_listener(
                 self._datapoint_address, self._on_telegram
             )
 
@@ -152,7 +153,7 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
         """Run when entity will be removed from Home Assistant."""
         # Unregister from KNX telegram updates
         if self._knx_gateway and self._datapoint_address is not None:
-            self._knx_gateway.unregister_telegram_listener(
+            self._knx_gateway.unregister_listener(
                 self._datapoint_address, self._on_telegram
             )
         await super().async_will_remove_from_hass()
@@ -163,27 +164,57 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
             return
 
         try:
-            value = await self._knx_gateway.async_read_group_value(self._datapoint_address)
-            if value is not None:
-                self._attr_native_value = value
-                _LOGGER.debug(
-                    "Read state for sensor '%s': %s %s",
-                    self.name,
-                    value,
-                    self._attr_native_unit_of_measurement or "",
-                )
-                self.async_write_ha_state()
+            # Send read request - value will arrive via telegram callback
+            await self._knx_gateway.async_read_group_address(
+                self._datapoint_address, is_initial=True
+            )
+            _LOGGER.debug(
+                "Sent read request for sensor '%s' to address %s",
+                self.name,
+                self._datapoint_address,
+            )
         except Exception as err:
             _LOGGER.error("Error reading state for sensor '%s': %s", self.name, err)
 
-    def _on_telegram(self, value: Any) -> None:
-        """Handle incoming KNX telegram for this sensor."""
+    def _on_telegram(self, group_address: str, value: Any) -> None:
+        """Handle incoming KNX telegram for this sensor.
+        
+        Args:
+            group_address: KNX group address that was updated
+            value: New value from KNX telegram
+        """
+        # Normalize common raw payloads (e.g., tuple-of-bytes from Wetterstation)
+        normalized = self._normalize_value(value)
+
         _LOGGER.debug(
-            "Received telegram for sensor '%s': %s %s",
+            "Received telegram for sensor '%s' from %s: %s → %s %s",
             self.name,
+            group_address,
             value,
+            normalized,
             self._attr_native_unit_of_measurement or "",
         )
+
+        if normalized is None:
+            _LOGGER.debug("Skipping state update for %s - normalized value is None", self.name)
+            return
+
+        self._attr_native_value = normalized
+        self.async_write_ha_state()
+
+    @staticmethod
+    def _normalize_value(value: Any) -> Any:
+        """Convert raw KNX payloads into HA-friendly numeric values."""
+        # Handle tuple/list of two bytes (common for DPT 2-byte float)
+        if isinstance(value, (list, tuple)) and len(value) == 2:
+            try:
+                return DPT2ByteFloat().from_knx(DPTArray(value))
+            except Exception:
+                # Fall through to raw value if decoding fails
+                return value
+
+        # Pass through other value types unchanged
+        return value
 
         self._attr_native_value = value
         self.async_write_ha_state()

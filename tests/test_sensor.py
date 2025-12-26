@@ -134,26 +134,25 @@ class TestLuxorLivingSensor:
         with patch.object(sensor, "async_write_ha_state"):
             await sensor.async_added_to_hass()
 
-        # Verify initial state was read
-        mock_knx_gateway.async_read_group_value.assert_called_with("1/2/3")
+        # Verify initial state read request was sent
+        mock_knx_gateway.async_read_group_address.assert_called_with("1/2/3", is_initial=True)
 
         # Verify telegram listener was registered
-        mock_knx_gateway.register_telegram_listener.assert_called_once()
+        mock_knx_gateway.register_listener.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_async_added_to_hass_read_success(
         self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
     ):
-        """Test reading initial state succeeds."""
+        """Test reading initial state sends request."""
         sensor = LuxorLivingSensor(
             mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
         )
 
-        with patch.object(sensor, "async_write_ha_state") as mock_write:
-            await sensor.async_added_to_hass()
+        await sensor.async_added_to_hass()
 
-        assert sensor.native_value == 22.5
-        mock_write.assert_called()
+        # Verify read request was sent
+        mock_knx_gateway.async_read_group_address.assert_called_with("1/2/3", is_initial=True)
 
     @pytest.mark.asyncio
     async def test_async_will_remove_from_hass(
@@ -167,7 +166,7 @@ class TestLuxorLivingSensor:
         await sensor.async_will_remove_from_hass()
 
         # Verify telegram listener was unregistered
-        mock_knx_gateway.unregister_telegram_listener.assert_called_once()
+        mock_knx_gateway.unregister_listener.assert_called_once()
 
     def test_on_telegram_update(
         self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
@@ -178,7 +177,7 @@ class TestLuxorLivingSensor:
         )
 
         with patch.object(sensor, "async_write_ha_state") as mock_write:
-            sensor._on_telegram(23.5)
+            sensor._on_telegram("1/2/3", 23.5)
 
         assert sensor.native_value == 23.5
         mock_write.assert_called_once()
@@ -192,9 +191,26 @@ class TestLuxorLivingSensor:
         )
 
         with patch.object(sensor, "async_write_ha_state") as mock_write:
-            sensor._on_telegram(0)
+            sensor._on_telegram("1/2/4", 0)
 
         assert sensor.native_value == 0
+        mock_write.assert_called_once()
+
+    def test_on_telegram_tuple_value(
+        self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+    ):
+        """Test handling incoming telegram with tuple payload (2-byte DPT)."""
+        from xknx.dpt import DPT2ByteFloat, DPTArray
+
+        sensor = LuxorLivingSensor(
+            mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+        )
+
+        with patch.object(sensor, "async_write_ha_state") as mock_write:
+            sensor._on_telegram("1/2/3", (5, 110))
+
+        expected = DPT2ByteFloat().from_knx(DPTArray((5, 110)))
+        assert sensor.native_value == expected
         mock_write.assert_called_once()
 
 
@@ -234,7 +250,7 @@ class TestAsyncSetupEntry:
         }
 
         # Setup async_add_entities callback
-        async_add_entities = AsyncMock()
+        async_add_entities = Mock()
 
         # Call setup
         await async_setup_entry(mock_hass, mock_config_entry, async_add_entities)
@@ -264,7 +280,7 @@ class TestAsyncSetupEntry:
         }
 
         # Setup async_add_entities callback
-        async_add_entities = AsyncMock()
+        async_add_entities = Mock()
 
         # Call setup
         await async_setup_entry(mock_hass, mock_config_entry, async_add_entities)
@@ -286,7 +302,7 @@ class TestAsyncSetupEntry:
             "knx_gateway": mock_knx_gateway,
         }
 
-        async_add_entities = AsyncMock()
+        async_add_entities = Mock()
 
         # Should return early without error
         await async_setup_entry(mock_hass, mock_config_entry, async_add_entities)

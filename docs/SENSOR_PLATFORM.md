@@ -203,6 +203,37 @@ climate.wohnzimmer  # Thermostat with setpoint control
    - ✅ Correct: `1/2/3` or `2563`
    - ❌ Wrong: `1.2.3`
 
+### Overrides (Fallback, wenn LuxorPlug keine Rollen/Wirksamkeit setzt)
+
+Wenn LuxorPlug die Sensor-Rollen nicht exportiert (oder `affected="0"` bleibt), kannst du die Sensor-Erzeugung über eine Override-Datei erzwingen:
+
+Hinweis zu `include_unaffected`:
+- Bedeutung: Der Parser nimmt auch Elemente mit `affected="0"` auf (normalerweise werden diese ausgelassen).
+- Wetterstation: Geräte mit Namen wie „Wetterstation“ werden jetzt automatisch berücksichtigt – auch wenn `affected="0"` ist. Du brauchst `include_unaffected` hierfür nicht.
+- Nutzung: Für andere Spezialfälle weiterhin hilfreich (z. B. wenn ein Sensor bewusst auf „nicht wirksam“ steht, aber dennoch aus KNX gelesen werden soll).
+
+- Datei im Home Assistant Config-Verzeichnis anlegen: `luxor_living_overrides.yaml` (oder `.json`)
+- Beispiel YAML:
+
+```yaml
+include_unaffected: true  # optional: Parser nimmt auch affected=0 auf
+map_onoff_to_binary: true # optional: OnOff-Kontakte als binary_sensor
+
+sensors:
+   - name: "Außentemperatur"
+      device_name: "Wetterstation 1"
+      device_id: "wetterstation_1"
+      role: Temperature
+      address: "5/1/0"    # M/L/G oder dezimal
+   - name: "Luftfeuchte"
+      device_name: "Wetterstation 1"
+      device_id: "wetterstation_1"
+      role: Humidity
+      address: "5/1/1"
+```
+
+Die Integration lädt die Datei automatisch und legt entsprechende Sensor-Entities an – auch wenn die LXP-Datei diese nicht als „wirksam“ exportiert.
+
 ### State Not Updating
 
 1. **KNX connection**: Verify tunneling/routing is active

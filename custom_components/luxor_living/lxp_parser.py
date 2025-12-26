@@ -85,11 +85,22 @@ class LXPProject:
 class LXPParser:
     """Parser for LUXORliving .lxp XML files."""
 
-    def __init__(self, file_path: str | Path) -> None:
+    def __init__(self, file_path: str | Path, include_unaffected: bool = False) -> None:
         """Initialize the parser."""
         self.file_path = Path(file_path)
         self.tree: ET.ElementTree | None = None
         self.root: ET.Element | None = None
+        # When true, sensors/actuators with affected="0" are also parsed (advanced/testing)
+        self.include_unaffected = include_unaffected
+
+    @staticmethod
+    def _is_weather_station_device(name: str) -> bool:
+        """Return True if the device name indicates a weather station.
+
+        Matches German and English naming variants commonly used in LXP exports.
+        """
+        lower = name.lower()
+        return "wetterstation" in lower or "weather station" in lower
 
     async def parse(self) -> LXPProject:
         """Parse the LXP file and return a project object."""
@@ -169,17 +180,20 @@ class LXPParser:
 
         _LOGGER.debug("Parsing device: %s (%s)", name, serial)
 
+        # Decide whether to force-include unaffected elements for this device
+        force_include_unaffected = self._is_weather_station_device(name)
+
         # Parse sensors
         sensors = []
         for sensor_elem in device_elem.findall(f"{NAMESPACE}sensor"):
-            sensor = self._parse_sensor(sensor_elem)
+            sensor = self._parse_sensor(sensor_elem, force_include_unaffected=force_include_unaffected)
             if sensor and sensor.datapoints:  # Only include sensors with datapoints
                 sensors.append(sensor)
 
         # Parse actuators
         actuators = []
         for actuator_elem in device_elem.findall(f"{NAMESPACE}actuator"):
-            actuator = self._parse_actuator(actuator_elem)
+            actuator = self._parse_actuator(actuator_elem, force_include_unaffected=force_include_unaffected)
             if actuator and actuator.datapoints:  # Only include actuators with datapoints
                 actuators.append(actuator)
 
@@ -193,15 +207,15 @@ class LXPParser:
             actuators=actuators,
         )
 
-    def _parse_sensor(self, sensor_elem: ET.Element) -> LXPSensor | None:
+    def _parse_sensor(self, sensor_elem: ET.Element, *, force_include_unaffected: bool = False) -> LXPSensor | None:
         """Parse a sensor element."""
         name = sensor_elem.get("name", "")
         channel = int(sensor_elem.get("channel", "0"))
         sensor_id = sensor_elem.get("id", "")
         affected = sensor_elem.get("affected", "0") == "1"
 
-        # Skip unaffected sensors
-        if not affected:
+        # Skip unaffected sensors unless explicitly included or forced by device type
+        if not affected and not (self.include_unaffected or force_include_unaffected):
             return None
 
         # Get sensor type from parameter
@@ -226,7 +240,7 @@ class LXPParser:
             datapoints=datapoints,
         )
 
-    def _parse_actuator(self, actuator_elem: ET.Element) -> LXPActuator | None:
+    def _parse_actuator(self, actuator_elem: ET.Element, *, force_include_unaffected: bool = False) -> LXPActuator | None:
         """Parse an actuator element."""
         name = actuator_elem.get("name", "")
         channel = int(actuator_elem.get("channel", "0"))
@@ -235,8 +249,8 @@ class LXPParser:
         on_icon = actuator_elem.get("onIcon", "Default_ON")
         off_icon = actuator_elem.get("offIcon", "Default_OFF")
 
-        # Skip unaffected actuators
-        if not affected:
+        # Skip unaffected actuators unless explicitly included or forced by device type
+        if not affected and not (self.include_unaffected or force_include_unaffected):
             return None
 
         # Get use case from parameter
