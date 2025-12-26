@@ -5,6 +5,15 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.6] - 2025-12-26
+
+### 🔥 Critical Hotfix
+- **DPT 9.xxx (2-byte float) conversion completely broken** - Fixed API usage
+  - Root cause: `from_knx()` expects `DPTArray` object, not raw `bytes()`
+  - Impact: Wetterstation sensors showed raw bytes `(5, 20)` instead of temperature `13.0°C`
+  - Fixed: All DPT 9.xxx sensors now convert properly (Temperature, Wind, Lux, Humidity, Pressure)
+  - Bonus: 🌡️ emoji logging now works → enables ION temperature discovery via bus monitoring
+
 ## [0.3.5] - 2025-12-26
 
 ### 🔥 Hotfix

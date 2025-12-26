@@ -405,7 +405,8 @@ class LuxorKNXGateway:
                 elif isinstance(raw_value, (list, tuple, bytes)) and len(raw_value) == 2:
                     # 2-byte float (DPT 9.xxx), used by Wetterstation (Temp, Wind, Lux)
                     try:
-                        value = DPT2ByteFloat().from_knx(bytes(raw_value))
+                        # IMPORTANT: from_knx() expects DPTArray object, not bytes!
+                        value = DPT2ByteFloat().from_knx(payload_value)
                     except Exception:
                         value = raw_value
                 else:
@@ -414,7 +415,8 @@ class LuxorKNXGateway:
             elif isinstance(payload_value, (list, tuple)) and len(payload_value) == 2:
                 # Some telegrams surface the raw tuple directly, handle as 2-byte float
                 try:
-                    value = DPT2ByteFloat().from_knx(bytes(payload_value))
+                    # Create DPTArray from raw tuple for conversion
+                    value = DPT2ByteFloat().from_knx(DPTArray(payload_value))
                 except Exception:
                     value = payload_value
             elif isinstance(payload_value, int):
