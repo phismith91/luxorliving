@@ -261,10 +261,6 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class LuxorLivingOptionsFlow(OptionsFlow):
     """Handle options flow for LUXORliving integration."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
@@ -272,7 +268,7 @@ class LuxorLivingOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        # Get current values
+        # Get current values from config_entry (provided by OptionsFlow base class)
         current_simulation_mode = self.config_entry.options.get(
             CONF_SIMULATION_MODE,
             self.config_entry.data.get(CONF_SIMULATION_MODE, False),
