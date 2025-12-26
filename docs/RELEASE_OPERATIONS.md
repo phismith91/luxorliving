@@ -8,6 +8,47 @@
 
 ## Phase 0: Pre-Release Verification (Durchführen vor jedem Release)
 
+### Step 0.0: Optional Pre-Release Testing auf Remote HA
+
+**EMPFOHLEN:** Features vor Release auf dem Remote Home Assistant über Tailscale testen.
+
+```bash
+# SSH-Verbindung für Pre-Release Tests
+# Host: 100.97.159.88 (via Tailscale VPN)
+# User: phil
+# ACHTUNG: Passwort NIEMALS in Skripte schreiben!
+
+# Deployment-Beispiel (Passwort interaktiv):
+read -sp "HA Passwort: " HA_PASSWORD
+
+# Temp-Deployment für Testing
+ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_test"
+rsync -avz --exclude="__pycache__" \
+  -e "ssh -F /dev/null" \
+  custom_components/luxor_living/ \
+  phil@100.97.159.88:/tmp/luxor_test/
+  
+ssh -F /dev/null phil@100.97.159.88 \
+  "sudo cp -r /tmp/luxor_test/* /config/custom_components/luxor_living/ && \
+   rm -rf /tmp/luxor_test"
+
+# HA Neustart manuell über http://100.97.159.88:8123
+# Einstellungen → System → Neustart
+```
+
+**Was testen:**
+- [ ] Integration lädt ohne Fehler
+- [ ] Config Flow funktioniert
+- [ ] Options Flow funktioniert
+- [ ] Diagnostics Download funktioniert
+- [ ] Services aufrufbar
+- [ ] HA Logs prüfen (keine Errors)
+
+**Wichtig:**
+- `~/.ssh/config` ist fehlerhaft → immer `-F /dev/null` verwenden
+- HA-Dateien gehören root → `sudo` für File-Operationen
+- Git push: `GIT_SSH_COMMAND='ssh -F /dev/null' git push`
+
 ### Step 0.1: Test Suite Verification
 
 ```bash
