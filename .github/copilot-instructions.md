@@ -8,48 +8,41 @@
 
 - **Host:** 100.97.159.88 (via Tailscale VPN)
 - **User:** phil
-- **Passwort:** NIEMALS in Skripte oder Code schreiben!
+- **Authentifizierung:** SSH-Key (passwortlos)
+- **SSH-Key:** `~/.ssh/id_rsa` (Public Key bereits in `/etc/ssh/authorized_keys` auf HA-Server installiert)
 - **Zielverzeichnis:** `/config/custom_components/luxor_living/` (root-owned, benötigt sudo)
 
 ### Deployment-Workflow
 
-**ACHTUNG: Passwort-Sicherheit beachten!**
-
-Beim Erstellen von Deployment-Skripten:
-- ✅ Passwort als Umgebungsvariable oder Prompt verwenden
-- ✅ Skripte mit `.gitignore` ausschließen wenn Credentials enthalten
-- ❌ NIEMALS Passwörter in Git committen
-- ❌ NIEMALS Credentials in GitHub pushen
-
-**Empfohlener Deployment-Ansatz:**
-
-```bash
-# Deployment ohne Passwort im Skript
-read -sp "HA Passwort: " HA_PASSWORD
-sshpass -p "$HA_PASSWORD" ssh -F /dev/null \
-  -o StrictHostKeyChecking=no phil@100.97.159.88 "command"
-```
-
 **SSH-Besonderheiten:**
-- Lokale `~/.ssh/config` hat ungültige Einträge → immer `-F /dev/null` verwenden
+- Lokale `~/.ssh/config` hat ungültige Einträge → **immer `-F /dev/null` verwenden**
 - Git-Operationen: `GIT_SSH_COMMAND='ssh -F /dev/null' git push`
 - HA-Dateien gehören root → `sudo` für File-Operationen verwenden
 - HA Restart via SSH funktioniert nicht → manuelle Nutzung über UI notwendig
+
+**Empfohlener Deployment-Ansatz (mit SSH-Key):**
+
+```bash
+# Deployment mit SSH-Key (passwortlos)
+ssh -F /dev/null -o StrictHostKeyChecking=no phil@100.97.159.88 "command"
+```
 
 ### Deployment-Ablauf
 
 1. **Sync zu Temp-Verzeichnis** (als User phil):
    ```bash
-   ssh phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
-   rsync -avz --exclude="__pycache__" custom_components/luxor_living/ \
+   ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
+   rsync -avz --exclude="__pycache__" \
+     -e "ssh -F /dev/null" \
+     custom_components/luxor_living/ \
      phil@100.97.159.88:/tmp/luxor_deploy/
    ```
 
 2. **Copy mit sudo zu final location**:
    ```bash
-   ssh phil@100.97.159.88 "sudo cp -r /tmp/luxor_deploy/* \
-     /config/custom_components/luxor_living/ && \
-     rm -rf /tmp/luxor_deploy"
+   ssh -F /dev/null phil@100.97.159.88 \
+     "sudo cp -r /tmp/luxor_deploy/* /config/custom_components/luxor_living/ && \
+      rm -rf /tmp/luxor_deploy"
    ```
 
 3. **HA Restart**: Manuell über UI (http://100.97.159.88:8123)
@@ -108,14 +101,12 @@ sshpass -p "$HA_PASSWORD" ssh -F /dev/null \
 
 ---
 
-## ⚠️ Security Best Practices
+## ⚠️SSH-Key Authentifizierung:**
+   - SSH-Key in `~/.ssh/id_rsa` (lokal)
+   - Public Key in `/etc/ssh/authorized_keys` auf HA-Server
+   - Keine Passwörter in Skripten oder Code nötig
 
-1. **Niemals Credentials committen:**
-   - Keine Passwörter in Skripten
-   - Keine API-Tokens in Code
-   - Keine SSH-Keys im Repository
-
-2. **Bei versehentlichem Commit:**
+2. **Bei versehentlichem Commit von Credentials:**
    ```bash
    # History zurücksetzen
    git reset --hard HEAD~N  # N = Anzahl Commits
@@ -128,10 +119,12 @@ sshpass -p "$HA_PASSWORD" ssh -F /dev/null \
    # GitHub Release löschen
    gh release delete vX.Y.Z -y
    
-   # SOFORT Passwort ändern!
+   # SOFORT Passwort/Key ändern!
    ```
 
 3. **Deployment-Skripte:**
+   - Können jetzt sicher mit SSH-Key committet werden
+   - Keine Credentials im Code erforderlich
    - In `.gitignore` aufnehmen wenn sie Credentials enthalten
    - Oder: Template-Skript ohne Credentials committen
 

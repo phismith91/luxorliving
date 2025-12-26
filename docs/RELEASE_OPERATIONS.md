@@ -13,22 +13,23 @@
 **EMPFOHLEN:** Features vor Release auf dem Remote Home Assistant über Tailscale testen.
 
 ```bash
-# SSH-Verbindung für Pre-Release Tests
+# SSH-Verbindung für Pre-Release Tests (mit SSH-Key, passwortlos)
 # Host: 100.97.159.88 (via Tailscale VPN)
 # User: phil
-# ACHTUNG: Passwort NIEMALS in Skripte schreiben!
+# Auth: SSH-Key (~/.ssh/id_rsa)
 
-# Deployment-Beispiel (Passwort interaktiv):
-read -sp "HA Passwort: " HA_PASSWORD
+# Deployment-Beispiel (passwortlos mit SSH-Key):
 
 # Temp-Deployment für Testing
-ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_test"
+ssh -F /dev/null -o StrictHostKeyChecking=no phil@100.97.159.88 \
+  "mkdir -p /tmp/luxor_test"
+
 rsync -avz --exclude="__pycache__" \
-  -e "ssh -F /dev/null" \
+  -e "ssh -F /dev/null -o StrictHostKeyChecking=no" \
   custom_components/luxor_living/ \
   phil@100.97.159.88:/tmp/luxor_test/
   
-ssh -F /dev/null phil@100.97.159.88 \
+ssh -F /dev/null -o StrictHostKeyChecking=no phil@100.97.159.88 \
   "sudo cp -r /tmp/luxor_test/* /config/custom_components/luxor_living/ && \
    rm -rf /tmp/luxor_test"
 
@@ -46,6 +47,7 @@ ssh -F /dev/null phil@100.97.159.88 \
 
 **Wichtig:**
 - `~/.ssh/config` ist fehlerhaft → immer `-F /dev/null` verwenden
+- SSH-Key Authentifizierung funktioniert (Public Key in `/etc/ssh/authorized_keys`)
 - HA-Dateien gehören root → `sudo` für File-Operationen
 - Git push: `GIT_SSH_COMMAND='ssh -F /dev/null' git push`
 
