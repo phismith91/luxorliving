@@ -135,7 +135,7 @@ grep -B 2 'name="iON' docs/Familie\ Schmidt_0.9.lxp | grep address=
 **Create mapping table:**
 
 | Device Name | Physical Address | Temperature Group Address |
-|-------------|------------------|---------------------------|
+| ----------- | ---------------- | ------------------------- |
 | iON4-3      | 9.0.7            | 5/1/10                    |
 | iON4-2      | 9.0.8            | 5/1/11                    |
 | iON4-7      | 9.0.10           | 5/1/12                    |
