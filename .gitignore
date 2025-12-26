@@ -55,6 +55,12 @@ htmlcov/
 *CRITICAL_SETUP*
 create_beta*.sh
 
+# Deployment scripts with credentials
+scripts/*_with_password
+scripts/*_with_credentials
+scripts/deploy.local
+scripts/*.local
+
 # Data
 data/temp/
 data/cache/
