@@ -249,6 +249,14 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await client.login(username, password)
             _LOGGER.debug("Credentials validated successfully")
 
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> LuxorLivingOptionsFlow:
+        """Get the options flow for this handler."""
+        return LuxorLivingOptionsFlow(config_entry)
+
 
 class LuxorLivingOptionsFlow(OptionsFlow):
     """Handle options flow for LUXORliving integration."""
@@ -280,17 +288,3 @@ class LuxorLivingOptionsFlow(OptionsFlow):
         )
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
-
-
-# Register options flow
-@staticmethod
-@callback
-def async_get_options_flow(
-    config_entry: config_entries.ConfigEntry,
-) -> LuxorLivingOptionsFlow:
-    """Get the options flow for this handler."""
-    return LuxorLivingOptionsFlow(config_entry)
-
-
-# Add options flow support to ConfigFlow class
-LuxorLivingConfigFlow.async_get_options_flow = async_get_options_flow

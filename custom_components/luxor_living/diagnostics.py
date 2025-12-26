@@ -44,10 +44,10 @@ async def async_get_config_entry_diagnostics(
     # KNX Gateway info
     if knx_gateway:
         diagnostics["knx_gateway"] = {
-            "connected": knx_gateway.xknx is not None,
-            "connection_type": knx_gateway.connection_type,
+            "connected": knx_gateway._connected,
+            "tunneling_enabled": knx_gateway._tunneling_enabled,
             "simulation_mode": knx_gateway.simulation_mode,
-            "tunneling_enabled": knx_gateway.tunneling_enabled,
+            "host": knx_gateway.host,
         }
 
         # Datapoint mapping info (anonymized)

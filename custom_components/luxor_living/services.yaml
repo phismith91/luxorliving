@@ -1,0 +1,4 @@
+reload:
+  name: Reload integration
+  description: Reload the LUXORliving integration without restarting Home Assistant.
+  fields: {}
