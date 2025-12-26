@@ -381,6 +381,7 @@ class LuxorKNXGateway:
         try:
             # Get group address as string
             group_address = str(telegram.destination_address)
+            source_address = str(telegram.source_address) if telegram.source_address else "unknown"
 
             # Extract value from payload
             payload_value = telegram.payload.value
@@ -429,6 +430,24 @@ class LuxorKNXGateway:
             telegram_type = (
                 "Response" if isinstance(telegram.payload, GroupValueResponse) else "Write"
             )
+
+            # Log temperature telegrams at INFO level for easy monitoring
+            if isinstance(value, float) and -50 <= value <= 100:
+                _LOGGER.info(
+                    "🌡️  KNX Temperature: %s → %s = %.1f°C (%s)",
+                    source_address,
+                    group_address,
+                    value,
+                    telegram_type
+                )
+            else:
+                _LOGGER.debug(
+                    "KNX Telegram: %s → %s = %s (%s)",
+                    source_address,
+                    group_address,
+                    value,
+                    telegram_type
+                )
             # Enrich with labels if known
             labels = self._ga_label_map.get(group_address)
             labels_str = f" | {', '.join(labels)}" if labels else ""
