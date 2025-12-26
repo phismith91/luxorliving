@@ -5,6 +5,29 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2025-12-26
+
+### 🛠️ Fixed
+- **Critical**: Test fixtures - Added proper `conftest.py` with MockConfigEntry and HA-compatible fixtures
+- **Critical**: Options Flow reload - Verified correct implementation (already working)
+- **High**: Password redaction in diagnostics - Sensitive data now shows `**REDACTED**`
+- **High**: Enhanced diagnostics entity handling - Detailed entity list (first 50) + summary by platform
+- **High**: Consistent CONF_SCAN_INTERVAL usage across codebase
+
+### 🏗️ Agent Reorganization
+- **New**: Created `agent_defect_tracker.md` for systematic bug management
+- **Enhanced**: Expanded `agent_architect.md` with comprehensive code quality standards
+- **Updated**: Rewrote `CONTEXT.md` as Single Source of Truth (removed outdated Proxmox/Madeira references, added current SSH deployment to 100.97.159.88)
+- **Created**: Comprehensive `.github/copilot/README.md` for agent documentation
+- **Archived**: 6 obsolete agents (12 → 7 active): code_quality, config_flow, lxp_import, mapping, documentation, github_release_workflow
+
+### ✅ Quality
+- All 86 tests passing
+- Enhanced test coverage with proper fixtures
+- Improved diagnostics for debugging
+
+---
+
 ## [0.3.1-beta.2] - 2025-12-24
 
 ### 🛠️ Fixed
