@@ -59,12 +59,12 @@ Die Auto-Discovery Implementierung ist **architektonisch solide** und löst das 
 
 **Bewertung: 9/10** ✅
 
-| Component | Verantwortlichkeit | SRP-Konformität |
-|-----------|-------------------|-----------------|
-| **`knx_gateway.py`** | Discovery Engine: Sample Tracking, Stability, Type Detection | ✅ Excellent |
-| **`__init__.py`** | Orchestration: LXP-Address-Extraction, Callback-Registration, Persistence | ✅ Good |
-| **`sensor.py`** | Entity Creation: Attribute Mapping, KNX Listener Registration | ✅ Good |
-| **`entity_mapper.py`** | LXP-to-HA Mapping (unberührt) | ✅ Excellent |
+| Component              | Verantwortlichkeit                                                        | SRP-Konformität |
+| ---------------------- | ------------------------------------------------------------------------- | --------------- |
+| **`knx_gateway.py`**   | Discovery Engine: Sample Tracking, Stability, Type Detection              | ✅ Excellent     |
+| **`__init__.py`**      | Orchestration: LXP-Address-Extraction, Callback-Registration, Persistence | ✅ Good          |
+| **`sensor.py`**        | Entity Creation: Attribute Mapping, KNX Listener Registration             | ✅ Good          |
+| **`entity_mapper.py`** | LXP-to-HA Mapping (unberührt)                                             | ✅ Excellent     |
 
 **Positiv:**
 - Gateway kennt weder Home Assistant noch Entities → Könnte standalone Library sein
@@ -251,11 +251,11 @@ for callback in self._discovery_callbacks:
 
 **Benchmark-Schätzung:**
 
-| Szenario | Adressen | Telegrams/sec | CPU Impact |
-|----------|----------|---------------|------------|
-| Normal | 50 LXP + 5 Auto | 10 | < 1% |
-| Heavy | 500 LXP + 50 Auto | 100 | ~5% |
-| Extreme | 1000 LXP + 200 Auto | 500 | ~20% (List Comprehension) |
+| Szenario | Adressen            | Telegrams/sec | CPU Impact                |
+| -------- | ------------------- | ------------- | ------------------------- |
+| Normal   | 50 LXP + 5 Auto     | 10            | < 1%                      |
+| Heavy    | 500 LXP + 50 Auto   | 100           | ~5%                       |
+| Extreme  | 1000 LXP + 200 Auto | 500           | ~20% (List Comprehension) |
 
 **Bottlenecks:**
 1. **Cleanup bei jedem Telegram** (Line 598-602) → Periodic Task besser
@@ -729,13 +729,13 @@ def detect_sensor_type(value: float) -> str:
 
 ### 8.4 Risk Assessment
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Memory Leak bei 1000+ Adressen | Medium | Medium | Add MAX_CANDIDATES limit |
-| Reload Loop bei ION Startup | High | Low | Debounce Reloads |
-| False Positive Discovery | Low | Medium | Increase MIN_SAMPLES to 5 |
-| Type Misdetection | Medium | Low | User can disable via Options |
-| Performance bei 500+ telegrams/sec | Low | High | Periodic Cleanup Task |
+| Risk                               | Probability | Impact | Mitigation                   |
+| ---------------------------------- | ----------- | ------ | ---------------------------- |
+| Memory Leak bei 1000+ Adressen     | Medium      | Medium | Add MAX_CANDIDATES limit     |
+| Reload Loop bei ION Startup        | High        | Low    | Debounce Reloads             |
+| False Positive Discovery           | Low         | Medium | Increase MIN_SAMPLES to 5    |
+| Type Misdetection                  | Medium      | Low    | User can disable via Options |
+| Performance bei 500+ telegrams/sec | Low         | High   | Periodic Cleanup Task        |
 
 **Overall Risk:** 🟢 **LOW** - Feature ist opt-in via auto-discovery, LXP Sensoren unberührt
 
@@ -743,16 +743,16 @@ def detect_sensor_type(value: float) -> str:
 
 ## 9. ARCHITECTURAL SCORE CARD
 
-| Kategorie | Score | Kommentar |
-|-----------|-------|-----------|
-| **Design** | 9/10 | Observer Pattern excellent, clean separation |
-| **Code Quality** | 7/10 | Solide, aber Performance-Optimierungen möglich |
-| **Maintainability** | 8/10 | Gut strukturiert, Constants klar definiert |
-| **Testability** | 4/10 | Fehlen Unit Tests, tight coupling zu HA |
-| **Documentation** | 6/10 | Code-Kommentare gut, fehlende User-Doku |
-| **Performance** | 7/10 | OK für <100 Adressen, Optimierung für Scale |
-| **Security** | 9/10 | Keine Credentials, Input Validation ok |
-| **Future-Proofing** | 8/10 | Erweiterbar für andere DPT-Typen |
+| Kategorie           | Score | Kommentar                                      |
+| ------------------- | ----- | ---------------------------------------------- |
+| **Design**          | 9/10  | Observer Pattern excellent, clean separation   |
+| **Code Quality**    | 7/10  | Solide, aber Performance-Optimierungen möglich |
+| **Maintainability** | 8/10  | Gut strukturiert, Constants klar definiert     |
+| **Testability**     | 4/10  | Fehlen Unit Tests, tight coupling zu HA        |
+| **Documentation**   | 6/10  | Code-Kommentare gut, fehlende User-Doku        |
+| **Performance**     | 7/10  | OK für <100 Adressen, Optimierung für Scale    |
+| **Security**        | 9/10  | Keine Credentials, Input Validation ok         |
+| **Future-Proofing** | 8/10  | Erweiterbar für andere DPT-Typen               |
 
 **Gesamtbewertung: 7.25/10** - **Gut bis Sehr Gut**
 
