@@ -315,10 +315,3 @@ class LuxorLivingDiscoveredSensor(SensorEntity):
         
         self._knx_gateway.unregister_listener(self._address, dummy_callback)
 
-
-        # Pass through other value types unchanged
-        return value
-
-        self._attr_native_value = value
-        self.async_write_ha_state()
-
