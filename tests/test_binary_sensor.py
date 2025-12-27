@@ -44,6 +44,7 @@ def mock_motion_entity():
         "OnOff": "1/2/3",
     }
     entity.attributes = {}
+    entity.parameters = {}  # LXP parameters
     return entity
 
 
@@ -60,6 +61,7 @@ def mock_window_entity():
         "status@OnOff": "1/2/4",
     }
     entity.attributes = {"sensor_type": "window"}
+    entity.parameters = {}  # LXP parameters
     return entity
 
 
@@ -106,6 +108,7 @@ class TestLuxorLivingBinarySensor:
         entity.entity_type = "binary_input"
         entity.datapoints = {"OnOff": "1/2/3"}
         entity.attributes = {}
+        entity.parameters = {}  # LXP parameters
 
         sensor = LuxorLivingBinarySensor(mock_coordinator, mock_config_entry, entity)
         assert sensor.device_class == BinarySensorDeviceClass.OPENING

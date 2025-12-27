@@ -70,6 +70,7 @@ def mock_temperature_entity():
         "device_class": "temperature",
         "unit_of_measurement": "°C",
     }
+    entity.parameters = {}  # LXP parameters
     return entity
 
 
@@ -93,6 +94,7 @@ def mock_humidity_entity():
         "device_class": "humidity",
         "unit_of_measurement": "%",
     }
+    entity.parameters = {}  # LXP parameters
     return entity
 
 
@@ -239,6 +241,7 @@ class TestAsyncSetupEntry:
             "device_class": "temperature",
             "unit_of_measurement": "°C",
         }
+        temp_entity.parameters = {}  # LXP parameters
         mock_mapper.get_entities_by_platform.return_value = [temp_entity]
 
         # Setup integration data

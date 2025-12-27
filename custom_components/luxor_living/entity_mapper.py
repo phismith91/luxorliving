@@ -26,6 +26,7 @@ class MappedEntity:
     entity_type: str  # light, switch, binary_sensor, etc.
     datapoints: dict[str, int]  # role -> address mapping
     attributes: dict[str, Any]  # Additional attributes
+    parameters: dict[str, str]  # LXP parameters (timers, flags, etc.)
 
 
 class EntityMapper:
@@ -191,6 +192,7 @@ class EntityMapper:
                 "serial_number": device.serial_number,
                 "knx_address": device.address,
             },
+            parameters=actuator.parameters,
         )
 
         self.entities.append(entity)
@@ -282,6 +284,7 @@ class EntityMapper:
             entity_type=entity_type,
             datapoints=datapoints,
             attributes=attributes,
+            parameters=sensor.parameters,
         )
 
         self.entities.append(entity)
@@ -402,6 +405,7 @@ class EntityMapper:
                     "serial_number": device.serial_number,
                     "knx_address": device.address,
                 },
+                parameters=sensor.parameters,
             )
 
             self.entities.append(entity)
@@ -456,6 +460,7 @@ class EntityMapper:
                         "serial_number": ov.get("serial_number"),
                         "knx_address": ov.get("individual_address"),
                     },
+                    parameters={},  # No LXP parameters for overrides
                 )
 
                 self.entities.append(entity)

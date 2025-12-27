@@ -106,3 +106,84 @@ class LuxorLivingEntity(Entity):
         but this ensures compatibility with manual refresh requests.
         """
         await self.coordinator.async_request_refresh()
+
+    def _get_parameter_attributes(self) -> dict[str, Any]:
+        """Extract user-friendly attributes from LXP parameters.
+        
+        Returns:
+            Dictionary with human-readable parameter attributes for state display.
+        """
+        attrs: dict[str, Any] = {}
+        parameters = getattr(self._mapped_entity, "parameters", {})
+        
+        if not parameters:
+            return attrs
+        
+        # Icon-based area suggestion
+        on_icon = self._mapped_entity.attributes.get("on_icon", "")
+        off_icon = self._mapped_entity.attributes.get("off_icon", "")
+        if on_icon and on_icon != "Default_ON":
+            attrs["icon_type"] = on_icon
+        elif off_icon and off_icon != "Default_OFF":
+            attrs["icon_type"] = off_icon
+        
+        # Participation flags
+        if "teilnahmePanik" in parameters:
+            attrs["panic_enabled"] = parameters["teilnahmePanik"] == "true"
+        if "teilnahmeZentralAus" in parameters:
+            attrs["central_off_enabled"] = parameters["teilnahmeZentralAus"] == "true"
+        
+        # Timing parameters (convert hex time values to readable format)
+        if "treppenlichtzeit" in parameters:
+            attrs["staircase_timer"] = self._decode_time_parameter(parameters["treppenlichtzeit"])
+        if "kellerlichtzeit" in parameters:
+            attrs["cellar_timer"] = self._decode_time_parameter(parameters["kellerlichtzeit"])
+        if "einschaltverzögerung" in parameters:
+            attrs["delay_on"] = self._decode_time_parameter(parameters["einschaltverzögerung"])
+        if "ausschaltverzögerung" in parameters:
+            attrs["delay_off"] = self._decode_time_parameter(parameters["ausschaltverzögerung"])
+        
+        # Other flags
+        if "ausschaltvorwarnung" in parameters:
+            attrs["switch_off_warning"] = parameters["ausschaltvorwarnung"] == "true"
+        if "impulsAnzahl" in parameters:
+            try:
+                attrs["impulse_count"] = int(parameters["impulsAnzahl"])
+            except (ValueError, TypeError):
+                pass
+        
+        return attrs
+    
+    @staticmethod
+    def _decode_time_parameter(hex_value: str) -> str:
+        """Decode LXP hex time parameter to human-readable string.
+        
+        Args:
+            hex_value: Hex string like "0000000f000002bf20" (3 minutes in ms)
+            
+        Returns:
+            Human-readable time string like "3 minutes" or raw value if decode fails.
+        """
+        try:
+            # LXP time format: last 8 hex chars are milliseconds
+            # e.g., "000002bf20" = 180000ms = 3 minutes
+            if len(hex_value) >= 8:
+                ms_hex = hex_value[-8:]
+                milliseconds = int(ms_hex, 16)
+                
+                if milliseconds == 0:
+                    return "disabled"
+                
+                seconds = milliseconds / 1000
+                if seconds < 60:
+                    return f"{seconds:.0f}s"
+                elif seconds < 3600:
+                    minutes = seconds / 60
+                    return f"{minutes:.1f}min"
+                else:
+                    hours = seconds / 3600
+                    return f"{hours:.1f}h"
+        except (ValueError, TypeError):
+            pass
+        
+        return hex_value  # Fallback to raw value

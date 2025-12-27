@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import Any
@@ -107,6 +108,79 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         connection_type=connection_type,
         simulation_mode=simulation_mode,
     )
+
+    # Load previously discovered sensors from config entry
+    discovered_sensors = entry.data.get("discovered_sensors", {})
+    if discovered_sensors:
+        knx_gateway.load_discovered_sensors(discovered_sensors)
+        _LOGGER.info("Loaded %d discovered sensors from config", len(discovered_sensors))
+
+    # Register discovery callback to persist new sensors (with debouncing)
+    _reload_scheduled = False
+
+    def _on_sensor_discovered(sensor_info: dict) -> None:
+        """Persist newly discovered sensor to config entry."""
+        nonlocal _reload_scheduled
+        
+        _LOGGER.info("New sensor discovered: %s", sensor_info["address"])
+        
+        # Update config entry data
+        new_data = {**entry.data}
+        new_data.setdefault("discovered_sensors", {})
+        new_data["discovered_sensors"][sensor_info["address"]] = sensor_info
+        hass.config_entries.async_update_entry(entry, data=new_data)
+        
+        # Trigger sensor platform reload only once (debounced by gateway)
+        if not _reload_scheduled:
+            _reload_scheduled = True
+            hass.async_create_task(
+                hass.config_entries.async_reload(entry.entry_id)
+            )
+            # Reset flag after a delay
+            async def reset_flag():
+                await asyncio.sleep(5)  # Allow time for reload to complete
+                nonlocal _reload_scheduled
+                _reload_scheduled = False
+            hass.async_create_task(reset_flag())
+
+    knx_gateway.register_discovery_callback(_on_sensor_discovered)
+
+    # Collect all known LXP addresses and sensor types from EntityMapper
+    known_addresses = set()
+    sensor_types = {}  # {address: sensor_type}
+    
+    if mapper:
+        for entity in mapper.entities:
+            # Add all datapoint addresses from entity
+            for role, address in entity.datapoints.items():
+                if isinstance(address, int):
+                    # Convert int address to group address string
+                    ga_str = f"{(address >> 11) & 0x1F}/{(address >> 8) & 0x07}/{address & 0xFF}"
+                    known_addresses.add(ga_str)
+                    
+                    # Map sensor roles to types for logging
+                    role_to_type = {
+                        "Temperature": "temperature",
+                        "Temperatur": "temperature",
+                        "Humidity": "humidity",
+                        "Brightness": "illuminance",
+                        "HelligkeitMitte": "illuminance",
+                        "HelligkeitLinks": "illuminance",
+                        "HelligkeitRechts": "illuminance",
+                        "Pressure": "pressure",
+                        "WindSpeed": "wind_speed",
+                        "Windgeschwindigkeit": "wind_speed",
+                    }
+                    if role in role_to_type:
+                        sensor_types[ga_str] = role_to_type[role]
+                        
+                elif isinstance(address, str):
+                    known_addresses.add(address)
+                    
+        knx_gateway.set_known_addresses(known_addresses)
+        knx_gateway.set_sensor_types(sensor_types)
+        _LOGGER.info("Excluded %d known LXP addresses from auto-discovery", len(known_addresses))
+        _LOGGER.info("Registered %d sensor type mappings for accurate logging", len(sensor_types))
 
     # Connect to gateway
     if not await knx_gateway.async_setup():

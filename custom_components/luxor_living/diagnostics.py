@@ -80,12 +80,16 @@ async def async_get_config_entry_diagnostics(
 
             # Collect entity details (limit to 50 for performance)
             for entity in entities[:50]:
-                # EntityConfig objects have attributes, not dict keys
+                # MappedEntity objects have attributes
                 entity_info = {
-                    "id": getattr(entity, "id", "unknown"),
+                    "unique_id": getattr(entity, "unique_id", "unknown"),
                     "name": getattr(entity, "name", "unknown"),
-                    "platform": getattr(entity, "platform", "unknown"),
-                    "group_address": getattr(entity, "address", "unknown"),
+                    "platform": str(getattr(entity, "platform", "unknown")),
+                    "entity_type": getattr(entity, "entity_type", "unknown"),
+                    "datapoints": getattr(entity, "datapoints", {}),
+                    "device_name": getattr(entity, "device_name", "unknown"),
+                    "attributes": getattr(entity, "attributes", {}),
+                    "parameters": getattr(entity, "parameters", {}),  # LXP parameters
                 }
                 diagnostics["entities"].append(entity_info)
 
@@ -93,28 +97,58 @@ async def async_get_config_entry_diagnostics(
             diagnostics["entity_summary"] = {
                 "total": len(entities),
                 "by_platform": {},
+                "with_parameters": sum(1 for e in entities if getattr(e, "parameters", {})),
             }
             
             for entity in entities:
-                platform = getattr(entity, "platform", "unknown")
+                platform = str(getattr(entity, "platform", "unknown"))
                 diagnostics["entity_summary"]["by_platform"][platform] = (
                     diagnostics["entity_summary"]["by_platform"].get(platform, 0) + 1
                 )
 
-            # Devices info (anonymized)
-            if hasattr(mapper, "project") and mapper.project:
-                devices = mapper.project.get("devices", [])
+            # Devices info (from LXP project)
+            if hasattr(mapper, "_project") and mapper._project:
+                project = mapper._project
+                devices = getattr(project, "devices", [])
                 diagnostics["devices"] = {
                     "total": len(devices),
-                    "by_app_id": {},
+                    "details": [],
                 }
 
-                # Count devices by app_id (device type)
+                # Device details with actuator/sensor parameters
                 for device in devices:
-                    app_id = device.get("app_id", "unknown")
-                    diagnostics["devices"]["by_app_id"][app_id] = (
-                        diagnostics["devices"]["by_app_id"].get(app_id, 0) + 1
-                    )
+                    device_info = {
+                        "name": getattr(device, "name", "unknown"),
+                        "serial_number": getattr(device, "serial_number", "unknown"),
+                        "app_id": getattr(device, "app_id", "unknown"),
+                        "address": getattr(device, "address", "unknown"),
+                        "actuators": [],
+                        "sensors": [],
+                    }
+                    
+                    # Actuator details with parameters
+                    for actuator in getattr(device, "actuators", []):
+                        actuator_info = {
+                            "name": getattr(actuator, "name", "unknown"),
+                            "channel": getattr(actuator, "channel", 0),
+                            "use_case": getattr(actuator, "use_case", 0),
+                            "on_icon": getattr(actuator, "on_icon", ""),
+                            "off_icon": getattr(actuator, "off_icon", ""),
+                            "parameters": getattr(actuator, "parameters", {}),
+                        }
+                        device_info["actuators"].append(actuator_info)
+                    
+                    # Sensor details with parameters
+                    for sensor in getattr(device, "sensors", []):
+                        sensor_info = {
+                            "name": getattr(sensor, "name", "unknown"),
+                            "channel": getattr(sensor, "channel", 0),
+                            "sensor_type": getattr(sensor, "sensor_type", 0),
+                            "parameters": getattr(sensor, "parameters", {}),
+                        }
+                        device_info["sensors"].append(sensor_info)
+                    
+                    diagnostics["devices"]["details"].append(device_info)
         except Exception as err:
             diagnostics["entities"] = {"error": str(err)}
 

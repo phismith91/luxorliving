@@ -149,4 +149,7 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
             if sensor_type:
                 attrs["sensor_type"] = sensor_type
 
+        # Add LXP parameter attributes
+        attrs.update(self._get_parameter_attributes())
+
         return attrs

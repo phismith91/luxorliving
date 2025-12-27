@@ -254,4 +254,7 @@ class LuxorLivingSwitch(LuxorLivingEntity, SwitchEntity):
         if self._address_status is not None:
             attrs["knx_address_status"] = str(GroupAddress(self._address_status))
 
+        # Add LXP parameter attributes
+        attrs.update(self._get_parameter_attributes())
+
         return attrs

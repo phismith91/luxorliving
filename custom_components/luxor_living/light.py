@@ -386,6 +386,9 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         if self._address_dim_status is not None:
             attrs["knx_address_dim_status"] = str(GroupAddress(self._address_dim_status))
 
+        # Add LXP parameter attributes
+        attrs.update(self._get_parameter_attributes())
+
         return attrs
 
     async def async_will_remove_from_hass(self) -> None:

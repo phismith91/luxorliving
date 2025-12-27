@@ -44,6 +44,7 @@ class LXPSensor:
     id: str
     sensor_type: int
     datapoints: list[LXPDatapoint]
+    parameters: dict[str, str]
 
 
 @dataclass
@@ -57,6 +58,7 @@ class LXPActuator:
     off_icon: str
     use_case: int
     datapoints: list[LXPDatapoint]
+    parameters: dict[str, str]
 
 
 @dataclass
@@ -210,6 +212,7 @@ class LXPParser:
     def _parse_sensor(self, sensor_elem: ET.Element, *, force_include_unaffected: bool = False) -> LXPSensor | None:
         """Parse a sensor element."""
         name = sensor_elem.get("name", "")
+        name = self._clean_duplicate_names(name)  # Clean duplicate names
         channel = int(sensor_elem.get("channel", "0"))
         sensor_id = sensor_elem.get("id", "")
         affected = sensor_elem.get("affected", "0") == "1"
@@ -218,12 +221,16 @@ class LXPParser:
         if not affected and not (self.include_unaffected or force_include_unaffected):
             return None
 
-        # Get sensor type from parameter
+        # Parse all parameters
+        parameters = {}
         sensor_type = 0
         for param in sensor_elem.findall(f"{NAMESPACE}parameter"):
-            if param.get("name") == "sensorTyp":
-                sensor_type = int(param.get("value", "0"))
-                break
+            param_name = param.get("name", "")
+            param_value = param.get("value", "")
+            if param_name:
+                parameters[param_name] = param_value
+                if param_name == "sensorTyp":
+                    sensor_type = int(param_value) if param_value else 0
 
         # Parse datapoints
         datapoints = []
@@ -238,11 +245,36 @@ class LXPParser:
             id=sensor_id,
             sensor_type=sensor_type,
             datapoints=datapoints,
+            parameters=parameters,
         )
+
+    @staticmethod
+    def _clean_duplicate_names(name: str) -> str:
+        """Clean duplicate consecutive words in actuator/sensor names.
+        
+        Some LXP files have names like "S16-2 S16-2 C9 Bad 3 Heizung"
+        where the device name appears twice. This removes consecutive duplicates.
+        """
+        if not name:
+            return name
+        
+        words = name.split()
+        if len(words) < 2:
+            return name
+        
+        # Remove consecutive duplicates
+        cleaned_words = [words[0]]
+        for word in words[1:]:
+            if word != cleaned_words[-1]:
+                cleaned_words.append(word)
+        
+        return " ".join(cleaned_words)
 
     def _parse_actuator(self, actuator_elem: ET.Element, *, force_include_unaffected: bool = False) -> LXPActuator | None:
         """Parse an actuator element."""
         name = actuator_elem.get("name", "")
+        name = self._clean_duplicate_names(name)  # Clean duplicate names
+        channel = int(actuator_elem.get("channel", "0"))
         channel = int(actuator_elem.get("channel", "0"))
         actuator_id = actuator_elem.get("id", "")
         affected = actuator_elem.get("affected", "0") == "1"
@@ -253,12 +285,16 @@ class LXPParser:
         if not affected and not (self.include_unaffected or force_include_unaffected):
             return None
 
-        # Get use case from parameter
+        # Parse all parameters
+        parameters = {}
         use_case = 0
         for param in actuator_elem.findall(f"{NAMESPACE}parameter"):
-            if param.get("name") == "useCase":
-                use_case = int(param.get("value", "0"))
-                break
+            param_name = param.get("name", "")
+            param_value = param.get("value", "")
+            if param_name:
+                parameters[param_name] = param_value
+                if param_name == "useCase":
+                    use_case = int(param_value) if param_value else 0
 
         # Parse datapoints
         datapoints = []
@@ -275,6 +311,7 @@ class LXPParser:
             off_icon=off_icon,
             use_case=use_case,
             datapoints=datapoints,
+            parameters=parameters,
         )
 
     def _parse_datapoint(self, dp_elem: ET.Element) -> LXPDatapoint | None:

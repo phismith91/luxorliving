@@ -52,13 +52,21 @@ async def async_setup_entry(
         _LOGGER.error("No coordinator found, skipping sensor setup")
         return
 
-    # Get all sensor entities
+    # Get all sensor entities from LXP
     sensor_entities = mapper.get_entities_by_platform(Platform.SENSOR)
-    _LOGGER.info("Creating %d sensor entities", len(sensor_entities))
+    _LOGGER.info("Creating %d LXP sensor entities", len(sensor_entities))
 
     entities: list[SensorEntity] = []
     for mapped_entity in sensor_entities:
         entity = LuxorLivingSensor(coordinator, entry, mapped_entity, knx_gateway)
+        entities.append(entity)
+
+    # Add auto-discovered sensors
+    discovered_sensors = knx_gateway.get_discovered_sensors()
+    _LOGGER.info("Creating %d auto-discovered sensor entities", len(discovered_sensors))
+    
+    for address, sensor_info in discovered_sensors.items():
+        entity = LuxorLivingDiscoveredSensor(coordinator, entry, sensor_info, knx_gateway)
         entities.append(entity)
 
     async_add_entities(entities)
@@ -212,6 +220,101 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
             except Exception:
                 # Fall through to raw value if decoding fails
                 return value
+
+
+class LuxorLivingDiscoveredSensor(SensorEntity):
+    """Representation of an auto-discovered LUXORliving sensor."""
+
+    def __init__(
+        self,
+        coordinator: LuxorLivingCoordinator,
+        entry: ConfigEntry,
+        sensor_info: dict[str, Any],
+        knx_gateway: LuxorKNXGateway,
+    ) -> None:
+        """Initialize the auto-discovered sensor."""
+        self._coordinator = coordinator
+        self._entry = entry
+        self._sensor_info = sensor_info
+        self._knx_gateway = knx_gateway
+        self._address = sensor_info["address"]
+        
+        # Generate unique ID from address
+        address_clean = self._address.replace("/", "_")
+        self._attr_unique_id = f"{entry.entry_id}_auto_{address_clean}"
+        
+        # Set name based on type and address
+        sensor_type = sensor_info.get("type", "sensor")
+        self._attr_name = f"Auto {sensor_type.title()} {self._address}"
+        
+        # Set device class and unit based on sensor type
+        self._setup_sensor_attributes(sensor_type)
+        
+        # Initial value
+        self._attr_native_value = sensor_info.get("last_value")
+
+    def _setup_sensor_attributes(self, sensor_type: str) -> None:
+        """Configure sensor attributes based on detected type."""
+        from homeassistant.components.sensor import SensorDeviceClass
+        from homeassistant.const import (
+            UnitOfTemperature,
+            PERCENTAGE,
+            LIGHT_LUX,
+            UnitOfPressure,
+            UnitOfSpeed,
+        )
+        
+        type_config = {
+            "temperature": {
+                "device_class": SensorDeviceClass.TEMPERATURE,
+                "unit": UnitOfTemperature.CELSIUS,
+                "icon": "mdi:thermometer",
+            },
+            "humidity": {
+                "device_class": SensorDeviceClass.HUMIDITY,
+                "unit": PERCENTAGE,
+                "icon": "mdi:water-percent",
+            },
+            "illuminance": {
+                "device_class": SensorDeviceClass.ILLUMINANCE,
+                "unit": LIGHT_LUX,
+                "icon": "mdi:brightness-5",
+            },
+            "pressure": {
+                "device_class": SensorDeviceClass.PRESSURE,
+                "unit": UnitOfPressure.PA,
+                "icon": "mdi:gauge",
+            },
+            "generic_sensor": {
+                "device_class": None,
+                "unit": None,
+                "icon": "mdi:gauge",
+            },
+        }
+        
+        config = type_config.get(sensor_type, type_config["generic_sensor"])
+        self._attr_device_class = config["device_class"]
+        self._attr_native_unit_of_measurement = config["unit"]
+        self._attr_icon = config["icon"]
+
+    async def async_added_to_hass(self) -> None:
+        """Register KNX listener when added to Home Assistant."""
+        def on_telegram_update(address: str, value: Any) -> None:
+            """Handle KNX telegram updates."""
+            if isinstance(value, float):
+                self._attr_native_value = value
+                self.async_write_ha_state()
+
+        self._knx_gateway.register_listener(self._address, on_telegram_update)
+        _LOGGER.info("Registered auto-discovered sensor: %s (%s)", self._attr_name, self._address)
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Unregister KNX listener when removed."""
+        def dummy_callback(address: str, value: Any) -> None:
+            pass
+        
+        self._knx_gateway.unregister_listener(self._address, dummy_callback)
+
 
         # Pass through other value types unchanged
         return value
