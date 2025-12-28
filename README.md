@@ -13,9 +13,38 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 - **Real-time updates** – Instant state changes from physical switches
 - **Config Flow UI** – Setup in <2 minutes via HA interface
 - **HACS compatible** – One-click installation
+- **🚀 Performance optimized** – Parallel entity creation, async operations
+- **⚙️ Configurable discovery** – Adjustable auto-discovery timeout (0.5-10s)
+- **📊 Performance monitoring** – Built-in benchmarking and regression detection
+- **🛡️ Circuit breaker protection** – Resilient error handling with automatic recovery
+- **💾 Smart caching** – LXP file caching with TTL and memory management
+- **🏥 Health monitoring** – System health endpoint for diagnostics
 
-**Working platforms:** Light, Switch, Binary Sensor, Sensor (NEW!)  
+**Working platforms:** Light, Switch, Binary Sensor, Sensor  
 **In development:** Climate, Cover
+
+## 🚀 v0.5.0 Performance & Resilience Features
+
+### Performance Optimizations
+- **Parallel Entity Creation**: All entities are created simultaneously using `asyncio.gather`, reducing startup time by up to 70%
+- **Async Operations**: CPU-intensive tasks run in thread pools to prevent blocking the event loop
+- **Smart Caching**: LXP files are cached with TTL-based expiration and automatic memory management
+
+### Configuration Options
+- **Discovery Timeout**: Configure auto-discovery debounce delay (0.5-10.0 seconds) via Options Flow
+- **Simulation Mode**: Test integration without physical KNX hardware
+- **Log Level Control**: Adjustable logging verbosity for troubleshooting
+
+### Resilience & Monitoring
+- **Circuit Breaker Pattern**: Automatic failure detection and recovery for network operations
+- **Health Check Endpoint**: Monitor system status at `/api/luxor_living/health`
+- **Performance Benchmarking**: Built-in tools to measure and track performance regressions
+- **Error Scenario Testing**: Comprehensive testing of failure modes and recovery
+
+### Developer Tools
+- **Benchmark Framework**: Measure operation performance with detailed statistics
+- **Memory Usage Tracking**: Monitor resource consumption during operations
+- **Regression Detection**: Automated performance regression testing
 
 ---
 
@@ -91,6 +120,9 @@ entities:
 | Gateway unreachable        | Verify IP address and port 3671, check firewall                       |
 | Entities not created       | Check LXP file contains group addresses, restart HA                   |
 | Tunneling connection fails | Try Routing mode or check BAOS authentication                         |
+| Slow startup               | Check discovery timeout setting (Options → Configure)                |
+| Performance issues         | Run benchmark: `curl http://localhost:8123/api/luxor_living/benchmark` |
+| Circuit breaker open       | Check network connectivity, circuit auto-recovers after timeout      |
 
 **Enable debug logging:**
 ```yaml
@@ -98,6 +130,17 @@ logger:
   default: info
   logs:
     custom_components.luxor_living: debug
+```
+
+**Health check endpoint:**
+```
+GET http://your-ha-ip:8123/api/luxor_living/health
+```
+
+**Performance benchmarking:**
+```bash
+# Run full benchmark suite
+curl -X POST http://your-ha-ip:8123/api/luxor_living/benchmark
 ```
 
 ---

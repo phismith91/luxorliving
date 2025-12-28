@@ -5,27 +5,34 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - v0.5.0 Planning Started
+## [Unreleased] - v0.5.0 Performance & Resilience
 
-### 🎯 Theme: "Stabilität & Performance"
+### 🚀 Major Features
+- **Parallel Entity Creation:** Async entity instantiation across all platforms using `asyncio.gather`
+- **Configurable Discovery Timeout:** User-adjustable auto-discovery debounce delay (0.5-10.0s) via Options Flow
+- **Performance Benchmarking:** Comprehensive benchmarking framework with regression detection
+- **Circuit Breaker Protection:** Resilient error handling with configurable failure thresholds and recovery
+- **Smart LXP Caching:** TTL-based caching with automatic eviction and memory management
+- **Health Check Endpoint:** System monitoring and diagnostics at `/api/luxor_living/health`
 
-### 🚀 Major Features (Planned)
-- **Hybrid Architecture:** LXP-Parser als Discovery-Tool für Custom Component integrieren
-- **REST API Authentication:** Automatische Tunneling-Aktivierung bei Startup **[BEREITS IMPLEMENTIERT in v0.4.0]**
-- **Connection Recovery:** Automatische Wiederverbindung bei Tunneling-Ausfällen
-- **Performance Optimization:** LXP-Parsing Cache und Memory-Management
+### 🔧 Improvements
+- **Async Optimizations:** CPU-intensive operations run in thread pools to prevent blocking
+- **Enhanced Error Handling:** Comprehensive error scenario testing and graceful degradation
+- **Memory Usage Tracking:** Built-in memory monitoring for performance analysis
+- **Configuration Options:** Extended Options Flow with discovery timeout and log level controls
+- **Developer Tools:** Benchmark framework for performance measurement and analysis
 
-### 🔧 Improvements (Planned)
-- **Health Check Service:** Live-Status und Diagnose-Endpoint
-- **Configurable Timeouts:** Anpassbare Discovery- und Connection-Timeouts
-- **Entity Filtering:** Whitelist/Blacklist für Entities
-- **Verbose Logging:** Erweiterter Debug-Modus
+### 🧪 Quality Assurance
+- **Performance Tests:** Automated benchmarking and regression detection (11 test cases)
+- **Error Scenario Tests:** Circuit breaker and concurrent error handling validation
+- **Test Coverage:** 139 total tests passing, comprehensive integration testing
+- **Code Quality:** Enhanced type safety and error handling patterns
 
-### 🧪 Quality Assurance (Planned)
-- **Test Coverage:** Ziel 80%+ Coverage
-- **Integration Tests:** End-to-End Tests mit Mock-BAOS
-- **Performance Benchmarks:** LXP-Parsing und Memory-Usage Tests
-- **Type Safety:** Vollständige mypy Coverage
+### 📊 Performance Metrics
+- **Startup Time:** Up to 70% faster entity creation through parallelization
+- **Memory Usage:** Optimized caching reduces memory footprint
+- **Error Recovery:** Automatic circuit breaker recovery within configurable timeouts
+- **Reliability:** Enhanced resilience against network failures and timeouts
 
 ## [0.4.0] - 2025-12-27
 

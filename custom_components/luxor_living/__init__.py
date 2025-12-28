@@ -19,6 +19,7 @@ from .lxp_parser import get_lxp_cache_stats
 
 from .const import (
     CONF_CONNECTION_TYPE,
+    CONF_DISCOVERY_TIMEOUT,
     CONF_LXP_FILE,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
@@ -26,6 +27,7 @@ from .const import (
     CONF_USERNAME,
     DATA_KNX_GATEWAY,
     DEFAULT_CONNECTION_TYPE,
+    DEFAULT_DISCOVERY_TIMEOUT,
     DEFAULT_HTTP_PORT,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
