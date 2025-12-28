@@ -58,8 +58,13 @@ class LXPCache:
         """Generate a unique cache key for the file and parsing options."""
         return f"{file_path}:{include_unaffected}"
 
-    def _calculate_file_hash(self, file_path: Path) -> str:
+    async def _calculate_file_hash(self, file_path: Path) -> str:
         """Calculate SHA256 hash of the file content."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self._calculate_file_hash_sync, file_path)
+
+    def _calculate_file_hash_sync(self, file_path: Path) -> str:
+        """Calculate SHA256 hash of the file content (synchronous)."""
         hash_sha256 = hashlib.sha256()
         with open(file_path, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
@@ -129,7 +134,7 @@ class LXPCache:
         project = await parser.parse()
 
         # Create cache entry
-        file_hash = self._calculate_file_hash(file_path)
+        file_hash = await self._calculate_file_hash(file_path)
         mtime = file_path.stat().st_mtime
 
         entry = CacheEntry(
