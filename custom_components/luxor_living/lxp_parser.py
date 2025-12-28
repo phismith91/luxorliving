@@ -106,7 +106,7 @@ class LXPCache:
             # Check if file has changed
             try:
                 current_mtime = file_path.stat().st_mtime
-                current_hash = self._calculate_file_hash(file_path)
+                current_hash = await self._calculate_file_hash(file_path)
 
                 if (entry.mtime == current_mtime and
                     entry.file_hash == current_hash and
