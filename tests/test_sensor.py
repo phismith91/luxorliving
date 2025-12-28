@@ -244,6 +244,9 @@ class TestAsyncSetupEntry:
         temp_entity.parameters = {}  # LXP parameters
         mock_mapper.get_entities_by_platform.return_value = [temp_entity]
 
+        # Mock KNX gateway discovered sensors
+        mock_knx_gateway.get_discovered_sensors.return_value = {}
+
         # Setup integration data
         mock_hass.data[DOMAIN] = {}
         mock_hass.data[DOMAIN][mock_config_entry.entry_id] = {
@@ -273,6 +276,9 @@ class TestAsyncSetupEntry:
         # Mock mapper with no sensor entities
         mock_mapper = Mock()
         mock_mapper.get_entities_by_platform.return_value = []
+
+        # Mock KNX gateway discovered sensors
+        mock_knx_gateway.get_discovered_sensors.return_value = {}
 
         # Setup integration data
         mock_hass.data[DOMAIN] = {}

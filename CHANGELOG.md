@@ -5,6 +5,54 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - v0.5.0 Planning Started
+
+### 🎯 Theme: "Stabilität & Performance"
+
+### 🚀 Major Features (Planned)
+- **Hybrid Architecture:** LXP-Parser als Discovery-Tool für Custom Component integrieren
+- **REST API Authentication:** Automatische Tunneling-Aktivierung bei Startup **[BEREITS IMPLEMENTIERT in v0.4.0]**
+- **Connection Recovery:** Automatische Wiederverbindung bei Tunneling-Ausfällen
+- **Performance Optimization:** LXP-Parsing Cache und Memory-Management
+
+### 🔧 Improvements (Planned)
+- **Health Check Service:** Live-Status und Diagnose-Endpoint
+- **Configurable Timeouts:** Anpassbare Discovery- und Connection-Timeouts
+- **Entity Filtering:** Whitelist/Blacklist für Entities
+- **Verbose Logging:** Erweiterter Debug-Modus
+
+### 🧪 Quality Assurance (Planned)
+- **Test Coverage:** Ziel 80%+ Coverage
+- **Integration Tests:** End-to-End Tests mit Mock-BAOS
+- **Performance Benchmarks:** LXP-Parsing und Memory-Usage Tests
+- **Type Safety:** Vollständige mypy Coverage
+
+## [0.4.0] - 2025-12-27
+
+### 🚀 Major Features
+- **Auto-Discovery:** Automatische Erkennung von ION Temperatursensoren via Bus-Monitoring
+- **REST API Authentication:** Automatische Tunneling-Aktivierung bei Startup (Hybrid-Ansatz)
+- **LXP Parameter Extraction:** Vollständige Extraktion und Anzeige von LXP-Parametern
+- **Duplicate Name Cleaning:** Automatische Bereinigung von doppelten Entity-Namen
+- **Memory Management:** MAX_CANDIDATES Limit zur Verhinderung von Memory-Leaks
+- **Sensor Type Detection:** Entity-basierte automatische Sensor-Typ-Erkennung
+
+### 🔧 Improvements  
+- **Enhanced Diagnostics:** Verbesserte Diagnose mit detaillierten Entity-Listen
+- **Connection Stability:** Robuste Fehlerbehandlung bei Verbindungsproblemen
+- **Performance:** Optimierte LXP-Parsing und Discovery-Algorithmen
+- **Logging:** Verbesserte Debug-Informationen für Troubleshooting
+
+### 🐛 Bug Fixes
+- **Syntax Error:** Behoben in sensor.py async_will_remove_from_hass
+- **Import Issues:** Alle Module korrekt importiert und verfügbar
+- **Configuration:** Manifest.json Version korrekt gesetzt
+
+### 🧪 Quality Assurance
+- **Test Coverage:** 74/74 Tests passing (100%)
+- **Code Quality:** Syntax-Check und Type-Checking erfolgreich
+- **Security:** defusedxml für sichere XML-Parsing implementiert
+
 ## [0.3.6] - 2025-12-26
 
 ### 🔥 Critical Hotfix

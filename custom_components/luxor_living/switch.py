@@ -55,12 +55,27 @@ async def async_setup_entry(
     switch_entities = mapper.get_entities_by_platform(Platform.SWITCH)
     _LOGGER.info("Creating %d switch entities", len(switch_entities))
 
-    entities: list[SwitchEntity] = []
-    for mapped_entity in switch_entities:
-        entity = LuxorLivingSwitch(coordinator, entry, mapped_entity, knx_gateway)
-        entities.append(entity)
+    # Create switch entities asynchronously
+    entities = await asyncio.gather(*[
+        _create_switch_entity(coordinator, entry, mapped_entity, knx_gateway)
+        for mapped_entity in switch_entities
+    ])
 
     async_add_entities(entities)
+
+
+async def _create_switch_entity(
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    mapped_entity: Any,
+    knx_gateway: LuxorKNXGateway,
+) -> LuxorLivingSwitch:
+    """Create a switch entity asynchronously."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        lambda: LuxorLivingSwitch(coordinator, entry, mapped_entity, knx_gateway)
+    )
 
 
 class LuxorLivingSwitch(LuxorLivingEntity, SwitchEntity):

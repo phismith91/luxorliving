@@ -56,20 +56,51 @@ async def async_setup_entry(
     sensor_entities = mapper.get_entities_by_platform(Platform.SENSOR)
     _LOGGER.info("Creating %d LXP sensor entities", len(sensor_entities))
 
-    entities: list[SensorEntity] = []
-    for mapped_entity in sensor_entities:
-        entity = LuxorLivingSensor(coordinator, entry, mapped_entity, knx_gateway)
-        entities.append(entity)
+    # Create LXP entities asynchronously
+    lxp_entities = await asyncio.gather(*[
+        _create_lxp_sensor_entity(coordinator, entry, mapped_entity, knx_gateway)
+        for mapped_entity in sensor_entities
+    ])
 
     # Add auto-discovered sensors
     discovered_sensors = knx_gateway.get_discovered_sensors()
     _LOGGER.info("Creating %d auto-discovered sensor entities", len(discovered_sensors))
     
-    for address, sensor_info in discovered_sensors.items():
-        entity = LuxorLivingDiscoveredSensor(coordinator, entry, sensor_info, knx_gateway)
-        entities.append(entity)
+    # Create discovered entities asynchronously
+    discovered_entities = await asyncio.gather(*[
+        _create_discovered_sensor_entity(coordinator, entry, sensor_info, knx_gateway)
+        for address, sensor_info in discovered_sensors.items()
+    ])
 
-    async_add_entities(entities)
+    async_add_entities(lxp_entities + discovered_entities)
+
+
+async def _create_lxp_sensor_entity(
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    mapped_entity: Any,
+    knx_gateway: LuxorKNXGateway,
+) -> LuxorLivingSensor:
+    """Create a LXP sensor entity asynchronously."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        lambda: LuxorLivingSensor(coordinator, entry, mapped_entity, knx_gateway)
+    )
+
+
+async def _create_discovered_sensor_entity(
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    sensor_info: Any,
+    knx_gateway: LuxorKNXGateway,
+) -> LuxorLivingDiscoveredSensor:
+    """Create a discovered sensor entity asynchronously."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        lambda: LuxorLivingDiscoveredSensor(coordinator, entry, sensor_info, knx_gateway)
+    )
 
 
 class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
@@ -220,6 +251,9 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
             except Exception:
                 # Fall through to raw value if decoding fails
                 return value
+        
+        # For all other values, return as-is
+        return value
 
 
 class LuxorLivingDiscoveredSensor(SensorEntity):
