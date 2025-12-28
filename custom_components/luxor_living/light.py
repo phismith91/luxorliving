@@ -55,16 +55,40 @@ async def async_setup_entry(
     light_entities = mapper.get_entities_by_platform(Platform.LIGHT)
     _LOGGER.info("Creating %d light entities", len(light_entities))
 
-    entities: list[LightEntity] = []
-    for mapped_entity in light_entities:
-        entity: LightEntity
-        if mapped_entity.entity_type == "dimmable_light":
-            entity = LuxorLivingDimmableLight(coordinator, entry, mapped_entity, knx_gateway)
-        else:
-            entity = LuxorLivingLight(coordinator, entry, mapped_entity, knx_gateway)
-        entities.append(entity)
+    # Create light entities asynchronously
+    entities = await asyncio.gather(*[
+        _create_light_entity(coordinator, entry, mapped_entity, knx_gateway)
+        for mapped_entity in light_entities
+    ])
 
     async_add_entities(entities)
+
+
+async def _create_light_entity(
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    mapped_entity: Any,
+    knx_gateway: LuxorKNXGateway,
+) -> LightEntity:
+    """Create a light entity asynchronously."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        lambda: _create_light_entity_sync(coordinator, entry, mapped_entity, knx_gateway)
+    )
+
+
+def _create_light_entity_sync(
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    mapped_entity: Any,
+    knx_gateway: LuxorKNXGateway,
+) -> LightEntity:
+    """Create a light entity synchronously."""
+    if mapped_entity.entity_type == "dimmable_light":
+        return LuxorLivingDimmableLight(coordinator, entry, mapped_entity, knx_gateway)
+    else:
+        return LuxorLivingLight(coordinator, entry, mapped_entity, knx_gateway)
 
 
 class LuxorLivingLight(LuxorLivingEntity, LightEntity):

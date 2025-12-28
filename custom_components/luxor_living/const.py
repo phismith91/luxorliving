@@ -12,6 +12,7 @@ CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_LOG_LEVEL = "log_level"
+CONF_DISCOVERY_TIMEOUT = "discovery_timeout"
 
 # Defaults
 DEFAULT_PORT = 3671  # KNX/IP default port
@@ -21,6 +22,7 @@ DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin"
 DEFAULT_SCAN_INTERVAL = 30  # seconds
 DEFAULT_LOG_LEVEL = "info"
+DEFAULT_DISCOVERY_TIMEOUT = 2.0  # seconds
 
 # KNX Connection Types
 CONNECTION_TYPE_TUNNELING = "tunneling"

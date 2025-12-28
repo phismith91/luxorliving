@@ -18,6 +18,7 @@ from xknx.telegram.address import GroupAddress
 from xknx.telegram.apci import GroupValueRead, GroupValueResponse, GroupValueWrite
 
 from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
+from .circuit_breaker import get_knx_circuit_breaker, CircuitBreakerOpenException
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,6 +50,7 @@ class LuxorKNXGateway:
         http_port: int = 80,
         connection_type: str = "tunneling",
         simulation_mode: bool = False,
+        discovery_timeout: float = DISCOVERY_DEBOUNCE_DELAY,
     ) -> None:
         """Initialize the KNX gateway."""
         self.hass = hass
@@ -58,6 +60,7 @@ class LuxorKNXGateway:
         self.password = password
         self.http_port = http_port
         self.simulation_mode = simulation_mode
+        self.discovery_timeout = discovery_timeout
 
         self._xknx: XKNX | None = None
         self._rest_client: BAOSRestClient | None = None
@@ -109,7 +112,9 @@ class LuxorKNXGateway:
             self._connected = True
             return True
 
-        try:
+        circuit_breaker = get_knx_circuit_breaker()
+
+        async def _setup_knx_connection():
             # Step 1: REST API Login (only for tunneling)
             if self._connection_type == ConnectionType.TUNNELING:
                 _LOGGER.debug("Step 1/3: REST API Login...")
@@ -125,7 +130,7 @@ class LuxorKNXGateway:
                     _LOGGER.error("Authentication failed: %s", err)
                     await self._rest_client.__aexit__(None, None, None)
                     self._rest_client = None
-                    return False
+                    raise err  # Re-raise to trigger circuit breaker
 
                 # Step 2: Enable KNX Tunneling
                 _LOGGER.debug("Step 2/3: Enabling KNX Tunneling...")
@@ -137,7 +142,7 @@ class LuxorKNXGateway:
                     _LOGGER.error("Failed to enable tunneling: %s", err)
                     await self._rest_client.__aexit__(None, None, None)
                     self._rest_client = None
-                    return False
+                    raise err  # Re-raise to trigger circuit breaker
 
             # Step 3: Connect KNX
             _LOGGER.debug("Step 3/3: Connecting KNX...")
@@ -174,6 +179,12 @@ class LuxorKNXGateway:
 
             return True
 
+        try:
+            return await circuit_breaker.call(_setup_knx_connection)
+        except CircuitBreakerOpenException as e:
+            _LOGGER.error("KNX connection rejected by circuit breaker: %s", e)
+            self._connected = False
+            return False
         except Exception as err:
             _LOGGER.error("Failed to connect to KNX Gateway: %s", err, exc_info=True)
             self._connected = False
@@ -740,7 +751,7 @@ class LuxorKNXGateway:
     async def _execute_debounced_callbacks(self) -> None:
         """Execute callbacks after debounce delay."""
         try:
-            await asyncio.sleep(DISCOVERY_DEBOUNCE_DELAY)
+            await asyncio.sleep(self.discovery_timeout)
             
             # Process all pending discoveries in one batch
             if self._pending_discoveries:

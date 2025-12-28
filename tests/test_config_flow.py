@@ -22,15 +22,14 @@ from custom_components.luxor_living.const import (
 def mock_lxp_parser():
     """Mock LXP Parser."""
     with patch("custom_components.luxor_living.config_flow.LXPParser") as mock:
-        parser_instance = MagicMock()
-        parser_instance.parse = AsyncMock()
+        # Mock the parse_cached classmethod
+        mock.parse_cached = AsyncMock()
 
         # Mock project
         mock_project = MagicMock()
         mock_project.name = "Test Project"
-        parser_instance.parse.return_value = mock_project
+        mock.parse_cached.return_value = mock_project
 
-        mock.return_value = parser_instance
         yield mock
 
 
@@ -122,7 +121,7 @@ class TestLuxorLivingConfigFlow:
         flow.hass = mock_hass
 
         # Make parser raise ValueError (more specific exception)
-        mock_lxp_parser.return_value.parse.side_effect = ValueError("Invalid XML")
+        mock_lxp_parser.parse_cached.side_effect = ValueError("Invalid XML")
 
         with patch("custom_components.luxor_living.config_flow.shutil.copy"):
             with patch("pathlib.Path.exists", return_value=True):

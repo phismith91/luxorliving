@@ -24,6 +24,7 @@ from .const import (
     CONF_USERNAME,
     CONF_SCAN_INTERVAL,
     CONF_LOG_LEVEL,
+    CONF_DISCOVERY_TIMEOUT,
     CONNECTION_TYPE_ROUTING,
     CONNECTION_TYPE_TUNNELING,
     DEFAULT_CONNECTION_TYPE,
@@ -32,6 +33,7 @@ from .const import (
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_LOG_LEVEL,
+    DEFAULT_DISCOVERY_TIMEOUT,
     DEFAULT_USERNAME,
     DOMAIN,
 )
@@ -232,8 +234,7 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             raise ValueError(f"Not a file: {lxp_file}")
 
         # Try to parse the file
-        parser = LXPParser(str(file_path))
-        project = await parser.parse()
+        project = await LXPParser.parse_cached(str(file_path))
 
         _LOGGER.debug("Valid LXP file: %s (Project: %s)", lxp_file, project.name)
         return project.name
@@ -291,6 +292,11 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             CONF_LOG_LEVEL,
             self.config_entry.data.get(CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL),
         )
+        
+        current_discovery_timeout = self.config_entry.options.get(
+            CONF_DISCOVERY_TIMEOUT,
+            self.config_entry.data.get(CONF_DISCOVERY_TIMEOUT, DEFAULT_DISCOVERY_TIMEOUT),
+        )
 
         options_schema = vol.Schema(
             {
@@ -306,6 +312,10 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                     CONF_LOG_LEVEL,
                     default=current_log_level,
                 ): vol.In(["debug", "info", "warning", "error"]),
+                vol.Optional(
+                    CONF_DISCOVERY_TIMEOUT,
+                    default=current_discovery_timeout,
+                ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=10.0)),
             }
         )
 

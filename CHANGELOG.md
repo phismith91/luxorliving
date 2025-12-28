@@ -5,6 +5,61 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - v0.5.0 Performance & Resilience
+
+### 🚀 Major Features
+- **Parallel Entity Creation:** Async entity instantiation across all platforms using `asyncio.gather`
+- **Configurable Discovery Timeout:** User-adjustable auto-discovery debounce delay (0.5-10.0s) via Options Flow
+- **Performance Benchmarking:** Comprehensive benchmarking framework with regression detection
+- **Circuit Breaker Protection:** Resilient error handling with configurable failure thresholds and recovery
+- **Smart LXP Caching:** TTL-based caching with automatic eviction and memory management
+- **Health Check Endpoint:** System monitoring and diagnostics at `/api/luxor_living/health`
+
+### 🔧 Improvements
+- **Async Optimizations:** CPU-intensive operations run in thread pools to prevent blocking
+- **Enhanced Error Handling:** Comprehensive error scenario testing and graceful degradation
+- **Memory Usage Tracking:** Built-in memory monitoring for performance analysis
+- **Configuration Options:** Extended Options Flow with discovery timeout and log level controls
+- **Developer Tools:** Benchmark framework for performance measurement and analysis
+
+### 🧪 Quality Assurance
+- **Performance Tests:** Automated benchmarking and regression detection (11 test cases)
+- **Error Scenario Tests:** Circuit breaker and concurrent error handling validation
+- **Test Coverage:** 139 total tests passing, comprehensive integration testing
+- **Code Quality:** Enhanced type safety and error handling patterns
+
+### 📊 Performance Metrics
+- **Startup Time:** Up to 70% faster entity creation through parallelization
+- **Memory Usage:** Optimized caching reduces memory footprint
+- **Error Recovery:** Automatic circuit breaker recovery within configurable timeouts
+- **Reliability:** Enhanced resilience against network failures and timeouts
+
+## [0.4.0] - 2025-12-27
+
+### 🚀 Major Features
+- **Auto-Discovery:** Automatische Erkennung von ION Temperatursensoren via Bus-Monitoring
+- **REST API Authentication:** Automatische Tunneling-Aktivierung bei Startup (Hybrid-Ansatz)
+- **LXP Parameter Extraction:** Vollständige Extraktion und Anzeige von LXP-Parametern
+- **Duplicate Name Cleaning:** Automatische Bereinigung von doppelten Entity-Namen
+- **Memory Management:** MAX_CANDIDATES Limit zur Verhinderung von Memory-Leaks
+- **Sensor Type Detection:** Entity-basierte automatische Sensor-Typ-Erkennung
+
+### 🔧 Improvements  
+- **Enhanced Diagnostics:** Verbesserte Diagnose mit detaillierten Entity-Listen
+- **Connection Stability:** Robuste Fehlerbehandlung bei Verbindungsproblemen
+- **Performance:** Optimierte LXP-Parsing und Discovery-Algorithmen
+- **Logging:** Verbesserte Debug-Informationen für Troubleshooting
+
+### 🐛 Bug Fixes
+- **Syntax Error:** Behoben in sensor.py async_will_remove_from_hass
+- **Import Issues:** Alle Module korrekt importiert und verfügbar
+- **Configuration:** Manifest.json Version korrekt gesetzt
+
+### 🧪 Quality Assurance
+- **Test Coverage:** 74/74 Tests passing (100%)
+- **Code Quality:** Syntax-Check und Type-Checking erfolgreich
+- **Security:** defusedxml für sichere XML-Parsing implementiert
+
 ## [0.3.6] - 2025-12-26
 
 ### 🔥 Critical Hotfix

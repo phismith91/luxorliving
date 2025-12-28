@@ -10,6 +10,8 @@ from typing import Any, Dict, Optional
 
 import aiohttp
 
+from .circuit_breaker import get_rest_api_circuit_breaker
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -194,7 +196,7 @@ class BAOSRestClient:
 
     async def enable_tunneling(self) -> bool:
         """
-        Enable KNX Tunneling via REST API.
+        Enable KNX Tunneling via REST API with circuit breaker protection.
 
         According to LUXORliving API Documentation:
         PUT /rest/device/authtunneling
@@ -206,20 +208,23 @@ class BAOSRestClient:
         Raises:
             AuthenticationError: If not logged in
             TunnelingError: If activation fails
+            CircuitBreakerOpenException: If circuit breaker is open
         """
-        self._ensure_authenticated()
+        circuit_breaker = get_rest_api_circuit_breaker()
 
-        url = f"{self.base_url}/rest/device/authtunneling"
-        payload = {"enabled": True}
-        headers = self._get_auth_headers()
+        async def _enable_tunneling():
+            self._ensure_authenticated()
 
-        _LOGGER.debug(f"Enabling tunneling at {url}")
-        _LOGGER.debug(f"Tunneling headers: {headers}")
-        _LOGGER.debug(
-            f"Session token: {self.session_token[:10]}..." if self.session_token else "No token"
-        )
+            url = f"{self.base_url}/rest/device/authtunneling"
+            payload = {"enabled": True}
+            headers = self._get_auth_headers()
 
-        try:
+            _LOGGER.debug(f"Enabling tunneling at {url}")
+            _LOGGER.debug(f"Tunneling headers: {headers}")
+            _LOGGER.debug(
+                f"Session token: {self.session_token[:10]}..." if self.session_token else "No token"
+            )
+
             async with self._session.put(url, json=payload, headers=headers) as response:
                 _LOGGER.debug(f"Tunneling response status: {response.status}")
                 _LOGGER.debug(f"Tunneling response headers: {response.headers}")
@@ -256,36 +261,41 @@ class BAOSRestClient:
                 _LOGGER.debug("KNX Tunneling enabled successfully (200 OK)")
                 return True
 
-        except aiohttp.ClientError as e:
-            raise TunnelingError(f"Network error enabling tunneling: {e}")
+        return await circuit_breaker.call(_enable_tunneling)
 
     async def disable_tunneling(self) -> bool:
         """
-        Disable KNX Tunneling.
+        Disable KNX Tunneling with circuit breaker protection.
 
         NOTE: Logout also disables tunneling automatically.
 
         Returns:
             True if tunneling was disabled
         """
-        self._ensure_authenticated()
+        circuit_breaker = get_rest_api_circuit_breaker()
 
-        url = f"{self.base_url}/rest/device/authtunneling"
-        payload = {"enabled": False}
-        headers = self._get_auth_headers()
+        async def _disable_tunneling():
+            self._ensure_authenticated()
 
-        _LOGGER.debug(f"Disabling tunneling at {url}")
+            url = f"{self.base_url}/rest/device/authtunneling"
+            payload = {"enabled": False}
+            headers = self._get_auth_headers()
 
-        try:
+            _LOGGER.debug(f"Disabling tunneling at {url}")
+
             async with self._session.put(url, json=payload, headers=headers) as response:
                 if response.status in (200, 204):
                     self.tunneling_enabled = False
                     _LOGGER.info(f"KNX Tunneling disabled ({response.status})")
                     return True
                 else:
-                    _LOGGER.warning(f"Disable tunneling returned {response.status}")
+                    response_text = await response.text()
+                    _LOGGER.warning(f"Disable tunneling returned {response.status}: {response_text}")
                     return False
-        except aiohttp.ClientError as e:
+
+        try:
+            return await circuit_breaker.call(_disable_tunneling)
+        except Exception as e:
             _LOGGER.error(f"Error disabling tunneling: {e}")
             return False
 

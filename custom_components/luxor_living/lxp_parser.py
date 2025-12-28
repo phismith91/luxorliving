@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, Optional
 
 try:
     from defusedxml import ElementTree as ET
@@ -24,6 +26,158 @@ except ImportError:
 _LOGGER = logging.getLogger(__name__)
 
 NAMESPACE = "{http://www.theben.de/LUXORplug/2016/12}"
+
+
+@dataclass
+class CacheEntry:
+    """Cache entry for parsed LXP projects."""
+    project: LXPProject
+    file_hash: str
+    mtime: float
+    access_count: int = 0
+    created_at: float = 0.0
+
+
+class LXPCache:
+    """Cache for parsed LXP projects to avoid re-parsing on reloads."""
+
+    def __init__(self, max_size: int = 10, ttl_seconds: int = 3600):
+        """Initialize the cache.
+
+        Args:
+            max_size: Maximum number of cached projects
+            ttl_seconds: Time-to-live for cache entries in seconds
+        """
+        self._cache: Dict[str, CacheEntry] = {}
+        self._max_size = max_size
+        self._ttl_seconds = ttl_seconds
+        self._hits = 0
+        self._misses = 0
+
+    def _get_cache_key(self, file_path: Path, include_unaffected: bool) -> str:
+        """Generate a unique cache key for the file and parsing options."""
+        return f"{file_path}:{include_unaffected}"
+
+    async def _calculate_file_hash(self, file_path: Path) -> str:
+        """Calculate SHA256 hash of the file content."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self._calculate_file_hash_sync, file_path)
+
+    def _calculate_file_hash_sync(self, file_path: Path) -> str:
+        """Calculate SHA256 hash of the file content (synchronous)."""
+        hash_sha256 = hashlib.sha256()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_sha256.update(chunk)
+        return hash_sha256.hexdigest()
+
+    def _is_expired(self, entry: CacheEntry) -> bool:
+        """Check if a cache entry has expired."""
+        import time
+        return (time.time() - entry.created_at) > self._ttl_seconds
+
+    def _evict_oldest(self):
+        """Evict the oldest cache entry when max size is reached."""
+        if not self._cache:
+            return
+
+        oldest_key = min(self._cache.keys(),
+                        key=lambda k: self._cache[k].created_at)
+        del self._cache[oldest_key]
+        _LOGGER.debug("Evicted oldest cache entry: %s", oldest_key)
+
+    async def get_or_parse(self, file_path: Path, include_unaffected: bool = False) -> LXPProject:
+        """Get cached project or parse and cache it.
+
+        Args:
+            file_path: Path to the LXP file
+            include_unaffected: Whether to include unaffected sensors/actuators
+
+        Returns:
+            Parsed LXPProject
+        """
+        import time
+        cache_key = self._get_cache_key(file_path, include_unaffected)
+
+        # Check if we have a valid cached entry
+        if cache_key in self._cache:
+            entry = self._cache[cache_key]
+
+            # Check if file has changed
+            try:
+                current_mtime = file_path.stat().st_mtime
+                current_hash = await self._calculate_file_hash(file_path)
+
+                if (entry.mtime == current_mtime and
+                    entry.file_hash == current_hash and
+                    not self._is_expired(entry)):
+
+                    entry.access_count += 1
+                    self._hits += 1
+                    _LOGGER.debug("LXP Cache HIT for %s (access #%d)",
+                                file_path.name, entry.access_count)
+                    return entry.project
+                else:
+                    # File changed or expired, remove from cache
+                    del self._cache[cache_key]
+                    _LOGGER.debug("LXP Cache INVALIDATED for %s", file_path.name)
+            except (OSError, IOError) as e:
+                _LOGGER.warning("Error checking file %s: %s", file_path, e)
+                # Remove from cache on error
+                del self._cache[cache_key]
+
+        # Cache miss - parse the file
+        self._misses += 1
+        _LOGGER.debug("LXP Cache MISS for %s", file_path.name)
+
+        parser = LXPParser(file_path, include_unaffected=include_unaffected)
+        project = await parser.parse()
+
+        # Create cache entry
+        file_hash = await self._calculate_file_hash(file_path)
+        mtime = file_path.stat().st_mtime
+
+        entry = CacheEntry(
+            project=project,
+            file_hash=file_hash,
+            mtime=mtime,
+            access_count=1,
+            created_at=time.time()
+        )
+
+        # Evict if cache is full
+        if len(self._cache) >= self._max_size:
+            self._evict_oldest()
+
+        self._cache[cache_key] = entry
+        _LOGGER.info("LXP Cache STORED for %s", file_path.name)
+
+        return project
+
+    def get_stats(self) -> Dict[str, int]:
+        """Get cache statistics."""
+        total_accesses = self._hits + self._misses
+        hit_rate = (self._hits / total_accesses * 100) if total_accesses > 0 else 0
+
+        return {
+            "size": len(self._cache),
+            "max_size": self._max_size,
+            "hits": self._hits,
+            "misses": self._misses,
+            "hit_rate_percent": round(hit_rate, 1),
+            "total_accesses": total_accesses
+        }
+
+    def clear(self):
+        """Clear all cached entries."""
+        self._cache.clear()
+        self._hits = 0
+        self._misses = 0
+        _LOGGER.info("LXP Cache cleared")
+
+
+# Global cache instance
+_lxp_cache = LXPCache()
 
 
 @dataclass
@@ -103,6 +257,32 @@ class LXPParser:
         """
         lower = name.lower()
         return "wetterstation" in lower or "weather station" in lower
+
+    @classmethod
+    async def parse_cached(cls, file_path: str | Path, include_unaffected: bool = False) -> LXPProject:
+        """Parse LXP file with caching for improved performance.
+
+        This method uses the global LXP cache to avoid re-parsing unchanged files.
+        Use this instead of creating a parser instance and calling parse() directly.
+
+        Args:
+            file_path: Path to the LXP file
+            include_unaffected: Whether to include unaffected sensors/actuators
+
+        Returns:
+            Parsed LXPProject
+        """
+        return await _lxp_cache.get_or_parse(Path(file_path), include_unaffected)
+
+    @classmethod
+    def get_cache_stats(cls) -> Dict[str, int]:
+        """Get LXP cache statistics."""
+        return _lxp_cache.get_stats()
+
+    @classmethod
+    def clear_cache(cls):
+        """Clear the LXP cache."""
+        _lxp_cache.clear()
 
     async def parse(self) -> LXPProject:
         """Parse the LXP file and return a project object."""
@@ -334,3 +514,21 @@ class LXPParser:
             role=role,
             id=dp_id,
         )
+
+
+# Global LXP cache instance
+_lxp_cache = LXPCache(max_size=10, ttl_seconds=3600)
+
+
+def get_lxp_cache_stats() -> Dict[str, int]:
+    """Get global LXP cache statistics for health monitoring."""
+    return _lxp_cache.get_stats()
+
+
+# Global LXP cache instance
+_lxp_cache = LXPCache(max_size=10, ttl_seconds=3600)
+
+
+def get_lxp_cache_stats() -> Dict[str, int]:
+    """Get LXP cache statistics for health monitoring."""
+    return _lxp_cache.get_stats()

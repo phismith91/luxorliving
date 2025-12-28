@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -54,12 +55,26 @@ async def async_setup_entry(
     sensor_entities = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)
     _LOGGER.info("Creating %d binary sensor entities", len(sensor_entities))
 
-    entities: list[BinarySensorEntity] = []
-    for mapped_entity in sensor_entities:
-        entity = LuxorLivingBinarySensor(coordinator, entry, mapped_entity)
-        entities.append(entity)
+    # Create binary sensor entities asynchronously
+    entities = await asyncio.gather(*[
+        _create_binary_sensor_entity(coordinator, entry, mapped_entity)
+        for mapped_entity in sensor_entities
+    ])
 
     async_add_entities(entities)
+
+
+async def _create_binary_sensor_entity(
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    mapped_entity: Any,
+) -> LuxorLivingBinarySensor:
+    """Create a binary sensor entity asynchronously."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        lambda: LuxorLivingBinarySensor(coordinator, entry, mapped_entity)
+    )
 
 
 class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
