@@ -1,0 +1,18 @@
+{
+    "name": "LUXORliving",
+    "version": "0.5.1",
+    "domain": "luxor_living",
+    "documentation": "https://github.com/phismith91/luxorliving",
+    "issue_tracker": "https://github.com/phismith91/luxorliving/issues",
+    "dependencies": [],
+    "codeowners": [
+        "@phismith91"
+    ],
+    "requirements": [
+        "xknx>=2.12.0"
+    ],
+    "integration_type": "hub",
+    "iot_class": "local_polling",
+    "config_flow": true,
+    "homeassistant": "2025.12.0"
+}

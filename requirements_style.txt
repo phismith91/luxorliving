@@ -15,7 +15,7 @@ mypy==1.19.1
 types-requests==2.32.4.20250913
 
 # Code complexity analysis
-radon==7.1.1
+radon==6.0.1
 
 # Security checks
 bandit==1.9.2
