@@ -2,7 +2,7 @@
 # Install with: pip install -r requirements_style.txt
 
 # Code formatting
-black==25.12.0
+black==24.10.0
 isort==7.0.0
 
 # Linting

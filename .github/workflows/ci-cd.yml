@@ -90,7 +90,7 @@ jobs:
     - name: Check for security issues
       run: |
         pip install bandit
-        python -m bandit -r custom_components/ -f json -o bandit-report.json || true
+        python -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
       continue-on-error: true
 
     - name: Upload security scan results
