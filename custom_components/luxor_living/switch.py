@@ -145,6 +145,9 @@ class LuxorLivingSwitch(LuxorLivingEntity, SwitchEntity):
             )
             self._listen_addresses.append(self._address_on)
 
+        # Initialize state - assume OFF until we get a state update
+        self._attr_is_on = False
+
     def _is_rate_limited(self) -> bool:
         """Check if command should be rate limited to prevent 'light show' loops.
         
@@ -245,14 +248,6 @@ class LuxorLivingSwitch(LuxorLivingEntity, SwitchEntity):
             return
         
         if self._address_on:
-            success = await self._knx_gateway.async_send_telegram(
-                self._address_on,
-                True,
-                "binary",
-            )
-            if success:
-                self._attr_is_on = True
-                self.async_write_ha_state()
             success = await self._knx_gateway.async_send_telegram(
                 self._address_on,
                 True,

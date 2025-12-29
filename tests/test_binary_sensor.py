@@ -19,6 +19,7 @@ def mock_coordinator():
     coordinator = Mock(spec=LuxorLivingCoordinator)
     coordinator.last_update_success = True
     coordinator.async_add_listener = Mock(return_value=lambda: None)
+    coordinator.get_state = Mock(return_value=False)  # Default to False for binary sensors
     return coordinator
 
 
