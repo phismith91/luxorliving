@@ -27,9 +27,9 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python3 -m pip install --upgrade pip
-        pip install -r requirements_dev.txt
-        pip install -r requirements_style.txt
+        pip3 install --upgrade pip
+        pip3 install -r requirements_dev.txt
+        pip3 install -r requirements_style.txt
 
     - name: Run tests with coverage
       run: |
@@ -59,8 +59,8 @@ jobs:
 
     - name: Install style dependencies
       run: |
-        python3 -m pip install --upgrade pip
-        pip install -r requirements_style.txt
+        pip3 install --upgrade pip
+        pip3 install -r requirements_style.txt
 
     - name: Check code formatting with Black
       run: python3 -m black --check --diff custom_components/ tests/
@@ -76,7 +76,7 @@ jobs:
 
     - name: Check for security issues
       run: |
-        pip install bandit
+        pip3 install bandit
         python3 -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
       continue-on-error: true
 
@@ -110,8 +110,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python3 -m pip install --upgrade pip
-        pip install -r requirements_dev.txt
+        pip3 install --upgrade pip
+        pip3 install -r requirements_dev.txt
 
     - name: Run performance benchmark
       run: |
