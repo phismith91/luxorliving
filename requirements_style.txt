@@ -22,4 +22,4 @@ radon==7.1.1
 bandit==1.7.9
 
 # Pre-commit hooks
-pre-commit==4.0.1
+pre-commit==4.5.1
