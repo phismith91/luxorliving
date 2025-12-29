@@ -8,7 +8,7 @@ isort==7.0.0
 # Linting
 flake8==7.1.1
 flake8-docstrings==1.7.0
-pylint==3.3.1
+pylint==4.0.4
 mypy==1.14.1
 
 # Type stubs
