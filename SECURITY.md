@@ -16,7 +16,7 @@ The following versions of the LUXORliving integration are currently supported wi
 
 ### How to Report a Security Vulnerability?
 
-1. **Email:** Send a detailed description to: [me@withphil.de](mailto:me@withphil.de)
+1. **Email:** Send a detailed description to: [philismith91@gmail.com](mailto:philismith91@gmail.com)
 2. **Subject:** Use "SECURITY: [Brief Description]" as subject
 3. **Content:** Please include:
    - Detailed description of the security vulnerability
