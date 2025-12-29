@@ -27,6 +27,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        apt-get update && apt-get install -y python3-pip
         pip3 install --upgrade pip
         pip3 install -r requirements_dev.txt
         pip3 install -r requirements_style.txt
@@ -59,6 +60,7 @@ jobs:
 
     - name: Install style dependencies
       run: |
+        apt-get update && apt-get install -y python3-pip
         pip3 install --upgrade pip
         pip3 install -r requirements_style.txt
 
@@ -76,6 +78,7 @@ jobs:
 
     - name: Check for security issues
       run: |
+        apt-get update && apt-get install -y python3-pip
         pip3 install bandit
         python3 -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
       continue-on-error: true
@@ -110,6 +113,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        apt-get update && apt-get install -y python3-pip
         pip3 install --upgrade pip
         pip3 install -r requirements_dev.txt
 
