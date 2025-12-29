@@ -19,7 +19,7 @@ types-requests==2.32.4.20250913
 radon==7.1.1
 
 # Security checks
-bandit==1.7.9
+bandit==1.9.2
 
 # Pre-commit hooks
 pre-commit==4.5.1
