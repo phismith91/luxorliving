@@ -13,7 +13,7 @@ mypy==1.14.1
 
 # Type stubs
 types-aiohttp==3.10.0
-types-requests==2.31.0
+types-requests==2.32.4.20250913
 
 # Code complexity analysis
 radon==7.1.1
