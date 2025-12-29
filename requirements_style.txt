@@ -9,7 +9,7 @@ isort==7.0.0
 flake8==7.3.0
 flake8-docstrings==1.7.0
 pylint==4.0.4
-mypy==1.14.1
+mypy==1.19.1
 
 # Type stubs
 types-aiohttp==3.10.0
