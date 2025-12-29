@@ -348,6 +348,44 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.services.async_register(DOMAIN, "reload", async_reload_entry)
 
+    # Register list entities service
+    async def async_list_entities(call: ServiceCall) -> None:
+        """List entity IDs for the integration."""
+        platform_filter = call.data.get("platform")
+        entities = []
+
+        # Get all entities from mapper
+        mapper = integration_data.get("mapper")
+        if mapper:
+            for entity in mapper.entities:
+                if platform_filter and entity.platform.value != platform_filter:
+                    continue
+                entities.append({
+                    "entity_id": f"{entity.platform.value}.{entity.unique_id}",
+                    "name": entity.name,
+                    "device_name": entity.device_name,
+                    "platform": entity.platform.value
+                })
+
+        # Send as persistent notification
+        message = f"**LUXORliving Entities**\n\n"
+        if platform_filter:
+            message += f"Filtered by platform: {platform_filter}\n\n"
+        
+        for entity in sorted(entities, key=lambda x: x["entity_id"]):
+            message += f"- `{entity['entity_id']}`: {entity['name']} ({entity['device_name']})\n"
+        
+        if not entities:
+            message += "No entities found."
+        
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {"title": "LUXORliving Entity List", "message": message}
+        )
+
+    hass.services.async_register(DOMAIN, "list_entities", async_list_entities)
+
     # Register options update listener
     entry.async_on_unload(entry.add_update_listener(async_update_options))
 

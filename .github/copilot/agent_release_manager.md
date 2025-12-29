@@ -14,7 +14,8 @@ Responsibilities:
 
 * **Version Management:**
   - Update version in `manifest.json` (both root and `custom_components/luxor_living/`)
-  - Update `CHANGELOG.md` with release notes
+  - Update `RELEASE_NOTES.md` in root with release notes
+  - Move previous `RELEASE_NOTES.md` to `docs/archive/RELEASE_NOTES_v{previous_version}.md`
   - Ensure version follows semantic versioning (MAJOR.MINOR.PATCH)
 
 * **Release Artifact Creation:**
@@ -30,7 +31,7 @@ Responsibilities:
 * **GitHub Release:**
   - Create GitHub release using `gh` CLI
   - Attach ZIP artifact
-  - Include release notes from CHANGELOG.md
+  - Include release notes from RELEASE_NOTES.md
   - Mark as pre-release if beta/testing
   - Link to documentation and issues
 
@@ -43,7 +44,8 @@ Allowed:
 
 * Execute release automation scripts (`scripts/deploy_release.sh`)
 * Modify version numbers in manifests
-* Update CHANGELOG.md
+* Update RELEASE_NOTES.md in root
+* Move old release notes to docs/archive/
 * Create and push git tags
 * Execute `gh release create` commands
 * Build and verify ZIP artifacts
@@ -91,13 +93,14 @@ Workflow Example:
 
 1. **Validate:** `pytest tests/ -v` → All passing?
 2. **Version:** Update manifests to `0.2.13`
-3. **Changelog:** Add entry to CHANGELOG.md
-4. **Commit:** `git commit -m "release: v0.2.13"`
-5. **Tag:** `git tag v0.2.13`
-6. **Push:** `git push && git push --tags`
-7. **Artifact:** `zip -r luxor_living-0.2.13.zip custom_components/luxor_living`
-8. **Release:** `gh release create v0.2.13 --notes "..." luxor_living-0.2.13.zip`
-9. **Verify:** Check GitHub releases page
+3. **Release Notes:** Update `RELEASE_NOTES.md` in root
+4. **Archive:** Move previous `RELEASE_NOTES.md` to `docs/archive/RELEASE_NOTES_v{previous_version}.md`
+5. **Commit:** `git commit -m "release: v0.2.13"`
+6. **Tag:** `git tag v0.2.13`
+7. **Push:** `git push && git push --tags`
+8. **Artifact:** `zip -r luxor_living-0.2.13.zip custom_components/luxor_living`
+9. **Release:** `gh release create v0.2.13 --notes-file RELEASE_NOTES.md luxor_living-0.2.13.zip`
+10. **Verify:** Check GitHub releases page
 
 Critical Rules:
 
@@ -105,6 +108,7 @@ Critical Rules:
 * ALWAYS update both manifest.json files
 * ALWAYS create a git tag for releases
 * ALWAYS attach ZIP artifact to GitHub release
+* ALWAYS keep current RELEASE_NOTES.md in root and archive old ones to docs/archive/
 * Coordinate with `agent_architect` for version strategy
 
 Notes:

@@ -180,3 +180,102 @@ class TestLuxorLivingSwitch:
 
         # Should unregister listeners
         assert mock_knx_gateway.unregister_listener.call_count >= 1
+
+
+class TestRateLimiting:
+    """Test rate limiting functionality."""
+
+    @pytest.fixture
+    def switch(self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway):
+        """Create a switch instance for testing."""
+        return LuxorLivingSwitch(
+            mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+        )
+
+    def test_rate_limiting_not_triggered(self, switch):
+        """Test that rate limiting doesn't block normal usage."""
+        # Should not be rate limited initially
+        assert not switch._is_rate_limited()
+        assert not switch._is_rate_limited()
+        assert not switch._is_rate_limited()
+        assert not switch._is_rate_limited()
+        assert not switch._is_rate_limited()
+
+    def test_rate_limiting_triggered(self, switch, monkeypatch):
+        """Test that rate limiting blocks after 5 commands in 1 second."""
+        import time
+        
+        # Mock time to control timestamps
+        timestamps = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]  # 6 calls within 0.5s
+        call_count = 0
+        
+        def mock_time():
+            nonlocal call_count
+            result = timestamps[min(call_count, len(timestamps) - 1)]
+            call_count += 1
+            return result
+        
+        monkeypatch.setattr(time, 'time', mock_time)
+        
+        # First 5 calls should not be limited
+        for i in range(5):
+            assert not switch._is_rate_limited(), f"Call {i+1} should not be limited"
+        
+        # 6th call should be limited
+        assert switch._is_rate_limited(), "6th call should be rate limited"
+
+    def test_rate_limiting_resets_after_time(self, switch, monkeypatch):
+        """Test that rate limiting resets after timestamps expire."""
+        import time
+        
+        # First set of calls
+        timestamps1 = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+        call_count = 0
+        
+        def mock_time1():
+            nonlocal call_count
+            result = timestamps1[min(call_count, len(timestamps1) - 1)]
+            call_count += 1
+            return result
+        
+        monkeypatch.setattr(time, 'time', mock_time1)
+        
+        # Trigger rate limiting
+        for _ in range(6):
+            switch._is_rate_limited()
+        
+        assert switch._is_rate_limited()
+        
+        # Now simulate time passing (2 seconds later)
+        timestamps2 = [2.0]
+        call_count = 0
+        
+        def mock_time2():
+            return 2.0
+        
+        monkeypatch.setattr(time, 'time', mock_time2)
+        
+        # Should not be limited anymore (old timestamps removed)
+        assert not switch._is_rate_limited()
+
+    @pytest.mark.asyncio
+    async def test_turn_on_rate_limited(self, switch, mock_knx_gateway):
+        """Test that turn_on is blocked when rate limited."""
+        # Trigger rate limiting
+        for _ in range(6):
+            switch._is_rate_limited()
+        
+        # turn_on should not send telegram
+        await switch.async_turn_on()
+        mock_knx_gateway.async_send_telegram.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_turn_off_rate_limited(self, switch, mock_knx_gateway):
+        """Test that turn_off is blocked when rate limited."""
+        # Trigger rate limiting
+        for _ in range(6):
+            switch._is_rate_limited()
+        
+        # turn_off should not send telegram
+        await switch.async_turn_off()
+        mock_knx_gateway.async_send_telegram.assert_not_called()

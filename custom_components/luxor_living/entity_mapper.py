@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.const import Platform
 from xknx.telegram.address import GroupAddress
 
+from .const import DOMAIN
 from .lxp_parser import LXPActuator, LXPDevice, LXPProject, LXPSensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -121,6 +122,20 @@ class EntityMapper:
         except Exception as err:
             _LOGGER.error("Failed applying overrides: %s", err)
 
+        # Add health monitoring entity
+        health_entity = MappedEntity(
+            platform=Platform.BINARY_SENSOR,
+            unique_id=f"{DOMAIN}_health",
+            name="System Health",
+            device_name="LUXORliving",
+            device_id=f"{DOMAIN}_system",
+            entity_type="health",
+            datapoints={},
+            attributes={},
+            parameters={}
+        )
+        self.entities.append(health_entity)
+
         _LOGGER.info("Mapped %d entities total", len(self.entities))
         return self.entities
 
@@ -174,6 +189,10 @@ class EntityMapper:
 
         # Generate friendly name
         name = actuator.name or f"{device.name} Ch{actuator.channel}"
+
+        # Remove device name prefix if present to avoid duplication
+        if name.startswith(device.name + " "):
+            name = name[len(device.name) + 1:]
 
         # Create mapped entity
         entity = MappedEntity(
@@ -260,6 +279,10 @@ class EntityMapper:
 
         # Generate friendly name
         name = sensor.name or f"{device.name} Ch{sensor.channel}"
+
+        # Remove device name prefix if present to avoid duplication
+        if name.startswith(device.name + " "):
+            name = name[len(device.name) + 1:]
 
         # Create mapped entity with sensor-specific attributes
         attributes = {

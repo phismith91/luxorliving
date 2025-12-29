@@ -116,6 +116,7 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
 
         self._knx_gateway = knx_gateway
         self._attr_is_on = False
+        self._command_times: list[float] = []  # Track command timestamps for rate limiting
 
         # Store datapoint addresses
         self._address_on: str | None = mapped_entity.datapoints.get(
@@ -160,6 +161,30 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
                 self._handle_knx_update,
             )
             self._listen_addresses.append(self._address_on)
+
+    def _is_rate_limited(self) -> bool:
+        """Check if command should be rate limited to prevent 'light show' loops.
+        
+        Returns True if too many commands in short time (5+ in 1 second).
+        """
+        import time
+        now = time.time()
+        
+        # Remove old timestamps (>1 second ago)
+        self._command_times = [t for t in self._command_times if now - t <= 1.0]
+        
+        # Check if we have 5+ commands in the last second
+        if len(self._command_times) >= 5:
+            _LOGGER.warning(
+                "Rate limiting light %s: %d commands in 1 second, blocking further commands",
+                self.name,
+                len(self._command_times)
+            )
+            return True
+        
+        # Add current timestamp
+        self._command_times.append(now)
+        return False
 
     async def async_added_to_hass(self) -> None:
         """Entity added to hass - request current state from KNX."""
@@ -235,6 +260,9 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         Args:
             **kwargs: Additional keyword arguments (brightness, etc.)
         """
+        if self._is_rate_limited():
+            return
+        
         if self._address_on:
             success = await self._knx_gateway.async_send_telegram(
                 self._address_on,
@@ -251,6 +279,9 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         Args:
             **kwargs: Additional keyword arguments
         """
+        if self._is_rate_limited():
+            return
+        
         if self._address_on:
             success = await self._knx_gateway.async_send_telegram(
                 self._address_on,

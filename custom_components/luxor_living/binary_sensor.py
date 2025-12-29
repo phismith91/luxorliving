@@ -114,6 +114,22 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
             self._address_status,
         )
 
+    @property
+    def is_on(self) -> bool:
+        """Return true if the binary sensor is on."""
+        if self._mapped_entity.entity_type == "health":
+            # Health sensor: check if all gateways are connected or in simulation mode
+            integration_data = self.hass.data.get(DOMAIN, {})
+            for entry_id, entry_data in integration_data.items():
+                if isinstance(entry_data, dict):
+                    knx_gateway = entry_data.get("knx_gateway")
+                    if knx_gateway and not knx_gateway.connected and not knx_gateway.simulation_mode:
+                        return False
+            return True
+        else:
+            # Default: use coordinator data
+            return self.coordinator.get_state(self._address_status)
+
     def _detect_device_class(self, mapped_entity: Any) -> BinarySensorDeviceClass | None:
         """Detect the device class based on entity type and name.
 
@@ -131,6 +147,8 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
         # Check entity type first
         if entity_type == "motion":
             return BinarySensorDeviceClass.MOTION
+        if entity_type == "health":
+            return BinarySensorDeviceClass.CONNECTIVITY
 
         # Check name for keywords
         if "rauchmelder" in entity_name or "smoke" in entity_name:

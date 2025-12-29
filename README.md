@@ -1,8 +1,8 @@
 # LUXORliving KNX Integration
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-[![GitHub Release](https://img.shields.io/github/release/phismith91/luxorliving.svg)](https://github.com/phismith91/luxorliving/releases)
-[![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](LICENSE)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/phismith91/luxorliving)](https://github.com/phismith91/luxorliving/releases)
+[![License](https://img.shields.io/github/license/phismith91/luxorliving)](LICENSE)
 
 Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity discovery from LXP project files.
 
@@ -19,6 +19,7 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 - **🛡️ Circuit breaker protection** – Resilient error handling with automatic recovery
 - **💾 Smart caching** – LXP file caching with TTL and memory management
 - **🏥 Health monitoring** – System health endpoint for diagnostics
+- **⚡ Rate limiting** – Prevents "light shows" by blocking rapid on/off cycles (5+ in 1s)
 
 **Working platforms:** Light, Switch, Binary Sensor, Sensor  
 **In development:** Climate, Cover
@@ -113,16 +114,16 @@ entities:
 
 ## Troubleshooting
 
-| Problem                    | Solution                                                              |
-| -------------------------- | --------------------------------------------------------------------- |
-| Integration not loading    | Check logs: `tail -f /config/home-assistant.log \| grep luxor_living` |
-| LXP file not found         | Use absolute path (e.g., `/config/luxor/project.lxp`)                 |
-| Gateway unreachable        | Verify IP address and port 3671, check firewall                       |
-| Entities not created       | Check LXP file contains group addresses, restart HA                   |
-| Tunneling connection fails | Try Routing mode or check BAOS authentication                         |
-| Slow startup               | Check discovery timeout setting (Options → Configure)                |
+| Problem                    | Solution                                                               |
+| -------------------------- | ---------------------------------------------------------------------- |
+| Integration not loading    | Check logs: `tail -f /config/home-assistant.log \| grep luxor_living`  |
+| LXP file not found         | Use absolute path (e.g., `/config/luxor/project.lxp`)                  |
+| Gateway unreachable        | Verify IP address and port 3671, check firewall                        |
+| Entities not created       | Check LXP file contains group addresses, restart HA                    |
+| Tunneling connection fails | Try Routing mode or check BAOS authentication                          |
+| Slow startup               | Check discovery timeout setting (Options → Configure)                  |
 | Performance issues         | Run benchmark: `curl http://localhost:8123/api/luxor_living/benchmark` |
-| Circuit breaker open       | Check network connectivity, circuit auto-recovers after timeout      |
+| Circuit breaker open       | Check network connectivity, circuit auto-recovers after timeout        |
 
 **Enable debug logging:**
 ```yaml
