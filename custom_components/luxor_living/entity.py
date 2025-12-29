@@ -59,7 +59,7 @@ class LuxorLivingEntity(Entity):
         # Get device name and ID from the mapped entity
         device_name = getattr(self._mapped_entity, "device_name", "Unknown Device")
         device_id = getattr(self._mapped_entity, "device_id", "unknown")
-        
+
         # Use device_id as the unique identifier (e.g., "_92a56b99254740dcbceaa3db595863b9" for S16-1)
         # This creates separate Home Assistant devices for each LXP device
         return DeviceInfo(
@@ -109,16 +109,16 @@ class LuxorLivingEntity(Entity):
 
     def _get_parameter_attributes(self) -> dict[str, Any]:
         """Extract user-friendly attributes from LXP parameters.
-        
+
         Returns:
             Dictionary with human-readable parameter attributes for state display.
         """
         attrs: dict[str, Any] = {}
         parameters = getattr(self._mapped_entity, "parameters", {})
-        
+
         if not parameters:
             return attrs
-        
+
         # Icon-based area suggestion
         on_icon = self._mapped_entity.attributes.get("on_icon", "")
         off_icon = self._mapped_entity.attributes.get("off_icon", "")
@@ -126,13 +126,13 @@ class LuxorLivingEntity(Entity):
             attrs["icon_type"] = on_icon
         elif off_icon and off_icon != "Default_OFF":
             attrs["icon_type"] = off_icon
-        
+
         # Participation flags
         if "teilnahmePanik" in parameters:
             attrs["panic_enabled"] = parameters["teilnahmePanik"] == "true"
         if "teilnahmeZentralAus" in parameters:
             attrs["central_off_enabled"] = parameters["teilnahmeZentralAus"] == "true"
-        
+
         # Timing parameters (convert hex time values to readable format)
         if "treppenlichtzeit" in parameters:
             attrs["staircase_timer"] = self._decode_time_parameter(parameters["treppenlichtzeit"])
@@ -142,7 +142,7 @@ class LuxorLivingEntity(Entity):
             attrs["delay_on"] = self._decode_time_parameter(parameters["einschaltverzögerung"])
         if "ausschaltverzögerung" in parameters:
             attrs["delay_off"] = self._decode_time_parameter(parameters["ausschaltverzögerung"])
-        
+
         # Other flags
         if "ausschaltvorwarnung" in parameters:
             attrs["switch_off_warning"] = parameters["ausschaltvorwarnung"] == "true"
@@ -151,16 +151,16 @@ class LuxorLivingEntity(Entity):
                 attrs["impulse_count"] = int(parameters["impulsAnzahl"])
             except (ValueError, TypeError):
                 pass
-        
+
         return attrs
-    
+
     @staticmethod
     def _decode_time_parameter(hex_value: str) -> str:
         """Decode LXP hex time parameter to human-readable string.
-        
+
         Args:
             hex_value: Hex string like "0000000f000002bf20" (3 minutes in ms)
-            
+
         Returns:
             Human-readable time string like "3 minutes" or raw value if decode fails.
         """
@@ -170,10 +170,10 @@ class LuxorLivingEntity(Entity):
             if len(hex_value) >= 8:
                 ms_hex = hex_value[-8:]
                 milliseconds = int(ms_hex, 16)
-                
+
                 if milliseconds == 0:
                     return "disabled"
-                
+
                 seconds = milliseconds / 1000
                 if seconds < 60:
                     return f"{seconds:.0f}s"
@@ -185,5 +185,5 @@ class LuxorLivingEntity(Entity):
                     return f"{hours:.1f}h"
         except (ValueError, TypeError):
             pass
-        
+
         return hex_value  # Fallback to raw value

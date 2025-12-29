@@ -132,7 +132,7 @@ class EntityMapper:
             entity_type="health",
             datapoints={},
             attributes={},
-            parameters={}
+            parameters={},
         )
         self.entities.append(health_entity)
 
@@ -182,9 +182,15 @@ class EntityMapper:
 
         # Generate unique ID - use control address to ensure uniqueness
         # Different actuators can have same name but different addresses
-        control_address = datapoints.get("OnOff") or datapoints.get("SchaltenOnOff") or \
-                         datapoints.get("UpDown") or datapoints.get("Dimmen%") or \
-                         list(datapoints.values())[0] if datapoints else "unknown"
+        control_address = (
+            datapoints.get("OnOff")
+            or datapoints.get("SchaltenOnOff")
+            or datapoints.get("UpDown")
+            or datapoints.get("Dimmen%")
+            or list(datapoints.values())[0]
+            if datapoints
+            else "unknown"
+        )
         unique_id = f"{device.id}_{control_address}"
 
         # Generate friendly name
@@ -192,7 +198,7 @@ class EntityMapper:
 
         # Remove device name prefix if present to avoid duplication
         if name.startswith(device.name + " "):
-            name = name[len(device.name) + 1:]
+            name = name[len(device.name) + 1 :]
 
         # Create mapped entity
         entity = MappedEntity(
@@ -282,7 +288,7 @@ class EntityMapper:
 
         # Remove device name prefix if present to avoid duplication
         if name.startswith(device.name + " "):
-            name = name[len(device.name) + 1:]
+            name = name[len(device.name) + 1 :]
 
         # Create mapped entity with sensor-specific attributes
         attributes = {
@@ -382,7 +388,7 @@ class EntityMapper:
         self, device: LXPDevice, sensor: LXPSensor, datapoints: dict[str, int]
     ) -> None:
         """Create individual sensor entities from Wetterstation datapoints.
-        
+
         Wetterstation sensors have multiple roles (Temperatur, HelligkeitMitte, etc.)
         but are marked affected=0. We create separate entities for each role.
         """
@@ -466,7 +472,11 @@ class EntityMapper:
                 # Map sensor role
                 # Allow override of unit/device_class
                 unit = ov.get("unit") if ov.get("unit") else self.ROLE_TO_UNIT.get(role)
-                device_class = ov.get("device_class") if ov.get("device_class") else self.ROLE_TO_DEVICE_CLASS.get(role)
+                device_class = (
+                    ov.get("device_class")
+                    if ov.get("device_class")
+                    else self.ROLE_TO_DEVICE_CLASS.get(role)
+                )
 
                 entity = MappedEntity(
                     platform=Platform.SENSOR,

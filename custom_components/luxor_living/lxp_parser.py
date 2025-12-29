@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import hashlib
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional
@@ -31,6 +31,7 @@ NAMESPACE = "{http://www.theben.de/LUXORplug/2016/12}"
 @dataclass
 class CacheEntry:
     """Cache entry for parsed LXP projects."""
+
     project: LXPProject
     file_hash: str
     mtime: float
@@ -74,6 +75,7 @@ class LXPCache:
     def _is_expired(self, entry: CacheEntry) -> bool:
         """Check if a cache entry has expired."""
         import time
+
         return (time.time() - entry.created_at) > self._ttl_seconds
 
     def _evict_oldest(self):
@@ -81,8 +83,7 @@ class LXPCache:
         if not self._cache:
             return
 
-        oldest_key = min(self._cache.keys(),
-                        key=lambda k: self._cache[k].created_at)
+        oldest_key = min(self._cache.keys(), key=lambda k: self._cache[k].created_at)
         del self._cache[oldest_key]
         _LOGGER.debug("Evicted oldest cache entry: %s", oldest_key)
 
@@ -97,6 +98,7 @@ class LXPCache:
             Parsed LXPProject
         """
         import time
+
         cache_key = self._get_cache_key(file_path, include_unaffected)
 
         # Check if we have a valid cached entry
@@ -108,14 +110,17 @@ class LXPCache:
                 current_mtime = file_path.stat().st_mtime
                 current_hash = await self._calculate_file_hash(file_path)
 
-                if (entry.mtime == current_mtime and
-                    entry.file_hash == current_hash and
-                    not self._is_expired(entry)):
+                if (
+                    entry.mtime == current_mtime
+                    and entry.file_hash == current_hash
+                    and not self._is_expired(entry)
+                ):
 
                     entry.access_count += 1
                     self._hits += 1
-                    _LOGGER.debug("LXP Cache HIT for %s (access #%d)",
-                                file_path.name, entry.access_count)
+                    _LOGGER.debug(
+                        "LXP Cache HIT for %s (access #%d)", file_path.name, entry.access_count
+                    )
                     return entry.project
                 else:
                     # File changed or expired, remove from cache
@@ -142,7 +147,7 @@ class LXPCache:
             file_hash=file_hash,
             mtime=mtime,
             access_count=1,
-            created_at=time.time()
+            created_at=time.time(),
         )
 
         # Evict if cache is full
@@ -165,7 +170,7 @@ class LXPCache:
             "hits": self._hits,
             "misses": self._misses,
             "hit_rate_percent": round(hit_rate, 1),
-            "total_accesses": total_accesses
+            "total_accesses": total_accesses,
         }
 
     def clear(self):
@@ -259,7 +264,9 @@ class LXPParser:
         return "wetterstation" in lower or "weather station" in lower
 
     @classmethod
-    async def parse_cached(cls, file_path: str | Path, include_unaffected: bool = False) -> LXPProject:
+    async def parse_cached(
+        cls, file_path: str | Path, include_unaffected: bool = False
+    ) -> LXPProject:
         """Parse LXP file with caching for improved performance.
 
         This method uses the global LXP cache to avoid re-parsing unchanged files.
@@ -368,14 +375,18 @@ class LXPParser:
         # Parse sensors
         sensors = []
         for sensor_elem in device_elem.findall(f"{NAMESPACE}sensor"):
-            sensor = self._parse_sensor(sensor_elem, force_include_unaffected=force_include_unaffected)
+            sensor = self._parse_sensor(
+                sensor_elem, force_include_unaffected=force_include_unaffected
+            )
             if sensor and sensor.datapoints:  # Only include sensors with datapoints
                 sensors.append(sensor)
 
         # Parse actuators
         actuators = []
         for actuator_elem in device_elem.findall(f"{NAMESPACE}actuator"):
-            actuator = self._parse_actuator(actuator_elem, force_include_unaffected=force_include_unaffected)
+            actuator = self._parse_actuator(
+                actuator_elem, force_include_unaffected=force_include_unaffected
+            )
             if actuator and actuator.datapoints:  # Only include actuators with datapoints
                 actuators.append(actuator)
 
@@ -389,7 +400,9 @@ class LXPParser:
             actuators=actuators,
         )
 
-    def _parse_sensor(self, sensor_elem: ET.Element, *, force_include_unaffected: bool = False) -> LXPSensor | None:
+    def _parse_sensor(
+        self, sensor_elem: ET.Element, *, force_include_unaffected: bool = False
+    ) -> LXPSensor | None:
         """Parse a sensor element."""
         name = sensor_elem.get("name", "")
         name = self._clean_duplicate_names(name)  # Clean duplicate names
@@ -431,26 +444,28 @@ class LXPParser:
     @staticmethod
     def _clean_duplicate_names(name: str) -> str:
         """Clean duplicate consecutive words in actuator/sensor names.
-        
+
         Some LXP files have names like "S16-2 S16-2 C9 Bad 3 Heizung"
         where the device name appears twice. This removes consecutive duplicates.
         """
         if not name:
             return name
-        
+
         words = name.split()
         if len(words) < 2:
             return name
-        
+
         # Remove consecutive duplicates
         cleaned_words = [words[0]]
         for word in words[1:]:
             if word != cleaned_words[-1]:
                 cleaned_words.append(word)
-        
+
         return " ".join(cleaned_words)
 
-    def _parse_actuator(self, actuator_elem: ET.Element, *, force_include_unaffected: bool = False) -> LXPActuator | None:
+    def _parse_actuator(
+        self, actuator_elem: ET.Element, *, force_include_unaffected: bool = False
+    ) -> LXPActuator | None:
         """Parse an actuator element."""
         name = actuator_elem.get("name", "")
         name = self._clean_duplicate_names(name)  # Clean duplicate names

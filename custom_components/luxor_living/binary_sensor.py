@@ -56,10 +56,12 @@ async def async_setup_entry(
     _LOGGER.info("Creating %d binary sensor entities", len(sensor_entities))
 
     # Create binary sensor entities asynchronously
-    entities = await asyncio.gather(*[
-        _create_binary_sensor_entity(coordinator, entry, mapped_entity)
-        for mapped_entity in sensor_entities
-    ])
+    entities = await asyncio.gather(
+        *[
+            _create_binary_sensor_entity(coordinator, entry, mapped_entity)
+            for mapped_entity in sensor_entities
+        ]
+    )
 
     async_add_entities(entities)
 
@@ -72,8 +74,7 @@ async def _create_binary_sensor_entity(
     """Create a binary sensor entity asynchronously."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
-        None,
-        lambda: LuxorLivingBinarySensor(coordinator, entry, mapped_entity)
+        None, lambda: LuxorLivingBinarySensor(coordinator, entry, mapped_entity)
     )
 
 
@@ -123,7 +124,11 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
             for entry_id, entry_data in integration_data.items():
                 if isinstance(entry_data, dict):
                     knx_gateway = entry_data.get("knx_gateway")
-                    if knx_gateway and not knx_gateway.connected and not knx_gateway.simulation_mode:
+                    if (
+                        knx_gateway
+                        and not knx_gateway.connected
+                        and not knx_gateway.simulation_mode
+                    ):
                         return False
             return True
         else:

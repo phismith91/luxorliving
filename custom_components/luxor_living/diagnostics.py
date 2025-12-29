@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.core import HomeAssistant
 
 from .const import (
     CONF_CONNECTION_TYPE,
@@ -25,7 +25,7 @@ async def async_get_config_entry_diagnostics(
         data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
     except (KeyError, AttributeError):
         data = {}
-    
+
     knx_gateway = data.get(DATA_KNX_GATEWAY)
     mapper = data.get("mapper")
     coordinator = data.get("coordinator")
@@ -99,7 +99,7 @@ async def async_get_config_entry_diagnostics(
                 "by_platform": {},
                 "with_parameters": sum(1 for e in entities if getattr(e, "parameters", {})),
             }
-            
+
             for entity in entities:
                 platform = str(getattr(entity, "platform", "unknown"))
                 diagnostics["entity_summary"]["by_platform"][platform] = (
@@ -125,7 +125,7 @@ async def async_get_config_entry_diagnostics(
                         "actuators": [],
                         "sensors": [],
                     }
-                    
+
                     # Actuator details with parameters
                     for actuator in getattr(device, "actuators", []):
                         actuator_info = {
@@ -137,7 +137,7 @@ async def async_get_config_entry_diagnostics(
                             "parameters": getattr(actuator, "parameters", {}),
                         }
                         device_info["actuators"].append(actuator_info)
-                    
+
                     # Sensor details with parameters
                     for sensor in getattr(device, "sensors", []):
                         sensor_info = {
@@ -147,7 +147,7 @@ async def async_get_config_entry_diagnostics(
                             "parameters": getattr(sensor, "parameters", {}),
                         }
                         device_info["sensors"].append(sensor_info)
-                    
+
                     diagnostics["devices"]["details"].append(device_info)
         except Exception as err:
             diagnostics["entities"] = {"error": str(err)}
@@ -157,8 +157,16 @@ async def async_get_config_entry_diagnostics(
         try:
             diagnostics["coordinator"] = {
                 "last_update_success": getattr(coordinator, "last_update_success", None),
-                "last_exception": str(coordinator.last_exception) if getattr(coordinator, "last_exception", None) else None,
-                "update_interval_seconds": coordinator.update_interval.total_seconds() if hasattr(coordinator, "update_interval") else None,
+                "last_exception": (
+                    str(coordinator.last_exception)
+                    if getattr(coordinator, "last_exception", None)
+                    else None
+                ),
+                "update_interval_seconds": (
+                    coordinator.update_interval.total_seconds()
+                    if hasattr(coordinator, "update_interval")
+                    else None
+                ),
                 "scan_interval_configured": getattr(coordinator, "_scan_interval", None),
             }
         except Exception as err:

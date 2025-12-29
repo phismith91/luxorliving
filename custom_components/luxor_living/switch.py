@@ -56,10 +56,12 @@ async def async_setup_entry(
     _LOGGER.info("Creating %d switch entities", len(switch_entities))
 
     # Create switch entities asynchronously
-    entities = await asyncio.gather(*[
-        _create_switch_entity(coordinator, entry, mapped_entity, knx_gateway)
-        for mapped_entity in switch_entities
-    ])
+    entities = await asyncio.gather(
+        *[
+            _create_switch_entity(coordinator, entry, mapped_entity, knx_gateway)
+            for mapped_entity in switch_entities
+        ]
+    )
 
     async_add_entities(entities)
 
@@ -73,8 +75,7 @@ async def _create_switch_entity(
     """Create a switch entity asynchronously."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
-        None,
-        lambda: LuxorLivingSwitch(coordinator, entry, mapped_entity, knx_gateway)
+        None, lambda: LuxorLivingSwitch(coordinator, entry, mapped_entity, knx_gateway)
     )
 
 
@@ -150,24 +151,25 @@ class LuxorLivingSwitch(LuxorLivingEntity, SwitchEntity):
 
     def _is_rate_limited(self) -> bool:
         """Check if command should be rate limited to prevent 'light show' loops.
-        
+
         Returns True if too many commands in short time (5+ in 1 second).
         """
         import time
+
         now = time.time()
-        
+
         # Remove old timestamps (>1 second ago)
         self._command_times = [t for t in self._command_times if now - t <= 1.0]
-        
+
         # Check if we have 5+ commands in the last second
         if len(self._command_times) >= 5:
             _LOGGER.warning(
                 "Rate limiting switch %s: %d commands in 1 second, blocking further commands",
                 self.name,
-                len(self._command_times)
+                len(self._command_times),
             )
             return True
-        
+
         # Add current timestamp
         self._command_times.append(now)
         return False
@@ -246,7 +248,7 @@ class LuxorLivingSwitch(LuxorLivingEntity, SwitchEntity):
         """
         if self._is_rate_limited():
             return
-        
+
         if self._address_on:
             success = await self._knx_gateway.async_send_telegram(
                 self._address_on,
@@ -265,7 +267,7 @@ class LuxorLivingSwitch(LuxorLivingEntity, SwitchEntity):
         """
         if self._is_rate_limited():
             return
-        
+
         if self._address_on:
             success = await self._knx_gateway.async_send_telegram(
                 self._address_on,

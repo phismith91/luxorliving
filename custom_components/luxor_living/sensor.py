@@ -11,12 +11,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from xknx.dpt import DPT2ByteFloat, DPTArray
 from xknx.telegram.address import GroupAddress
 
 from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
-from xknx.dpt import DPT2ByteFloat, DPTArray
 from .entity_mapper import EntityMapper
 from .knx_gateway import LuxorKNXGateway
 
@@ -57,20 +57,24 @@ async def async_setup_entry(
     _LOGGER.info("Creating %d LXP sensor entities", len(sensor_entities))
 
     # Create LXP entities asynchronously
-    lxp_entities = await asyncio.gather(*[
-        _create_lxp_sensor_entity(coordinator, entry, mapped_entity, knx_gateway)
-        for mapped_entity in sensor_entities
-    ])
+    lxp_entities = await asyncio.gather(
+        *[
+            _create_lxp_sensor_entity(coordinator, entry, mapped_entity, knx_gateway)
+            for mapped_entity in sensor_entities
+        ]
+    )
 
     # Add auto-discovered sensors
     discovered_sensors = knx_gateway.get_discovered_sensors()
     _LOGGER.info("Creating %d auto-discovered sensor entities", len(discovered_sensors))
-    
+
     # Create discovered entities asynchronously
-    discovered_entities = await asyncio.gather(*[
-        _create_discovered_sensor_entity(coordinator, entry, sensor_info, knx_gateway)
-        for address, sensor_info in discovered_sensors.items()
-    ])
+    discovered_entities = await asyncio.gather(
+        *[
+            _create_discovered_sensor_entity(coordinator, entry, sensor_info, knx_gateway)
+            for address, sensor_info in discovered_sensors.items()
+        ]
+    )
 
     async_add_entities(lxp_entities + discovered_entities)
 
@@ -84,8 +88,7 @@ async def _create_lxp_sensor_entity(
     """Create a LXP sensor entity asynchronously."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
-        None,
-        lambda: LuxorLivingSensor(coordinator, entry, mapped_entity, knx_gateway)
+        None, lambda: LuxorLivingSensor(coordinator, entry, mapped_entity, knx_gateway)
     )
 
 
@@ -98,8 +101,7 @@ async def _create_discovered_sensor_entity(
     """Create a discovered sensor entity asynchronously."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
-        None,
-        lambda: LuxorLivingDiscoveredSensor(coordinator, entry, sensor_info, knx_gateway)
+        None, lambda: LuxorLivingDiscoveredSensor(coordinator, entry, sensor_info, knx_gateway)
     )
 
 
@@ -127,9 +129,7 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
         self._attr_native_value = None
 
         # Get sensor-specific attributes from mapped entity
-        self._attr_native_unit_of_measurement = mapped_entity.attributes.get(
-            "unit_of_measurement"
-        )
+        self._attr_native_unit_of_measurement = mapped_entity.attributes.get("unit_of_measurement")
         device_class = mapped_entity.attributes.get("device_class")
         if device_class:
             self._attr_device_class = device_class
@@ -184,17 +184,13 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
 
         # Register for KNX telegram updates
         if self._knx_gateway and self._datapoint_address is not None:
-            self._knx_gateway.register_listener(
-                self._datapoint_address, self._on_telegram
-            )
+            self._knx_gateway.register_listener(self._datapoint_address, self._on_telegram)
 
     async def async_will_remove_from_hass(self) -> None:
         """Run when entity will be removed from Home Assistant."""
         # Unregister from KNX telegram updates
         if self._knx_gateway and self._datapoint_address is not None:
-            self._knx_gateway.unregister_listener(
-                self._datapoint_address, self._on_telegram
-            )
+            self._knx_gateway.unregister_listener(self._datapoint_address, self._on_telegram)
         await super().async_will_remove_from_hass()
 
     async def _async_read_state(self) -> None:
@@ -217,7 +213,7 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
 
     def _on_telegram(self, group_address: str, value: Any) -> None:
         """Handle incoming KNX telegram for this sensor.
-        
+
         Args:
             group_address: KNX group address that was updated
             value: New value from KNX telegram
@@ -251,7 +247,7 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
             except Exception:
                 # Fall through to raw value if decoding fails
                 return value
-        
+
         # For all other values, return as-is
         return value
 
@@ -272,18 +268,18 @@ class LuxorLivingDiscoveredSensor(SensorEntity):
         self._sensor_info = sensor_info
         self._knx_gateway = knx_gateway
         self._address = sensor_info["address"]
-        
+
         # Generate unique ID from address
         address_clean = self._address.replace("/", "_")
         self._attr_unique_id = f"{entry.entry_id}_auto_{address_clean}"
-        
+
         # Set name based on type and address
         sensor_type = sensor_info.get("type", "sensor")
         self._attr_name = f"Auto {sensor_type.title()} {self._address}"
-        
+
         # Set device class and unit based on sensor type
         self._setup_sensor_attributes(sensor_type)
-        
+
         # Initial value
         self._attr_native_value = sensor_info.get("last_value")
 
@@ -291,13 +287,13 @@ class LuxorLivingDiscoveredSensor(SensorEntity):
         """Configure sensor attributes based on detected type."""
         from homeassistant.components.sensor import SensorDeviceClass
         from homeassistant.const import (
-            UnitOfTemperature,
-            PERCENTAGE,
             LIGHT_LUX,
+            PERCENTAGE,
             UnitOfPressure,
             UnitOfSpeed,
+            UnitOfTemperature,
         )
-        
+
         type_config = {
             "temperature": {
                 "device_class": SensorDeviceClass.TEMPERATURE,
@@ -325,7 +321,7 @@ class LuxorLivingDiscoveredSensor(SensorEntity):
                 "icon": "mdi:gauge",
             },
         }
-        
+
         config = type_config.get(sensor_type, type_config["generic_sensor"])
         self._attr_device_class = config["device_class"]
         self._attr_native_unit_of_measurement = config["unit"]
@@ -333,6 +329,7 @@ class LuxorLivingDiscoveredSensor(SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Register KNX listener when added to Home Assistant."""
+
         def on_telegram_update(address: str, value: Any) -> None:
             """Handle KNX telegram updates."""
             if isinstance(value, float):
@@ -344,8 +341,8 @@ class LuxorLivingDiscoveredSensor(SensorEntity):
 
     async def async_will_remove_from_hass(self) -> None:
         """Unregister KNX listener when removed."""
+
         def dummy_callback(address: str, value: Any) -> None:
             pass
-        
-        self._knx_gateway.unregister_listener(self._address, dummy_callback)
 
+        self._knx_gateway.unregister_listener(self._address, dummy_callback)

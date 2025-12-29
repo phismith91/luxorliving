@@ -18,22 +18,22 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_CONNECTION_TYPE,
+    CONF_DISCOVERY_TIMEOUT,
+    CONF_LOG_LEVEL,
     CONF_LXP_FILE,
     CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
     CONF_SIMULATION_MODE,
     CONF_USERNAME,
-    CONF_SCAN_INTERVAL,
-    CONF_LOG_LEVEL,
-    CONF_DISCOVERY_TIMEOUT,
     CONNECTION_TYPE_ROUTING,
     CONNECTION_TYPE_TUNNELING,
     DEFAULT_CONNECTION_TYPE,
+    DEFAULT_DISCOVERY_TIMEOUT,
     DEFAULT_HTTP_PORT,
+    DEFAULT_LOG_LEVEL,
     DEFAULT_PASSWORD,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
-    DEFAULT_LOG_LEVEL,
-    DEFAULT_DISCOVERY_TIMEOUT,
     DEFAULT_USERNAME,
     DOMAIN,
 )
@@ -266,15 +266,13 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class LuxorLivingOptionsFlow(OptionsFlow):
     """Handle options flow for LUXORliving integration."""
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
             # Update log level if changed
             if CONF_LOG_LEVEL in user_input:
                 await self._async_update_log_level(user_input[CONF_LOG_LEVEL])
-            
+
             return self.async_create_entry(title="", data=user_input)
 
         # Get current values from config_entry (provided by OptionsFlow base class)
@@ -282,17 +280,17 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             CONF_SIMULATION_MODE,
             self.config_entry.data.get(CONF_SIMULATION_MODE, False),
         )
-        
+
         current_scan_interval = self.config_entry.options.get(
             CONF_SCAN_INTERVAL,
             self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
         )
-        
+
         current_log_level = self.config_entry.options.get(
             CONF_LOG_LEVEL,
             self.config_entry.data.get(CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL),
         )
-        
+
         current_discovery_timeout = self.config_entry.options.get(
             CONF_DISCOVERY_TIMEOUT,
             self.config_entry.data.get(CONF_DISCOVERY_TIMEOUT, DEFAULT_DISCOVERY_TIMEOUT),
@@ -331,7 +329,7 @@ class LuxorLivingOptionsFlow(OptionsFlow):
     async def _async_update_log_level(self, log_level: str) -> None:
         """Update the log level for the integration."""
         import logging
-        
+
         logger = logging.getLogger(f"custom_components.{DOMAIN}")
         level_map = {
             "debug": logging.DEBUG,

@@ -15,8 +15,6 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .circuit_breaker import get_knx_circuit_breaker, get_rest_api_circuit_breaker
-from .lxp_parser import get_lxp_cache_stats
-
 from .const import (
     CONF_CONNECTION_TYPE,
     CONF_DISCOVERY_TIMEOUT,
@@ -35,9 +33,9 @@ from .const import (
 )
 from .coordinator import LuxorLivingCoordinator
 from .entity_mapper import EntityMapper
-from .overrides import load_overrides
 from .knx_gateway import LuxorKNXGateway
-from .lxp_parser import LXPParser
+from .lxp_parser import LXPParser, get_lxp_cache_stats
+from .overrides import load_overrides
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -81,8 +79,8 @@ class LuxorLivingHealthView(HomeAssistantView):
                     "circuit_breakers": {
                         "rest_api": get_rest_api_circuit_breaker().get_stats(),
                         "knx_connection": get_knx_circuit_breaker().get_stats(),
-                    }
-                }
+                    },
+                },
             }
 
             # Check each config entry
@@ -116,7 +114,7 @@ class LuxorLivingHealthView(HomeAssistantView):
                     entry_health["discovered_sensors"] = len(discovered_sensors)
 
                     # Get known addresses count
-                    if hasattr(knx_gateway, '_known_addresses'):
+                    if hasattr(knx_gateway, "_known_addresses"):
                         entry_health["known_addresses"] = len(knx_gateway._known_addresses)
 
                 health_data["entries"][entry_id] = entry_health
@@ -136,13 +134,17 @@ class LuxorLivingHealthView(HomeAssistantView):
 
         except Exception as err:
             _LOGGER.exception("Health check failed")
-            from homeassistant.core import HomeAssistant
             from aiohttp import web
-            return web.json_response({
-                "status": "error",
-                "error": str(err),
-                "timestamp": asyncio.get_event_loop().time(),
-            }, status=500)
+            from homeassistant.core import HomeAssistant
+
+            return web.json_response(
+                {
+                    "status": "error",
+                    "error": str(err),
+                    "timestamp": asyncio.get_event_loop().time(),
+                },
+                status=500,
+            )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -167,8 +169,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     username = entry.data.get(CONF_USERNAME, "admin")
     password = entry.data.get(CONF_PASSWORD, "admin")
     connection_type = entry.data.get(CONF_CONNECTION_TYPE, DEFAULT_CONNECTION_TYPE)
-    simulation_mode = entry.options.get(CONF_SIMULATION_MODE, entry.data.get(CONF_SIMULATION_MODE, False))
-    discovery_timeout = entry.options.get(CONF_DISCOVERY_TIMEOUT, entry.data.get(CONF_DISCOVERY_TIMEOUT, DEFAULT_DISCOVERY_TIMEOUT))
+    simulation_mode = entry.options.get(
+        CONF_SIMULATION_MODE, entry.data.get(CONF_SIMULATION_MODE, False)
+    )
+    discovery_timeout = entry.options.get(
+        CONF_DISCOVERY_TIMEOUT, entry.data.get(CONF_DISCOVERY_TIMEOUT, DEFAULT_DISCOVERY_TIMEOUT)
+    )
 
     if not lxp_file:
         _LOGGER.error("No LXP file configured - setup cannot continue")
@@ -185,7 +191,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             overrides = load_overrides(config_dir)
             include_unaffected = bool(overrides.get("include_unaffected", False))
 
-            project = await LXPParser.parse_cached(str(lxp_path), include_unaffected=include_unaffected)
+            project = await LXPParser.parse_cached(
+                str(lxp_path), include_unaffected=include_unaffected
+            )
 
             # Create entity mapper
             mapper = EntityMapper(project, overrides=overrides)
@@ -231,26 +239,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     def _on_sensor_discovered(sensor_info: dict) -> None:
         """Persist newly discovered sensor to config entry."""
         nonlocal _reload_scheduled
-        
+
         _LOGGER.info("New sensor discovered: %s", sensor_info["address"])
-        
+
         # Update config entry data
         new_data = {**entry.data}
         new_data.setdefault("discovered_sensors", {})
         new_data["discovered_sensors"][sensor_info["address"]] = sensor_info
         hass.config_entries.async_update_entry(entry, data=new_data)
-        
+
         # Trigger sensor platform reload only once (debounced by gateway)
         if not _reload_scheduled:
             _reload_scheduled = True
-            hass.async_create_task(
-                hass.config_entries.async_reload(entry.entry_id)
-            )
+            hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))
+
             # Reset flag after a delay
             async def reset_flag():
                 await asyncio.sleep(5)  # Allow time for reload to complete
                 nonlocal _reload_scheduled
                 _reload_scheduled = False
+
             hass.async_create_task(reset_flag())
 
     knx_gateway.register_discovery_callback(_on_sensor_discovered)
@@ -258,7 +266,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Collect all known LXP addresses and sensor types from EntityMapper
     known_addresses = set()
     sensor_types = {}  # {address: sensor_type}
-    
+
     if mapper:
         for entity in mapper.entities:
             # Add all datapoint addresses from entity
@@ -267,7 +275,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     # Convert int address to group address string
                     ga_str = f"{(address >> 11) & 0x1F}/{(address >> 8) & 0x07}/{address & 0xFF}"
                     known_addresses.add(ga_str)
-                    
+
                     # Map sensor roles to types for logging
                     role_to_type = {
                         "Temperature": "temperature",
@@ -283,10 +291,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     }
                     if role in role_to_type:
                         sensor_types[ga_str] = role_to_type[role]
-                        
+
                 elif isinstance(address, str):
                     known_addresses.add(address)
-                    
+
         knx_gateway.set_known_addresses(known_addresses)
         knx_gateway.set_sensor_types(sensor_types)
         _LOGGER.info("Excluded %d known LXP addresses from auto-discovery", len(known_addresses))
@@ -360,28 +368,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             for entity in mapper.entities:
                 if platform_filter and entity.platform.value != platform_filter:
                     continue
-                entities.append({
-                    "entity_id": f"{entity.platform.value}.{entity.unique_id}",
-                    "name": entity.name,
-                    "device_name": entity.device_name,
-                    "platform": entity.platform.value
-                })
+                entities.append(
+                    {
+                        "entity_id": f"{entity.platform.value}.{entity.unique_id}",
+                        "name": entity.name,
+                        "device_name": entity.device_name,
+                        "platform": entity.platform.value,
+                    }
+                )
 
         # Send as persistent notification
         message = f"**LUXORliving Entities**\n\n"
         if platform_filter:
             message += f"Filtered by platform: {platform_filter}\n\n"
-        
+
         for entity in sorted(entities, key=lambda x: x["entity_id"]):
             message += f"- `{entity['entity_id']}`: {entity['name']} ({entity['device_name']})\n"
-        
+
         if not entities:
             message += "No entities found."
-        
+
         await hass.services.async_call(
             "persistent_notification",
             "create",
-            {"title": "LUXORliving Entity List", "message": message}
+            {"title": "LUXORliving Entity List", "message": message},
         )
 
     hass.services.async_register(DOMAIN, "list_entities", async_list_entities)

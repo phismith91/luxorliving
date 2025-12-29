@@ -290,7 +290,9 @@ class BAOSRestClient:
                     return True
                 else:
                     response_text = await response.text()
-                    _LOGGER.warning(f"Disable tunneling returned {response.status}: {response_text}")
+                    _LOGGER.warning(
+                        f"Disable tunneling returned {response.status}: {response_text}"
+                    )
                     return False
 
         try:

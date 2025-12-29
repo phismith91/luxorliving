@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import asyncio
-import time
 import logging
-from typing import Any, Dict, List, Callable, Awaitable
+import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Awaitable, Callable, Dict, List
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,6 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 @dataclass
 class BenchmarkResult:
     """Result of a benchmark operation."""
+
     operation: str
     iterations: int
     total_time: float
@@ -127,22 +128,26 @@ class LuxorLivingBenchmark:
 
     def print_summary(self) -> None:
         """Print benchmark results summary."""
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("LUXORLIVING PERFORMANCE BENCHMARK RESULTS")
-        print("="*80)
-        print(f"{'Operation':<25} {'Iter':<8} {'Total':<8} {'Avg':<8} {'Min':<8} {'Max':<8} {'Throughput':<10}")
+        print("=" * 80)
+        print(
+            f"{'Operation':<25} {'Iter':<8} {'Total':<8} {'Avg':<8} {'Min':<8} {'Max':<8} {'Throughput':<10}"
+        )
         print("-" * 80)
 
         for result in self.results:
-            print(f"{result.operation:<25} "
-                  f"{result.iterations:<8} "
-                  f"{result.total_time:<8.2f} "
-                  f"{result.avg_time:<8.4f} "
-                  f"{result.min_time:<8.4f} "
-                  f"{result.max_time:<8.4f} "
-                  f"{result.throughput:<8.2f}")
+            print(
+                f"{result.operation:<25} "
+                f"{result.iterations:<8} "
+                f"{result.total_time:<8.2f} "
+                f"{result.avg_time:<8.4f} "
+                f"{result.min_time:<8.4f} "
+                f"{result.max_time:<8.4f} "
+                f"{result.throughput:<8.2f}"
+            )
 
-        print("="*80)
+        print("=" * 80)
 
     def save_results(self, filepath: str) -> None:
         """Save benchmark results to JSON file."""
@@ -162,7 +167,7 @@ class LuxorLivingBenchmark:
                     "throughput": r.throughput,
                 }
                 for r in self.results
-            ]
+            ],
         }
 
         Path(filepath).write_text(json.dumps(data, indent=2))
@@ -186,9 +191,7 @@ async def benchmark_lxp_parsing(lxp_file: str, iterations: int = 10) -> Benchmar
         await LXPParser.parse_cached(lxp_file, include_unaffected=False)
 
     return await _benchmark.benchmark_operation(
-        f"LXP Parsing ({Path(lxp_file).name})",
-        parse_operation,
-        iterations=iterations
+        f"LXP Parsing ({Path(lxp_file).name})", parse_operation, iterations=iterations
     )
 
 
@@ -206,9 +209,7 @@ def benchmark_entity_creation(entity_count: int, iterations: int = 50) -> Benchm
         return entities
 
     return _benchmark.benchmark_sync_operation(
-        f"Entity Creation ({entity_count} entities)",
-        create_operation,
-        iterations=iterations
+        f"Entity Creation ({entity_count} entities)", create_operation, iterations=iterations
     )
 
 
@@ -223,9 +224,7 @@ async def benchmark_circuit_breaker(iterations: int = 100) -> BenchmarkResult:
         await cb.call(lambda: asyncio.sleep(0.001))
 
     return await _benchmark.benchmark_operation(
-        "Circuit Breaker Operation",
-        cb_operation,
-        iterations=iterations
+        "Circuit Breaker Operation", cb_operation, iterations=iterations
     )
 
 
@@ -239,8 +238,8 @@ async def run_full_benchmark(lxp_file: str | None = None) -> None:
         await benchmark_lxp_parsing(lxp_file)
 
     # Benchmark entity creation scenarios
-    benchmark_entity_creation(10)   # Small setup
-    benchmark_entity_creation(50)   # Medium setup
+    benchmark_entity_creation(10)  # Small setup
+    benchmark_entity_creation(50)  # Medium setup
     benchmark_entity_creation(100)  # Large setup
 
     # Benchmark circuit breaker

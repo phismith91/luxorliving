@@ -14,14 +14,16 @@ _LOGGER = logging.getLogger(__name__)
 
 class CircuitBreakerState(Enum):
     """Circuit breaker states."""
-    CLOSED = "closed"      # Normal operation
-    OPEN = "open"         # Failing, requests rejected
+
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Failing, requests rejected
     HALF_OPEN = "half_open"  # Testing if service recovered
 
 
 @dataclass
 class CircuitBreakerConfig:
     """Configuration for circuit breaker."""
+
     failure_threshold: int = 5  # Failures before opening
     recovery_timeout: float = 60.0  # Seconds to wait before trying again
     success_threshold: int = 3  # Successes needed to close circuit
@@ -30,6 +32,7 @@ class CircuitBreakerConfig:
 
 class CircuitBreakerOpenException(Exception):
     """Raised when circuit breaker is open."""
+
     pass
 
 
@@ -74,8 +77,11 @@ class CircuitBreaker:
             if self._success_count >= self.config.success_threshold:
                 self._state = CircuitBreakerState.CLOSED
                 self._success_count = 0
-                _LOGGER.info("Circuit breaker '%s' closed after %d successes",
-                           self.name, self.config.success_threshold)
+                _LOGGER.info(
+                    "Circuit breaker '%s' closed after %d successes",
+                    self.name,
+                    self.config.success_threshold,
+                )
 
     def _record_failure(self):
         """Record a failed operation."""
@@ -86,11 +92,14 @@ class CircuitBreaker:
         if self._state == CircuitBreakerState.HALF_OPEN:
             self._state = CircuitBreakerState.OPEN
             _LOGGER.warning("Circuit breaker '%s' opened again after failure", self.name)
-        elif (self._state == CircuitBreakerState.CLOSED and
-              self._failure_count >= self.config.failure_threshold):
+        elif (
+            self._state == CircuitBreakerState.CLOSED
+            and self._failure_count >= self.config.failure_threshold
+        ):
             self._state = CircuitBreakerState.OPEN
-            _LOGGER.warning("Circuit breaker '%s' opened after %d failures",
-                          self.name, self._failure_count)
+            _LOGGER.warning(
+                "Circuit breaker '%s' opened after %d failures", self.name, self._failure_count
+            )
 
     async def call(self, func: Callable, *args, **kwargs) -> Any:
         """Execute function with circuit breaker protection.
@@ -122,10 +131,7 @@ class CircuitBreaker:
 
         try:
             # Execute with timeout
-            result = await asyncio.wait_for(
-                func(*args, **kwargs),
-                timeout=self.config.timeout
-            )
+            result = await asyncio.wait_for(func(*args, **kwargs), timeout=self.config.timeout)
 
             self._record_success()
             return result
@@ -150,7 +156,7 @@ class CircuitBreaker:
                 "recovery_timeout": self.config.recovery_timeout,
                 "success_threshold": self.config.success_threshold,
                 "timeout": self.config.timeout,
-            }
+            },
         }
 
 
@@ -160,19 +166,19 @@ _rest_api_circuit_breaker = CircuitBreaker(
     CircuitBreakerConfig(
         failure_threshold=3,  # Open after 3 REST API failures
         recovery_timeout=30.0,  # Try again after 30 seconds
-        success_threshold=2,   # Need 2 successes to close
-        timeout=15.0          # 15 second timeout for REST calls
-    )
+        success_threshold=2,  # Need 2 successes to close
+        timeout=15.0,  # 15 second timeout for REST calls
+    ),
 )
 
 _knx_circuit_breaker = CircuitBreaker(
     "knx_connection",
     CircuitBreakerConfig(
-        failure_threshold=5,   # Open after 5 KNX connection failures
+        failure_threshold=5,  # Open after 5 KNX connection failures
         recovery_timeout=60.0,  # Try again after 1 minute
-        success_threshold=3,    # Need 3 successes to close
-        timeout=30.0           # 30 second timeout for KNX operations
-    )
+        success_threshold=3,  # Need 3 successes to close
+        timeout=30.0,  # 30 second timeout for KNX operations
+    ),
 )
 
 

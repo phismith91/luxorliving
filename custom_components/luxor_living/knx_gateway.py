@@ -17,8 +17,8 @@ from xknx.telegram import Telegram
 from xknx.telegram.address import GroupAddress
 from xknx.telegram.apci import GroupValueRead, GroupValueResponse, GroupValueWrite
 
+from .circuit_breaker import CircuitBreakerOpenException, get_knx_circuit_breaker
 from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
-from .circuit_breaker import get_knx_circuit_breaker, CircuitBreakerOpenException
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,8 +74,12 @@ class LuxorKNXGateway:
 
         # Auto-discovery state
         self._discovered_sensors: dict[str, dict[str, Any]] = {}  # {address: sensor_info}
-        self._discovery_candidates: dict[str, list[tuple[float, datetime]]] = defaultdict(list)  # {address: [(value, timestamp)]}
-        self._discovery_callbacks: list[Callable[[dict], None]] = []  # Notify when new sensor discovered
+        self._discovery_candidates: dict[str, list[tuple[float, datetime]]] = defaultdict(
+            list
+        )  # {address: [(value, timestamp)]}
+        self._discovery_callbacks: list[Callable[[dict], None]] = (
+            []
+        )  # Notify when new sensor discovered
         self._known_addresses: set[str] = set()  # Known LXP addresses to exclude from discovery
         self._pending_discoveries: list[dict[str, Any]] = []  # Batch discoveries for debouncing
         self._debounce_task: asyncio.Task | None = None  # Debounce reload task
@@ -472,7 +476,7 @@ class LuxorKNXGateway:
                 if not detected_type:
                     # Fallback to value-based heuristic for unknown addresses
                     detected_type = self._detect_sensor_type(value)
-                
+
                 type_info = {
                     "temperature": ("🌡️", "Temperature", "°C", 1),
                     "humidity": ("💧", "Humidity", "%", 1),
@@ -484,8 +488,12 @@ class LuxorKNXGateway:
                 emoji, label, unit, divisor = type_info.get(detected_type, ("📊", "Sensor", "", 1))
                 sensor_emoji = emoji
                 display_value = value / divisor
-                sensor_label = f"{label}: {display_value:.1f}{unit}" if unit else f"{label}: {display_value:.1f}"
-            
+                sensor_label = (
+                    f"{label}: {display_value:.1f}{unit}"
+                    if unit
+                    else f"{label}: {display_value:.1f}"
+                )
+
             # Log DPT 9.xxx float telegrams at INFO level for monitoring
             if isinstance(value, float):
                 _LOGGER.info(
@@ -494,7 +502,7 @@ class LuxorKNXGateway:
                     sensor_label,
                     source_address,
                     group_address,
-                    telegram_type
+                    telegram_type,
                 )
             else:
                 _LOGGER.debug(
@@ -502,7 +510,7 @@ class LuxorKNXGateway:
                     source_address,
                     group_address,
                     value,
-                    telegram_type
+                    telegram_type,
                 )
             # Enrich with labels if known
             labels = self._ga_label_map.get(group_address)
@@ -623,7 +631,7 @@ class LuxorKNXGateway:
         Process a potential auto-discovery candidate.
 
         Track DPT 9.xxx float values and create sensors after stable readings.
-        
+
         Args:
             group_address: KNX group address (e.g., "5/1/10")
             value: Converted float value
@@ -631,43 +639,46 @@ class LuxorKNXGateway:
         # Skip if address is known from LXP
         if group_address in self._known_addresses:
             return
-        
+
         # Skip if already discovered
         if group_address in self._discovered_sensors:
             return
-        
+
         now = datetime.now()
-        
+
         # Add to candidates
         self._discovery_candidates[group_address].append((value, now))
-        
+
         # Keep only recent samples (last 10 minutes) AND limit max samples per address
         cutoff = now.timestamp() - 600
         self._discovery_candidates[group_address] = [
-            (v, t) for v, t in self._discovery_candidates[group_address]
-            if t.timestamp() > cutoff
-        ][-DISCOVERY_MAX_CANDIDATES_PER_ADDRESS:]  # Keep only last N samples (prevent memory leak)
-        
+            (v, t) for v, t in self._discovery_candidates[group_address] if t.timestamp() > cutoff
+        ][
+            -DISCOVERY_MAX_CANDIDATES_PER_ADDRESS:
+        ]  # Keep only last N samples (prevent memory leak)
+
         # Check if we have enough stable samples
         samples = self._discovery_candidates[group_address]
         if len(samples) < DISCOVERY_MIN_SAMPLES:
             return
-        
+
         # Check value stability (last N samples within tolerance)
         recent_values = [v for v, _ in samples[-DISCOVERY_MIN_SAMPLES:]]
         avg_value = sum(recent_values) / len(recent_values)
         max_deviation = max(abs(v - avg_value) for v in recent_values)
-        
+
         if max_deviation > DISCOVERY_VALUE_TOLERANCE:
             _LOGGER.debug(
                 "Discovery candidate %s unstable: deviation=%.2f (samples=%s)",
-                group_address, max_deviation, recent_values
+                group_address,
+                max_deviation,
+                recent_values,
             )
             return
-        
+
         # Stable sensor detected! Determine type based on value range
         sensor_type = self._detect_sensor_type(avg_value)
-        
+
         sensor_info = {
             "address": group_address,
             "type": sensor_type,
@@ -675,24 +686,23 @@ class LuxorKNXGateway:
             "discovered_at": now.isoformat(),
             "sample_count": len(samples),
         }
-        
+
         self._discovered_sensors[group_address] = sensor_info
-        
+
         _LOGGER.info(
-            "🔍 Auto-discovered sensor: %s (%s) = %.2f",
-            group_address, sensor_type, avg_value
+            "🔍 Auto-discovered sensor: %s (%s) = %.2f", group_address, sensor_type, avg_value
         )
-        
+
         # Add to pending discoveries (debounced callback)
         self._pending_discoveries.append(sensor_info)
-        
+
         # Trigger debounced callback
         await self._trigger_debounced_callbacks()
 
     def _detect_sensor_type(self, value: float) -> str:
         """
         Detect sensor type based on value range.
-        
+
         DPT 9.xxx subtypes:
         - Temperature: -273..+670°C (typical: -50..+50°C)
         - Lux: 0..670760 lux (typical: 0..100000)
@@ -732,7 +742,9 @@ class LuxorKNXGateway:
     def set_known_addresses(self, addresses: set[str]) -> None:
         """Set known LXP addresses to exclude from auto-discovery."""
         self._known_addresses = addresses
-        _LOGGER.info("Registered %d known LXP addresses (excluded from auto-discovery)", len(addresses))
+        _LOGGER.info(
+            "Registered %d known LXP addresses (excluded from auto-discovery)", len(addresses)
+        )
 
     def set_sensor_types(self, sensor_types: dict[str, str]) -> None:
         """Set known sensor types for accurate logging (e.g., {'5/0/3': 'illuminance'})."""
@@ -744,7 +756,7 @@ class LuxorKNXGateway:
         # Cancel existing debounce task
         if self._debounce_task and not self._debounce_task.done():
             self._debounce_task.cancel()
-        
+
         # Schedule new debounced task
         self._debounce_task = asyncio.create_task(self._execute_debounced_callbacks())
 
@@ -752,17 +764,17 @@ class LuxorKNXGateway:
         """Execute callbacks after debounce delay."""
         try:
             await asyncio.sleep(self.discovery_timeout)
-            
+
             # Process all pending discoveries in one batch
             if self._pending_discoveries:
                 discoveries = self._pending_discoveries.copy()
                 self._pending_discoveries.clear()
-                
+
                 _LOGGER.info(
                     "🚀 Triggering callbacks for %d discovered sensors (debounced)",
-                    len(discoveries)
+                    len(discoveries),
                 )
-                
+
                 for sensor_info in discoveries:
                     for callback in self._discovery_callbacks:
                         try:
@@ -771,4 +783,3 @@ class LuxorKNXGateway:
                             _LOGGER.error("Error in discovery callback: %s", err)
         except asyncio.CancelledError:
             _LOGGER.debug("Debounce task cancelled (new discoveries incoming)")
-
