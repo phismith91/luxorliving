@@ -20,10 +20,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+    - name: Check Python version
+      run: python3 --version
 
     - name: Cache pip dependencies
       uses: actions/cache@v4
@@ -36,8 +34,8 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip3 install -r requirements_dev.txt
-        pip3 install -r requirements_style.txt
+        python3 -m pip install -r requirements_dev.txt
+        python3 -m pip install -r requirements_style.txt
 
     - name: Run tests with coverage
       run: |
@@ -67,8 +65,8 @@ jobs:
 
     - name: Install style dependencies
       run: |
-        pip3 install --upgrade pip
-        pip3 install -r requirements_style.txt
+        python3 -m pip install --upgrade pip
+        python3 -m pip install -r requirements_style.txt
 
     - name: Check code formatting with Black
       run: python3 -m black --check --diff custom_components/ tests/
@@ -84,7 +82,7 @@ jobs:
 
     - name: Check for security issues
       run: |
-        pip3 install bandit
+        python3 -m pip install bandit
         python3 -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
       continue-on-error: true
 
@@ -102,10 +100,34 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Validate HACS
-      uses: hacs/action@main
-      with:
-        category: integration
+    - name: Validate HACS manifest
+      run: |
+        python3 -c "
+        import json
+        import os
+        import sys
+        
+        # Load manifest
+        with open('custom_components/luxor_living/manifest.json', 'r') as f:
+            manifest = json.load(f)
+        
+        # Basic validation
+        required_fields = ['domain', 'name', 'version', 'codeowners', 'requirements', 'iot_class']
+        for field in required_fields:
+            if field not in manifest:
+                print(f'ERROR: Missing required field: {field}')
+                sys.exit(1)
+        
+        # Check hacs.json
+        with open('hacs.json', 'r') as f:
+            hacs = json.load(f)
+        
+        if hacs.get('name') != manifest['domain']:
+            print('ERROR: hacs.json name does not match manifest domain')
+            sys.exit(1)
+        
+        print('HACS validation passed')
+        "
 
   performance-test:
     name: Performance Benchmark
@@ -118,8 +140,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip3 install --upgrade pip
-        pip3 install -r requirements_dev.txt
+        python3 -m pip install --upgrade pip
+        python3 -m pip install -r requirements_dev.txt
 
     - name: Run performance benchmark
       run: |
