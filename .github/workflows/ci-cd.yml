@@ -35,10 +35,10 @@ jobs:
     - name: Install dependencies
       run: |
         python3 --version
-        curl https://bootstrap.pypa.io/get-pip.py | python3 --break-system-packages
-        python3 -m pip install --upgrade pip --break-system-packages
-        python3 -m pip install -r requirements_dev.txt --break-system-packages
-        python3 -m pip install -r requirements_style.txt --break-system-packages
+        curl https://bootstrap.pypa.io/get-pip.py | python3
+        python3 -m pip install --upgrade pip
+        python3 -m pip install -r requirements_dev.txt
+        python3 -m pip install -r requirements_style.txt
 
     - name: Run tests with coverage
       run: |
@@ -68,9 +68,9 @@ jobs:
 
     - name: Install style dependencies
       run: |
-        curl https://bootstrap.pypa.io/get-pip.py | python3 --break-system-packages
-        python3 -m pip install --upgrade pip --break-system-packages
-        python3 -m pip install -r requirements_style.txt --break-system-packages
+        curl https://bootstrap.pypa.io/get-pip.py | python3
+        python3 -m pip install --upgrade pip
+        python3 -m pip install -r requirements_style.txt
 
     - name: Check code formatting with Black
       run: python3 -m black --check --diff custom_components/ tests/
@@ -86,7 +86,7 @@ jobs:
 
     - name: Check for security issues
       run: |
-        python3 -m pip install bandit --break-system-packages
+        python3 -m pip install bandit
         python3 -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
       continue-on-error: true
 
@@ -126,8 +126,8 @@ jobs:
         with open('hacs.json', 'r') as f:
             hacs = json.load(f)
         
-        if hacs.get('name') != manifest['domain']:
-            print('ERROR: hacs.json name does not match manifest domain')
+        if hacs.get('name') != manifest['name']:
+            print('ERROR: hacs.json name does not match manifest name')
             sys.exit(1)
         
         print('HACS validation passed')
@@ -144,9 +144,9 @@ jobs:
 
     - name: Install dependencies
       run: |
-        curl https://bootstrap.pypa.io/get-pip.py | python3 --break-system-packages
-        python3 -m pip install --upgrade pip --break-system-packages
-        python3 -m pip install -r requirements_dev.txt --break-system-packages
+        curl https://bootstrap.pypa.io/get-pip.py | python3
+        python3 -m pip install --upgrade pip
+        python3 -m pip install -r requirements_dev.txt
 
     - name: Run performance benchmark
       run: |
