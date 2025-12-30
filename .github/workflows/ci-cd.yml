@@ -11,11 +11,19 @@ on:
 jobs:
   test:
     name: Run Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, docker]
+    strategy:
+      matrix:
+        python-version: ["3.12"]
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
 
     - name: Cache pip dependencies
       uses: actions/cache@v4
@@ -27,8 +35,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        apt-get update && apt-get install -y python3-pip
-        pip3 install --upgrade pip
+        python3 -m pip install --upgrade pip
         pip3 install -r requirements_dev.txt
         pip3 install -r requirements_style.txt
 
@@ -46,7 +53,7 @@ jobs:
 
   code-quality:
     name: Code Quality Checks
-    runs-on: self-hosted
+    runs-on: [self-hosted, docker]
 
     steps:
     - name: Checkout code
@@ -60,7 +67,6 @@ jobs:
 
     - name: Install style dependencies
       run: |
-        apt-get update && apt-get install -y python3-pip
         pip3 install --upgrade pip
         pip3 install -r requirements_style.txt
 
@@ -78,7 +84,6 @@ jobs:
 
     - name: Check for security issues
       run: |
-        apt-get update && apt-get install -y python3-pip
         pip3 install bandit
         python3 -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
       continue-on-error: true
@@ -91,7 +96,7 @@ jobs:
 
   validate-hacs:
     name: Validate HACS Integration
-    runs-on: self-hosted
+    runs-on: [self-hosted, docker]
 
     steps:
     - name: Checkout code
@@ -104,7 +109,7 @@ jobs:
 
   performance-test:
     name: Performance Benchmark
-    runs-on: self-hosted
+    runs-on: [self-hosted, docker]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
@@ -113,7 +118,6 @@ jobs:
 
     - name: Install dependencies
       run: |
-        apt-get update && apt-get install -y python3-pip
         pip3 install --upgrade pip
         pip3 install -r requirements_dev.txt
 
@@ -129,7 +133,7 @@ jobs:
 
   release:
     name: Create Release
-    runs-on: self-hosted
+    runs-on: [self-hosted, docker]
     if: github.event_name == 'release' && github.event.action == 'published'
     needs: [test, code-quality, validate-hacs]
 
