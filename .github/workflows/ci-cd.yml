@@ -35,17 +35,14 @@ jobs:
     - name: Install dependencies
       run: |
         python3 --version
-        python3 -m venv venv
-        source venv/bin/activate
-        python --version
-        pip install --upgrade pip
-        pip install -r requirements_dev.txt
-        pip install -r requirements_style.txt
+        curl https://bootstrap.pypa.io/get-pip.py | python3 --break-system-packages
+        python3 -m pip install --upgrade pip --break-system-packages
+        python3 -m pip install -r requirements_dev.txt --break-system-packages
+        python3 -m pip install -r requirements_style.txt --break-system-packages
 
     - name: Run tests with coverage
       run: |
-        source venv/bin/activate
-        python -m pytest tests/ --cov=custom_components.luxor_living --cov-report=xml --cov-report=term-missing
+        python3 -m pytest tests/ --cov=custom_components.luxor_living --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -71,36 +68,26 @@ jobs:
 
     - name: Install style dependencies
       run: |
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements_style.txt
+        curl https://bootstrap.pypa.io/get-pip.py | python3 --break-system-packages
+        python3 -m pip install --upgrade pip --break-system-packages
+        python3 -m pip install -r requirements_style.txt --break-system-packages
 
     - name: Check code formatting with Black
-      run: |
-        source venv/bin/activate
-        python -m black --check --diff custom_components/ tests/
+      run: python3 -m black --check --diff custom_components/ tests/
 
     - name: Check import sorting with isort
-      run: |
-        source venv/bin/activate
-        python -m isort --check-only --diff custom_components/ tests/
+      run: python3 -m isort --check-only --diff custom_components/ tests/
 
     - name: Lint with flake8
-      run: |
-        source venv/bin/activate
-        python -m flake8 custom_components/ tests/
+      run: python3 -m flake8 custom_components/ tests/
 
     - name: Type check with mypy
-      run: |
-        source venv/bin/activate
-        python -m mypy custom_components/
+      run: python3 -m mypy custom_components/
 
     - name: Check for security issues
       run: |
-        source venv/bin/activate
-        pip install bandit
-        python -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
+        python3 -m pip install bandit --break-system-packages
+        python3 -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
       continue-on-error: true
 
     - name: Upload security scan results
@@ -157,15 +144,13 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements_dev.txt
+        curl https://bootstrap.pypa.io/get-pip.py | python3 --break-system-packages
+        python3 -m pip install --upgrade pip --break-system-packages
+        python3 -m pip install -r requirements_dev.txt --break-system-packages
 
     - name: Run performance benchmark
       run: |
-        source venv/bin/activate
-        python -m custom_components.luxor_living.benchmark docs/Familie\ Schmidt_0.9.lxp
+        python3 -m custom_components.luxor_living.benchmark docs/Familie\ Schmidt_0.9.lxp
 
     - name: Store benchmark results
       uses: actions/upload-artifact@v4
