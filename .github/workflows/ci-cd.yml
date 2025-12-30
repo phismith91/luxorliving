@@ -35,13 +35,14 @@ jobs:
     - name: Install dependencies
       run: |
         python3 --version
-        curl https://bootstrap.pypa.io/get-pip.py | python3
-        PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade pip
-        PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install -r requirements_dev.txt
-        PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install -r requirements_style.txt
+        curl https://bootstrap.pypa.io/get-pip.py | python3 --user
+        export PATH=$HOME/.local/bin:$PATH
+        pip install --user -r requirements_dev.txt
+        pip install --user -r requirements_style.txt
 
     - name: Run tests with coverage
       run: |
+        export PATH=$HOME/.local/bin:$PATH
         python3 -m pytest tests/ --cov=custom_components.luxor_living --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
@@ -68,25 +69,34 @@ jobs:
 
     - name: Install style dependencies
       run: |
-        curl https://bootstrap.pypa.io/get-pip.py | python3
-        PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade pip
-        PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install -r requirements_style.txt
+        curl https://bootstrap.pypa.io/get-pip.py | python3 --user
+        export PATH=$HOME/.local/bin:$PATH
+        pip install --user -r requirements_style.txt
 
     - name: Check code formatting with Black
-      run: python3 -m black --check --diff custom_components/ tests/
+      run: |
+        export PATH=$HOME/.local/bin:$PATH
+        python3 -m black --check --diff custom_components/ tests/
 
     - name: Check import sorting with isort
-      run: python3 -m isort --check-only --diff custom_components/ tests/
+      run: |
+        export PATH=$HOME/.local/bin:$PATH
+        python3 -m isort --check-only --diff custom_components/ tests/
 
     - name: Lint with flake8
-      run: python3 -m flake8 custom_components/ tests/
+      run: |
+        export PATH=$HOME/.local/bin:$PATH
+        python3 -m flake8 custom_components/ tests/
 
     - name: Type check with mypy
-      run: python3 -m mypy custom_components/
+      run: |
+        export PATH=$HOME/.local/bin:$PATH
+        python3 -m mypy custom_components/
 
     - name: Check for security issues
       run: |
-        PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install bandit
+        export PATH=$HOME/.local/bin:$PATH
+        pip install --user bandit
         python3 -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
       continue-on-error: true
 
@@ -145,11 +155,12 @@ jobs:
     - name: Install dependencies
       run: |
         curl https://bootstrap.pypa.io/get-pip.py | python3
-        PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade pip
-        PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install -r requirements_dev.txt
+        export PATH=$HOME/.local/bin:$PATH
+        pip install --user -r requirements_dev.txt
 
     - name: Run performance benchmark
       run: |
+        export PATH=$HOME/.local/bin:$PATH
         python3 -m custom_components.luxor_living.benchmark docs/Familie\ Schmidt_0.9.lxp
 
     - name: Store benchmark results
