@@ -35,14 +35,17 @@ jobs:
     - name: Install dependencies
       run: |
         python3 --version
-        which pip3 || (echo "pip3 not found, installing pip..." && python3 -m ensurepip --upgrade || curl https://bootstrap.pypa.io/get-pip.py | python3)
-        python3 -m pip install --upgrade pip
-        python3 -m pip install -r requirements_dev.txt
-        python3 -m pip install -r requirements_style.txt
+        python3 -m venv venv
+        source venv/bin/activate
+        python --version
+        pip install --upgrade pip
+        pip install -r requirements_dev.txt
+        pip install -r requirements_style.txt
 
     - name: Run tests with coverage
       run: |
-        python3 -m pytest tests/ --cov=custom_components.luxor_living --cov-report=xml --cov-report=term-missing
+        source venv/bin/activate
+        python -m pytest tests/ --cov=custom_components.luxor_living --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -68,26 +71,36 @@ jobs:
 
     - name: Install style dependencies
       run: |
-        which pip3 || (echo "pip3 not found, installing pip..." && python3 -m ensurepip --upgrade || curl https://bootstrap.pypa.io/get-pip.py | python3)
-        python3 -m pip install --upgrade pip
-        python3 -m pip install -r requirements_style.txt
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements_style.txt
 
     - name: Check code formatting with Black
-      run: python3 -m black --check --diff custom_components/ tests/
+      run: |
+        source venv/bin/activate
+        python -m black --check --diff custom_components/ tests/
 
     - name: Check import sorting with isort
-      run: python3 -m isort --check-only --diff custom_components/ tests/
+      run: |
+        source venv/bin/activate
+        python -m isort --check-only --diff custom_components/ tests/
 
     - name: Lint with flake8
-      run: python3 -m flake8 custom_components/ tests/
+      run: |
+        source venv/bin/activate
+        python -m flake8 custom_components/ tests/
 
     - name: Type check with mypy
-      run: python3 -m mypy custom_components/
+      run: |
+        source venv/bin/activate
+        python -m mypy custom_components/
 
     - name: Check for security issues
       run: |
-        python3 -m pip install bandit
-        python3 -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
+        source venv/bin/activate
+        pip install bandit
+        python -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
       continue-on-error: true
 
     - name: Upload security scan results
@@ -144,13 +157,15 @@ jobs:
 
     - name: Install dependencies
       run: |
-        which pip3 || (echo "pip3 not found, installing pip..." && python3 -m ensurepip --upgrade || curl https://bootstrap.pypa.io/get-pip.py | python3)
-        python3 -m pip install --upgrade pip
-        python3 -m pip install -r requirements_dev.txt
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements_dev.txt
 
     - name: Run performance benchmark
       run: |
-        python3 -m custom_components.luxor_living.benchmark docs/Familie\ Schmidt_0.9.lxp
+        source venv/bin/activate
+        python -m custom_components.luxor_living.benchmark docs/Familie\ Schmidt_0.9.lxp
 
     - name: Store benchmark results
       uses: actions/upload-artifact@v4
