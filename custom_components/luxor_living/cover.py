@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -13,20 +14,16 @@ from homeassistant.components.cover import (
     CoverEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, DATA_KNX_GATEWAY
 from .coordinator import LuxorLivingCoordinator
+from .entity_mapper import EntityMapper
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
-
-# Cover/Shutter Actuator App IDs
-COVER_APP_IDS = [
-    "18520",  # J8 8-channel shutter/blind actuator
-    "18516",  # J4 4-channel shutter/blind actuator
-]
 
 
 async def async_setup_entry(
@@ -37,55 +34,68 @@ async def async_setup_entry(
     """Set up LUXORliving covers from a config entry."""
     _LOGGER.info("Setting up LUXORliving covers")
 
-    coordinator: LuxorLivingCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    knx_gateway: LuxorKNXGateway = hass.data[DOMAIN][entry.entry_id][DATA_KNX_GATEWAY]
-    project = coordinator.project
+    # Get coordinator, mapper and KNX gateway from integration data
+    try:
+        integration_data = hass.data[DOMAIN][entry.entry_id]
+        if not isinstance(integration_data, dict):
+            _LOGGER.error("Integration data is not a dictionary: %s", type(integration_data))
+            return
+        coordinator: LuxorLivingCoordinator = integration_data.get("coordinator")
+        mapper: EntityMapper = integration_data.get("mapper")
+        knx_gateway: LuxorKNXGateway = integration_data.get(DATA_KNX_GATEWAY)
+    except (KeyError, AttributeError) as err:
+        _LOGGER.error("Failed to get integration data: %s", err)
+        return
 
-    entities: list[LuxorCover] = []
+    if not mapper:
+        _LOGGER.warning("No mapper found, skipping cover setup")
+        return
 
-    # Find all cover/shutter actuators
-    for device in project.devices:
-        if device.app_id not in COVER_APP_IDS:
-            continue
+    if not coordinator:
+        _LOGGER.error("No coordinator found, skipping cover setup")
+        return
 
-        _LOGGER.debug(
-            "Found cover device: %s (App ID: %s) with %d actuators",
-            device.name,
-            device.app_id,
-            len(device.actuators),
-        )
+    # Get all cover entities from mapper
+    cover_entities = mapper.get_entities_by_platform(Platform.COVER)
+    _LOGGER.info("Creating %d cover entities", len(cover_entities))
 
-        # Each actuator channel is a separate cover entity (e.g., window shutter)
-        for actuator in device.actuators:
-            # Check if actuator has required datapoints for cover control
-            dp_roles = {dp.role for dp in actuator.datapoints}
+    # Create cover entities asynchronously
+    entities = await asyncio.gather(
+        *[
+            _create_cover_entity(coordinator, entry, mapped_entity, knx_gateway)
+            for mapped_entity in cover_entities
+        ]
+    )
 
-            if "UpDown" in dp_roles or "StepStop" in dp_roles:
-                # Determine if this is a blind (has tilt) or shutter
-                has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+    async_add_entities(entities)
 
-                entities.append(
-                    LuxorCover(
-                        coordinator=coordinator,
-                        knx_gateway=knx_gateway,
-                        device=device,
-                        actuator=actuator,
-                        entry_id=entry.entry_id,
-                        has_tilt=has_tilt,
-                    )
-                )
-                _LOGGER.info(
-                    "Created cover entity for %s - %s (tilt: %s)",
-                    device.name,
-                    actuator.name,
-                    has_tilt,
-                )
 
-    if entities:
-        async_add_entities(entities)
-        _LOGGER.info("Added %d cover entities", len(entities))
-    else:
-        _LOGGER.warning("No cover entities found in LXP file")
+async def _create_cover_entity(
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    mapped_entity: Any,
+    knx_gateway: LuxorKNXGateway,
+) -> CoverEntity:
+    """Create a cover entity asynchronously."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, lambda: _create_cover_entity_sync(coordinator, entry, mapped_entity, knx_gateway)
+    )
+
+
+def _create_cover_entity_sync(
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    mapped_entity: Any,
+    knx_gateway: LuxorKNXGateway,
+) -> LuxorCover:
+    """Create a cover entity synchronously."""
+    return LuxorCover(
+        coordinator=coordinator,
+        knx_gateway=knx_gateway,
+        mapped_entity=mapped_entity,
+        entry_id=entry.entry_id,
+    )
 
 
 class LuxorCover(CoverEntity):
@@ -97,27 +107,27 @@ class LuxorCover(CoverEntity):
         self,
         coordinator: LuxorLivingCoordinator,
         knx_gateway: LuxorKNXGateway,
-        device,
-        actuator,
+        mapped_entity: Any,
         entry_id: str,
-        has_tilt: bool = False,
     ) -> None:
         """Initialize the cover entity."""
         self.coordinator = coordinator
         self.knx_gateway = knx_gateway
-        self._device = device
-        self._actuator = actuator
+        self._mapped_entity = mapped_entity
         self._entry_id = entry_id
-        self._has_tilt = has_tilt
 
-        # Map datapoint roles to addresses
-        self._datapoints = {dp.role: dp.address for dp in actuator.datapoints}
+        # Map datapoint addresses by role
+        self._datapoints = {dp["role"]: dp["address"] for dp in mapped_entity.get("datapoints", [])}
 
         # Set unique ID
-        self._attr_unique_id = f"luxor_{device.serial_number}_{actuator.channel}_cover"
+        self._attr_unique_id = mapped_entity.get("unique_id")
 
         # Set name
-        self._attr_name = actuator.name
+        self._attr_name = mapped_entity.get("name")
+
+        # Determine if this is a blind (has tilt) or shutter
+        dp_roles = {dp["role"] for dp in mapped_entity.get("datapoints", [])}
+        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
 
         # Set device class
         if has_tilt:
@@ -132,25 +142,26 @@ class LuxorCover(CoverEntity):
             | CoverEntityFeature.STOP
         )
 
-        if "Höhe%" in self._datapoints or "StatusHöhe%" in self._datapoints:
+        if "Höhe%" in dp_roles or "StatusHöhe%" in dp_roles:
             features |= CoverEntityFeature.SET_POSITION
 
         if has_tilt:
             features |= CoverEntityFeature.OPEN_TILT
             features |= CoverEntityFeature.CLOSE_TILT
             features |= CoverEntityFeature.STOP_TILT
-            if "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints:
+            if "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles:
                 features |= CoverEntityFeature.SET_TILT_POSITION
 
         self._attr_supported_features = features
 
         # Set device info
+        device_id = mapped_entity.get("device_id")
         self._attr_device_info = {
-            "identifiers": {(DOMAIN, device.serial_number)},
-            "name": device.name,
+            "identifiers": {(DOMAIN, device_id)},
+            "name": mapped_entity.get("device_name"),
             "manufacturer": "Theben",
-            "model": f"J8/J4 Shutter Actuator (App ID {device.app_id})",
-            "sw_version": device.app_id,
+            "model": mapped_entity.get("device_model"),
+            "sw_version": mapped_entity.get("device_model"),
         }
 
         # Initialize state
@@ -185,7 +196,10 @@ class LuxorCover(CoverEntity):
                     self._attr_is_closed = position_raw == 0
 
             # Read current tilt position if available
-            if self._has_tilt:
+            dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
+            has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+            
+            if has_tilt:
                 tilt_dp = "StatusLamelle%" if "StatusLamelle%" in self._datapoints else "Lamelle%"
                 if tilt_dp in self._datapoints:
                     tilt_raw = await self.knx_gateway.read_group_address(
@@ -256,7 +270,10 @@ class LuxorCover(CoverEntity):
 
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
         """Open the cover tilt."""
-        if not self._has_tilt:
+        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
+        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        
+        if not has_tilt:
             return
 
         try:
@@ -270,7 +287,10 @@ class LuxorCover(CoverEntity):
 
     async def async_close_cover_tilt(self, **kwargs: Any) -> None:
         """Close the cover tilt."""
-        if not self._has_tilt:
+        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
+        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        
+        if not has_tilt:
             return
 
         try:
@@ -284,7 +304,10 @@ class LuxorCover(CoverEntity):
 
     async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
         """Stop the cover tilt."""
-        if not self._has_tilt:
+        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
+        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        
+        if not has_tilt:
             return
 
         try:
@@ -298,7 +321,10 @@ class LuxorCover(CoverEntity):
 
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Move the cover tilt to a specific position."""
-        if not self._has_tilt:
+        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
+        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        
+        if not has_tilt:
             return
 
         tilt_position = kwargs.get(ATTR_TILT_POSITION)

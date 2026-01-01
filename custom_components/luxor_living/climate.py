@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -11,18 +12,16 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
+from homeassistant.const import ATTR_TEMPERATURE, Platform, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, DATA_KNX_GATEWAY
 from .coordinator import LuxorLivingCoordinator
+from .entity_mapper import EntityMapper
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
-
-# H6 Heating Actuator App IDs
-HEATING_APP_IDS = ["18502"]  # H6 6-channel heating actuator
 
 
 async def async_setup_entry(
@@ -33,50 +32,68 @@ async def async_setup_entry(
     """Set up LUXORliving climate devices from a config entry."""
     _LOGGER.info("Setting up LUXORliving climate devices")
 
-    coordinator: LuxorLivingCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    knx_gateway: LuxorKNXGateway = hass.data[DOMAIN][entry.entry_id][DATA_KNX_GATEWAY]
-    project = coordinator.project
+    # Get coordinator, mapper and KNX gateway from integration data
+    try:
+        integration_data = hass.data[DOMAIN][entry.entry_id]
+        if not isinstance(integration_data, dict):
+            _LOGGER.error("Integration data is not a dictionary: %s", type(integration_data))
+            return
+        coordinator: LuxorLivingCoordinator = integration_data.get("coordinator")
+        mapper: EntityMapper = integration_data.get("mapper")
+        knx_gateway: LuxorKNXGateway = integration_data.get(DATA_KNX_GATEWAY)
+    except (KeyError, AttributeError) as err:
+        _LOGGER.error("Failed to get integration data: %s", err)
+        return
 
-    entities: list[LuxorClimate] = []
+    if not mapper:
+        _LOGGER.warning("No mapper found, skipping climate setup")
+        return
 
-    # Find all H6 heating actuators
-    for device in project.devices:
-        if device.app_id not in HEATING_APP_IDS:
-            continue
+    if not coordinator:
+        _LOGGER.error("No coordinator found, skipping climate setup")
+        return
 
-        _LOGGER.debug(
-            "Found heating device: %s (App ID: %s) with %d actuators",
-            device.name,
-            device.app_id,
-            len(device.actuators),
-        )
+    # Get all climate entities from mapper
+    climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+    _LOGGER.info("Creating %d climate entities", len(climate_entities))
 
-        # Each actuator channel is a separate climate entity (e.g., FBH room)
-        for actuator in device.actuators:
-            # Check if actuator has required datapoints for climate control
-            dp_roles = {dp.role for dp in actuator.datapoints}
+    # Create climate entities asynchronously
+    entities = await asyncio.gather(
+        *[
+            _create_climate_entity(coordinator, entry, mapped_entity, knx_gateway)
+            for mapped_entity in climate_entities
+        ]
+    )
 
-            if "Istwert" in dp_roles and "Sollwert" in dp_roles:
-                entities.append(
-                    LuxorClimate(
-                        coordinator=coordinator,
-                        knx_gateway=knx_gateway,
-                        device=device,
-                        actuator=actuator,
-                        entry_id=entry.entry_id,
-                    )
-                )
-                _LOGGER.info(
-                    "Created climate entity for %s - %s",
-                    device.name,
-                    actuator.name,
-                )
+    async_add_entities(entities)
 
-    if entities:
-        async_add_entities(entities)
-        _LOGGER.info("Added %d climate entities", len(entities))
-    else:
-        _LOGGER.warning("No climate entities found in LXP file")
+
+async def _create_climate_entity(
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    mapped_entity: Any,
+    knx_gateway: LuxorKNXGateway,
+) -> ClimateEntity:
+    """Create a climate entity asynchronously."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, lambda: _create_climate_entity_sync(coordinator, entry, mapped_entity, knx_gateway)
+    )
+
+
+def _create_climate_entity_sync(
+    coordinator: LuxorLivingCoordinator,
+    entry: ConfigEntry,
+    mapped_entity: Any,
+    knx_gateway: LuxorKNXGateway,
+) -> LuxorClimate:
+    """Create a climate entity synchronously."""
+    return LuxorClimate(
+        coordinator=coordinator,
+        knx_gateway=knx_gateway,
+        mapped_entity=mapped_entity,
+        entry_id=entry.entry_id,
+    )
 
 
 class LuxorClimate(ClimateEntity):
@@ -98,33 +115,32 @@ class LuxorClimate(ClimateEntity):
         self,
         coordinator: LuxorLivingCoordinator,
         knx_gateway: LuxorKNXGateway,
-        device,
-        actuator,
+        mapped_entity: Any,
         entry_id: str,
     ) -> None:
         """Initialize the climate entity."""
         self.coordinator = coordinator
         self.knx_gateway = knx_gateway
-        self._device = device
-        self._actuator = actuator
+        self._mapped_entity = mapped_entity
         self._entry_id = entry_id
 
-        # Map datapoint roles to addresses
-        self._datapoints = {dp.role: dp.address for dp in actuator.datapoints}
+        # Map datapoint addresses by role
+        self._datapoints = {dp["role"]: dp["address"] for dp in mapped_entity.get("datapoints", [])}
 
         # Set unique ID
-        self._attr_unique_id = f"luxor_{device.serial_number}_{actuator.channel}_climate"
+        self._attr_unique_id = mapped_entity.get("unique_id")
 
         # Set name
-        self._attr_name = actuator.name
+        self._attr_name = mapped_entity.get("name")
 
         # Set device info
+        device_id = mapped_entity.get("device_id")
         self._attr_device_info = {
-            "identifiers": {(DOMAIN, device.serial_number)},
-            "name": device.name,
+            "identifiers": {(DOMAIN, device_id)},
+            "name": mapped_entity.get("device_name"),
             "manufacturer": "Theben",
-            "model": f"H6 Heating Actuator (App ID {device.app_id})",
-            "sw_version": device.app_id,
+            "model": mapped_entity.get("device_model"),
+            "sw_version": mapped_entity.get("device_model"),
         }
 
         # Initialize state
