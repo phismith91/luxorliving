@@ -1,120 +1,71 @@
 # GitHub Copilot Instructions - LUXORliving Integration
 
-## 🚀 Deployment & Testing
+> **Note:** Allgemeine Projekt-Infos, Setup-Commands und Testing-Guidelines sind in [AGENTS.md](../AGENTS.md) dokumentiert.  
+> **Projekt-Context und Architektur:** Siehe [.github/copilot/CONTEXT.md](copilot/CONTEXT.md)  
+> **Context Engineering Skills:** Siehe [.github/copilot/skills/](copilot/skills/)
 
-### SSH-Verbindung für Pre-Release Tests
+---
 
-**WICHTIG:** Für Tests vor offiziellen Releases steht eine SSH-Verbindung zum Remote Home Assistant zur Verfügung:
+## 🚀 Remote Deployment Workflow
 
+### SSH-Verbindung zu Production HA
+
+**WICHTIG:** Development und Testing erfolgt auf Remote HA via SSH!
+
+**Connection Details:**
 - **Host:** 100.97.159.88 (via Tailscale VPN)
 - **User:** phil
-- **Authentifizierung:** SSH-Key (passwortlos)
-- **SSH-Key:** `~/.ssh/id_rsa` (Public Key in `/etc/ssh/authorized_keys` auf HA-Server)
-- **Zielverzeichnis:** `/config/custom_components/luxor_living/` (root-owned, benötigt sudo)
-- **System:** Home Assistant OS mit s6-overlay Init-System
+- **Auth:** SSH-Key (`~/.ssh/id_rsa`) - passwortlos
+- **Target:** `/config/custom_components/luxor_living/` (root-owned, needs `sudo`)
+- **System:** Home Assistant OS mit s6-overlay (nicht systemd!)
 
-### System-Architektur
+### SSH-Besonderheiten
 
-**Home Assistant OS Details:**
-- **Init-System:** s6-overlay (nicht systemd)
-- **SSH-Service:** Verwaltet über s6 (`/etc/s6-overlay/s6-rc.d/sshd/`)
-- **HA Config:** `/config/` (gemountetes Volume)
-- **SSH Auth:** Public Keys in `/etc/ssh/authorized_keys` (nicht `~/.ssh/authorized_keys`)
+**CRITICAL:** Lokale `~/.ssh/config` hat ungültige Einträge!
 
-**SSH-Konfiguration:**
-- SSH läuft standardmäßig nach Installation
-- Key Authentication über `/etc/ssh/authorized_keys`
-- Keine Passwort-Authentication für Sicherheit
-
-### SSH-Service Verwaltung (s6):
+**Lösung:** Immer `-F /dev/null` verwenden:
 ```bash
-# SSH-Status überprüfen
-ssh phil@100.97.159.88 "ps aux | grep sshd"
-
-# SSH-Service neu starten (falls nötig)
-ssh phil@100.97.159.88 "sudo s6-svc -r /run/s6/services/sshd"
+ssh -F /dev/null phil@100.97.159.88 "command"
+GIT_SSH_COMMAND='ssh -F /dev/null' git push
 ```
 
-### SSH-Key Authentifizierung:
-   - SSH-Key in `~/.ssh/id_rsa` (lokal)
-   - Public Key in `/etc/ssh/authorized_keys` auf HA-Server
-   - Keine Passwörter in Skripten oder Code nötig
+**System-Details:**
+- Init: s6-overlay (nicht systemd)
+- SSH: `/etc/ssh/authorized_keys` (nicht `~/.ssh/authorized_keys`)
+- HA Restart via SSH: **funktioniert nicht** → UI verwenden
 
-2. **Bei versehentlichem Commit von Credentials:**
-   ```bash
-   # History zurücksetzen
-   git reset --hard HEAD~N  # N = Anzahl Commits
-   GIT_SSH_COMMAND='ssh -F /dev/null' git push -f origin main
-   
-   # Tags löschen
-   git tag -d vX.Y.Z
-   GIT_SSH_COMMAND='ssh -F /dev/null' git push origin :refs/tags/vX.Y.Z
-   
-   # GitHub Release löschen
-   gh release delete vX.Y.Z -y
-   
-   # SOFORT Passwort/Key ändern!
-   ```
+### Deployment zu Remote HA
 
-3. **Deployment-Skripte:**
-   - Können jetzt sicher mit SSH-Key committet werden
-   - Keine Credentials im Code erforderlich
-   - In `.gitignore` aufnehmen wenn sie Credentials enthalten
-   - Oder: Template-Skript ohne Credentials committen
-
-### Deployment-Workflow
-
-**SSH-Besonderheiten:**
-- Lokale `~/.ssh/config` hat ungültige Einträge → **immer `-F /dev/null` verwenden**
-- Git-Operationen: `GIT_SSH_COMMAND='ssh -F /dev/null' git push`
-- HA-Dateien gehören root → `sudo` für File-Operationen verwenden
-- HA Restart via SSH funktioniert nicht → manuelle Nutzung über UI notwendig
-
-**Empfohlener Deployment-Ansatz (mit SSH-Key):**
+**3-Step Process:**
 
 ```bash
-# Deployment mit SSH-Key (passwortlos - bereits konfiguriert)
-ssh -F /dev/null -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no phil@100.97.159.88 "command"
-
-# Oder rsync für Datei-Transfers:
+# Step 1: Sync zu Temp (als User phil)
+ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
 rsync -avz --exclude="__pycache__" \
-  -e "ssh -F /dev/null -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
+  -e "ssh -F /dev/null" \
   custom_components/luxor_living/ \
   phil@100.97.159.88:/tmp/luxor_deploy/
+
+# Step 2: Copy mit sudo (files owned by root)
+ssh -F /dev/null phil@100.97.159.88 \
+  "sudo cp -r /tmp/luxor_deploy/* /config/custom_components/luxor_living/ && \
+   rm -rf /tmp/luxor_deploy"
+
+# Step 3: HA Restart (manuell!)
+# → http://100.97.159.88:8123
+# → Einstellungen → System → Neustart
 ```
 
-### Deployment-Ablauf
+### Pre-Release Testing Checklist
 
-1. **Sync zu Temp-Verzeichnis** (als User phil):
-   ```bash
-   ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
-   rsync -avz --exclude="__pycache__" \
-     -e "ssh -F /dev/null" \
-     custom_components/luxor_living/ \
-     phil@100.97.159.88:/tmp/luxor_deploy/
-   ```
-
-2. **Copy mit sudo zu final location**:
-   ```bash
-   ssh -F /dev/null phil@100.97.159.88 \
-     "sudo cp -r /tmp/luxor_deploy/* /config/custom_components/luxor_living/ && \
-      rm -rf /tmp/luxor_deploy"
-   ```
-
-3. **HA Restart**: Manuell über UI (http://100.97.159.88:8123)
-   - Einstellungen → System → Neustart
-
-### Testing vor Release
-
-1. Deploy zu Remote HA
-2. HA neustarten
-3. Features testen:
-   - Integration konfigurieren
-   - Options Flow testen
-   - Diagnostik herunterladen
-   - Services aufrufen
-4. HA Logs prüfen
-5. Bei Erfolg → Release erstellen
+1. ✅ Deploy zu Remote HA (siehe oben)
+2. ✅ HA neustarten (via UI)
+3. ✅ Integration konfigurieren
+4. ✅ Options Flow testen
+5. ✅ Diagnostik herunterladen
+6. ✅ Services aufrufen
+7. ✅ HA Logs prüfen
+8. ✅ Bei Erfolg → Release erstellen
 
 ---
 
@@ -122,87 +73,91 @@ rsync -avz --exclude="__pycache__" \
 
 ### Vor jedem Release
 
-1. **Tests laufen lassen:**
-   ```bash
-   python -m pytest tests/ -v
-   # ERWARTUNG: Alle Tests passing
-   ```
+**1. Tests laufen lassen:**
+```bash
+python -m pytest tests/ -v
+# ERWARTUNG: Alle Tests passing
+```
 
-2. **Optional: Deployment zu Remote HA für Pre-Release Testing**
+**2. Optional:** Deploy + Test auf Remote HA (siehe oben)
 
-3. **Version bumpen:**
-   - `custom_components/luxor_living/manifest.json` → "version" field
-   - `CHANGELOG.md` aktualisieren
+**3. Version bumpen:**
+- `custom_components/luxor_living/manifest.json` → "version"
+- `CHANGELOG.md` aktualisieren
 
-4. **Git Operations:**
-   ```bash
-   git add -A
-   git commit -m "Release vX.Y.Z"
-   git tag -a vX.Y.Z -m "Release notes..."
-   GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main
-   GIT_SSH_COMMAND='ssh -F /dev/null' git push origin vX.Y.Z
-   ```
+**4. Git Operations (mit SSH workaround!):**
+```bash
+git add -A
+git commit -m "Release vX.Y.Z"
+git tag -a vX.Y.Z -m "Release notes..."
 
-5. **GitHub Release erstellen:**
-   ```bash
-   gh release create vX.Y.Z --title "vX.Y.Z - Title" \
-     --notes-file RELEASE_NOTES.md --latest
-   ```
+# IMPORTANT: Use -F /dev/null for git operations!
+GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main
+GIT_SSH_COMMAND='ssh -F /dev/null' git push origin vX.Y.Z
+```
+
+**5. GitHub Release erstellen:**
+```bash
+gh release create vX.Y.Z \
+  --title "vX.Y.Z - Title" \
+  --notes-file RELEASE_NOTES.md \
+  --latest
+```
 
 ### Nach Release
 
-- Release Notes committen
-- Alte Release Notes ins Archiv verschieben (falls gewünscht)
-- CHANGELOG.md für nächste Version vorbereiten
+- ✅ Release Notes committen
+- ✅ Archiv aufräumen (falls gewünscht)
+- ✅ `CHANGELOG.md` für nächste Version vorbereiten
 
 ---
 
-## ⚠️SSH-Key Authentifizierung:**
-   - SSH-Key in `~/.ssh/id_rsa` (lokal)
-   - Public Key in `/etc/ssh/authorized_keys` auf HA-Server
-   - Keine Passwörter in Skripten oder Code nötig
+## 🔒 Security Guidelines
 
-2. **Bei versehentlichem Commit von Credentials:**
-   ```bash
-   # History zurücksetzen
-   git reset --hard HEAD~N  # N = Anzahl Commits
-   GIT_SSH_COMMAND='ssh -F /dev/null' git push -f origin main
-   
-   # Tags löschen
-   git tag -d vX.Y.Z
-   GIT_SSH_COMMAND='ssh -F /dev/null' git push origin :refs/tags/vX.Y.Z
-   
-   # GitHub Release löschen
-   gh release delete vX.Y.Z -y
-   
-   # SOFORT Passwort/Key ändern!
-   ```
+### SSH Key Authentication
 
-3. **Deployment-Skripte:**
-   - Können jetzt sicher mit SSH-Key committet werden
-   - Keine Credentials im Code erforderlich
-   - In `.gitignore` aufnehmen wenn sie Credentials enthalten
-   - Oder: Template-Skript ohne Credentials committen
+**Setup:**
+- Local: `~/.ssh/id_rsa`
+- Remote: `/etc/ssh/authorized_keys` (auf HA-Server)
+- **NEVER commit** SSH keys oder credentials!
+
+### Credentials Management
+
+**NEVER commit:**
+- Passwords, tokens, API keys
+- SSH private keys
+- Deployment scripts mit hardcoded credentials
+
+**Bei versehentlichem Commit:**
+
+```bash
+# 1. History zurücksetzen
+git reset --hard HEAD~N  # N = Anzahl Commits
+
+# 2. Force push (mit SSH workaround!)
+GIT_SSH_COMMAND='ssh -F /dev/null' git push -f origin main
+
+# 3. Tags löschen
+git tag -d vX.Y.Z
+GIT_SSH_COMMAND='ssh -F /dev/null' git push origin :refs/tags/vX.Y.Z
+
+# 4. GitHub Release löschen
+gh release delete vX.Y.Z -y
+
+# 5. SOFORT Credential ändern!
+```
+
+### Deployment Scripts
+
+- ✅ SSH-Key Auth → können committet werden
+- ✅ Template-Skripte ohne Credentials committen
+- ❌ Hardcoded Passwords → `.gitignore`
 
 ---
-
-## 🏗️ Projekt-Struktur
-
-- `custom_components/luxor_living/` - Integration Code
-- `tests/` - Unit Tests (pytest)
-- `docs/` - Dokumentation
-- `scripts/` - Utility-Skripte (OHNE Credentials!)
-
-## 📊 Quality Gates
-
-- ✅ Alle Tests passing (pytest)
-- ✅ Code formatiert (black, isort)
-- ✅ Type checking (mypy)
-- ✅ Optional: Pre-Release Testing via SSH auf Remote HA
-- ✅ Dokumentation aktuell
 
 ## 🔗 Wichtige Links
 
-- Repository: https://github.com/phismith91/luxorliving
-- Issues: https://github.com/phismith91/luxorliving/issues
-- HA Forum: [Link wenn vorhanden]
+- **Projekt Setup & Tests:** [AGENTS.md](../AGENTS.md)
+- **Projekt Context:** [.github/copilot/CONTEXT.md](.github/copilot/CONTEXT.md)
+- **Repository:** https://github.com/phismith91/luxorliving
+- **Issues:** https://github.com/phismith91/luxorliving/issues

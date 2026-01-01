@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - v0.5.0 Performance & Resilience
 
 ### 🚀 Major Features
+- **Climate Platform:** Full support for H6 heating actuators (FBH zones) with temperature control
+  - Current temperature (Istwert) and setpoint (Sollwert) display
+  - Temperature adjustment with 0.5°C steps (5°C - 35°C range)
+  - HVAC mode switching (Heat/Off)
+  - Window contact monitoring
+  - Valve position tracking (Stellgrösse)
+  - **9 heating zones** detected in test project (Hauptwohnung.lxp)
+
+- **Cover Platform:** Full support for J8/J4 shutter and blind actuators
+  - Open/Close/Stop controls (UpDown, StepStop)
+  - Position control (Höhe%) with feedback (StatusHöhe%)
+  - Tilt/Slat control (Lamelle%) with feedback (StatusLamelle%)
+  - Safety features (Rain/Frost/Wind sensors, Panic mode)
+  - Window contact integration
+  - Device class auto-detection (Shutter vs. Blind based on tilt capability)
+  - **15 covers** detected in test project (all with tilt support)
+
 - **Parallel Entity Creation:** Async entity instantiation across all platforms using `asyncio.gather`
 - **Configurable Discovery Timeout:** User-adjustable auto-discovery debounce delay (0.5-10.0s) via Options Flow
 - **Performance Benchmarking:** Comprehensive benchmarking framework with regression detection
@@ -16,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Health Check Endpoint:** System monitoring and diagnostics at `/api/luxor_living/health`
 
 ### 🔧 Improvements
+- **Enhanced LXP Parser:** Device-level warnings for unconfigured devices, detailed statistics logging
+- **Validation Tools:** New `validate_climate_cover.py` script for entity validation
 - **Async Optimizations:** CPU-intensive operations run in thread pools to prevent blocking
 - **Enhanced Error Handling:** Comprehensive error scenario testing and graceful degradation
 - **Memory Usage Tracking:** Built-in memory monitoring for performance analysis
@@ -23,10 +42,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Developer Tools:** Benchmark framework for performance measurement and analysis
 
 ### 🧪 Quality Assurance
+- **Climate/Cover Tests:** 30 new test cases for heating and cover platforms
 - **Performance Tests:** Automated benchmarking and regression detection (11 test cases)
 - **Error Scenario Tests:** Circuit breaker and concurrent error handling validation
-- **Test Coverage:** 139 total tests passing, comprehensive integration testing
+- **Test Coverage:** 178 total tests passing, comprehensive integration testing
 - **Code Quality:** Enhanced type safety and error handling patterns
+- **Real-World Validation:** Tested with Hauptwohnung.lxp (63 devices, 851 datapoints)
 
 ### 📊 Performance Metrics
 - **Startup Time:** Up to 70% faster entity creation through parallelization
