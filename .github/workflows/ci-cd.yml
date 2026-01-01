@@ -34,12 +34,9 @@ jobs:
 
             - name: Setup Python environment
               run: |
-                  # Ensure python3-venv is installed
-                  sudo apt-get update -qq
-                  sudo apt-get install -y python3.11-venv || true
-                  
-                  # Create virtual environment
-                  python3 -m venv $HOME/venv
+                  # Use virtualenv instead of venv (no system package needed)
+                  python3 -m pip install --user virtualenv
+                  python3 -m virtualenv $HOME/venv
                   source $HOME/venv/bin/activate
                   pip install --upgrade pip
 
@@ -78,12 +75,9 @@ jobs:
 
             - name: Setup Python environment
               run: |
-                  # Ensure python3-venv is installed
-                  sudo apt-get update -qq
-                  sudo apt-get install -y python3.11-venv || true
-                  
-                  # Create virtual environment
-                  python3 -m venv $HOME/venv
+                  # Use virtualenv instead of venv (no system package needed)
+                  python3 -m pip install --user virtualenv
+                  python3 -m virtualenv $HOME/venv
                   source $HOME/venv/bin/activate
                   pip install --upgrade pip
 
@@ -173,12 +167,9 @@ jobs:
 
             - name: Setup Python environment
               run: |
-                  # Ensure python3-venv is installed
-                  sudo apt-get update -qq
-                  sudo apt-get install -y python3.11-venv || true
-                  
-                  # Create virtual environment
-                  python3 -m venv $HOME/venv
+                  # Use virtualenv instead of venv (no system package needed)
+                  python3 -m pip install --user virtualenv
+                  python3 -m virtualenv $HOME/venv
                   source $HOME/venv/bin/activate
                   pip install --upgrade pip
 
