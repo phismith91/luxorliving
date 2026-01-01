@@ -32,8 +32,15 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-pip-
 
-            - name: Create virtual environment
+            - name: Setup Python environment
               run: |
+                  # Install python3-venv if not available
+                  if ! python3 -m venv --help &>/dev/null; then
+                      sudo apt-get update -qq
+                      sudo apt-get install -y python3.11-venv
+                  fi
+                  
+                  # Create virtual environment
                   python3 -m venv $HOME/venv
                   source $HOME/venv/bin/activate
                   pip install --upgrade pip
@@ -71,8 +78,15 @@ jobs:
                   path: ~/.cache/pip
                   key: ${{ runner.os }}-pip-style-${{ hashFiles('**/requirements_style.txt') }}
 
-            - name: Create virtual environment
+            - name: Setup Python environment
               run: |
+                  # Install python3-venv if not available
+                  if ! python3 -m venv --help &>/dev/null; then
+                      sudo apt-get update -qq
+                      sudo apt-get install -y python3.11-venv
+                  fi
+                  
+                  # Create virtual environment
                   python3 -m venv $HOME/venv
                   source $HOME/venv/bin/activate
                   pip install --upgrade pip
@@ -161,8 +175,15 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Create virtual environment
+            - name: Setup Python environment
               run: |
+                  # Install python3-venv if not available
+                  if ! python3 -m venv --help &>/dev/null; then
+                      sudo apt-get update -qq
+                      sudo apt-get install -y python3.11-venv
+                  fi
+                  
+                  # Create virtual environment
                   python3 -m venv $HOME/venv
                   source $HOME/venv/bin/activate
                   pip install --upgrade pip
