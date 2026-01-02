@@ -69,3 +69,8 @@ data/cache/
 .DS_Store
 Thumbs.db
 .coverage
+
+# Internal agent docs (not part of OSS)
+AGENTS.md
+.github/copilot/
+.github/CI_CD_FIX_SUMMARY.md

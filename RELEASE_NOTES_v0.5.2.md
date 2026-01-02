@@ -92,14 +92,14 @@ Full support for **J8/J4 shutter and blind actuators** (App IDs: 18520, 18516):
 
 The integration now supports **100% of standard Theben LUXORliving devices**:
 
-| Platform | Devices | Status |
-|----------|---------|--------|
-| **Switch** | S4, S8, S16 | ✅ |
-| **Light** | D2, D4 | ✅ |
-| **Cover** | J4, J8 | ✅ **NEW** |
-| **Climate** | H6 | ✅ **NEW** |
-| **Binary Sensor** | BI180, BI360, Binäreingänge | ✅ |
-| **Sensor** | Wetterstation, E1 | ✅ |
+| Platform          | Devices                     | Status    |
+| ----------------- | --------------------------- | --------- |
+| **Switch**        | S4, S8, S16                 | ✅         |
+| **Light**         | D2, D4                      | ✅         |
+| **Cover**         | J4, J8                      | ✅ **NEW** |
+| **Climate**       | H6                          | ✅ **NEW** |
+| **Binary Sensor** | BI180, BI360, Binäreingänge | ✅         |
+| **Sensor**        | Wetterstation, E1           | ✅         |
 
 ---
 
