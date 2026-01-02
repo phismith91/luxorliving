@@ -1,8 +1,10 @@
 # 📋 Release & Tagging Operational Guide
 
 **Author:** Release Manager Agent  
-**Date:** 23. Dezember 2025  
-**Purpose:** Step-by-step instructions for v0.3.0 release and future tagging
+**Date:** 2. Januar 2026  
+**Purpose:** Step-by-step release procedures and quality gates (current: v0.5.2)
+
+**Note:** Examples use v0.3.0 for illustration. Replace with actual target version.
 
 ---
 
@@ -112,10 +114,10 @@ ssh -F /dev/null -o StrictHostKeyChecking=no YOUR_USER@YOUR_HA_IP \
 # ✅ Alle Tests müssen passing sein
 cd /home/phil/gitlab_github/luxorliving
 python -m pytest tests/ -q --tb=short
-# EXPECTED: 74 passed in ~3s
+# EXPECTED: 207 passed in ~3s
 ```
 
-**Aktueller Status:** ✅ 74/74 passing (100%)
+**Aktueller Status:** ✅ 207/207 passing (100%)
 
 ### Step 0.2: Code Quality Checks
 
@@ -155,13 +157,57 @@ python -m pytest tests/ --cov
 
 ### Step 0.4: Documentation Review
 
+**CRITICAL: README.md is user-facing quality! Must be reviewed like code.**
+
 ```bash
 # ✅ Check that docs are up-to-date
 - [ ] CHANGELOG.md: Has entry for unreleased version
 - [ ] manifest.json: Version field correct
-- [ ] README.md: No outdated version references
-- [ ] docs/QUICKSTART.md: Current and accurate
+- [ ] README.md: **MANDATORY Quality Gates** (see below)
+- [ ] docs/INDEX.md: Links work and are current
 ```
+
+**README.md Quality Checklist (MANDATORY before release):**
+
+```bash
+# ⚡ AUTOMATED VALIDATION (recommended)
+./scripts/validate_readme.sh
+# This checks:
+# - Version consistency (manifest.json ↔ README.md ↔ CHANGELOG.md)
+# - Test count accuracy (pytest ↔ README.md)
+# - All documentation links exist
+# - CHANGELOG.md release entry for current version
+# - No versioned [Unreleased] sections in CHANGELOG
+
+# OR MANUAL VALIDATION:
+
+# 1. Version Consistency Check
+grep -n "v0\." README.md  # Should match manifest.json version
+
+# 2. Test Count Accuracy
+python -m pytest tests/ --collect-only -q 2>&1 | grep "tests collected"
+# Then verify README mentions correct count (e.g., "207 tests")
+
+# 3. Link Validation (check all referenced files exist)
+for file in docs/INDEX.md docs/INSTALLATION.md docs/KNX_IMPLEMENTATION.md \
+            docs/SENSOR_PLATFORM.md docs/ARCHITECTURE_DECISION.md \
+            docs/RELEASE_OPERATIONS.md SECURITY.md LICENSE; do
+  [ -f "$file" ] && echo "✅ $file" || echo "❌ MISSING: $file"
+done
+
+# 4. Manual Review Checklist:
+- [ ] Version in "## 🚀 vX.Y.Z Features" section matches manifest.json
+- [ ] Badge links work (HACS, release, license)
+- [ ] Installation instructions are current
+- [ ] Troubleshooting section is up-to-date
+- [ ] No references to deprecated features
+- [ ] All documentation links point to existing files
+- [ ] Test count mentioned matches actual test suite
+- [ ] Performance numbers are current (if mentioned)
+```
+
+**Quality Rule:** README.md must be reviewed with same rigor as code tests!
+Broken links or wrong version numbers reflect poorly on integration quality.
 
 ### Step 0.5: Git Status Check
 
@@ -181,7 +227,9 @@ git log --oneline -5
 
 ---
 
-## Phase 1: Release Preparation for v0.3.0
+## Phase 1: Release Preparation
+
+**Note:** All v0.3.0 references below are examples. Use your actual target version.
 
 ### Step 1.1: Merge to main branch (if not already)
 
@@ -288,7 +336,7 @@ git log --oneline -1
 
 ---
 
-## Phase 2: Git Tagging for v0.3.0
+## Phase 2: Git Tagging
 
 ### Step 2.1: Create Annotated Release Tag
 
@@ -429,14 +477,16 @@ git ls-remote --tags origin | grep -v "^"
 
 **Steps:**
 1. Click "Releases" → "Create a new release"
-2. Choose tag: `v0.3.0`
-3. Release title: `LUXORliving v0.3.0 - HACS Stable Release`
-4. Release notes (from CHANGELOG.md):
+2. Choose tag: `vX.Y.Z` (example: `v0.5.2`)
+3. Release title: `LUXORliving vX.Y.Z - Release Title`
+4. Release notes (copy from CHANGELOG.md and adapt):
+
+**Template Example (adapt to your release):**
 
 ```markdown
-# 🎉 LUXORliving v0.3.0
+# 🎉 LUXORliving vX.Y.Z
 
-**Release Date:** 23. Dezember 2025
+**Release Date:** YYYY-MM-DD
 
 ## Highlights
 
@@ -444,8 +494,9 @@ git ls-remote --tags origin | grep -v "^"
 - ✅ Full device registry integration for all platforms
 - ✅ Complete type hints (100%) on Light, Switch, Binary Sensor
 - ✅ Black code formatting (100% compliant)
-- ✅ Comprehensive test suite (74 tests, 55% coverage baseline)
+- ✅ Comprehensive test suite (207 tests passing)
 - ✅ py.typed marker for editor type checking support
+- ✅ README.md and CHANGELOG.md quality gates
 
 ## 📋 What's New
 
@@ -490,17 +541,17 @@ git ls-remote --tags origin | grep -v "^"
 
 ## 📊 Quality Metrics
 
-- **Tests:** 74/74 passing (100% success rate)
-- **Coverage:** 55% baseline (improving in 0.3.x)
+- **Tests:** 207/207 passing (100% success rate)
+- **Coverage:** Comprehensive test coverage (see pytest report)
 - **Type Hints:** 100% on critical modules
 - **Code Style:** Black compliant
 - **Documentation:** Complete and up-to-date
+- **Quality Gates:** Automated validation (README.md + CHANGELOG.md)
 
 ## ⚠️ Known Issues
 
-- Test coverage: 55% (ongoing improvement)
-- Climate, Cover, Sensor platforms in beta (limited features)
 - See [Issues](https://github.com/phismith91/luxorliving/issues) for current tracking
+- Report bugs via GitHub issue tracker
 
 ## 🙏 Credits
 
@@ -525,10 +576,10 @@ Thanks to all contributors and testers!
 
 ```bash
 # Check via GitHub CLI (if installed)
-gh release view v0.3.0
+gh release view vX.Y.Z
 
 # Or manually verify on:
-# https://github.com/phismith91/luxorliving/releases/tag/v0.3.0
+# https://github.com/phismith91/luxorliving/releases/tag/vX.Y.Z
 ```
 
 ---
@@ -601,16 +652,15 @@ ls docs/*.md
 
 **Template Message:**
 ```
-📢 LUXORliving v0.3.0 Released!
+📢 LUXORliving vX.Y.Z Released!
 
-🎉 LUXORliving v0.3.0 is now available for HACS!
+🎉 LUXORliving vX.Y.Z is now available for HACS!
 
 Key Features:
-- DataUpdateCoordinator pattern for reliable state management
-- Full device registry integration
-- Complete type hints (100% on critical platforms)
-- 74 comprehensive tests (55% coverage baseline)
-- Black-formatted, production-ready code
+- [List your release highlights from CHANGELOG.md]
+- 207 comprehensive tests (100% passing)
+- Automated quality gates (README + CHANGELOG validation)
+- Production-ready code
 
 Installation:
 1. Add to HACS Integrations
@@ -623,22 +673,22 @@ Releases: https://github.com/phismith91/luxorliving/releases
 Questions? Start a discussion: https://github.com/phismith91/luxorliving/discussions
 ```
 
-### Step 6.3: Create Release Candidate Branch
+### Step 6.3: Create Release Candidate Branch (Optional)
 
 ```bash
-# Create backup branch for this release
-git checkout -b release/0.3.0
-git push origin release/0.3.0
+# Create backup branch for this release (example)
+git checkout -b release/0.X.Y
+git push origin release/0.X.Y
 
-# This allows hotfixes on 0.3.0 if needed (v0.3.1, v0.3.2, etc.)
+# This allows hotfixes on 0.X.Y if needed (v0.X.Y+1, etc.)
 ```
 
 ### Step 6.4: Begin Next Development Cycle
 
 ```bash
-# Update version for next dev cycle
-# manifest.json: "version": "0.4.0-beta.1"
-sed -i 's/"version": "0.3.0"/"version": "0.4.0-beta.1"/' \
+# Update version for next dev cycle (example: 0.5.2 → 0.5.3-beta.1)
+# manifest.json: "version": "0.X.Y-beta.1"
+sed -i 's/"version": "0.X.Y"/"version": "0.X.Y+1-beta.1"/' \
   custom_components/luxor_living/manifest.json
 
 # Update CHANGELOG
@@ -648,22 +698,18 @@ sed -i 's/"version": "0.3.0"/"version": "0.4.0-beta.1"/' \
 ```markdown
 ## [Unreleased]
 
+### Planned
+- TBD for next release
+
+## [X.Y.Z] - YYYY-MM-DD
 ### Added
-- (features in development)
-
-### Changed
-- (ongoing improvements)
-
-### Fixed
-- (bug fixes)
-
-## [0.3.0] - 2025-12-23
+- Released features from this version
 ```
 
 ```bash
 # Commit
 git add manifest.json CHANGELOG.md
-git commit -m "chore: prepare v0.4.0-beta.1 development cycle"
+git commit -m "chore: prepare vX.Y.Z-beta.1 development cycle"
 git push origin main  # or feature/core-integration
 ```
 
@@ -733,10 +779,10 @@ git push origin --force v0.3.0  # Can break clone operations
 ### Emergency 1: Hotfix After Release
 
 ```bash
-# Scenario: Critical bug found in v0.3.0
+# Scenario: Critical bug found in current release (example: v0.5.2)
 
 # Step 1: Create hotfix branch from release tag
-git checkout -b hotfix/0.3.1 v0.3.0
+git checkout -b hotfix/0.5.3 v0.5.2
 
 # Step 2: Apply fix
 # (edit files to fix critical bug)
@@ -744,29 +790,29 @@ git add .
 git commit -m "fix: critical bug description"
 
 # Step 3: Update version & CHANGELOG
-# manifest.json: 0.3.0 → 0.3.1
-# CHANGELOG.md: Add [0.3.1] section
+# manifest.json: 0.5.2 → 0.5.3
+# CHANGELOG.md: Add [0.5.3] section
 
 # Step 4: Tag and release
-git tag -a v0.3.1 -m "LUXORliving v0.3.1: Hotfix for [issue]"
-git push origin hotfix/0.3.1 v0.3.1
+git tag -a v0.5.3 -m "LUXORliving v0.5.3: Hotfix for [issue]"
+git push origin hotfix/0.5.3 v0.5.3
 
 # Step 5: Create GitHub Release (same as Phase 4)
 
 # Step 6: Merge hotfix back to main
 git checkout main
-git merge hotfix/0.3.1
+git merge hotfix/0.5.3
 git push origin main
 ```
 
 ### Emergency 2: Rollback Failed Release
 
 ```bash
-# Scenario: v0.3.0 has critical issues, need to rollback
+# Scenario: Current release has critical issues, need to rollback (example)
 
 # Step 1: Delete tags locally and remotely
-git tag -d v0.3.0
-git push origin --delete v0.3.0
+git tag -d v0.X.Y
+git push origin --delete v0.X.Y
 
 # Step 2: Revert version changes
 git revert HEAD  # Revert the release commit
@@ -775,8 +821,8 @@ git revert HEAD  # Revert the release commit
 # (make necessary changes)
 
 # Step 4: Create new release attempt
-git tag -a v0.3.0-rc.1 -m "..."  # Or use different version
-git push origin v0.3.0-rc.1
+git tag -a v0.X.Y-rc.1 -m "..."  # Or use different version
+git push origin v0.X.Y-rc.1
 
 # Step 5: Announce issue on community channels
 ```
@@ -792,38 +838,38 @@ git push origin v0.3.0-rc.1
 git tag -l
 
 # List tags with pattern
-git tag -l "v0.3*"
+git tag -l "v0.5*"
 
 # Show tag details
-git show v0.3.0
+git show v0.5.2
 
-# Create annotated tag
-git tag -a v0.3.0 -m "Message"
+# Create annotated tag (example)
+git tag -a v0.X.Y -m "Message"
 
-# Create signed tag
-git tag -a -s v0.3.0 -m "Message"
+# Create signed tag (example)
+git tag -a -s v0.X.Y -m "Message"
 
-# Delete local tag
-git tag -d v0.3.0
+# Delete local tag (example)
+git tag -d v0.X.Y
 
-# Delete remote tag
-git push origin --delete v0.3.0
+# Delete remote tag (example)
+git push origin --delete v0.X.Y
 
-# Push specific tag
-git push origin v0.3.0
+# Push specific tag (example)
+git push origin v0.X.Y
 
 # Push all tags
 git push origin --tags
 
-# Verify tag
-git verify-tag v0.3.0
+# Verify tag (example)
+git verify-tag v0.X.Y
 ```
 
 ### Version Updates
 
 ```bash
-# Update manifest version
-sed -i 's/"version": "0.3.0-beta.1"/"version": "0.3.0"/' \
+# Update manifest version (example: beta → release)
+sed -i 's/"version": "0.X.Y-beta.1"/"version": "0.X.Y"/' \
   custom_components/luxor_living/manifest.json
 
 # Verify version

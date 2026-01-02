@@ -23,7 +23,23 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 **Working platforms:** Light, Switch, Cover, Climate, Binary Sensor, Sensor
 
-## 🚀 v0.5.0 Performance & Resilience Features
+## 🚀 v0.5.3 Quality Assurance & Release Process
+
+### Quality Gates & Validation
+- **Automated README.md Validation**: Version consistency, test count accuracy, link validation
+- **CHANGELOG.md Quality Gates**: Mandatory release entry validation, version consistency checks
+- **Pre-Release Validation Script**: `./scripts/validate_readme.sh` - 6-step automated quality gate
+- **Release Process Improvements**: Enhanced documentation, SSH workflow, GitHub release templates
+
+### Documentation Updates
+- **Release Operations**: Comprehensive quality gates, automated validation workflows
+- **Agent Coordination**: Enhanced release manager with CHANGELOG.md quality gates
+- **Error Prevention**: Detects versioned [Unreleased] sections, missing release entries
+- **Test Count Tracking**: 207 comprehensive tests (100% passing)
+
+---
+
+## 🚀 v0.5.2 Performance & Resilience Features
 
 ### Performance Optimizations
 - **Parallel Entity Creation**: All entities are created simultaneously using `asyncio.gather`, reducing startup time by up to 70%
@@ -39,7 +55,7 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 - **Circuit Breaker Pattern**: Automatic failure detection and recovery for network operations
 - **Health Check Endpoint**: Monitor system status at `/api/luxor_living/health`
 - **Performance Benchmarking**: Built-in tools to measure and track performance regressions
-- **Error Scenario Testing**: Comprehensive testing of failure modes and recovery
+- **Error Scenario Testing**: Comprehensive testing of failure modes and recovery (207 tests)
 
 ### Developer Tools
 - **Benchmark Framework**: Measure operation performance with detailed statistics
@@ -188,6 +204,11 @@ Each gateway creates separate entities.
 - [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technical protocol details
 - [Sensor Platform](docs/SENSOR_PLATFORM.md) – Sensor configuration and usage
 - [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) – Core design decisions
+- [Release Operations](docs/RELEASE_OPERATIONS.md) – Release process and deployment
+
+**For Developers:**
+- [Security Policy](SECURITY.md) – Vulnerability reporting
+- Test Suite: 207 tests – Run `pytest tests/ -v` for details
 
 ---
 

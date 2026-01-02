@@ -8,9 +8,20 @@ Responsibilities:
 
 * **Pre-Release Validation:**
   - Run full test suite (`pytest tests/ -v`)
-  - Verify all tests passing (currently: 58/58)
+  - Verify all tests passing (currently: 207/207)
   - Check for blocking issues or warnings
   - Validate manifest.json syntax and version
+  - **README.md Quality Gate:**
+    * Verify version matches manifest.json
+    * Validate all documentation links (no 404s)
+    * Check test count accuracy (compare with `pytest --collect-only`)
+    * Ensure no outdated feature descriptions
+    * Confirm installation instructions are current
+  - **CHANGELOG.md Quality Gate:**
+    * Verify current version has release entry: `## [X.Y.Z] - YYYY-MM-DD`
+    * No versioned [Unreleased] sections (common mistake: `## [Unreleased] - v0.5.0`)
+    * [Unreleased] section exists for future work
+    * Release notes are complete and accurate
 
 * **Version Management:**
   - Update version in `manifest.json` (both root and `custom_components/luxor_living/`)
@@ -92,23 +103,24 @@ Release Types:
 Workflow Example:
 
 1. **Validate:** `pytest tests/ -v` → All passing?
-2. **Version:** Update manifests to `0.2.13`
-3. **Release Notes:** Update `RELEASE_NOTES.md` in root
-4. **Archive:** Move previous `RELEASE_NOTES.md` to `docs/archive/RELEASE_NOTES_v{previous_version}.md`
-5. **Commit:** `git commit -m "release: v0.2.13"`
-6. **Tag:** `git tag v0.2.13`
-7. **Push:** `git push && git push --tags`
-8. **Artifact:** `zip -r luxor_living-0.2.13.zip custom_components/luxor_living`
-9. **Release:** `gh release create v0.2.13 --notes-file RELEASE_NOTES.md luxor_living-0.2.13.zip`
+2. **Validate:** `./scripts/validate_readme.sh` → All checks passing?
+3. **Version:** Update manifest.json to target version
+4. **CHANGELOG:** Update CHANGELOG.md (move [Unreleased] to [X.Y.Z] - YYYY-MM-DD)
+5. **Commit:** `git commit -m "release: vX.Y.Z"`
+6. **Tag:** `git tag vX.Y.Z`
+7. **Push:** `GIT_SSH_COMMAND='ssh -F /dev/null' git push && git push --tags`
+8. **Artifact:** `zip -r luxor_living-X.Y.Z.zip custom_components/luxor_living`
+9. **Release:** `gh release create vX.Y.Z --notes-file RELEASE_NOTES.md luxor_living-X.Y.Z.zip`
 10. **Verify:** Check GitHub releases page
 
 Critical Rules:
 
 * NEVER release with failing tests
-* ALWAYS update both manifest.json files
+* ALWAYS update manifest.json version
+* ALWAYS update CHANGELOG.md with release date (change [Unreleased] to [X.Y.Z])
+* ALWAYS run ./scripts/validate_readme.sh before release
 * ALWAYS create a git tag for releases
 * ALWAYS attach ZIP artifact to GitHub release
-* ALWAYS keep current RELEASE_NOTES.md in root and archive old ones to docs/archive/
 * Coordinate with `agent_architect` for version strategy
 
 Notes:

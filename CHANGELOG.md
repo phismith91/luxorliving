@@ -5,7 +5,7 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - v0.5.0 Performance & Resilience
+## [0.5.2] - 2026-01-02
 
 ### 🚀 Major Features
 - **Climate Platform:** Full support for H6 heating actuators (FBH zones) with temperature control
@@ -55,6 +55,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Error Recovery:** Automatic circuit breaker recovery within configurable timeouts
 - **Reliability:** Enhanced resilience against network failures and timeouts
 
+---
+
+## [Unreleased]
+
+### Planned
+- TBD for next release
+
+---
+## [0.5.3] - 2026-01-02
+
+### 🎯 Quality Assurance Improvements
+
+**Focus:** Enhanced release process reliability and documentation quality gates
+
+#### Added
+- **README.md Quality Gates:** Automated validation script (`scripts/validate_readme.sh`)
+  - Version consistency checks (manifest.json ↔ README.md ↔ CHANGELOG.md)
+  - Test count accuracy verification (pytest ↔ README.md)
+  - Documentation link validation (no 404s)
+  - CHANGELOG.md release entry validation
+  - Detection of versioned [Unreleased] sections (common mistake)
+
+- **CHANGELOG.md Quality Gates:** Mandatory pre-release validation
+  - Ensures current version has proper release entry
+  - Prevents accidental versioned [Unreleased] sections
+  - Validates [Unreleased] section exists for future work
+
+- **Enhanced Release Documentation:**
+  - Updated `docs/RELEASE_OPERATIONS.md` with README/CHANGELOG quality gates
+  - Added automated validation workflow to Step 0.4
+  - Updated GitHub Release template with current metrics (207 tests)
+  - Generalized version examples for future releases
+  - SSH workaround documentation (`-F /dev/null` for git operations)
+
+- **Agent Documentation:**
+  - Enhanced `agent_release_manager.md` with quality gate workflows
+  - Added `RELEASE_OPERATIONS_REVIEW.md` (comprehensive review report)
+  - Updated critical rules to include CHANGELOG.md validation
+
+#### Fixed
+- **CHANGELOG.md:** Corrected v0.5.2 release entry (was incorrectly marked as [Unreleased])
+- **README.md:** Removed broken link to non-existent `AGENTS.md`
+- **Documentation Links:** All links validated and verified functional
+- **Release Process:** Eliminated RELEASE_NOTES.md references (project uses CHANGELOG.md)
+
+#### Changed
+- **Quality Standards:** README.md and CHANGELOG.md now validated with same rigor as code tests
+- **Release Workflow:** Mandatory `./scripts/validate_readme.sh` before each release
+- **Documentation Metrics:** Updated all references to current test count (207 tests)
+
+### 📊 Quality Metrics
+- **Validation Script:** 6-step automated quality gate
+- **Test Count:** 207/207 passing (100% success rate)
+- **Quality Coverage:** README + CHANGELOG + Links + Version consistency
+- **Release Safety:** Prevents common documentation errors before release
+
+### 🔧 Technical Details
+
+**Validation Script Features:**
+```bash
+./scripts/validate_readme.sh
+# Checks:
+# 1. Version consistency (manifest ↔ README)
+# 2. Test count accuracy (pytest ↔ README)
+# 3. Documentation links (all files exist)
+# 4. Outdated patterns detection
+# 5. CHANGELOG.md release entry
+# 6. [Unreleased] section validation
+```
+
+**Exit Codes:**
+- `0` = All checks passed (safe to release)
+- `1` = Errors found (must fix before release)
+
+---
 ## [0.4.0] - 2025-12-27
 
 ### 🚀 Major Features

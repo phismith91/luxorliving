@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-01-02T20:59:21.874891",
+  "results": [
+    {
+      "operation": "LXP Parsing (tmpj2lgbusr.lxp)",
+      "iterations": 2,
+      "total_time": 3.336698864586651e-05,
+      "avg_time": 1.6683494322933257e-05,
+      "min_time": 1.6027988749556243e-05,
+      "max_time": 1.733899989631027e-05,
+      "throughput": 59939.48154047036
+    },
+    {
+      "operation": "Entity Creation (5 entities)",
+      "iterations": 2,
+      "total_time": 0.011328378997859545,
+      "avg_time": 0.0056641894989297725,
+      "min_time": 0.005638609000016004,
+      "max_time": 0.005689769997843541,
+      "throughput": 176.5477656051137
+    },
+    {
+      "operation": "Circuit Breaker Operation",
+      "iterations": 2,
+      "total_time": 0.003914266999345273,
+      "avg_time": 0.0019571334996726364,
+      "min_time": 0.001937355991685763,
+      "max_time": 0.0019769110076595098,
+      "throughput": 510.9513480645377
+    }
+  ]
+}
