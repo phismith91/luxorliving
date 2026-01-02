@@ -84,3 +84,19 @@ scripts/deploy_to_ha.sh
 .devcontainer/
 Dockerfile.runner
 setup-custom-runner.sh
+
+# Internal documentation (not relevant for HACS users)
+docs/RELEASE_OPERATIONS.md
+docs/LXP_AUDIT_*.md
+docs/TESTS.md
+docs/ROADMAP_*.md
+docs/ION_TEMPERATURE_*.md
+docs/AUDIT_REPORT_*.md
+docs/BAOS_REST_API_DISCOVERY.md
+docs/BAOS_REST_API_LIMITATIONS.md
+docs/ARCHITECTURE_REVIEW_*.md
+docs/TUNNELING_AUTHENTICATION.md
+docs/KNX_TUNNELING_SETUP.md
+docs/LXP_VALIDATION.md
+docs/*.pdf
+docs/archive/

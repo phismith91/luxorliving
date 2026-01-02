@@ -183,16 +183,11 @@ Each gateway creates separate entities.
 
 ## Documentation
 
+- [Documentation Index](docs/INDEX.md) – Complete documentation overview
 - [Installation Guide](docs/INSTALLATION.md) – Detailed setup instructions
 - [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technical protocol details
-- [Sensor Platform](docs/SENSOR_PLATFORM.md) – Temperature, Humidity, Pressure sensors (v0.3.1+)
-- [Quality Improvements](docs/QUALITY_IMPROVEMENTS.md) – v0.3.0 changes
-- [Port Configuration](docs/PORT_CONFIGURATION_ANALYSIS.md) – Architecture decisions
-
-**For developers:**
-- [Contributing Guide](docs/QUICKSTART.md) – Development setup
-- [Test Report](docs/TEST_REPORT.md) – 85/85 tests (improved coverage)
-- [Architecture](docs/ARCHITECTURE_DECISION.md) – Design decisions
+- [Sensor Platform](docs/SENSOR_PLATFORM.md) – Sensor configuration and usage
+- [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) – Core design decisions
 
 ---
 

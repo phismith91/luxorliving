@@ -115,26 +115,26 @@ TOTAL: 2505 statements, 960 missed, 56% coverage
 
 #### Coverage by Module:
 
-| Module | Coverage | Status | Missing Lines |
-|--------|----------|--------|---------------|
-| **circuit_breaker.py** | 100% | ✅ Excellent | - |
-| **const.py** | 100% | ✅ Excellent | - |
-| **benchmark.py** | 98% | ✅ Excellent | 2 lines |
-| **climate.py** | 81% | ✅ Good | Service calls, edge cases |
-| **config_flow.py** | 69% | ⚠️ Acceptable | Options flow, error paths |
-| **cover.py** | 68% | ⚠️ Acceptable | Tilt, position, edge cases |
-| **knx_gateway.py** | 66% | ⚠️ Acceptable | Error handling, retries |
-| **switch.py** | 62% | ⚠️ Acceptable | State updates, edge cases |
-| **light.py** | 60% | ⚠️ Acceptable | Color modes, transitions |
-| **sensor.py** | 58% | ⚠️ Acceptable | Normalization, edge cases |
-| **lxp_parser.py** | 52% | ⚠️ Low | Complex parsing paths |
-| **rest_client.py** | 52% | ⚠️ Low | Error scenarios, retries |
-| **coordinator.py** | 50% | ⚠️ Low | Async updates, polling |
-| **binary_sensor.py** | 46% | ⚠️ Low | Motion detection, contact |
-| **entity.py** | 34% | ❌ Critical | Base entity methods |
-| **overrides.py** | 26% | ❌ Critical | Override logic |
-| **entity_mapper.py** | 13% | ❌ Critical | Mapping logic |
-| **diagnostics.py** | 0% | ❌ Critical | Diagnostics export |
+| Module                 | Coverage | Status       | Missing Lines              |
+| ---------------------- | -------- | ------------ | -------------------------- |
+| **circuit_breaker.py** | 100%     | ✅ Excellent  | -                          |
+| **const.py**           | 100%     | ✅ Excellent  | -                          |
+| **benchmark.py**       | 98%      | ✅ Excellent  | 2 lines                    |
+| **climate.py**         | 81%      | ✅ Good       | Service calls, edge cases  |
+| **config_flow.py**     | 69%      | ⚠️ Acceptable | Options flow, error paths  |
+| **cover.py**           | 68%      | ⚠️ Acceptable | Tilt, position, edge cases |
+| **knx_gateway.py**     | 66%      | ⚠️ Acceptable | Error handling, retries    |
+| **switch.py**          | 62%      | ⚠️ Acceptable | State updates, edge cases  |
+| **light.py**           | 60%      | ⚠️ Acceptable | Color modes, transitions   |
+| **sensor.py**          | 58%      | ⚠️ Acceptable | Normalization, edge cases  |
+| **lxp_parser.py**      | 52%      | ⚠️ Low        | Complex parsing paths      |
+| **rest_client.py**     | 52%      | ⚠️ Low        | Error scenarios, retries   |
+| **coordinator.py**     | 50%      | ⚠️ Low        | Async updates, polling     |
+| **binary_sensor.py**   | 46%      | ⚠️ Low        | Motion detection, contact  |
+| **entity.py**          | 34%      | ❌ Critical   | Base entity methods        |
+| **overrides.py**       | 26%      | ❌ Critical   | Override logic             |
+| **entity_mapper.py**   | 13%      | ❌ Critical   | Mapping logic              |
+| **diagnostics.py**     | 0%       | ❌ Critical   | Diagnostics export         |
 
 ### Code Style ⚠️
 
@@ -167,32 +167,32 @@ TOTAL: 2505 statements, 960 missed, 56% coverage
 
 #### Core Documentation:
 
-| File | Lines | Status | Assessment |
-|------|-------|--------|------------|
-| **README.md** | 308 | ✅ | Complete, clear installation |
-| **INSTALLATION.md** | 390 | ✅ | Detailed setup guide |
-| **CHANGELOG.md** | 24K | ✅ | Well-maintained |
-| **AGENTS.md** | 244 | ✅ | AI agent instructions |
-| **SECURITY.md** | 84 | ✅ | Security policy |
-| **RELEASE_NOTES_v0.5.2.md** | 195 | ✅ | Prepared for release |
+| File                        | Lines | Status | Assessment                   |
+| --------------------------- | ----- | ------ | ---------------------------- |
+| **README.md**               | 308   | ✅      | Complete, clear installation |
+| **INSTALLATION.md**         | 390   | ✅      | Detailed setup guide         |
+| **CHANGELOG.md**            | 24K   | ✅      | Well-maintained              |
+| **AGENTS.md**               | 244   | ✅      | AI agent instructions        |
+| **SECURITY.md**             | 84    | ✅      | Security policy              |
+| **RELEASE_NOTES_v0.5.2.md** | 195   | ✅      | Prepared for release         |
 
 #### Technical Documentation:
 
-| Category | Files | Total Lines | Quality |
-|----------|-------|-------------|---------|
-| Architecture | 4 | 1,930 | ✅ Excellent |
-| KNX Implementation | 5 | 1,712 | ✅ Excellent |
-| Testing | 2 | 450 | ✅ Good |
-| Release Process | 3 | 1,384 | ✅ Excellent |
-| Sensor Platform | 4 | 996 | ✅ Good |
+| Category           | Files | Total Lines | Quality     |
+| ------------------ | ----- | ----------- | ----------- |
+| Architecture       | 4     | 1,930       | ✅ Excellent |
+| KNX Implementation | 5     | 1,712       | ✅ Excellent |
+| Testing            | 2     | 450         | ✅ Good      |
+| Release Process    | 3     | 1,384       | ✅ Excellent |
+| Sensor Platform    | 4     | 996         | ✅ Good      |
 
 #### GitHub Copilot Documentation:
 
-| Component | Files | Status |
-|-----------|-------|--------|
-| Agent Instructions | 7 | ✅ Complete |
-| Context Engineering Skills | 4 | ✅ New (v0.5.2) |
-| Archive (old agents) | 6 | ✅ Archived properly |
+| Component                  | Files | Status              |
+| -------------------------- | ----- | ------------------- |
+| Agent Instructions         | 7     | ✅ Complete          |
+| Context Engineering Skills | 4     | ✅ New (v0.5.2)      |
+| Archive (old agents)       | 6     | ✅ Archived properly |
 
 ### Documentation Quality Assessment:
 
@@ -221,13 +221,13 @@ TOTAL: 2505 statements, 960 missed, 56% coverage
 
 **Password/Secret Usage Analysis:**
 
-| File | Usage | Status | Assessment |
-|------|-------|--------|------------|
-| `const.py` | CONF_PASSWORD constant | ✅ | Properly defined |
-| `config_flow.py` | User input handling | ✅ | No hardcoded credentials |
-| `diagnostics.py` | Password redaction | ✅ | `**REDACTED**` |
-| `__init__.py` | Config entry handling | ✅ | Secure storage |
-| `tests/*.py` | Test fixtures only | ✅ | Mock data only |
+| File             | Usage                  | Status | Assessment               |
+| ---------------- | ---------------------- | ------ | ------------------------ |
+| `const.py`       | CONF_PASSWORD constant | ✅      | Properly defined         |
+| `config_flow.py` | User input handling    | ✅      | No hardcoded credentials |
+| `diagnostics.py` | Password redaction     | ✅      | `**REDACTED**`           |
+| `__init__.py`    | Config entry handling  | ✅      | Secure storage           |
+| `tests/*.py`     | Test fixtures only     | ✅      | Mock data only           |
 
 **Findings:**
 - ✅ No hardcoded passwords in production code
@@ -276,28 +276,28 @@ scripts/*.local
 
 #### Test Categories:
 
-| Category | Tests | Coverage | Status |
-|----------|-------|----------|--------|
-| **Unit Tests** | 120 | Platform-specific | ✅ |
-| **Integration Tests** | 35 | End-to-end flows | ✅ |
-| **Performance Tests** | 11 | Benchmarking | ✅ |
-| **Error Handling** | 12 | Circuit breaker, retries | ✅ |
+| Category              | Tests | Coverage                 | Status |
+| --------------------- | ----- | ------------------------ | ------ |
+| **Unit Tests**        | 120   | Platform-specific        | ✅      |
+| **Integration Tests** | 35    | End-to-end flows         | ✅      |
+| **Performance Tests** | 11    | Benchmarking             | ✅      |
+| **Error Handling**    | 12    | Circuit breaker, retries | ✅      |
 
 #### Platform Coverage:
 
-| Platform | Tests | Coverage % | Status |
-|----------|-------|------------|--------|
-| **Circuit Breaker** | 5 | 100% | ✅ Excellent |
-| **Light** | 15 | 60% | ⚠️ Good |
-| **Switch** | 13 | 62% | ⚠️ Good |
-| **Binary Sensor** | 12 | 46% | ⚠️ Acceptable |
-| **Sensor** | 12 | 58% | ⚠️ Acceptable |
-| **Climate** | 15 | 81% | ✅ Good |
-| **Cover** | 15 | 68% | ⚠️ Good |
-| **Config Flow** | 18 | 69% | ⚠️ Good |
-| **REST Client** | 12 | 52% | ⚠️ Low |
-| **KNX Gateway** | 16 | 66% | ⚠️ Acceptable |
-| **LXP Parser** | 8 | 52% | ⚠️ Low |
+| Platform            | Tests | Coverage % | Status       |
+| ------------------- | ----- | ---------- | ------------ |
+| **Circuit Breaker** | 5     | 100%       | ✅ Excellent  |
+| **Light**           | 15    | 60%        | ⚠️ Good       |
+| **Switch**          | 13    | 62%        | ⚠️ Good       |
+| **Binary Sensor**   | 12    | 46%        | ⚠️ Acceptable |
+| **Sensor**          | 12    | 58%        | ⚠️ Acceptable |
+| **Climate**         | 15    | 81%        | ✅ Good       |
+| **Cover**           | 15    | 68%        | ⚠️ Good       |
+| **Config Flow**     | 18    | 69%        | ⚠️ Good       |
+| **REST Client**     | 12    | 52%        | ⚠️ Low        |
+| **KNX Gateway**     | 16    | 66%        | ⚠️ Acceptable |
+| **LXP Parser**      | 8     | 52%        | ⚠️ Low        |
 
 ### Critical Gaps ⚠️
 
