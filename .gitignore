@@ -72,7 +72,10 @@ Thumbs.db
 
 # Internal agent docs (not part of OSS)
 AGENTS.md
-.github/copilot/
+.github/copilot/agent_*.md
+.github/copilot/archive/
+.github/copilot/CONTEXT.md
+.github/copilot/README.md
 .github/CI_CD_FIX_SUMMARY.md
 
 # Private deployment info (IP addresses, usernames, SSH configs)
