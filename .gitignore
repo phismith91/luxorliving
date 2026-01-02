@@ -74,3 +74,8 @@ Thumbs.db
 AGENTS.md
 .github/copilot/
 .github/CI_CD_FIX_SUMMARY.md
+
+# Private deployment info (IP addresses, usernames, SSH configs)
+DEPLOYMENT_PRIVATE.md
+scripts/deploy_to_ha.sh
+.ssh_config.local

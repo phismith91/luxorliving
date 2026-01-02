@@ -6,34 +6,89 @@
 
 ---
 
+## 🔀 Branch Strategy & Release Workflow
+
+### Pre-Release Workflow (Feature Branches)
+
+**Für Pre-Releases (Beta, RC, Feature Testing):**
+
+1. **Entwicklung auf Feature Branch**
+   ```bash
+   git checkout -b pre-release/v0.5.2-climate-cover
+   # Entwicklung, Tests, Commits...
+   ```
+
+2. **Pre-Release Tag auf Feature Branch**
+   ```bash
+   git tag -a v0.5.2-beta.1 -m "Pre-release beta testing"
+   GIT_SSH_COMMAND='ssh -F /dev/null' git push origin pre-release/v0.5.2-climate-cover
+   GIT_SSH_COMMAND='ssh -F /dev/null' git push origin v0.5.2-beta.1
+   ```
+
+3. **GitHub Pre-Release erstellen**
+   ```bash
+   gh release create v0.5.2-beta.1 --title "v0.5.2-beta.1" --prerelease --notes "..."
+   ```
+
+### Final Release Workflow (Main Branch)
+
+**Für finale Releases (Production):**
+
+1. **Feature Branch in Main mergen**
+   ```bash
+   git checkout main
+   git merge pre-release/v0.5.2-climate-cover --no-ff -m "Merge v0.5.2 release"
+   ```
+
+2. **Release Tag auf Main**
+   ```bash
+   git tag -a v0.5.2 -m "Release v0.5.2"
+   GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main
+   GIT_SSH_COMMAND='ssh -F /dev/null' git push origin v0.5.2
+   ```
+
+3. **GitHub Release erstellen (Latest)**
+   ```bash
+   gh release create v0.5.2 --title "v0.5.2" --notes-file RELEASE_NOTES_v0.5.2.md --latest
+   ```
+
+**WICHTIG:** 
+- Pre-Releases → Feature Branch
+- Finale Releases → Main Branch (nach Merge)
+- HACS installiert vom Main Branch (default)
+- Immer `GIT_SSH_COMMAND='ssh -F /dev/null'` wegen defekter `~/.ssh/config`
+
+---
+
 ## Phase 0: Pre-Release Verification (Durchführen vor jedem Release)
 
 ### Step 0.0: Optional Pre-Release Testing auf Remote HA
 
-**EMPFOHLEN:** Features vor Release auf dem Remote Home Assistant über Tailscale testen.
+**EMPFOHLEN:** Features vor Release auf dem Remote Home Assistant testen.
 
 ```bash
-# SSH-Verbindung für Pre-Release Tests (mit SSH-Key, passwortlos)
-# Host: 100.97.159.88 (via Tailscale VPN)
-# User: phil
-# Auth: SSH-Key (~/.ssh/id_rsa)
+# SSH-Verbindung für Pre-Release Tests
+# PRIVATE CONFIG: See DEPLOYMENT_PRIVATE.md (not in repository)
+# - SSH host/IP address
+# - SSH username
+# - SSH key path
 
-# Deployment-Beispiel (passwortlos mit SSH-Key):
+# Deployment-Beispiel (mit SSH-Key Authentifizierung):
 
 # Temp-Deployment für Testing
-ssh -F /dev/null -o StrictHostKeyChecking=no phil@100.97.159.88 \
+ssh -F /dev/null -o StrictHostKeyChecking=no YOUR_USER@YOUR_HA_IP \
   "mkdir -p /tmp/luxor_test"
 
 rsync -avz --exclude="__pycache__" \
   -e "ssh -F /dev/null -o StrictHostKeyChecking=no" \
   custom_components/luxor_living/ \
-  phil@100.97.159.88:/tmp/luxor_test/
+  YOUR_USER@YOUR_HA_IP:/tmp/luxor_test/
   
-ssh -F /dev/null -o StrictHostKeyChecking=no phil@100.97.159.88 \
+ssh -F /dev/null -o StrictHostKeyChecking=no YOUR_USER@YOUR_HA_IP \
   "sudo cp -r /tmp/luxor_test/* /config/custom_components/luxor_living/ && \
    rm -rf /tmp/luxor_test"
 
-# HA Neustart manuell über http://100.97.159.88:8123
+# HA Neustart manuell über http://YOUR_HA_IP:8123
 # Einstellungen → System → Neustart
 ```
 
