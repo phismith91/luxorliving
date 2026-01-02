@@ -79,3 +79,8 @@ AGENTS.md
 DEPLOYMENT_PRIVATE.md
 scripts/deploy_to_ha.sh
 .ssh_config.local
+
+# Local development environment (personal dev setup)
+.devcontainer/
+Dockerfile.runner
+setup-custom-runner.sh
