@@ -1,195 +1,215 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  release:
-    types: [published]
-  workflow_dispatch:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+    release:
+        types: [published]
+    workflow_dispatch:
 
 jobs:
-  test:
-    name: Run Tests
-    runs-on: [self-hosted, docker]
-    strategy:
-      matrix:
-        python-version: ["3.12"]
+    test:
+        name: Run Tests
+        runs-on: [self-hosted, docker]
+        strategy:
+            matrix:
+                python-version: ["3.12"]
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-    - name: Check Python version
-      run: python3 --version
+            - name: Check Python version
+              run: python3 --version
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+            - name: Cache pip dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pip-
 
-    - name: Install dependencies
-      run: |
-        python3 --version
-        curl https://bootstrap.pypa.io/get-pip.py | python3
-        export PATH=$HOME/.local/bin:$PATH
-        pip install --user -r requirements_dev.txt
-        pip install --user -r requirements_style.txt
+            - name: Setup Python environment
+              run: |
+                  # Use virtualenv instead of venv (no system package needed)
+                  python3 -m pip install --user virtualenv
+                  python3 -m virtualenv $HOME/venv
+                  source $HOME/venv/bin/activate
+                  pip install --upgrade pip
 
-    - name: Run tests with coverage
-      run: |
-        export PATH=$HOME/.local/bin:$PATH
-        python3 -m pytest tests/ --cov=custom_components.luxor_living --cov-report=xml --cov-report=term-missing
+            - name: Install dependencies
+              run: |
+                  source $HOME/venv/bin/activate
+                  pip install -r requirements_dev.txt
+                  pip install -r requirements_style.txt
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+            - name: Run tests with coverage
+              run: |
+                  source $HOME/venv/bin/activate
+                  python3 -m pytest tests/ --cov=custom_components.luxor_living --cov-report=xml --cov-report=term-missing
 
-  code-quality:
-    name: Code Quality Checks
-    runs-on: [self-hosted, docker]
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v4
+              with:
+                  file: ./coverage.xml
+                  flags: unittests
+                  name: codecov-umbrella
+                  fail_ci_if_error: false
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    code-quality:
+        name: Code Quality Checks
+        runs-on: [self-hosted, docker]
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-style-${{ hashFiles('**/requirements_style.txt') }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-    - name: Install style dependencies
-      run: |
-        curl https://bootstrap.pypa.io/get-pip.py | python3
-        export PATH=$HOME/.local/bin:$PATH
-        pip install --user -r requirements_style.txt
+            - name: Cache pip dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-style-${{ hashFiles('**/requirements_style.txt') }}
 
-    - name: Check code formatting with Black
-      run: |
-        export PATH=$HOME/.local/bin:$PATH
-        python3 -m black --check --diff custom_components/ tests/
+            - name: Setup Python environment
+              run: |
+                  # Use virtualenv instead of venv (no system package needed)
+                  python3 -m pip install --user virtualenv
+                  python3 -m virtualenv $HOME/venv
+                  source $HOME/venv/bin/activate
+                  pip install --upgrade pip
 
-    - name: Check import sorting with isort
-      run: |
-        export PATH=$HOME/.local/bin:$PATH
-        python3 -m isort --check-only --diff custom_components/ tests/
+            - name: Install style dependencies
+              run: |
+                  source $HOME/venv/bin/activate
+                  pip install -r requirements_style.txt
 
-    - name: Lint with flake8
-      run: |
-        export PATH=$HOME/.local/bin:$PATH
-        python3 -m flake8 custom_components/ tests/
+            - name: Check code formatting with Black
+              run: |
+                  source $HOME/venv/bin/activate
+                  python3 -m black --check --diff custom_components/ tests/
 
-    - name: Type check with mypy
-      run: |
-        export PATH=$HOME/.local/bin:$PATH
-        python3 -m mypy custom_components/
+            - name: Check import sorting with isort
+              run: |
+                  source $HOME/venv/bin/activate
+                  python3 -m isort --check-only --diff custom_components/ tests/
 
-    - name: Check for security issues
-      run: |
-        export PATH=$HOME/.local/bin:$PATH
-        pip install --user bandit
-        python3 -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
-      continue-on-error: true
+            - name: Lint with flake8
+              run: |
+                  source $HOME/venv/bin/activate
+                  python3 -m flake8 custom_components/ tests/
 
-    - name: Upload security scan results
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: bandit-report.json
-      if: always()
+            - name: Type check with mypy
+              run: |
+                  source $HOME/venv/bin/activate
+                  python3 -m mypy custom_components/
 
-  validate-hacs:
-    name: Validate HACS Integration
-    runs-on: [self-hosted, docker]
+            - name: Check for security issues
+              run: |
+                  source $HOME/venv/bin/activate
+                  pip install bandit
+                  python3 -m bandit -r custom_components/ -f json -o bandit-report.json || echo '{"runs": []}' > bandit-report.json
+              continue-on-error: true
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+            - name: Upload security scan results
+              uses: github/codeql-action/upload-sarif@v3
+              with:
+                  sarif_file: bandit-report.json
+              if: always()
 
-    - name: Validate HACS manifest
-      run: |
-        python3 -c "
-        import json
-        import os
-        import sys
-        
-        # Load manifest
-        with open('custom_components/luxor_living/manifest.json', 'r') as f:
-            manifest = json.load(f)
-        
-        # Basic validation
-        required_fields = ['domain', 'name', 'version', 'codeowners', 'requirements', 'iot_class']
-        for field in required_fields:
-            if field not in manifest:
-                print(f'ERROR: Missing required field: {field}')
-                sys.exit(1)
-        
-        # Check hacs.json
-        with open('hacs.json', 'r') as f:
-            hacs = json.load(f)
-        
-        if hacs.get('name') != manifest['name']:
-            print('ERROR: hacs.json name does not match manifest name')
-            sys.exit(1)
-        
-        print('HACS validation passed')
-        "
+    validate-hacs:
+        name: Validate HACS Integration
+        runs-on: [self-hosted, docker]
 
-  performance-test:
-    name: Performance Benchmark
-    runs-on: [self-hosted, docker]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+            - name: Validate HACS manifest
+              run: |
+                  python3 -c "
+                  import json
+                  import os
+                  import sys
 
-    - name: Install dependencies
-      run: |
-        curl https://bootstrap.pypa.io/get-pip.py | python3
-        export PATH=$HOME/.local/bin:$PATH
-        pip install --user -r requirements_dev.txt
+                  # Load manifest
+                  with open('custom_components/luxor_living/manifest.json', 'r') as f:
+                      manifest = json.load(f)
 
-    - name: Run performance benchmark
-      run: |
-        export PATH=$HOME/.local/bin:$PATH
-        python3 -m custom_components.luxor_living.benchmark docs/Familie\ Schmidt_0.9.lxp
+                  # Basic validation
+                  required_fields = ['domain', 'name', 'version', 'codeowners', 'requirements', 'iot_class']
+                  for field in required_fields:
+                      if field not in manifest:
+                          print(f'ERROR: Missing required field: {field}')
+                          sys.exit(1)
 
-    - name: Store benchmark results
-      uses: actions/upload-artifact@v4
-      with:
-        name: benchmark-results
-        path: benchmark_results.json
+                  # Check hacs.json
+                  with open('hacs.json', 'r') as f:
+                      hacs = json.load(f)
 
-  release:
-    name: Create Release
-    runs-on: [self-hosted, docker]
-    if: github.event_name == 'release' && github.event.action == 'published'
-    needs: [test, code-quality, validate-hacs]
+                  if hacs.get('name') != manifest['name']:
+                      print('ERROR: hacs.json name does not match manifest name')
+                      sys.exit(1)
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+                  print('HACS validation passed')
+                  "
 
-    - name: Create ZIP for HACS
-      run: |
-        cd custom_components/luxor_living
-        zip -r ../../luxor_living.zip .
+    performance-test:
+        name: Performance Benchmark
+        runs-on: [self-hosted, docker]
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./luxor_living.zip
-        asset_name: luxor_living.zip
-        asset_content_type: application/zip
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Python environment
+              run: |
+                  # Use virtualenv instead of venv (no system package needed)
+                  python3 -m pip install --user virtualenv
+                  python3 -m virtualenv $HOME/venv
+                  source $HOME/venv/bin/activate
+                  pip install --upgrade pip
+
+            - name: Install dependencies
+              run: |
+                  source $HOME/venv/bin/activate
+                  pip install -r requirements_dev.txt
+
+            - name: Run performance benchmark
+              run: |
+                  source $HOME/venv/bin/activate
+                  python3 -m custom_components.luxor_living.benchmark docs/Familie\ Schmidt_0.9.lxp
+
+            - name: Store benchmark results
+              uses: actions/upload-artifact@v4
+              with:
+                  name: benchmark-results
+                  path: benchmark_results.json
+
+    release:
+        name: Create Release
+        runs-on: [self-hosted, docker]
+        if: github.event_name == 'release' && github.event.action == 'published'
+        needs: [test, code-quality, validate-hacs]
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Create ZIP for HACS
+              run: |
+                  cd custom_components/luxor_living
+                  zip -r ../../luxor_living.zip .
+
+            - name: Upload release assets
+              uses: actions/upload-release-asset@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ github.event.release.upload_url }}
+                  asset_path: ./luxor_living.zip
+                  asset_name: luxor_living.zip
+                  asset_content_type: application/zip

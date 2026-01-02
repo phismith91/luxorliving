@@ -10,7 +10,7 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 - **Automatic entity discovery** – Upload LXP file, entities are created automatically
 - **KNX/IP native** – Tunneling and routing modes supported
-- **Real-time updates** – Instant state changes from physical switches
+- **Local polling updates** – State refresh via BAOS REST (configurable interval)
 - **Config Flow UI** – Setup in <2 minutes via HA interface
 - **HACS compatible** – One-click installation
 - **🚀 Performance optimized** – Parallel entity creation, async operations
@@ -21,8 +21,7 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 - **🏥 Health monitoring** – System health endpoint for diagnostics
 - **⚡ Rate limiting** – Prevents "light shows" by blocking rapid on/off cycles (5+ in 1s)
 
-**Working platforms:** Light, Switch, Binary Sensor, Sensor  
-**In development:** Climate, Cover
+**Working platforms:** Light, Switch, Cover, Climate, Binary Sensor, Sensor
 
 ## 🚀 v0.5.0 Performance & Resilience Features
 
@@ -55,7 +54,7 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 - Theben LUXORliving IP1 Gateway (BAOS 777)
 - LXP project file (export from Theben LUXORPlug software)
-- Home Assistant ≥ 2024.12.0
+- Home Assistant ≥ 2025.12.0
 
 ### 2. Installation
 

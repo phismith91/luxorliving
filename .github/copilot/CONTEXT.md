@@ -278,16 +278,31 @@ luxorliving/
 
 ### Decision Hierarchy
 
-1. **agent_architect** - Final authority
-2. **agent_luxor_expert** - Domain authority
-3. **agent_knx_protocol** - KNX specifics
-4. **Functional agents** - Domain implementations
+1. **agent_architect** - Final authority (L1)
+2. **agent_luxor_expert** - Domain authority (L2)
+3. **agent_knx_protocol** - KNX specifics (L2)
+4. **Functional agents** - Domain implementations (L2/L3)
+
+### Context Budgets (Context Engineering)
+
+| Agent               | Level | Budget     | Primary Sources                       | Monitor |
+| ------------------- | ----- | ---------- | ------------------------------------- | ------- |
+| **Architect**       | L1    | 50k tokens | CONTEXT.md, ARCHITECTURE_DECISION.md  | <80%    |
+| **KNX Protocol**    | L2    | 80k tokens | KNX_IMPLEMENTATION.md, lxp_parser.py  | <80%    |
+| **Testing**         | L2    | 30k tokens | tests/, TESTS.md                      | <80%    |
+| **Release Manager** | L2    | 35k tokens | RELEASE_OPERATIONS.md, deploy scripts | <80%    |
+| **Documentation**   | L2    | 40k tokens | docs/                                 | <80%    |
+| **HACS Compliance** | L2    | 25k tokens | hacs.json, manifest.json              | <80%    |
+| **Code Quality**    | L3    | 20k tokens | requirements_style.txt                | <80%    |
+
+**Skills Reference**: [skills/](skills/) - Context Engineering Patterns
 
 ### All Agents Must:
 
 1. ✅ Respect production environment (Remote SSH)
 2. ✅ Use `ssh -F /dev/null` (lokale config defekt)
 3. ✅ Follow architecture principles
+4. ✅ Monitor context budget (<80% efficiency target)
 4. ✅ Maintain quality (type hints, tests, reviews)
 5. ✅ Track bugs via agent_defect_tracker
 6. ✅ **Read CONTEXT.md first** (Single Source of Truth)

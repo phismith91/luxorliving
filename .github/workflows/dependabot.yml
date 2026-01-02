@@ -1,53 +1,53 @@
 name: Dependabot PR Validation
 
 on:
-  pull_request:
-    branches: [ main ]
+    pull_request:
+        branches: [main]
 
 jobs:
-  dependabot-validation:
-    name: Validate Dependabot PRs
-    runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    dependabot-validation:
+        name: Validate Dependabot PRs
+        runs-on: ubuntu-latest
+        if: github.actor == 'dependabot[bot]'
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.12"
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+            - name: Cache pip dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pip-
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements_dev.txt
-        pip install -r requirements_style.txt
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements_dev.txt
+                  pip install -r requirements_style.txt
 
-    - name: Run tests
-      run: python -m pytest tests/ -x --tb=short
+            - name: Run tests
+              run: python -m pytest tests/ -x --tb=short
 
-    - name: Check code formatting
-      run: python -m black --check custom_components/ tests/
+            - name: Check code formatting
+              run: python -m black --check custom_components/ tests/
 
-    - name: Check import sorting
-      run: python -m isort --check-only custom_components/ tests/
+            - name: Check import sorting
+              run: python -m isort --check-only custom_components/ tests/
 
-    - name: Auto-merge minor/patch updates
-      if: contains(github.event.pull_request.title, 'patch') || contains(github.event.pull_request.title, 'minor')
-      uses: peter-evans/enable-pull-request-automerge@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        pull-request-number: ${{ github.event.pull_request.number }}
-        merge-method: squash
+            - name: Auto-merge minor/patch updates
+              if: contains(github.event.pull_request.title, 'patch') || contains(github.event.pull_request.title, 'minor')
+              uses: peter-evans/enable-pull-request-automerge@v3
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  pull-request-number: ${{ github.event.pull_request.number }}
+                  merge-method: squash

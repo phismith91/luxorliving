@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """Test script for LXP parser."""
+import asyncio
 import sys
 from pathlib import Path
 
 # Add custom_components to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from custom_components.luxor_living.lxp_parser import LXPParser
+from custom_components.luxor_living.lxp_parser import LXPCache
 
 
-def main():
+async def main():
     """Test the LXP parser."""
-    import sys
-
     # Check if file provided as argument
     if len(sys.argv) > 1:
         lxp_file = Path(sys.argv[1])
@@ -32,8 +31,8 @@ def main():
     print(f"📄 Parsing: {lxp_file.name}")
     print("=" * 60)
 
-    parser = LXPParser(lxp_file)
-    project = parser.parse()
+    cache = LXPCache()
+    project = await cache.get_or_parse(lxp_file, include_unaffected=True)
 
     print(f"\n🏠 Project: {project.name}")
     print(f"🌐 Gateway: {project.gateway_address}:{project.gateway_port}")
@@ -75,4 +74,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
