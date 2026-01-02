@@ -6,11 +6,11 @@ Angepasste Context Engineering Skills basierend auf [Agent Skills for Context En
 
 ### Foundational Skills
 
-| Skill | Beschreibung | Wann aktivieren |
-|-------|--------------|-----------------|
+| Skill                                           | Beschreibung                                                  | Wann aktivieren                            |
+| ----------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------ |
 | [context-fundamentals](context-fundamentals.md) | Context Management, Progressive Disclosure, Attention Budgets | Agent-Koordination, LXP Parser Optimierung |
-| [multi-agent-patterns](multi-agent-patterns.md) | Coordination der 7 Copilot Agents, Hierarchies, Handoffs | Feature Development, Agent Conflicts |
-| [evaluation](evaluation.md) | Quality Gates, Testing Metrics, Agent Performance | Pre-Release, CI/CD, Performance Monitoring |
+| [multi-agent-patterns](multi-agent-patterns.md) | Coordination der 7 Copilot Agents, Hierarchies, Handoffs      | Feature Development, Agent Conflicts       |
+| [evaluation](evaluation.md)                     | Quality Gates, Testing Metrics, Agent Performance             | Pre-Release, CI/CD, Performance Monitoring |
 
 ## Nutzung in VS Code
 
@@ -38,15 +38,15 @@ GitHub Copilot lädt Skills automatisch wenn Keywords erwähnt werden:
 
 ### Context Budgets (aus context-fundamentals.md)
 
-| Agent | Budget | Primäre Context Sources |
-|-------|--------|------------------------|
-| Architect | 50k | CONTEXT.md, ARCHITECTURE_DECISION.md |
-| KNX Protocol | 80k | KNX_IMPLEMENTATION.md, lxp_parser.py |
-| Testing | 30k | tests/, TESTS.md |
-| Documentation | 40k | docs/ |
-| Deployment | 35k | copilot-instructions.md, deploy scripts |
-| Security | 25k | SECURITY.md |
-| Code Style | 20k | requirements_style.txt |
+| Agent         | Budget | Primäre Context Sources                 |
+| ------------- | ------ | --------------------------------------- |
+| Architect     | 50k    | CONTEXT.md, ARCHITECTURE_DECISION.md    |
+| KNX Protocol  | 80k    | KNX_IMPLEMENTATION.md, lxp_parser.py    |
+| Testing       | 30k    | tests/, TESTS.md                        |
+| Documentation | 40k    | docs/                                   |
+| Deployment    | 35k    | copilot-instructions.md, deploy scripts |
+| Security      | 25k    | SECURITY.md                             |
+| Code Style    | 20k    | requirements_style.txt                  |
 
 ### Agent Hierarchie (aus multi-agent-patterns.md)
 
@@ -108,11 +108,11 @@ AGENTS.md (Universal Setup/Testing)
 
 ## Skill Trigger Keywords
 
-| Skill | Trigger Keywords |
-|-------|------------------|
+| Skill                | Trigger Keywords                                                                |
+| -------------------- | ------------------------------------------------------------------------------- |
 | context-fundamentals | "context budget", "progressive disclosure", "agent context", "optimize context" |
-| multi-agent-patterns | "agent handoff", "agent coordination", "decision hierarchy", "parallel agents" |
-| evaluation | "pre-release", "quality gate", "test coverage", "agent performance" |
+| multi-agent-patterns | "agent handoff", "agent coordination", "decision hierarchy", "parallel agents"  |
+| evaluation           | "pre-release", "quality gate", "test coverage", "agent performance"             |
 
 ## Best Practices
 

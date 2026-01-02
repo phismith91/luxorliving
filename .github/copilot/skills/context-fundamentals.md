@@ -30,15 +30,15 @@ description: Context Engineering Fundamentals für GitHub Copilot - Management v
 
 ### Agent Context Budgets
 
-| Agent | Role | Context Budget | Priority |
-|-------|------|----------------|----------|
-| **Architect** | Architektur-Entscheidungen | 50k tokens | CONTEXT.md, Architecture Docs |
-| **KNX Protocol** | BAOS/KNX Technical | 80k tokens | KNX_IMPLEMENTATION.md, LXP Parser |
-| **Testing** | Test-Suite Management | 30k tokens | test_*.py, TESTS.md |
-| **Documentation** | Docs + Changelog | 40k tokens | docs/, CHANGELOG.md |
-| **Deployment** | Release + SSH Deploy | 35k tokens | deploy scripts, copilot-instructions.md |
-| **Security** | Credentials + SSH Keys | 25k tokens | SECURITY.md, SSH procedures |
-| **Code Style** | Python Best Practices | 20k tokens | requirements_*.txt, PEP 8 |
+| Agent             | Role                       | Context Budget | Priority                                |
+| ----------------- | -------------------------- | -------------- | --------------------------------------- |
+| **Architect**     | Architektur-Entscheidungen | 50k tokens     | CONTEXT.md, Architecture Docs           |
+| **KNX Protocol**  | BAOS/KNX Technical         | 80k tokens     | KNX_IMPLEMENTATION.md, LXP Parser       |
+| **Testing**       | Test-Suite Management      | 30k tokens     | test_*.py, TESTS.md                     |
+| **Documentation** | Docs + Changelog           | 40k tokens     | docs/, CHANGELOG.md                     |
+| **Deployment**    | Release + SSH Deploy       | 35k tokens     | deploy scripts, copilot-instructions.md |
+| **Security**      | Credentials + SSH Keys     | 25k tokens     | SECURITY.md, SSH procedures             |
+| **Code Style**    | Python Best Practices      | 20k tokens     | requirements_*.txt, PEP 8               |
 
 **Total Budget**: ~280k tokens across all agents
 

@@ -285,15 +285,15 @@ luxorliving/
 
 ### Context Budgets (Context Engineering)
 
-| Agent | Level | Budget | Primary Sources | Monitor |
-|-------|-------|--------|-----------------|---------|
-| **Architect** | L1 | 50k tokens | CONTEXT.md, ARCHITECTURE_DECISION.md | <80% |
-| **KNX Protocol** | L2 | 80k tokens | KNX_IMPLEMENTATION.md, lxp_parser.py | <80% |
-| **Testing** | L2 | 30k tokens | tests/, TESTS.md | <80% |
-| **Release Manager** | L2 | 35k tokens | RELEASE_OPERATIONS.md, deploy scripts | <80% |
-| **Documentation** | L2 | 40k tokens | docs/ | <80% |
-| **HACS Compliance** | L2 | 25k tokens | hacs.json, manifest.json | <80% |
-| **Code Quality** | L3 | 20k tokens | requirements_style.txt | <80% |
+| Agent               | Level | Budget     | Primary Sources                       | Monitor |
+| ------------------- | ----- | ---------- | ------------------------------------- | ------- |
+| **Architect**       | L1    | 50k tokens | CONTEXT.md, ARCHITECTURE_DECISION.md  | <80%    |
+| **KNX Protocol**    | L2    | 80k tokens | KNX_IMPLEMENTATION.md, lxp_parser.py  | <80%    |
+| **Testing**         | L2    | 30k tokens | tests/, TESTS.md                      | <80%    |
+| **Release Manager** | L2    | 35k tokens | RELEASE_OPERATIONS.md, deploy scripts | <80%    |
+| **Documentation**   | L2    | 40k tokens | docs/                                 | <80%    |
+| **HACS Compliance** | L2    | 25k tokens | hacs.json, manifest.json              | <80%    |
+| **Code Quality**    | L3    | 20k tokens | requirements_style.txt                | <80%    |
 
 **Skills Reference**: [skills/](skills/) - Context Engineering Patterns
 

@@ -51,15 +51,15 @@ description: Multi-Agent Coordination Patterns für 7 spezialisierte GitHub Copi
 
 ### Agent Roles & Responsibilities
 
-| Agent | Level | Primary Responsibility | Context Sources | Authority |
-|-------|-------|----------------------|-----------------|-----------|
-| **Architect** | L1 | Architecture Decisions, Roadmap | CONTEXT.md, ARCHITECTURE_DECISION.md | FINAL |
-| **KNX Protocol** | L2 | BAOS REST API, LXP Parsing, KNX Implementation | KNX_IMPLEMENTATION.md, lxp_parser.py, rest_client.py | Technical |
-| **Testing** | L2 | Test Suite, Coverage, pytest | tests/, TESTS.md, pytest.ini | Quality |
-| **Documentation** | L2 | docs/, CHANGELOG.md, README.md | docs/** | Content |
-| **Deployment** | L2 | SSH Deploy, Release Process | copilot-instructions.md, scripts/deploy_release.sh | Operational |
-| **Security** | L2 | SSH Keys, Credentials, SECURITY.md | SECURITY.md, SSH config | Security |
-| **Code Style** | L3 | black, isort, mypy, PEP 8 | requirements_style.txt, pyproject.toml | Formatting |
+| Agent             | Level | Primary Responsibility                         | Context Sources                                      | Authority   |
+| ----------------- | ----- | ---------------------------------------------- | ---------------------------------------------------- | ----------- |
+| **Architect**     | L1    | Architecture Decisions, Roadmap                | CONTEXT.md, ARCHITECTURE_DECISION.md                 | FINAL       |
+| **KNX Protocol**  | L2    | BAOS REST API, LXP Parsing, KNX Implementation | KNX_IMPLEMENTATION.md, lxp_parser.py, rest_client.py | Technical   |
+| **Testing**       | L2    | Test Suite, Coverage, pytest                   | tests/, TESTS.md, pytest.ini                         | Quality     |
+| **Documentation** | L2    | docs/, CHANGELOG.md, README.md                 | docs/**                                              | Content     |
+| **Deployment**    | L2    | SSH Deploy, Release Process                    | copilot-instructions.md, scripts/deploy_release.sh   | Operational |
+| **Security**      | L2    | SSH Keys, Credentials, SECURITY.md             | SECURITY.md, SSH config                              | Security    |
+| **Code Style**    | L3    | black, isort, mypy, PEP 8                      | requirements_style.txt, pyproject.toml               | Formatting  |
 
 ## Multi-Agent Coordination Patterns
 

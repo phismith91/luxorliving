@@ -57,13 +57,13 @@ ruff check custom_components/luxor_living/
 ```markdown
 ## Agent Evaluation Rubric
 
-| Metric | Measurement | Target | Current |
-|--------|-------------|--------|---------|
-| **Context Efficiency** | Token Usage / Task | <50k tokens | ? |
-| **Decision Quality** | Conflicts / 10 Decisions | <1 | ? |
-| **Handoff Clarity** | Undefined Context / Handoff | 0 | ? |
-| **Scope Isolation** | File Overlaps / Agent Pair | 0 | ? |
-| **Authority Respect** | L3 overrides L1 / Month | 0 | ? |
+| Metric                 | Measurement                 | Target      | Current |
+| ---------------------- | --------------------------- | ----------- | ------- |
+| **Context Efficiency** | Token Usage / Task          | <50k tokens | ?       |
+| **Decision Quality**   | Conflicts / 10 Decisions    | <1          | ?       |
+| **Handoff Clarity**    | Undefined Context / Handoff | 0           | ?       |
+| **Scope Isolation**    | File Overlaps / Agent Pair  | 0           | ?       |
+| **Authority Respect**  | L3 overrides L1 / Month     | 0           | ?       |
 
 ### Measurement Script
 
