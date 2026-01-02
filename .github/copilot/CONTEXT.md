@@ -1,8 +1,9 @@
 # LUXORliving Integration - Project Context
 
-**Last Updated:** 2025-12-26  
-**Version:** v0.3.3 → v0.3.4  
-**Status:** Active Development (Private Repository)
+**Last Updated:** 2026-01-02  
+**Version:** v0.5.2 (HACS-ready)  
+**Status:** Active Development (Private Repository)  
+**Subscription:** GitHub Copilot Individual ($10/month)
 
 ---
 
@@ -292,6 +293,41 @@ luxorliving/
 | **Testing**         | L2    | 30k tokens | tests/, TESTS.md                      | <80%    |
 | **Release Manager** | L2    | 35k tokens | RELEASE_OPERATIONS.md, deploy scripts | <80%    |
 | **Documentation**   | L2    | 40k tokens | docs/                                 | <80%    |
+| **HACS Compliance** | L2    | 25k tokens | hacs.json, manifest.json              | <80%    |
+| **Code Quality**    | L3    | 20k tokens | requirements_style.txt                | <80%    |
+
+**Skills Reference**: [skills/](skills/) - Context Engineering Patterns
+
+### AI Model Selection (Individual Plan)
+
+**Subscription:** GitHub Copilot Individual ($10/month) - Limited Premium requests
+
+**Model-Use Guidelines:**
+
+| Task Type | Recommended Model | Reason |
+|-----------|------------------|--------|
+| **Quick edits, git ops** | GPT-4o | Fast, cost-effective, 128k context |
+| **Code reviews** | GPT-4o | Good balance speed/quality |
+| **Complex refactoring** | Claude 3.5 Sonnet | Best code quality, 200k context |
+| **Architecture decisions** | Claude 3.5 Sonnet | Deep reasoning, long context |
+| **LXP/KNX analysis** | Claude 3.5 Sonnet | Handles large files well |
+| **Simple questions** | GPT-4o | Saves Premium quota |
+| **Documentation writing** | GPT-4o | Fast, coherent |
+| **Debugging/reasoning** | o1-preview/mini | Deep analysis (use sparingly!) |
+
+**Premium Quota Management:**
+- ✅ Use GPT-4o as default for most tasks
+- ✅ Switch to Claude 3.5 Sonnet for complex code/architecture work
+- ✅ Reserve o1-models for truly complex debugging
+- ❌ Don't waste Premium on simple file edits
+- ❌ Don't use Claude for basic git operations
+
+**Cost Efficiency Tips:**
+1. Use targeted searches (grep, semantic_search) before loading full files
+2. Read only needed line ranges, not entire files
+3. Batch independent operations in parallel
+4. Clear conversation when switching contexts (new task)
+5. Monitor token usage (stays visible in responses)
 | **HACS Compliance** | L2    | 25k tokens | hacs.json, manifest.json              | <80%    |
 | **Code Quality**    | L3    | 20k tokens | requirements_style.txt                | <80%    |
 
