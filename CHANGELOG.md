@@ -61,10 +61,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-## [0.5.4.1] - 2026-01-03
+## [0.5.4.2] - 2026-01-03
 
 ### ✅ Release Notes
-- Retry of v0.5.4 release after fixing GitHub Actions permissions
+- Final release attempt after resolving GitHub Actions permissions and immutable release issues
 - Automated CI/CD pipeline with GitHub Release creation
 - ZIP archive for HACS/manual installation
 - All changes from v0.5.4 preserved
