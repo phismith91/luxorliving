@@ -61,9 +61,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+## [0.5.4] - 2026-01-03
+
+### ✅ Release Notes
+- Promote HTTPS authentication enforcement verified in pre-release 0.5.4-beta.1.
+- CI pragmatism: skip `enable_socket` (REST client socket) tests in GitHub Actions; full suite of 209 tests remains required locally.
+- Packaging: manifest bumped to 0.5.4 for final release.
+
+### 🧪 Testing
+- Local: `python -m pytest tests/` → 209 passed
+- CI/CD: `python -m pytest tests/ -m "not enable_socket"` → 195 passed (14 skipped socket tests)
+
 ## [0.5.4-beta.1] - 2026-01-03
 
-### 🔒 HTTPS Enforcement Pre-Release
+### 🔒 HTTPS Enforcement Pre-Release (superseded by 0.5.4)
 
 **Goal:** Validate HTTPS authentication enforcement for outbound requests.
 
