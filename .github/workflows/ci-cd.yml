@@ -42,7 +42,7 @@ jobs:
 
             - name: Run tests with coverage
               run: |
-                  python -m pytest tests/ -v --tb=short --cov=custom_components.luxor_living --cov-report=term --cov-report=xml
+                  python -m pytest tests/ --cov-report=xml
 
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@v4
