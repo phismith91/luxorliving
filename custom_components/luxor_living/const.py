@@ -18,6 +18,8 @@ CONF_DISCOVERY_TIMEOUT = "discovery_timeout"
 DEFAULT_PORT = 3671  # KNX/IP default port
 DEFAULT_HTTP_PORT = 443  # REST API HTTPS port (secure by default)
 DEFAULT_CONNECTION_TYPE = "tunneling"
+# Default credentials are used as UI form defaults only (common BAOS factory defaults)
+# Actual credentials are entered by users and stored in encrypted config entry
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin"
 DEFAULT_SCAN_INTERVAL = 30  # seconds
