@@ -20,6 +20,18 @@ from custom_components.luxor_living.const import (
 )
 
 
+@pytest.fixture(scope="session", autouse=True)
+def socket_enabled():
+    """Enable socket usage for all tests."""
+    try:
+        from pytest_socket import disable_socket, enable_socket
+        enable_socket()
+        yield
+    except ImportError:
+        # pytest-socket not installed
+        yield
+
+
 @pytest.fixture
 def mock_config_entry():
     """Create a mock config entry."""
