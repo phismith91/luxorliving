@@ -1,15 +1,14 @@
 """Pytest fixtures for LUXORliving tests."""
 
+# Disable pytest-socket immediately to allow aiohttp mock servers
+# Must be done before any test modules are imported
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-
-# Disable pytest-socket immediately to allow aiohttp mock servers
-# Must be done before any test modules are imported
-import sys
 
 if "pytest_socket" in sys.modules:
     import pytest_socket
