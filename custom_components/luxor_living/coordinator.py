@@ -9,7 +9,6 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,6 +47,13 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from the KNX gateway.
 
+        This method is required to be async by the DataUpdateCoordinator base class,
+        even though it currently doesn't perform any async operations.
+
+        Currently, state updates come from KNX telegrams via listeners in the gateway,
+        not from polling. This method serves as a placeholder for future polling
+        implementation when batch read requests are supported.
+
         Returns:
             Dictionary containing current state of all entities
 
@@ -58,7 +64,7 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Fetch current state of all known group addresses
             state_updates: dict[str, Any] = {}
 
-            # For now, coordinator just returns an empty cache
+            # For now, coordinator just returns the existing cache
             # Real state updates come from KNX telegrams via listeners
             # The coordinator is a placeholder for future polling implementation
             # when Home Assistant adds group read request support to XKNX
