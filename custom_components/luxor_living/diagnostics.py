@@ -20,7 +20,12 @@ from .const import (
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> dict[str, Any]:
-    """Return diagnostics for a config entry."""
+    """Return diagnostics for a config entry.
+    
+    Note: This function is async to comply with Home Assistant's diagnostics API,
+    even though it only performs synchronous data aggregation. The async signature
+    is required by the framework and allows for future async operations if needed.
+    """
     try:
         data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
     except (KeyError, AttributeError):
