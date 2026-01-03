@@ -7,6 +7,16 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+# Disable pytest-socket immediately to allow aiohttp mock servers
+# Must be done before any test modules are imported
+import sys
+
+if "pytest_socket" in sys.modules:
+    import pytest_socket
+
+    # Prevent pytest-socket from blocking sockets
+    pytest_socket.disable_socket_is_enabled = False
+
 from custom_components.luxor_living.const import (
     CONF_CONNECTION_TYPE,
     CONF_LOG_LEVEL,
@@ -18,33 +28,6 @@ from custom_components.luxor_living.const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
-
-
-def pytest_configure(config):
-    """Disable pytest-socket to allow mock servers in tests.
-
-    Patches pytest_socket.disable_socket to prevent socket blocking.
-    This must happen before any test modules are imported.
-    """
-    try:
-        import socket
-        import pytest_socket
-
-        # Get the original socket class before pytest_socket patches it
-        original_socket = socket.socket
-
-        # Replace pytest_socket's disable_socket function to be a no-op
-        def no_op_disable(*args, **kwargs):
-            """No-op disable function."""
-            pass
-
-        pytest_socket.disable_socket = no_op_disable
-        pytest_socket.disable_socket_is_enabled = False
-
-        # Restore the original socket class
-        socket.socket = original_socket
-    except (ImportError, AttributeError):
-        pass
 
 
 @pytest.fixture
