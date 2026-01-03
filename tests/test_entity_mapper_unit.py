@@ -72,10 +72,10 @@ def test_entity_mapper_with_empty_project():
     with patch.object(EntityMapper, "map_all", return_value=[]):
         project = MagicMock(spec=LXPProject)
         project.devices = []
-        
+
         mapper = EntityMapper(project)
         mapper.entities = []
-        
+
         assert mapper.entities == []
         assert mapper.get_entities_by_platform(Platform.LIGHT) == []
 
@@ -84,10 +84,10 @@ def test_get_entities_by_platform():
     """Test getting entities filtered by platform."""
     project = MagicMock(spec=LXPProject)
     project.devices = []
-    
+
     with patch.object(EntityMapper, "map_all", return_value=[]):
         mapper = EntityMapper(project)
-        
+
         # Manually set entities
         mapper.entities = [
             MappedEntity(
@@ -124,15 +124,15 @@ def test_get_entities_by_platform():
                 parameters={},
             ),
         ]
-        
+
         lights = mapper.get_entities_by_platform(Platform.LIGHT)
         switches = mapper.get_entities_by_platform(Platform.SWITCH)
         covers = mapper.get_entities_by_platform(Platform.COVER)
-        
+
         assert len(lights) == 2
         assert len(switches) == 1
         assert len(covers) == 0
-        
+
         # Verify all lights are Platform.LIGHT
         for light in lights:
             assert light.platform == Platform.LIGHT
@@ -142,10 +142,10 @@ def test_get_entity_by_unique_id():
     """Test getting entity by unique ID."""
     project = MagicMock(spec=LXPProject)
     project.devices = []
-    
+
     with patch.object(EntityMapper, "map_all", return_value=[]):
         mapper = EntityMapper(project)
-        
+
         mapper.entities = [
             MappedEntity(
                 platform=Platform.LIGHT,
@@ -159,13 +159,13 @@ def test_get_entity_by_unique_id():
                 parameters={},
             ),
         ]
-        
+
         # Find by unique_id
         entity = mapper.get_entity_by_unique_id("unique_123")
         assert entity is not None
         assert entity.unique_id == "unique_123"
         assert entity.name == "Test Light"
-        
+
         # Not found
         not_found = mapper.get_entity_by_unique_id("nonexistent")
         assert not_found is None
@@ -175,14 +175,14 @@ def test_determine_platform_light():
     """Test _determine_platform for light entities."""
     project = MagicMock(spec=LXPProject)
     project.devices = []
-    
+
     with patch.object(EntityMapper, "map_all", return_value=[]):
         mapper = EntityMapper(project)
-        
+
         # OnOff only -> Light
         platform = mapper._determine_platform({"OnOff": 1})
         assert platform == Platform.LIGHT
-        
+
         # OnOff + Dimmen% -> Light
         platform = mapper._determine_platform({"OnOff": 1, "Dimmen%": 2})
         assert platform == Platform.LIGHT
@@ -192,9 +192,9 @@ def test_determine_platform_cover():
     """Test _determine_platform for cover entities."""
     project = MagicMock(spec=LXPProject)
     project.devices = []
-    
+
     with patch.object(EntityMapper, "map_all", return_value=[]):
         mapper = EntityMapper(project)
-        
+
         # UpDown -> Cover
         platform = mapper._determine_platform({"UpDown": 10})

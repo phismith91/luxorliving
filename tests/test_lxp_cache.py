@@ -37,7 +37,7 @@ class TestLXPCache:
     @pytest.fixture
     def temp_lxp_file(self, sample_lxp_content):
         """Create a temporary LXP file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.lxp', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".lxp", delete=False) as f:
             f.write(sample_lxp_content)
             f.flush()
             yield Path(f.name)
@@ -75,7 +75,9 @@ class TestLXPCache:
 
         # Modify file
         time.sleep(0.1)  # Ensure mtime changes
-        temp_lxp_file.write_text(temp_lxp_file.read_text().replace("Test Project", "Modified Project"))
+        temp_lxp_file.write_text(
+            temp_lxp_file.read_text().replace("Test Project", "Modified Project")
+        )
 
         # Second parse should be cache miss due to file change
         project2 = await cache.get_or_parse(temp_lxp_file, include_unaffected=False)
@@ -109,16 +111,24 @@ class TestLXPCache:
         cache = LXPCache(max_size=2, ttl_seconds=3600)
 
         # Create two temporary files
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.lxp', delete=False) as f1, \
-             tempfile.NamedTemporaryFile(mode='w', suffix='.lxp', delete=False) as f2, \
-             tempfile.NamedTemporaryFile(mode='w', suffix='.lxp', delete=False) as f3:
+        with (
+            tempfile.NamedTemporaryFile(mode="w", suffix=".lxp", delete=False) as f1,
+            tempfile.NamedTemporaryFile(mode="w", suffix=".lxp", delete=False) as f2,
+            tempfile.NamedTemporaryFile(mode="w", suffix=".lxp", delete=False) as f3,
+        ):
 
             # Write different content to each file
-            f1.write('<LUXORplug version="1.0" name="Project1"><Gateway address="192.168.1.3" port="3671"/><Devices></Devices></LUXORplug>')
+            f1.write(
+                '<LUXORplug version="1.0" name="Project1"><Gateway address="192.168.1.3" port="3671"/><Devices></Devices></LUXORplug>'
+            )
             f1.flush()
-            f2.write('<LUXORplug version="1.0" name="Project2"><Gateway address="192.168.1.3" port="3671"/><Devices></Devices></LUXORplug>')
+            f2.write(
+                '<LUXORplug version="1.0" name="Project2"><Gateway address="192.168.1.3" port="3671"/><Devices></Devices></LUXORplug>'
+            )
             f2.flush()
-            f3.write('<LUXORplug version="1.0" name="Project3"><Gateway address="192.168.1.3" port="3671"/><Devices></Devices></LUXORplug>')
+            f3.write(
+                '<LUXORplug version="1.0" name="Project3"><Gateway address="192.168.1.3" port="3671"/><Devices></Devices></LUXORplug>'
+            )
             f3.flush()
 
             file1, file2, file3 = Path(f1.name), Path(f2.name), Path(f3.name)

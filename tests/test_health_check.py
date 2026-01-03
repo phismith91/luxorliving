@@ -21,7 +21,7 @@ class TestLuxorLivingHealthView:
                     "config": {"discovered_sensors": {"addr1": {}, "addr2": {}}},
                     "overrides": {},
                 },
-                "_health_registered": True  # Prevent double registration
+                "_health_registered": True,  # Prevent double registration
             }
         }
 
@@ -53,6 +53,7 @@ class TestLuxorLivingHealthView:
 
         # Parse JSON response
         import json
+
         data = json.loads(response.body.decode())
 
         # Verify structure
@@ -95,6 +96,7 @@ class TestLuxorLivingHealthView:
 
         response = await health_view.get(request)
         import json
+
         data = json.loads(response.body.decode())
 
         assert data["status"] == "healthy"
@@ -112,6 +114,7 @@ class TestLuxorLivingHealthView:
         response = await health_view.get(request)
 
         import json
+
         data = json.loads(response.body.decode())
 
         assert data["status"] == "unhealthy"
@@ -128,6 +131,7 @@ class TestLuxorLivingHealthView:
         response = await health_view.get(request)
 
         import json
+
         data = json.loads(response.body.decode())
 
         # Should be healthy even when disconnected in simulation mode
@@ -136,24 +140,38 @@ class TestLuxorLivingHealthView:
     @pytest.mark.asyncio
     async def test_health_endpoint_circuit_breaker_open(self, health_view, mock_hass):
         """Test health check when circuit breaker is open."""
-        from custom_components.luxor_living.circuit_breaker import _rest_api_circuit_breaker, _knx_circuit_breaker
-        
+        from custom_components.luxor_living.circuit_breaker import (
+            _rest_api_circuit_breaker,
+            _knx_circuit_breaker,
+        )
+
         # Mock the circuit breaker instances directly
-        with patch.object(_rest_api_circuit_breaker, 'get_stats', return_value={
-            "state": "open",
-            "failure_count": 5,
-            "last_failure_time": 1234567890.0,
-        }), \
-             patch.object(_knx_circuit_breaker, 'get_stats', return_value={
-            "state": "closed",
-            "failure_count": 0,
-            "last_failure_time": None,
-        }):
-            
+        with (
+            patch.object(
+                _rest_api_circuit_breaker,
+                "get_stats",
+                return_value={
+                    "state": "open",
+                    "failure_count": 5,
+                    "last_failure_time": 1234567890.0,
+                },
+            ),
+            patch.object(
+                _knx_circuit_breaker,
+                "get_stats",
+                return_value={
+                    "state": "closed",
+                    "failure_count": 0,
+                    "last_failure_time": None,
+                },
+            ),
+        ):
+
             request = MagicMock()
             response = await health_view.get(request)
 
             import json
+
             data = json.loads(response.body.decode())
 
             # Should be degraded when circuit breaker is open

@@ -205,9 +205,7 @@ class LuxorClimate(ClimateEntity):
 
             # Write to Sollwert address
             if "Sollwert" in self._datapoints:
-                await self.knx_gateway.write_group_address(
-                    self._datapoints["Sollwert"], temp_raw
-                )
+                await self.knx_gateway.write_group_address(self._datapoints["Sollwert"], temp_raw)
                 self._attr_target_temperature = temperature
                 self.async_write_ha_state()
                 _LOGGER.info("Set temperature for %s to %.1f°C", self.name, temperature)

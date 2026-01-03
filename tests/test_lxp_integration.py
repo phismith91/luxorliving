@@ -132,11 +132,13 @@ async def test_hauptwohnung_io_devices():
     # Verify IO devices were found and parsed
     if io_devices:
         for device in io_devices:
-            print(f"  - {device.name}: {len(device.sensors)} sensors, {len(device.actuators)} actuators")
-            
+            print(
+                f"  - {device.name}: {len(device.sensors)} sensors, {len(device.actuators)} actuators"
+            )
+
             # IO devices should have sensors
             assert len(device.sensors) > 0, f"{device.name} should have sensors"
-            
+
             # Check sensor datapoints
             for sensor in device.sensors:
                 assert len(sensor.datapoints) > 0, f"Sensor {sensor.name} should have datapoints"
@@ -144,11 +146,11 @@ async def test_hauptwohnung_io_devices():
     # Map entities and check sensor platforms
     mapper = EntityMapper(project)
     sensors = mapper.get_entities_by_platform(Platform.SENSOR)
-    
+
     # Should have sensor entities from IO devices
     if io_devices:
         assert len(sensors) > 0, "Should have sensor entities from IO devices"
-        
+
         # Check for weather-related sensors
         sensor_names = [s.name for s in sensors]
         print(f"\n=== Sensor Entities ({len(sensors)}) ===")
@@ -214,7 +216,7 @@ async def test_familie_schmidt_entity_mapping():
 
 @pytest.mark.skipif(
     not LXP_HAUPTWOHNUNG.exists() or not LXP_FAMILIE_SCHMIDT.exists(),
-    reason="Both LXP files required"
+    reason="Both LXP files required",
 )
 @pytest.mark.asyncio
 async def test_compare_io_vs_standard_devices():
@@ -222,7 +224,7 @@ async def test_compare_io_vs_standard_devices():
     # Parse both files
     parser_hw = LXPParser(LXP_HAUPTWOHNUNG)
     project_hw = await parser_hw.parse()
-    
+
     parser_fs = LXPParser(LXP_FAMILIE_SCHMIDT)
     project_fs = await parser_fs.parse()
 
@@ -267,7 +269,7 @@ async def test_unique_id_stability_with_real_lxp():
     parser1 = LXPParser(LXP_HAUPTWOHNUNG)
     project1 = await parser1.parse()
     mapper1 = EntityMapper(project1)
-    
+
     parser2 = LXPParser(LXP_HAUPTWOHNUNG)
     project2 = await parser2.parse()
     mapper2 = EntityMapper(project2)
@@ -278,7 +280,7 @@ async def test_unique_id_stability_with_real_lxp():
 
     # Should be identical
     assert unique_ids_1 == unique_ids_2, "Unique IDs should be stable across parses"
-    
+
     # Should have no duplicates
     assert len(unique_ids_1) == len(mapper1.entities), "All unique IDs should be unique"
     assert len(unique_ids_2) == len(mapper2.entities), "All unique IDs should be unique"
@@ -292,17 +294,17 @@ async def test_unique_id_stability_with_real_lxp():
 def test_lxp_cache_functionality():
     """Test that LXP cache works correctly."""
     from custom_components.luxor_living.lxp_parser import _lxp_cache
-    
+
     # Clear cache first
     _lxp_cache.clear()
-    
+
     # First parse should be a cache miss
     stats_before = _lxp_cache.get_stats()
     print(f"\n=== Cache Stats (before) ===")
     print(f"Hits: {stats_before['hits']}")
     print(f"Misses: {stats_before['misses']}")
-    
+
     # Parse (will use cache internally via async)
     # We can't easily test async cache here, but we verify cache exists
     assert _lxp_cache is not None
-    assert _lxp_cache.get_stats()['max_size'] > 0
+    assert _lxp_cache.get_stats()["max_size"] > 0

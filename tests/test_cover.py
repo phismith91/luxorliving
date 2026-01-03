@@ -96,10 +96,7 @@ class TestLuxorCover:
         assert entity.name == "Wohnzimmer Rollladen"
         assert entity.unique_id == "luxor_DEF456_1_cover"
         assert entity.device_class == CoverDeviceClass.SHUTTER
-        assert (
-            entity.supported_features
-            & CoverEntityFeature.SET_POSITION
-        )
+        assert entity.supported_features & CoverEntityFeature.SET_POSITION
 
     def test_init_blind(self, mock_coordinator, mock_knx_gateway, blind_mapped_entity):
         """Test blind initialization."""
@@ -113,10 +110,7 @@ class TestLuxorCover:
         assert entity.name == "Wohnzimmer Jalousie"
         assert entity.unique_id == "luxor_DEF456_2_cover"
         assert entity.device_class == CoverDeviceClass.BLIND
-        assert (
-            entity.supported_features
-            & CoverEntityFeature.SET_TILT_POSITION
-        )
+        assert entity.supported_features & CoverEntityFeature.SET_TILT_POSITION
 
     def test_datapoint_mapping(self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity):
         """Test datapoint address mapping."""
@@ -133,9 +127,7 @@ class TestLuxorCover:
         assert entity._datapoints["StatusHöhe%"] == 8710
 
     @pytest.mark.asyncio
-    async def test_update_position(
-        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
-    ):
+    async def test_update_position(self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity):
         """Test position update from KNX."""
         mock_knx_gateway.read_group_address.side_effect = [75]  # Position: 75%
 
@@ -168,9 +160,7 @@ class TestLuxorCover:
         mock_knx_gateway.write_group_address.assert_called_once_with(8454, 0)
 
     @pytest.mark.asyncio
-    async def test_close_cover(
-        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
-    ):
+    async def test_close_cover(self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity):
         """Test closing cover."""
         entity = LuxorCover(
             coordinator=mock_coordinator,
@@ -249,9 +239,7 @@ class TestLuxorCover:
         mock_knx_gateway.write_group_address.assert_called_once_with(9222, 0)
 
     @pytest.mark.asyncio
-    async def test_set_tilt_position(
-        self, mock_coordinator, mock_knx_gateway, blind_mapped_entity
-    ):
+    async def test_set_tilt_position(self, mock_coordinator, mock_knx_gateway, blind_mapped_entity):
         """Test setting tilt position."""
         entity = LuxorCover(
             coordinator=mock_coordinator,

@@ -322,17 +322,15 @@ class LXPParser:
 
         # Parse devices
         devices = self._parse_devices()
-        
+
         # Collect statistics for detailed logging
         total_sensors = sum(len(d.sensors) for d in devices)
         total_actuators = sum(len(d.actuators) for d in devices)
-        total_datapoints = sum(
-            len(s.datapoints) for d in devices for s in d.sensors
-        ) + sum(len(a.datapoints) for d in devices for a in d.actuators)
-        devices_without_datapoints = sum(
-            1 for d in devices if not d.sensors and not d.actuators
+        total_datapoints = sum(len(s.datapoints) for d in devices for s in d.sensors) + sum(
+            len(a.datapoints) for d in devices for a in d.actuators
         )
-        
+        devices_without_datapoints = sum(1 for d in devices if not d.sensors and not d.actuators)
+
         _LOGGER.info(
             "Parsed %d devices from %s: %d sensors, %d actuators, %d datapoints total",
             len(devices),
@@ -341,7 +339,7 @@ class LXPParser:
             total_actuators,
             total_datapoints,
         )
-        
+
         if devices_without_datapoints > 0:
             _LOGGER.warning(
                 "Found %d device(s) without datapoints (%.1f%% of total devices). "

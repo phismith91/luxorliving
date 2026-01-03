@@ -6,7 +6,11 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from custom_components.luxor_living.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenException
+from custom_components.luxor_living.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerOpenException,
+)
 
 
 class TestErrorScenarios:
@@ -15,7 +19,9 @@ class TestErrorScenarios:
     @pytest.mark.asyncio
     async def test_circuit_breaker_failure_recovery(self):
         """Test circuit breaker failure and recovery."""
-        config = CircuitBreakerConfig(failure_threshold=2, recovery_timeout=1.0, success_threshold=1)
+        config = CircuitBreakerConfig(
+            failure_threshold=2, recovery_timeout=1.0, success_threshold=1
+        )
         breaker = CircuitBreaker("test", config)
 
         async def failing_func():
@@ -55,14 +61,18 @@ class TestErrorScenarios:
         breaker = CircuitBreaker("test", config)
 
         async def failing_operation():
-            await breaker.call(lambda: (_ for _ in ()).throw(Exception("Simulated network failure")))
+            await breaker.call(
+                lambda: (_ for _ in ()).throw(Exception("Simulated network failure"))
+            )
 
         # Launch multiple concurrent failing operations
         tasks = [failing_operation() for _ in range(5)]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # All should fail with CircuitBreakerOpenException after threshold
-        exceptions_after_threshold = [r for r in results if isinstance(r, CircuitBreakerOpenException)]
+        exceptions_after_threshold = [
+            r for r in results if isinstance(r, CircuitBreakerOpenException)
+        ]
         assert len(exceptions_after_threshold) > 0
 
         # Circuit should be open

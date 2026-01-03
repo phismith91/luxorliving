@@ -136,11 +136,7 @@ class LuxorCover(CoverEntity):
             self._attr_device_class = CoverDeviceClass.SHUTTER
 
         # Set supported features
-        features = (
-            CoverEntityFeature.OPEN
-            | CoverEntityFeature.CLOSE
-            | CoverEntityFeature.STOP
-        )
+        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
 
         if "Höhe%" in dp_roles or "StatusHöhe%" in dp_roles:
             features |= CoverEntityFeature.SET_POSITION
@@ -198,13 +194,11 @@ class LuxorCover(CoverEntity):
             # Read current tilt position if available
             dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
             has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
-            
+
             if has_tilt:
                 tilt_dp = "StatusLamelle%" if "StatusLamelle%" in self._datapoints else "Lamelle%"
                 if tilt_dp in self._datapoints:
-                    tilt_raw = await self.knx_gateway.read_group_address(
-                        self._datapoints[tilt_dp]
-                    )
+                    tilt_raw = await self.knx_gateway.read_group_address(self._datapoints[tilt_dp])
                     if tilt_raw is not None:
                         self._attr_current_cover_tilt_position = tilt_raw
 
@@ -218,9 +212,7 @@ class LuxorCover(CoverEntity):
         try:
             # Send UP command (value 0 = UP)
             if "UpDown" in self._datapoints:
-                await self.knx_gateway.write_group_address(
-                    self._datapoints["UpDown"], 0
-                )
+                await self.knx_gateway.write_group_address(self._datapoints["UpDown"], 0)
                 _LOGGER.info("Opening cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error opening cover %s: %s", self.name, e)
@@ -230,9 +222,7 @@ class LuxorCover(CoverEntity):
         try:
             # Send DOWN command (value 1 = DOWN)
             if "UpDown" in self._datapoints:
-                await self.knx_gateway.write_group_address(
-                    self._datapoints["UpDown"], 1
-                )
+                await self.knx_gateway.write_group_address(self._datapoints["UpDown"], 1)
                 _LOGGER.info("Closing cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error closing cover %s: %s", self.name, e)
@@ -242,9 +232,7 @@ class LuxorCover(CoverEntity):
         try:
             # Send STOP command
             if "StepStop" in self._datapoints:
-                await self.knx_gateway.write_group_address(
-                    self._datapoints["StepStop"], 0
-                )
+                await self.knx_gateway.write_group_address(self._datapoints["StepStop"], 0)
                 _LOGGER.info("Stopping cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error stopping cover %s: %s", self.name, e)
@@ -258,9 +246,7 @@ class LuxorCover(CoverEntity):
         try:
             # Write to Höhe% address
             if "Höhe%" in self._datapoints:
-                await self.knx_gateway.write_group_address(
-                    self._datapoints["Höhe%"], int(position)
-                )
+                await self.knx_gateway.write_group_address(self._datapoints["Höhe%"], int(position))
                 self._attr_current_cover_position = position
                 self._attr_is_closed = position == 0
                 self.async_write_ha_state()
@@ -272,15 +258,13 @@ class LuxorCover(CoverEntity):
         """Open the cover tilt."""
         dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
         has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
-        
+
         if not has_tilt:
             return
 
         try:
             if "Lamelle%" in self._datapoints:
-                await self.knx_gateway.write_group_address(
-                    self._datapoints["Lamelle%"], 100
-                )
+                await self.knx_gateway.write_group_address(self._datapoints["Lamelle%"], 100)
                 _LOGGER.info("Opening tilt for cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error opening tilt for %s: %s", self.name, e)
@@ -289,15 +273,13 @@ class LuxorCover(CoverEntity):
         """Close the cover tilt."""
         dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
         has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
-        
+
         if not has_tilt:
             return
 
         try:
             if "Lamelle%" in self._datapoints:
-                await self.knx_gateway.write_group_address(
-                    self._datapoints["Lamelle%"], 0
-                )
+                await self.knx_gateway.write_group_address(self._datapoints["Lamelle%"], 0)
                 _LOGGER.info("Closing tilt for cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error closing tilt for %s: %s", self.name, e)
@@ -306,15 +288,13 @@ class LuxorCover(CoverEntity):
         """Stop the cover tilt."""
         dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
         has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
-        
+
         if not has_tilt:
             return
 
         try:
             if "StepStop" in self._datapoints:
-                await self.knx_gateway.write_group_address(
-                    self._datapoints["StepStop"], 0
-                )
+                await self.knx_gateway.write_group_address(self._datapoints["StepStop"], 0)
                 _LOGGER.info("Stopping tilt for cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error stopping tilt for %s: %s", self.name, e)
@@ -323,7 +303,7 @@ class LuxorCover(CoverEntity):
         """Move the cover tilt to a specific position."""
         dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
         has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
-        
+
         if not has_tilt:
             return
 

@@ -101,7 +101,9 @@ def mock_humidity_entity():
 class TestLuxorLivingSensor:
     """Test LuxorLivingSensor entity."""
 
-    def test_init(self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway):
+    def test_init(
+        self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+    ):
         """Test sensor initialization."""
         sensor = LuxorLivingSensor(
             mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
@@ -113,7 +115,9 @@ class TestLuxorLivingSensor:
         assert sensor.device_class == "temperature"
         assert sensor.native_value is None
 
-    def test_init_humidity(self, mock_coordinator, mock_config_entry, mock_humidity_entity, mock_knx_gateway):
+    def test_init_humidity(
+        self, mock_coordinator, mock_config_entry, mock_humidity_entity, mock_knx_gateway
+    ):
         """Test humidity sensor initialization."""
         sensor = LuxorLivingSensor(
             mock_coordinator, mock_config_entry, mock_humidity_entity, mock_knx_gateway

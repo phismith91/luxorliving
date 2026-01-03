@@ -33,10 +33,7 @@ class TestBenchmarkSuite:
             await asyncio.sleep(0.01)  # 10ms operation
 
         result = await benchmark.benchmark_operation(
-            "Test Operation",
-            test_operation,
-            iterations=5,
-            warmup_iterations=1
+            "Test Operation", test_operation, iterations=5, warmup_iterations=1
         )
 
         assert result.operation == "Test Operation"
@@ -51,13 +48,11 @@ class TestBenchmarkSuite:
 
         def test_operation():
             import time
+
             time.sleep(0.01)  # 10ms operation
 
         result = benchmark.benchmark_sync_operation(
-            "Test Sync Operation",
-            test_operation,
-            iterations=3,
-            warmup_iterations=1
+            "Test Sync Operation", test_operation, iterations=3, warmup_iterations=1
         )
 
         assert result.operation == "Test Sync Operation"
@@ -72,6 +67,7 @@ class TestBenchmarkSuite:
 
         # Add a mock result
         from custom_components.luxor_living.benchmark import BenchmarkResult
+
         result = BenchmarkResult(
             operation="Test",
             iterations=10,
@@ -79,7 +75,7 @@ class TestBenchmarkSuite:
             avg_time=0.1,
             min_time=0.09,
             max_time=0.11,
-            throughput=10.0
+            throughput=10.0,
         )
         benchmark.results.append(result)
 
@@ -93,12 +89,14 @@ class TestBenchmarkSuite:
     async def test_lxp_parsing_benchmark(self):
         """Test LXP parsing benchmark with mock file."""
         # Create a temporary LXP file
-        with tempfile.NamedTemporaryFile(suffix='.lxp', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".lxp", delete=False) as f:
             f.write(b'<?xml version="1.0"?><project></project>')
             temp_file = f.name
 
         try:
-            with patch('custom_components.luxor_living.lxp_parser.LXPParser.parse_cached') as mock_parse:
+            with patch(
+                "custom_components.luxor_living.lxp_parser.LXPParser.parse_cached"
+            ) as mock_parse:
                 mock_parse.return_value = Mock()  # Mock project
 
                 result = await benchmark_lxp_parsing(temp_file, iterations=2)
@@ -129,9 +127,13 @@ class TestBenchmarkSuite:
     @pytest.mark.asyncio
     async def test_full_benchmark_run(self, capsys):
         """Test running the full benchmark suite."""
-        with patch('custom_components.luxor_living.benchmark.benchmark_lxp_parsing') as mock_lxp, \
-             patch('custom_components.luxor_living.benchmark.benchmark_entity_creation') as mock_entity, \
-             patch('custom_components.luxor_living.benchmark.benchmark_circuit_breaker') as mock_cb:
+        with (
+            patch("custom_components.luxor_living.benchmark.benchmark_lxp_parsing") as mock_lxp,
+            patch(
+                "custom_components.luxor_living.benchmark.benchmark_entity_creation"
+            ) as mock_entity,
+            patch("custom_components.luxor_living.benchmark.benchmark_circuit_breaker") as mock_cb,
+        ):
 
             # Mock the benchmark functions
             mock_lxp.return_value = None
@@ -188,4 +190,6 @@ class TestPerformanceRegression:
         memory_increase = final_memory - initial_memory
 
         # Memory increase should be reasonable (< 10MB)
-        assert memory_increase < 10 * 1024 * 1024, f"Memory leak detected: {memory_increase / 1024 / 1024:.2f}MB increase"
+        assert (
+            memory_increase < 10 * 1024 * 1024
+        ), f"Memory leak detected: {memory_increase / 1024 / 1024:.2f}MB increase"

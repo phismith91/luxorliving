@@ -56,7 +56,7 @@ def mock_hass_data():
 
     # Mock Mapper with entities
     mock_mapper = MagicMock(spec=EntityMapper)
-    
+
     # Create test entities
     test_entities = [
         MappedEntity(
@@ -82,9 +82,9 @@ def mock_hass_data():
             parameters={},
         ),
     ]
-    
+
     mock_mapper.entities = test_entities
-    
+
     # Mock project
     mock_project = MagicMock()
     mock_device = MagicMock()
@@ -94,7 +94,7 @@ def mock_hass_data():
     mock_device.address = "1.1.10"
     mock_device.actuators = []
     mock_device.sensors = []
-    
+
     # Mock actuator
     mock_actuator = MagicMock()
     mock_actuator.name = "Light Channel 1"
@@ -104,7 +104,7 @@ def mock_hass_data():
     mock_actuator.off_icon = "icon_off"
     mock_actuator.parameters = {"timer": "5", "fade": "2"}
     mock_device.actuators = [mock_actuator]
-    
+
     # Mock sensor
     mock_sensor = MagicMock()
     mock_sensor.name = "Temperature Sensor"
@@ -112,7 +112,7 @@ def mock_hass_data():
     mock_sensor.sensor_type = 1
     mock_sensor.parameters = {"offset": "0.5"}
     mock_device.sensors = [mock_sensor]
-    
+
     mock_project.devices = [mock_device]
     mock_mapper._project = mock_project
 
@@ -285,7 +285,7 @@ async def test_diagnostics_empty_hass_data(mock_config_entry):
     # Should still return config entry
     assert "config_entry" in diag
     assert diag["config_entry"]["entry_id"] == "test_entry_123"
-    
+
     # But no gateway/mapper/coordinator
     assert "knx_gateway" not in diag
     assert "entities" not in diag
@@ -334,7 +334,7 @@ async def test_diagnostics_gateway_exception(mock_config_entry, mock_hass_data):
 async def test_diagnostics_entity_limit(mock_config_entry, mock_hass_data):
     """Test that diagnostics limits entity details to 50."""
     hass = MagicMock(spec=HomeAssistant)
-    
+
     # Create 100 entities
     entities = []
     for i in range(100):
@@ -351,7 +351,7 @@ async def test_diagnostics_entity_limit(mock_config_entry, mock_hass_data):
                 parameters={},
             )
         )
-    
+
     mock_hass_data["mapper"].entities = entities
     hass.data = {DOMAIN: {mock_config_entry.entry_id: mock_hass_data}}
 
@@ -366,11 +366,11 @@ async def test_diagnostics_entity_limit(mock_config_entry, mock_hass_data):
 async def test_diagnostics_coordinator_with_exception(mock_config_entry, mock_hass_data):
     """Test coordinator diagnostics when last update had exception."""
     hass = MagicMock(spec=HomeAssistant)
-    
+
     # Set coordinator with exception
     mock_hass_data["coordinator"].last_update_success = False
     mock_hass_data["coordinator"].last_exception = RuntimeError("Connection timeout")
-    
+
     hass.data = {DOMAIN: {mock_config_entry.entry_id: mock_hass_data}}
 
     diag = await async_get_config_entry_diagnostics(hass, mock_config_entry)
@@ -383,10 +383,10 @@ async def test_diagnostics_coordinator_with_exception(mock_config_entry, mock_ha
 async def test_diagnostics_without_project(mock_config_entry, mock_hass_data):
     """Test diagnostics when mapper has no project."""
     hass = MagicMock(spec=HomeAssistant)
-    
+
     # Remove project from mapper
     mock_hass_data["mapper"]._project = None
-    
+
     hass.data = {DOMAIN: {mock_config_entry.entry_id: mock_hass_data}}
 
     diag = await async_get_config_entry_diagnostics(hass, mock_config_entry)

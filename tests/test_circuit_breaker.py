@@ -45,6 +45,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_successful_call(self, circuit_breaker):
         """Test successful call doesn't change state."""
+
         async def success_func():
             return "success"
 
@@ -58,6 +59,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_single_failure_no_trip(self, circuit_breaker):
         """Test single failure doesn't trip circuit breaker."""
+
         async def failing_func():
             raise ValueError("test error")
 
@@ -73,6 +75,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_failure_threshold_trip(self, circuit_breaker):
         """Test circuit breaker trips after reaching failure threshold."""
+
         async def failing_func():
             raise ValueError("test error")
 
@@ -89,6 +92,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_open_circuit_rejects_calls(self, circuit_breaker):
         """Test that open circuit breaker rejects calls."""
+
         # Trip the circuit breaker
         async def failing_func():
             raise ValueError("test error")
@@ -109,6 +113,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_half_open_after_timeout(self, circuit_breaker):
         """Test circuit breaker goes to HALF_OPEN after recovery timeout."""
+
         # Trip the circuit breaker
         async def failing_func():
             raise ValueError("test error")
@@ -135,6 +140,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_half_open_failure_returns_to_open(self, circuit_breaker):
         """Test that failure in HALF_OPEN state returns to OPEN."""
+
         # Trip the circuit breaker
         async def failing_func():
             raise ValueError("test error")
@@ -159,6 +165,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_timeout_handling(self, circuit_breaker):
         """Test timeout handling for async calls."""
+
         async def slow_func():
             await asyncio.sleep(10)  # Longer than timeout
             return "success"
@@ -173,6 +180,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_success_resets_failure_count(self, circuit_breaker):
         """Test that successful call resets failure count."""
+
         async def failing_func():
             raise ValueError("test error")
 
@@ -196,6 +204,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_different_exception_types(self, circuit_breaker):
         """Test handling of different exception types."""
+
         async def auth_error():
             raise ConnectionError("auth failed")
 
@@ -224,6 +233,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_statistics_update(self, circuit_breaker):
         """Test that statistics are updated correctly."""
+
         async def success_func():
             return "success"
 
@@ -258,11 +268,12 @@ class TestCircuitBreaker:
 
         # Check configurations
         assert rest_cb.config.failure_threshold == 3  # REST specific
-        assert knx_cb.config.failure_threshold == 5   # KNX specific
+        assert knx_cb.config.failure_threshold == 5  # KNX specific
 
     @pytest.mark.asyncio
     async def test_concurrent_calls_during_open(self, circuit_breaker):
         """Test concurrent calls when circuit is open."""
+
         # Trip the circuit breaker
         async def failing_func():
             raise ValueError("error")
@@ -291,6 +302,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_recovery_success_resets_state(self, circuit_breaker):
         """Test successful recovery resets circuit breaker state."""
+
         # Trip circuit breaker
         async def failing_func():
             raise ValueError("error")

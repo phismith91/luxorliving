@@ -117,9 +117,7 @@ class TestLuxorClimate:
         assert entity._window_contact_open is False
 
     @pytest.mark.asyncio
-    async def test_set_temperature(
-        self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
-    ):
+    async def test_set_temperature(self, mock_coordinator, mock_knx_gateway, climate_mapped_entity):
         """Test setting target temperature."""
         entity = LuxorClimate(
             coordinator=mock_coordinator,
