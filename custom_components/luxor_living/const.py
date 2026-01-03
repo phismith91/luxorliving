@@ -16,7 +16,7 @@ CONF_DISCOVERY_TIMEOUT = "discovery_timeout"
 
 # Defaults
 DEFAULT_PORT = 3671  # KNX/IP default port
-DEFAULT_HTTP_PORT = 80  # REST API HTTP port (per LUXORliving API documentation)
+DEFAULT_HTTP_PORT = 443  # REST API HTTPS port (secure by default)
 DEFAULT_CONNECTION_TYPE = "tunneling"
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin"
