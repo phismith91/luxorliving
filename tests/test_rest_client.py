@@ -66,7 +66,8 @@ class TestBAOSRestClient:
         host = base_url.replace("http://", "").split(":")[0]
         port = int(base_url.split(":")[-1].rstrip("/"))
 
-        client = BAOSRestClient(host, port=port)
+        # Test server uses HTTP, so disable HTTPS
+        client = BAOSRestClient(host, port=port, use_https=False)
 
         async with client:
             token = await client.login("admin", "admin")
@@ -84,7 +85,8 @@ class TestBAOSRestClient:
         host = base_url.replace("http://", "").split(":")[0]
         port = int(base_url.split(":")[-1].rstrip("/"))
 
-        client = BAOSRestClient(host, port=port)
+        # Test server uses HTTP, so disable HTTPS
+        client = BAOSRestClient(host, port=port, use_https=False)
 
         async with client:
             with pytest.raises(AuthenticationError, match="Invalid username or password"):
@@ -97,7 +99,8 @@ class TestBAOSRestClient:
         host = base_url.replace("http://", "").split(":")[0]
         port = int(base_url.split(":")[-1].rstrip("/"))
 
-        client = BAOSRestClient(host, port=port)
+        # Test server uses HTTP, so disable HTTPS
+        client = BAOSRestClient(host, port=port, use_https=False)
 
         async with client:
             await client.login("admin", "admin")
@@ -131,7 +134,8 @@ class TestBAOSRestClient:
         host = base_url.replace("http://", "").split(":")[0]
         port = int(base_url.split(":")[-1].rstrip("/"))
 
-        client = BAOSRestClient(host, port=port)
+        # Test server uses HTTP, so disable HTTPS
+        client = BAOSRestClient(host, port=port, use_https=False)
 
         async with client:
             await client.login("admin", "admin")
@@ -148,7 +152,8 @@ class TestBAOSRestClient:
         host = base_url.replace("http://", "").split(":")[0]
         port = int(base_url.split(":")[-1].rstrip("/"))
 
-        client = BAOSRestClient(host, port=port)
+        # Test server uses HTTP, so disable HTTPS
+        client = BAOSRestClient(host, port=port, use_https=False)
 
         async with client:
             await client.login("admin", "admin")
@@ -165,7 +170,8 @@ class TestBAOSRestClient:
         host = base_url.replace("http://", "").split(":")[0]
         port = int(base_url.split(":")[-1].rstrip("/"))
 
-        client = BAOSRestClient(host, port=port)
+        # Test server uses HTTP, so disable HTTPS
+        client = BAOSRestClient(host, port=port, use_https=False)
 
         async with client:
             await client.login("admin", "admin")
@@ -176,7 +182,7 @@ class TestBAOSRestClient:
 
     def test_diagnostics(self):
         """Test diagnostics output."""
-        client = BAOSRestClient("192.168.1.3", port=80)
+        client = BAOSRestClient("192.168.1.3", port=80, use_https=False)
         client.session_token = "test_token"
         client.session_expires = datetime.now() + timedelta(hours=1)
         client.tunneling_enabled = True
@@ -185,9 +191,24 @@ class TestBAOSRestClient:
 
         assert diag["host"] == "192.168.1.3"
         assert diag["port"] == 80
+        assert diag["use_https"] is False
         assert diag["authenticated"] is True
         assert diag["tunneling_enabled"] is True
         assert "session_expires" in diag
+
+    def test_https_by_default(self):
+        """Test that HTTPS is used by default."""
+        client = BAOSRestClient("192.168.1.3")
+        assert client.use_https is True
+        assert client.port == 443
+        assert client.base_url == "https://192.168.1.3:443"
+
+    def test_http_fallback(self):
+        """Test HTTP fallback when explicitly disabled."""
+        client = BAOSRestClient("192.168.1.3", port=80, use_https=False)
+        assert client.use_https is False
+        assert client.port == 80
+        assert client.base_url == "http://192.168.1.3:80"
 
     def test_is_authenticated_no_token(self):
         """Test authentication check without token."""

@@ -41,18 +41,21 @@ class BAOSRestClient:
     - PUT /rest/device/authtunneling → Enable/Disable Tunneling
     """
 
-    def __init__(self, host: str, port: int = 80):
+    def __init__(self, host: str, port: int = 443, use_https: bool = True):
         """
         Initialize REST API Client.
 
         Args:
             host: IP address of BAOS 777 device
-            port: HTTP port (default: 80, per LUXORliving API docs)
+            port: Port for REST API (default: 443 for HTTPS)
+            use_https: Use HTTPS for secure communication (default: True, recommended)
         """
         self.host = host
         self.port = port
-        # Use HTTP as documented, SSL context handles HTTPS redirects
-        self.base_url = f"http://{host}:{port}"
+        self.use_https = use_https
+        # Use HTTPS by default for secure authentication
+        protocol = "https" if use_https else "http"
+        self.base_url = f"{protocol}://{host}:{port}"
 
         self.session_token: Optional[str] = None
         self.session_expires: Optional[datetime] = None
@@ -569,6 +572,7 @@ class BAOSRestClient:
         return {
             "host": self.host,
             "port": self.port,
+            "use_https": self.use_https,
             "authenticated": self.is_authenticated,
             "session_token": bool(self.session_token),
             "session_expires": self.session_expires.isoformat() if self.session_expires else None,
