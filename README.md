@@ -23,6 +23,18 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 **Working platforms:** Light, Switch, Cover, Climate, Binary Sensor, Sensor
 
+## 🚀 v0.5.4-beta.1 HTTPS Enforcement (Pre-Release)
+
+### Focus
+- Enforce HTTPS authentication for outbound requests (pre-release build for testing)
+- Validate new HTTPS request handling path
+
+### Quality
+- Test Count Tracking: 209 tests (100% passing)
+- Automated Quality Gates: `./scripts/validate_readme.sh` (version, tests, links, changelog)
+
+---
+
 ## 🚀 v0.5.3 Quality Assurance & Release Process
 
 ### Quality Gates & Validation

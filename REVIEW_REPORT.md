@@ -1,12 +1,12 @@
 # Multi-Agent Code Review Report
 
-**Generated:** 2026-01-03T09:05:39.555178
-**Repository:** /home/user/luxorliving
+**Generated:** 2026-01-03T11:02:18.958740
+**Repository:** /home/phil/gitlab_github/luxorliving
 
 ## Executive Summary
 
 - **Total Findings:** 34
-- **Execution Time:** 0.02s
+- **Execution Time:** 0.04s
 - **Agents Executed:** 7
 
 ### Findings by Severity
@@ -26,21 +26,21 @@
 Security review completed. Found 5 potential security concerns.
 
 - **Findings:** 5
-- **Execution Time:** 0.00s
+- **Execution Time:** 0.01s
 
 ### CODE QUALITY
 
 Code quality review completed. Found 7 observations.
 
 - **Findings:** 7
-- **Execution Time:** 0.01s
+- **Execution Time:** 0.02s
 
 ### ARCHITECTURE
 
 Architecture review completed. Found 6 architectural observations.
 
 - **Findings:** 6
-- **Execution Time:** 0.01s
+- **Execution Time:** 0.00s
 
 ### PERFORMANCE
 
@@ -80,7 +80,7 @@ Dependencies review completed. Found 4 dependency observations.
 
 Detected potential credential assignment. Verify no passwords/tokens are hardcoded.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/rest_client.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/rest_client.py`
 
 **Recommendation:** Use configuration storage or environment variables for credentials.
 
@@ -92,21 +92,9 @@ Detected potential credential assignment. Verify no passwords/tokens are hardcod
 
 HTTP connections detected. Authentication should use HTTPS.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/rest_client.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/rest_client.py`
 
 **Recommendation:** Enforce HTTPS for all authentication and API calls.
-
----
-
-#### Async functions without await in coordinator.py
-
-**Category:** Async Patterns
-
-File contains async functions but no await statements. Verify if async is necessary.
-
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/coordinator.py`
-
-**Recommendation:** Review async functions and ensure they properly await async operations.
 
 ---
 
@@ -116,7 +104,19 @@ File contains async functions but no await statements. Verify if async is necess
 
 File contains async functions but no await statements. Verify if async is necessary.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/diagnostics.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/diagnostics.py`
+
+**Recommendation:** Review async functions and ensure they properly await async operations.
+
+---
+
+#### Async functions without await in coordinator.py
+
+**Category:** Async Patterns
+
+File contains async functions but no await statements. Verify if async is necessary.
+
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/coordinator.py`
 
 **Recommendation:** Review async functions and ensure they properly await async operations.
 
@@ -130,7 +130,7 @@ File contains async functions but no await statements. Verify if async is necess
 
 File has 607 lines. Consider breaking into smaller modules.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/rest_client.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/rest_client.py`
 
 **Recommendation:** Split large files into smaller, focused modules for better maintainability.
 
@@ -142,7 +142,7 @@ File has 607 lines. Consider breaking into smaller modules.
 
 File has 786 lines. Consider breaking into smaller modules.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/knx_gateway.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/knx_gateway.py`
 
 **Recommendation:** Split large files into smaller, focused modules for better maintainability.
 
@@ -154,7 +154,7 @@ File has 786 lines. Consider breaking into smaller modules.
 
 Some dependencies use == (exact pins). Consider >= for libraries.
 
-**Location:** `/home/user/luxorliving/pyproject.toml`
+**Location:** `/home/phil/gitlab_github/luxorliving/pyproject.toml`
 
 **Recommendation:** Use >= with upper bounds for libraries, == only for applications.
 
@@ -168,7 +168,7 @@ Some dependencies use == (exact pins). Consider >= for libraries.
 
 The code uses defusedxml library which protects against XML attacks (XXE, billion laughs, etc.)
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/lxp_parser.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/lxp_parser.py`
 
 **Recommendation:** Continue using defusedxml for all XML parsing operations.
 
@@ -180,7 +180,7 @@ The code uses defusedxml library which protects against XML attacks (XXE, billio
 
 Configuration inputs are validated using Voluptuous schema validation.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/config_flow.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/config_flow.py`
 
 **Recommendation:** Ensure all user inputs are validated through schemas.
 
@@ -192,7 +192,7 @@ Configuration inputs are validated using Voluptuous schema validation.
 
 .env files are properly excluded from version control.
 
-**Location:** `/home/user/luxorliving/.gitignore`
+**Location:** `/home/phil/gitlab_github/luxorliving/.gitignore`
 
 ---
 
@@ -202,7 +202,7 @@ Configuration inputs are validated using Voluptuous schema validation.
 
 Black code formatter is configured for consistent code style.
 
-**Location:** `/home/user/luxorliving/pyproject.toml`
+**Location:** `/home/phil/gitlab_github/luxorliving/pyproject.toml`
 
 ---
 
@@ -212,7 +212,7 @@ Black code formatter is configured for consistent code style.
 
 isort is configured for consistent import organization.
 
-**Location:** `/home/user/luxorliving/pyproject.toml`
+**Location:** `/home/phil/gitlab_github/luxorliving/pyproject.toml`
 
 ---
 
@@ -222,7 +222,7 @@ isort is configured for consistent import organization.
 
 mypy is configured for static type analysis.
 
-**Location:** `/home/user/luxorliving/pyproject.toml`
+**Location:** `/home/phil/gitlab_github/luxorliving/pyproject.toml`
 
 **Recommendation:** Ensure strict mode is enabled and all code passes mypy checks.
 
@@ -234,7 +234,7 @@ mypy is configured for static type analysis.
 
 Code uses type hints for better type safety and IDE support.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/__init__.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/__init__.py`
 
 ---
 
@@ -244,7 +244,7 @@ Code uses type hints for better type safety and IDE support.
 
 Resilience pattern for fault tolerance is implemented.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/circuit_breaker.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/circuit_breaker.py`
 
 **Recommendation:** Ensure circuit breaker is used for all external service calls.
 
@@ -266,7 +266,7 @@ Code is well-organized into separate modules: config_flow.py (Configuration mana
 
 Using DataUpdateCoordinator for efficient state management.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/coordinator.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/coordinator.py`
 
 **Recommendation:** Ensure all entities use the coordinator for data updates.
 
@@ -278,7 +278,7 @@ Using DataUpdateCoordinator for efficient state management.
 
 Common entity functionality is abstracted in a base class.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/entity.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/entity.py`
 
 **Recommendation:** All platform entities should inherit from this base class.
 
@@ -300,7 +300,7 @@ Integration supports 6 platforms: light.py, switch.py, sensor.py, binary_sensor.
 
 LXP parser implements caching to avoid redundant parsing operations.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/lxp_parser.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/lxp_parser.py`
 
 **Recommendation:** Monitor cache hit rates and adjust TTL as needed.
 
@@ -312,7 +312,7 @@ LXP parser implements caching to avoid redundant parsing operations.
 
 Switch platform includes rate limiting to prevent rapid state changes.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/switch.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/switch.py`
 
 **Recommendation:** Verify rate limits are appropriate for the use case.
 
@@ -324,7 +324,7 @@ Switch platform includes rate limiting to prevent rapid state changes.
 
 Code uses asyncio.gather or create_task for parallel execution.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/__init__.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/__init__.py`
 
 **Recommendation:** Ensure error handling for parallel tasks is robust.
 
@@ -336,7 +336,7 @@ Code uses asyncio.gather or create_task for parallel execution.
 
 Dedicated benchmarking module for performance regression detection.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/benchmark.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/benchmark.py`
 
 **Recommendation:** Run benchmarks regularly and track metrics over time.
 
@@ -348,7 +348,7 @@ Dedicated benchmarking module for performance regression detection.
 
 pytest with coverage tracking is configured.
 
-**Location:** `/home/user/luxorliving/pyproject.toml`
+**Location:** `/home/phil/gitlab_github/luxorliving/pyproject.toml`
 
 **Recommendation:** Set minimum coverage thresholds and enforce in CI.
 
@@ -360,7 +360,7 @@ pytest with coverage tracking is configured.
 
 Tests are well-organized with separate files for different components.
 
-**Location:** `/home/user/luxorliving/tests`
+**Location:** `/home/phil/gitlab_github/luxorliving/tests`
 
 **Recommendation:** Maintain test organization as new features are added.
 
@@ -382,7 +382,7 @@ Repository includes: Integration tests, Error scenario tests, Performance tests
 
 conftest.py provides shared fixtures for tests.
 
-**Location:** `/home/user/luxorliving/tests/conftest.py`
+**Location:** `/home/phil/gitlab_github/luxorliving/tests/conftest.py`
 
 **Recommendation:** Document complex fixtures and their usage.
 
@@ -394,7 +394,7 @@ conftest.py provides shared fixtures for tests.
 
 README includes all key sections: installation, usage, configuration, and features.
 
-**Location:** `/home/user/luxorliving/README.md`
+**Location:** `/home/phil/gitlab_github/luxorliving/README.md`
 
 ---
 
@@ -404,7 +404,7 @@ README includes all key sections: installation, usage, configuration, and featur
 
 Dedicated docs directory with multiple documentation files.
 
-**Location:** `/home/user/luxorliving/docs`
+**Location:** `/home/phil/gitlab_github/luxorliving/docs`
 
 **Recommendation:** Keep documentation up to date with code changes.
 
@@ -416,7 +416,7 @@ Dedicated docs directory with multiple documentation files.
 
 CHANGELOG.md tracks version history and changes.
 
-**Location:** `/home/user/luxorliving/CHANGELOG.md`
+**Location:** `/home/phil/gitlab_github/luxorliving/CHANGELOG.md`
 
 **Recommendation:** Update changelog with each release following Keep a Changelog format.
 
@@ -438,7 +438,7 @@ Sampled 5 files, 5 have docstrings.
 
 Using pyproject.toml for dependency management (PEP 518).
 
-**Location:** `/home/user/luxorliving/pyproject.toml`
+**Location:** `/home/phil/gitlab_github/luxorliving/pyproject.toml`
 
 **Recommendation:** Keep dependencies up to date and use version constraints.
 
@@ -450,7 +450,7 @@ Using pyproject.toml for dependency management (PEP 518).
 
 manifest.json declares integration dependencies.
 
-**Location:** `/home/user/luxorliving/custom_components/luxor_living/manifest.json`
+**Location:** `/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/manifest.json`
 
 **Recommendation:** Ensure manifest.json versions match pyproject.toml.
 
@@ -462,7 +462,7 @@ manifest.json declares integration dependencies.
 
 Automated dependency updates are enabled via Dependabot.
 
-**Location:** `/home/user/luxorliving/.github/dependabot.yml`
+**Location:** `/home/phil/gitlab_github/luxorliving/.github/dependabot.yml`
 
 **Recommendation:** Review and merge Dependabot PRs regularly.
 

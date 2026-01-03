@@ -106,13 +106,13 @@ RELEASE_OPERATIONS.md wurde überprüft und enthält eine solide Grundlage für 
 
 ## 📊 Metrics
 
-| Metric | Before Review | After Review | Status |
-|--------|--------------|--------------|--------|
-| Test Count Accuracy | ❌ 74 (wrong) | ✅ 207 (correct) | Fixed |
-| README.md Validation | ⚠️ Manual only | ✅ Automated + Manual | Improved |
-| Version Consistency | ⚠️ Mixed v0.3.0/v0.5.2 | ✅ Clarified examples | Improved |
-| Documentation Links | ❌ Some broken | ✅ All validated | Fixed |
-| SSH Workflow | ⚠️ Undocumented | ✅ Fully documented | Added |
+| Metric               | Before Review         | After Review         | Status   |
+| -------------------- | --------------------- | -------------------- | -------- |
+| Test Count Accuracy  | ❌ 74 (wrong)          | ✅ 207 (correct)      | Fixed    |
+| README.md Validation | ⚠️ Manual only         | ✅ Automated + Manual | Improved |
+| Version Consistency  | ⚠️ Mixed v0.3.0/v0.5.2 | ✅ Clarified examples | Improved |
+| Documentation Links  | ❌ Some broken         | ✅ All validated      | Fixed    |
+| SSH Workflow         | ⚠️ Undocumented        | ✅ Fully documented   | Added    |
 
 ---
 
