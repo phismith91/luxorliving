@@ -23,7 +23,7 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 **Working platforms:** Light, Switch, Cover, Climate, Binary Sensor, Sensor
 
-## 🚀 v0.5.4.2 Final Release
+## 🚀 v0.5.4.3 Final Release
 
 ### Focus
 - Automated CI/CD pipeline with GitHub Release creation

@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-## [0.5.4.2] - 2026-01-03
+## [0.5.4.3] - 2026-01-03
 
 ### ✅ Release Notes
 - Final release attempt after resolving GitHub Actions permissions and immutable release issues
