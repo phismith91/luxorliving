@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-01-03T09:05:39.555178",
-  "repository": "/home/user/luxorliving",
+  "timestamp": "2026-01-03T11:02:18.958740",
+  "repository": "/home/phil/gitlab_github/luxorliving",
   "statistics": {
     "total_findings": 34,
     "by_severity": {
@@ -10,14 +10,14 @@
       "low": 3,
       "info": 27
     },
-    "total_execution_time": 0.021184039000047505,
+    "total_execution_time": 0.03732533100992441,
     "agents_executed": 7
   },
   "agent_summaries": {
     "security": {
       "summary": "Security review completed. Found 5 potential security concerns.",
       "finding_count": 5,
-      "execution_time": 0.0030250549999664145,
+      "execution_time": 0.007581578000099398,
       "metrics": {
         "total_findings": 5
       }
@@ -25,7 +25,7 @@
     "code_quality": {
       "summary": "Code quality review completed. Found 7 observations.",
       "finding_count": 7,
-      "execution_time": 0.007198122999966472,
+      "execution_time": 0.018181374005507678,
       "metrics": {
         "total_findings": 7
       }
@@ -33,7 +33,7 @@
     "architecture": {
       "summary": "Architecture review completed. Found 6 architectural observations.",
       "finding_count": 6,
-      "execution_time": 0.005633460000012747,
+      "execution_time": 0.0036086210020584986,
       "metrics": {
         "total_findings": 6
       }
@@ -41,7 +41,7 @@
     "performance": {
       "summary": "Performance review completed. Found 4 performance-related observations.",
       "finding_count": 4,
-      "execution_time": 0.00107370500001025,
+      "execution_time": 0.002526847005356103,
       "metrics": {
         "total_findings": 4
       }
@@ -49,7 +49,7 @@
     "testing": {
       "summary": "Testing review completed. Found 4 testing observations.",
       "finding_count": 4,
-      "execution_time": 0.001252720000024965,
+      "execution_time": 0.0019256899977335706,
       "metrics": {
         "total_findings": 4
       }
@@ -57,7 +57,7 @@
     "documentation": {
       "summary": "Documentation review completed. Found 4 documentation observations.",
       "finding_count": 4,
-      "execution_time": 0.002417216000026201,
+      "execution_time": 0.0030862429994158447,
       "metrics": {
         "total_findings": 4
       }
@@ -65,7 +65,7 @@
     "dependencies": {
       "summary": "Dependencies review completed. Found 4 dependency observations.",
       "finding_count": 4,
-      "execution_time": 0.0005837600000404564,
+      "execution_time": 0.0004149779997533187,
       "metrics": {
         "total_findings": 4
       }
@@ -79,7 +79,7 @@
         "category": "Authentication",
         "title": "Verify no hardcoded credentials",
         "description": "Detected potential credential assignment. Verify no passwords/tokens are hardcoded.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/rest_client.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/rest_client.py",
         "line_number": null,
         "recommendation": "Use configuration storage or environment variables for credentials."
       },
@@ -87,23 +87,23 @@
         "category": "Authentication",
         "title": "Unencrypted HTTP connections",
         "description": "HTTP connections detected. Authentication should use HTTPS.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/rest_client.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/rest_client.py",
         "line_number": null,
         "recommendation": "Enforce HTTPS for all authentication and API calls."
       },
       {
         "category": "Async Patterns",
-        "title": "Async functions without await in coordinator.py",
+        "title": "Async functions without await in diagnostics.py",
         "description": "File contains async functions but no await statements. Verify if async is necessary.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/coordinator.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/diagnostics.py",
         "line_number": null,
         "recommendation": "Review async functions and ensure they properly await async operations."
       },
       {
         "category": "Async Patterns",
-        "title": "Async functions without await in diagnostics.py",
+        "title": "Async functions without await in coordinator.py",
         "description": "File contains async functions but no await statements. Verify if async is necessary.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/diagnostics.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/coordinator.py",
         "line_number": null,
         "recommendation": "Review async functions and ensure they properly await async operations."
       }
@@ -113,7 +113,7 @@
         "category": "Code Complexity",
         "title": "Large file: rest_client.py",
         "description": "File has 607 lines. Consider breaking into smaller modules.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/rest_client.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/rest_client.py",
         "line_number": null,
         "recommendation": "Split large files into smaller, focused modules for better maintainability."
       },
@@ -121,7 +121,7 @@
         "category": "Code Complexity",
         "title": "Large file: knx_gateway.py",
         "description": "File has 786 lines. Consider breaking into smaller modules.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/knx_gateway.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/knx_gateway.py",
         "line_number": null,
         "recommendation": "Split large files into smaller, focused modules for better maintainability."
       },
@@ -129,7 +129,7 @@
         "category": "Dependencies",
         "title": "Pinned dependency versions detected",
         "description": "Some dependencies use == (exact pins). Consider >= for libraries.",
-        "file_path": "/home/user/luxorliving/pyproject.toml",
+        "file_path": "/home/phil/gitlab_github/luxorliving/pyproject.toml",
         "line_number": null,
         "recommendation": "Use >= with upper bounds for libraries, == only for applications."
       }
@@ -139,7 +139,7 @@
         "category": "XML Security",
         "title": "Secure XML parsing implemented",
         "description": "The code uses defusedxml library which protects against XML attacks (XXE, billion laughs, etc.)",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/lxp_parser.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/lxp_parser.py",
         "line_number": null,
         "recommendation": "Continue using defusedxml for all XML parsing operations."
       },
@@ -147,7 +147,7 @@
         "category": "Input Validation",
         "title": "Input validation using Voluptuous",
         "description": "Configuration inputs are validated using Voluptuous schema validation.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/config_flow.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/config_flow.py",
         "line_number": null,
         "recommendation": "Ensure all user inputs are validated through schemas."
       },
@@ -155,7 +155,7 @@
         "category": "Secrets Management",
         "title": "Environment files ignored in git",
         "description": ".env files are properly excluded from version control.",
-        "file_path": "/home/user/luxorliving/.gitignore",
+        "file_path": "/home/phil/gitlab_github/luxorliving/.gitignore",
         "line_number": null,
         "recommendation": null
       },
@@ -163,7 +163,7 @@
         "category": "Code Formatting",
         "title": "Black formatter configured",
         "description": "Black code formatter is configured for consistent code style.",
-        "file_path": "/home/user/luxorliving/pyproject.toml",
+        "file_path": "/home/phil/gitlab_github/luxorliving/pyproject.toml",
         "line_number": null,
         "recommendation": null
       },
@@ -171,7 +171,7 @@
         "category": "Import Sorting",
         "title": "Import sorting configured",
         "description": "isort is configured for consistent import organization.",
-        "file_path": "/home/user/luxorliving/pyproject.toml",
+        "file_path": "/home/phil/gitlab_github/luxorliving/pyproject.toml",
         "line_number": null,
         "recommendation": null
       },
@@ -179,7 +179,7 @@
         "category": "Type Safety",
         "title": "Static type checking enabled",
         "description": "mypy is configured for static type analysis.",
-        "file_path": "/home/user/luxorliving/pyproject.toml",
+        "file_path": "/home/phil/gitlab_github/luxorliving/pyproject.toml",
         "line_number": null,
         "recommendation": "Ensure strict mode is enabled and all code passes mypy checks."
       },
@@ -187,7 +187,7 @@
         "category": "Type Hints",
         "title": "Type hints present in code",
         "description": "Code uses type hints for better type safety and IDE support.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/__init__.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/__init__.py",
         "line_number": null,
         "recommendation": null
       },
@@ -195,7 +195,7 @@
         "category": "Error Handling",
         "title": "Circuit breaker pattern implemented",
         "description": "Resilience pattern for fault tolerance is implemented.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/circuit_breaker.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/circuit_breaker.py",
         "line_number": null,
         "recommendation": "Ensure circuit breaker is used for all external service calls."
       },
@@ -211,7 +211,7 @@
         "category": "Design Patterns",
         "title": "Coordinator pattern implemented",
         "description": "Using DataUpdateCoordinator for efficient state management.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/coordinator.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/coordinator.py",
         "line_number": null,
         "recommendation": "Ensure all entities use the coordinator for data updates."
       },
@@ -219,7 +219,7 @@
         "category": "Design Patterns",
         "title": "Base entity abstraction",
         "description": "Common entity functionality is abstracted in a base class.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/entity.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/entity.py",
         "line_number": null,
         "recommendation": "All platform entities should inherit from this base class."
       },
@@ -235,7 +235,7 @@
         "category": "Performance",
         "title": "Caching implemented",
         "description": "LXP parser implements caching to avoid redundant parsing operations.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/lxp_parser.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/lxp_parser.py",
         "line_number": null,
         "recommendation": "Monitor cache hit rates and adjust TTL as needed."
       },
@@ -243,7 +243,7 @@
         "category": "Performance",
         "title": "Rate limiting implemented",
         "description": "Switch platform includes rate limiting to prevent rapid state changes.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/switch.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/switch.py",
         "line_number": null,
         "recommendation": "Verify rate limits are appropriate for the use case."
       },
@@ -251,7 +251,7 @@
         "category": "Performance",
         "title": "Parallel async operations",
         "description": "Code uses asyncio.gather or create_task for parallel execution.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/__init__.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/__init__.py",
         "line_number": null,
         "recommendation": "Ensure error handling for parallel tasks is robust."
       },
@@ -259,7 +259,7 @@
         "category": "Performance",
         "title": "Performance benchmarking framework",
         "description": "Dedicated benchmarking module for performance regression detection.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/benchmark.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/benchmark.py",
         "line_number": null,
         "recommendation": "Run benchmarks regularly and track metrics over time."
       },
@@ -267,7 +267,7 @@
         "category": "Test Coverage",
         "title": "Coverage tracking configured",
         "description": "pytest with coverage tracking is configured.",
-        "file_path": "/home/user/luxorliving/pyproject.toml",
+        "file_path": "/home/phil/gitlab_github/luxorliving/pyproject.toml",
         "line_number": null,
         "recommendation": "Set minimum coverage thresholds and enforce in CI."
       },
@@ -275,7 +275,7 @@
         "category": "Test Organization",
         "title": "Comprehensive test suite with 22 test files",
         "description": "Tests are well-organized with separate files for different components.",
-        "file_path": "/home/user/luxorliving/tests",
+        "file_path": "/home/phil/gitlab_github/luxorliving/tests",
         "line_number": null,
         "recommendation": "Maintain test organization as new features are added."
       },
@@ -291,7 +291,7 @@
         "category": "Test Fixtures",
         "title": "Pytest fixtures configured",
         "description": "conftest.py provides shared fixtures for tests.",
-        "file_path": "/home/user/luxorliving/tests/conftest.py",
+        "file_path": "/home/phil/gitlab_github/luxorliving/tests/conftest.py",
         "line_number": null,
         "recommendation": "Document complex fixtures and their usage."
       },
@@ -299,7 +299,7 @@
         "category": "Documentation",
         "title": "Comprehensive README",
         "description": "README includes all key sections: installation, usage, configuration, and features.",
-        "file_path": "/home/user/luxorliving/README.md",
+        "file_path": "/home/phil/gitlab_github/luxorliving/README.md",
         "line_number": null,
         "recommendation": null
       },
@@ -307,7 +307,7 @@
         "category": "Documentation",
         "title": "Technical documentation present (6 files)",
         "description": "Dedicated docs directory with multiple documentation files.",
-        "file_path": "/home/user/luxorliving/docs",
+        "file_path": "/home/phil/gitlab_github/luxorliving/docs",
         "line_number": null,
         "recommendation": "Keep documentation up to date with code changes."
       },
@@ -315,7 +315,7 @@
         "category": "Documentation",
         "title": "Changelog maintained",
         "description": "CHANGELOG.md tracks version history and changes.",
-        "file_path": "/home/user/luxorliving/CHANGELOG.md",
+        "file_path": "/home/phil/gitlab_github/luxorliving/CHANGELOG.md",
         "line_number": null,
         "recommendation": "Update changelog with each release following Keep a Changelog format."
       },
@@ -331,7 +331,7 @@
         "category": "Dependencies",
         "title": "Modern Python packaging",
         "description": "Using pyproject.toml for dependency management (PEP 518).",
-        "file_path": "/home/user/luxorliving/pyproject.toml",
+        "file_path": "/home/phil/gitlab_github/luxorliving/pyproject.toml",
         "line_number": null,
         "recommendation": "Keep dependencies up to date and use version constraints."
       },
@@ -339,7 +339,7 @@
         "category": "Dependencies",
         "title": "Home Assistant manifest",
         "description": "manifest.json declares integration dependencies.",
-        "file_path": "/home/user/luxorliving/custom_components/luxor_living/manifest.json",
+        "file_path": "/home/phil/gitlab_github/luxorliving/custom_components/luxor_living/manifest.json",
         "line_number": null,
         "recommendation": "Ensure manifest.json versions match pyproject.toml."
       },
@@ -347,7 +347,7 @@
         "category": "Dependencies",
         "title": "Dependabot configured",
         "description": "Automated dependency updates are enabled via Dependabot.",
-        "file_path": "/home/user/luxorliving/.github/dependabot.yml",
+        "file_path": "/home/phil/gitlab_github/luxorliving/.github/dependabot.yml",
         "line_number": null,
         "recommendation": "Review and merge Dependabot PRs regularly."
       }

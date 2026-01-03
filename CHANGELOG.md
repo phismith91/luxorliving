@@ -60,7 +60,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- TBD for next release
+
+## [0.5.4-beta.1] - 2026-01-03
+
+### 🔒 HTTPS Enforcement Pre-Release
+
+**Goal:** Validate HTTPS authentication enforcement for outbound requests.
+
+#### Added
+- Enforce HTTPS authentication path for external requests (copilot/enforce-https-authentication merged into main)
+- Pre-release build to test HTTPS request handling
+
+#### Quality
+- Tests: pending validation in this pre-release cycle
+- Quality gates: pending (validate_readme.sh to be executed before final release)
 
 ---
 ## [0.5.3] - 2026-01-02
