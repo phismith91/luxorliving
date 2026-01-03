@@ -578,9 +578,18 @@ class BAOSRestClient:
 
 # Example usage
 async def main():
-    """Example usage of BAOSRestClient."""
+    """
+    Example usage of BAOSRestClient.
+    
+    NOTE: This example uses default credentials for demonstration only.
+    In production (Home Assistant integration), credentials are:
+    - Entered by users via the configuration UI
+    - Stored securely in Home Assistant's encrypted config entry
+    - Retrieved at runtime from the config entry
+    See config_flow.py and __init__.py for the actual credential handling.
+    """
     async with BAOSRestClient("192.168.1.3") as client:
-        # Login
+        # Login with example credentials (NOT used in production)
         await client.login("admin", "admin")
         print(f"✅ Logged in. Token: {client.session_token[:20]}...")
 
