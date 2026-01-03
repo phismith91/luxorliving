@@ -21,18 +21,29 @@ from custom_components.luxor_living.const import (
 
 
 def pytest_configure(config):
-    """Disable pytest-socket globally to allow mock servers."""
+    """Disable pytest-socket to allow mock servers in tests.
+
+    Patches pytest_socket.disable_socket to prevent socket blocking.
+    This must happen before any test modules are imported.
+    """
     try:
+        import socket
         import pytest_socket
 
-        # Completely disable socket blocking
+        # Get the original socket class before pytest_socket patches it
+        original_socket = socket.socket
+
+        # Replace pytest_socket's disable_socket function to be a no-op
+        def no_op_disable(*args, **kwargs):
+            """No-op disable function."""
+            pass
+
+        pytest_socket.disable_socket = no_op_disable
         pytest_socket.disable_socket_is_enabled = False
-        
-        # Also try to disable via the module function
-        if hasattr(pytest_socket, "enable_socket"):
-            pytest_socket.enable_socket()
+
+        # Restore the original socket class
+        socket.socket = original_socket
     except (ImportError, AttributeError):
-        # pytest-socket not installed or doesn't have these attributes
         pass
 
 

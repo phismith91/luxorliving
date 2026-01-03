@@ -1,32 +1,32 @@
 {
-  "timestamp": "2026-01-03T19:29:06.220935",
+  "timestamp": "2026-01-03T19:35:49.002958",
   "results": [
     {
-      "operation": "LXP Parsing (tmpus9_go7t.lxp)",
+      "operation": "LXP Parsing (tmpi6hhril9.lxp)",
       "iterations": 2,
-      "total_time": 2.8508999093901366e-05,
-      "avg_time": 1.4254499546950683e-05,
-      "min_time": 1.4193999959388748e-05,
-      "max_time": 1.4314999134512618e-05,
-      "throughput": 70153.28715724149
+      "total_time": 2.609000148368068e-05,
+      "avg_time": 1.304500074184034e-05,
+      "min_time": 1.2753000191878527e-05,
+      "max_time": 1.3337001291802153e-05,
+      "throughput": 76657.71890626384
     },
     {
       "operation": "Entity Creation (5 entities)",
       "iterations": 2,
-      "total_time": 0.01138142399940989,
-      "avg_time": 0.005690711999704945,
-      "min_time": 0.005662850999215152,
-      "max_time": 0.005718573000194738,
-      "throughput": 175.72493565863965
+      "total_time": 0.01221350000196253,
+      "avg_time": 0.006106750000981265,
+      "min_time": 0.0056029680017672945,
+      "max_time": 0.006610532000195235,
+      "throughput": 163.75322386528265
     },
     {
       "operation": "Circuit Breaker Operation",
       "iterations": 2,
-      "total_time": 0.0029464959989127237,
-      "avg_time": 0.0014732479994563619,
-      "min_time": 0.001431875998605392,
-      "max_time": 0.0015146200003073318,
-      "throughput": 678.7723454360749
+      "total_time": 0.0031370579981739866,
+      "avg_time": 0.0015685289990869933,
+      "min_time": 0.0014982559987402055,
+      "max_time": 0.001638801999433781,
+      "throughput": 637.5400139762021
     }
   ]
 }
