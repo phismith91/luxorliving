@@ -20,17 +20,20 @@ from custom_components.luxor_living.const import (
 )
 
 
-@pytest.fixture(scope="session", autouse=True)
-def socket_enabled():
-    """Enable socket usage for all tests."""
+def pytest_configure(config):
+    """Disable pytest-socket globally to allow mock servers."""
     try:
-        from pytest_socket import disable_socket, enable_socket
+        import pytest_socket
 
-        enable_socket()
-        yield
-    except ImportError:
-        # pytest-socket not installed
-        yield
+        # Completely disable socket blocking
+        pytest_socket.disable_socket_is_enabled = False
+        
+        # Also try to disable via the module function
+        if hasattr(pytest_socket, "enable_socket"):
+            pytest_socket.enable_socket()
+    except (ImportError, AttributeError):
+        # pytest-socket not installed or doesn't have these attributes
+        pass
 
 
 @pytest.fixture
