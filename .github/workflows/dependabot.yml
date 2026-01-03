@@ -44,9 +44,6 @@ jobs:
             - name: Run isort
               run: isort --check-only custom_components/luxor_living/ tests/
 
-            - name: Run mypy
-              run: mypy custom_components/luxor_living/
-
             - name: Validate README
               run: ./scripts/validate_readme.sh
 

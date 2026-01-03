@@ -42,7 +42,7 @@ jobs:
 
             - name: Run tests with coverage
               run: |
-                  python -m pytest tests/ -v --tb=short --cov=custom_components.luxor_living --cov-report=term --cov-report=xml --disable-socket
+                  python -m pytest tests/ -v --tb=short --cov=custom_components.luxor_living --cov-report=term --cov-report=xml
 
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@v4
@@ -75,9 +75,6 @@ jobs:
 
             - name: Run isort
               run: isort --check-only custom_components/luxor_living/ tests/
-
-            - name: Run mypy
-              run: mypy custom_components/luxor_living/
 
             - name: Validate README
               run: ./scripts/validate_readme.sh

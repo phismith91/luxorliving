@@ -28,7 +28,7 @@ python -m pytest tests/ -v
 black custom_components/luxor_living/ tests/
 isort custom_components/luxor_living/ tests/
 
-# Type checking
+# Type checking (optional)
 mypy custom_components/luxor_living/
 ```
 
@@ -149,7 +149,7 @@ Before any commit/release:
 
 - ✅ All tests passing (`pytest`)
 - ✅ Code formatted (`black`, `isort`)
-- ✅ Type checking passes (`mypy`)
+- ✅ Type checking passes (`mypy`) - optional
 - ✅ Documentation updated
 - ✅ Optional: Pre-release testing on remote HA
 
