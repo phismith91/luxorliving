@@ -365,7 +365,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entities = []
 
         # Get all entities from mapper
-        mapper = integration_data.get("mapper")
+        mapper = hass.data[DOMAIN].get("mapper")
         if mapper:
             for entity in mapper.entities:
                 if platform_filter and entity.platform.value != platform_filter:

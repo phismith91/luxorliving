@@ -310,7 +310,7 @@ class EntityMapper:
             name=name,
             device_name=device.name,
             device_id=device.id,
-            entity_type=entity_type,
+            entity_type=entity_type,  # type: ignore
             datapoints=datapoints,
             attributes=attributes,
             parameters=sensor.parameters,

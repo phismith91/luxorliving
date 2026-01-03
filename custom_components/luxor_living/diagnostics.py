@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
@@ -81,7 +81,8 @@ async def async_get_config_entry_diagnostics(
     if mapper:
         try:
             entities = getattr(mapper, "entities", [])
-            diagnostics["entities"] = []
+            entity_list: list[dict[str, Any]] = []
+            diagnostics["entities"] = entity_list  # type: ignore
 
             # Collect entity details (limit to 50 for performance)
             for entity in entities[:50]:
@@ -96,7 +97,7 @@ async def async_get_config_entry_diagnostics(
                     "attributes": getattr(entity, "attributes", {}),
                     "parameters": getattr(entity, "parameters", {}),  # LXP parameters
                 }
-                diagnostics["entities"].append(entity_info)
+                entity_list.append(entity_info)
 
             # Summary
             diagnostics["entity_summary"] = {
@@ -122,7 +123,7 @@ async def async_get_config_entry_diagnostics(
 
                 # Device details with actuator/sensor parameters
                 for device in devices:
-                    device_info = {
+                    device_info: dict[str, Any] = {
                         "name": getattr(device, "name", "unknown"),
                         "serial_number": getattr(device, "serial_number", "unknown"),
                         "app_id": getattr(device, "app_id", "unknown"),
@@ -141,7 +142,7 @@ async def async_get_config_entry_diagnostics(
                             "off_icon": getattr(actuator, "off_icon", ""),
                             "parameters": getattr(actuator, "parameters", {}),
                         }
-                        device_info["actuators"].append(actuator_info)
+                        cast(list, device_info["actuators"]).append(actuator_info)
 
                     # Sensor details with parameters
                     for sensor in getattr(device, "sensors", []):
@@ -151,7 +152,7 @@ async def async_get_config_entry_diagnostics(
                             "sensor_type": getattr(sensor, "sensor_type", 0),
                             "parameters": getattr(sensor, "parameters", {}),
                         }
-                        device_info["sensors"].append(sensor_info)
+                        cast(list, device_info["sensors"]).append(sensor_info)
 
                     diagnostics["devices"]["details"].append(device_info)
         except Exception as err:

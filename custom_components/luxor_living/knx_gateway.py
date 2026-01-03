@@ -6,7 +6,7 @@ import asyncio
 import logging
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 from homeassistant.core import HomeAssistant
 from xknx import XKNX
@@ -184,7 +184,7 @@ class LuxorKNXGateway:
             return True
 
         try:
-            return await circuit_breaker.call(_setup_knx_connection)
+            return cast(bool, await circuit_breaker.call(_setup_knx_connection))
         except CircuitBreakerOpenException as e:
             _LOGGER.error("KNX connection rejected by circuit breaker: %s", e)
             self._connected = False

@@ -6,7 +6,7 @@ import asyncio
 import logging
 import ssl
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import aiohttp
 
@@ -264,7 +264,7 @@ class BAOSRestClient:
                 _LOGGER.debug("KNX Tunneling enabled successfully (200 OK)")
                 return True
 
-        return await circuit_breaker.call(_enable_tunneling)
+        return cast(bool, await circuit_breaker.call(_enable_tunneling))
 
     async def disable_tunneling(self) -> bool:
         """
@@ -299,7 +299,7 @@ class BAOSRestClient:
                     return False
 
         try:
-            return await circuit_breaker.call(_disable_tunneling)
+            return cast(bool, await circuit_breaker.call(_disable_tunneling))
         except Exception as e:
             _LOGGER.error(f"Error disabling tunneling: {e}")
             return False
@@ -316,13 +316,14 @@ class BAOSRestClient:
             }
         """
         self._ensure_authenticated()
+        assert self._session is not None
 
         url = f"{self.base_url}/rest/device/authtunneling"
         headers = self._get_auth_headers()
 
         async with self._session.get(url, headers=headers) as response:
             if response.status == 200:
-                return await response.json()
+                return cast(Dict[str, Any], await response.json())
             else:
                 _LOGGER.warning(f"Get tunneling status returned {response.status}")
                 return {"enabled": False, "connectedClients": 0, "maxSlots": 1}
@@ -351,6 +352,7 @@ class BAOSRestClient:
             List of datapoint dicts, or None on error
         """
         self._ensure_authenticated()
+        assert self._session is not None
 
         url = f"{self.base_url}/rest/datapoints"
         headers = self._get_auth_headers()
@@ -370,14 +372,14 @@ class BAOSRestClient:
                     )
                     return None
 
-                response_data = await response.json()
+                response_data = cast(Dict[str, Any], await response.json())
 
                 # BAOS API returns {"datapoints": [{"id": 1, "url": "..."}]}
                 if isinstance(response_data, dict) and "datapoints" in response_data:
                     datapoints = response_data["datapoints"]
                     _LOGGER.debug(f"Fetched {len(datapoints)} datapoint references from BAOS")
                     _LOGGER.debug(f"🔍 First 3 datapoints: {datapoints[:3]}")
-                    return datapoints
+                    return cast(Optional[list], datapoints)
                 else:
                     _LOGGER.error(f"Unexpected API format: {type(response_data)}")
                     _LOGGER.debug(f"Response data: {response_data}")
@@ -414,6 +416,7 @@ class BAOSRestClient:
             Full datapoint dict with name, value, type, etc., or None on error
         """
         self._ensure_authenticated()
+        assert self._session is not None
 
         url = f"{self.base_url}/rest/datapoints/{datapoint_id}"
         headers = self._get_auth_headers()
@@ -439,7 +442,7 @@ class BAOSRestClient:
                         )
                         return None
 
-                    datapoint = await response.json()
+                    datapoint = cast(Optional[dict], await response.json())
                     _LOGGER.info(f"📁 Datapoint {datapoint_id} response: {datapoint}")
                     return datapoint
 
@@ -475,6 +478,7 @@ class BAOSRestClient:
             Datapoint value, or None on error
         """
         self._ensure_authenticated()
+        assert self._session is not None
 
         url = f"{self.base_url}/rest/datapoint/{datapoint_id}"
         headers = self._get_auth_headers()

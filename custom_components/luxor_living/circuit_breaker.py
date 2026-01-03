@@ -39,7 +39,7 @@ class CircuitBreakerOpenException(Exception):
 class CircuitBreaker:
     """Circuit breaker implementation for resilient error handling."""
 
-    def __init__(self, name: str, config: CircuitBreakerConfig = None):
+    def __init__(self, name: str, config: Optional[CircuitBreakerConfig] = None):
         """Initialize circuit breaker.
 
         Args:

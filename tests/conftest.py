@@ -25,6 +25,7 @@ def socket_enabled():
     """Enable socket usage for all tests."""
     try:
         from pytest_socket import disable_socket, enable_socket
+
         enable_socket()
         yield
     except ImportError:
