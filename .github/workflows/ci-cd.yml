@@ -91,8 +91,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, quality]
     if: >-
-      ((github.event_name == 'release' && github.event.action == 'published') ||
-       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))) &&
+      github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/tags/v') &&
       needs.test.result == 'success' &&
       needs.quality.result == 'success'
     steps:
@@ -110,13 +110,20 @@ jobs:
           zip -r ../luxor_living.zip luxor_living/
           cd ..
 
-      - name: Create GitHub Release
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: luxor_living.zip
-          body_path: CHANGELOG.md
-          draft: false
-          prerelease: false
+      - name: Delete existing release (if any)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG_NAME" >/dev/null 2>&1 && gh release delete "$TAG_NAME" -y || true
+
+      - name: Create GitHub Release with asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG_NAME" \
+            --title "$TAG_NAME" \
+            --notes-file CHANGELOG.md \
+            --latest \
+            luxor_living.zip
