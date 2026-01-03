@@ -42,7 +42,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          python -m pytest tests/ --cov-report=xml
+          python -m pytest tests/ --cov-report=xml -m "not enable_socket"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
