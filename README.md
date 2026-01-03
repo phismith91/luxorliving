@@ -23,15 +23,19 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 **Working platforms:** Light, Switch, Cover, Climate, Binary Sensor, Sensor
 
-## 🚀 v0.5.4-beta.1 HTTPS Enforcement (Pre-Release)
+## 🚀 v0.5.4.2 Final Release
 
 ### Focus
-- Enforce HTTPS authentication for outbound requests (pre-release build for testing)
-- Validate new HTTPS request handling path
+- Automated CI/CD pipeline with GitHub Release creation
+- ZIP archive for HACS/manual installation
+- HTTPS authentication enforcement from pre-release
+- CI pragmatism: skip socket tests in GitHub Actions, full suite locally
 
 ### Quality
 - Test Count Tracking: 209 tests (100% passing)
 - Automated Quality Gates: `./scripts/validate_readme.sh` (version, tests, links, changelog)
+- Local Testing: `python -m pytest tests/` → 209 passed
+- CI/CD Testing: `python -m pytest tests/ -m "not enable_socket"` → 195 passed (14 skipped socket tests)
 
 ---
 
@@ -47,7 +51,7 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 - **Release Operations**: Comprehensive quality gates, automated validation workflows
 - **Agent Coordination**: Enhanced release manager with CHANGELOG.md quality gates
 - **Error Prevention**: Detects versioned [Unreleased] sections, missing release entries
-- **Test Count Tracking**: 207 comprehensive tests (100% passing)
+- **Test Count Tracking**: 209 comprehensive tests (100% passing)
 
 ---
 
@@ -67,7 +71,7 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 - **Circuit Breaker Pattern**: Automatic failure detection and recovery for network operations
 - **Health Check Endpoint**: Monitor system status at `/api/luxor_living/health`
 - **Performance Benchmarking**: Built-in tools to measure and track performance regressions
-- **Error Scenario Testing**: Comprehensive testing of failure modes and recovery (207 tests)
+- **Error Scenario Testing**: Comprehensive testing of failure modes and recovery (209 tests)
 
 ### Developer Tools
 - **Benchmark Framework**: Measure operation performance with detailed statistics
@@ -220,7 +224,7 @@ Each gateway creates separate entities.
 
 **For Developers:**
 - [Security Policy](SECURITY.md) – Vulnerability reporting
-- Test Suite: 207 tests – Run `pytest tests/ -v` for details
+- Test Suite: 209 tests – Run `pytest tests/ -v` for details
 
 ---
 
