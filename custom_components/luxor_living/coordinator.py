@@ -9,7 +9,6 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,7 +49,7 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         This method is required to be async by the DataUpdateCoordinator base class,
         even though it currently doesn't perform any async operations.
-        
+
         Currently, state updates come from KNX telegrams via listeners in the gateway,
         not from polling. This method serves as a placeholder for future polling
         implementation when batch read requests are supported.
