@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Performance tests for LUXORliving integration."""
 
-import pytest
 import asyncio
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
+
 from custom_components.luxor_living.benchmark import (
     LuxorLivingBenchmark,
-    benchmark_lxp_parsing,
-    benchmark_entity_creation,
     benchmark_circuit_breaker,
+    benchmark_entity_creation,
+    benchmark_lxp_parsing,
     run_full_benchmark,
 )
 
@@ -175,8 +176,9 @@ class TestPerformanceRegression:
     @pytest.mark.asyncio
     async def test_memory_usage_stability(self):
         """Test that operations don't have memory leaks (basic check)."""
-        import psutil
         import os
+
+        import psutil
 
         # Get initial memory
         process = psutil.Process(os.getpid())

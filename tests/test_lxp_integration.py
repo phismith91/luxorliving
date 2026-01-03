@@ -11,7 +11,6 @@ from homeassistant.const import Platform
 from custom_components.luxor_living.entity_mapper import EntityMapper
 from custom_components.luxor_living.lxp_parser import LXPParser
 
-
 # LXP file paths
 LXP_HAUPTWOHNUNG = Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp"
 LXP_FAMILIE_SCHMIDT = Path(__file__).parent.parent / "docs" / "Familie Schmidt_0.9.lxp"

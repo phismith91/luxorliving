@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from custom_components.luxor_living.lxp_parser import LXPParser, LXPCache
+from custom_components.luxor_living.lxp_parser import LXPCache, LXPParser
 
 
 class TestLXPCache:

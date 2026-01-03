@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 
 from custom_components.luxor_living.const import (
@@ -18,7 +18,6 @@ from custom_components.luxor_living.const import (
 )
 from custom_components.luxor_living.diagnostics import async_get_config_entry_diagnostics
 from custom_components.luxor_living.entity_mapper import EntityMapper, MappedEntity
-from homeassistant.const import Platform
 
 
 @pytest.fixture

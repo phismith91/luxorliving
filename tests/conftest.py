@@ -1,15 +1,16 @@
 """Pytest fixtures for LUXORliving tests."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from homeassistant.core import HomeAssistant
+
+import pytest
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.luxor_living.const import (
     CONF_CONNECTION_TYPE,
-    CONF_LXP_FILE,
     CONF_LOG_LEVEL,
+    CONF_LXP_FILE,
     CONF_SCAN_INTERVAL,
     CONF_SIMULATION_MODE,
     CONNECTION_TYPE_TUNNELING,

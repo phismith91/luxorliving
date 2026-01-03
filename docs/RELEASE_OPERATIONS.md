@@ -122,21 +122,28 @@ python -m pytest tests/ -q --tb=short
 ### Step 0.2: Code Quality Checks
 
 ```bash
-# ✅ Black formatting check
+# ✅ Black formatting check (MANDATORY)
 black --check custom_components/luxor_living tests
 # EXPECTED: All done (no changes)
+# FIX: Run 'black custom_components/luxor_living tests' locally
 
-# ✅ isort check
+# ✅ isort check (MANDATORY)
 isort --check-only custom_components/luxor_living tests
 # EXPECTED: All done (no changes)
+# FIX: Run 'isort custom_components/luxor_living tests' locally
+
+# ✅ Type checking (MANDATORY)
+mypy custom_components/luxor_living --ignore-missing-imports
+# EXPECTED: Success
+
+# ✅ README validation (MANDATORY)
+./scripts/validate_readme.sh
+# EXPECTED: Exit code 0
+# FIX: Update README.md and CHANGELOG.md
 
 # ✅ flake8 linting (optional)
 flake8 custom_components/luxor_living
 # EXPECTED: 0 errors (unless acceptable warnings)
-
-# ✅ Type checking
-mypy custom_components/luxor_living --ignore-missing-imports
-# EXPECTED: Success
 
 # ✅ Security scanning
 bandit -r custom_components/luxor_living -q

@@ -1,8 +1,8 @@
 """Tests for LUXORliving cover platform."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from homeassistant.components.cover import (
     ATTR_POSITION,
     ATTR_TILT_POSITION,
@@ -12,11 +12,11 @@ from homeassistant.components.cover import (
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
+from custom_components.luxor_living.const import DATA_KNX_GATEWAY, DOMAIN
 from custom_components.luxor_living.cover import (
-    async_setup_entry,
     LuxorCover,
+    async_setup_entry,
 )
-from custom_components.luxor_living.const import DOMAIN, DATA_KNX_GATEWAY
 
 
 @pytest.fixture

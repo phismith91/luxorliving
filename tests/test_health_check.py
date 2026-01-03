@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Tests for Health Check endpoint."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from custom_components.luxor_living import LuxorLivingHealthView
 
@@ -141,8 +142,8 @@ class TestLuxorLivingHealthView:
     async def test_health_endpoint_circuit_breaker_open(self, health_view, mock_hass):
         """Test health check when circuit breaker is open."""
         from custom_components.luxor_living.circuit_breaker import (
-            _rest_api_circuit_breaker,
             _knx_circuit_breaker,
+            _rest_api_circuit_breaker,
         )
 
         # Mock the circuit breaker instances directly

@@ -42,11 +42,12 @@ mypy custom_components/luxor_living/
 
 ## Code Style Guidelines
 
-- **Formatting:** Use `black` (line length 88)
-- **Import sorting:** Use `isort`
+- **Formatting:** Use `black` (line length 100, Python 3.13+)
+- **Import sorting:** Use `isort` (black compatible, profile=black)
 - **Type hints:** Required for all functions (checked with `mypy`)
 - **Docstrings:** Use Google style for classes and public methods
 - **No emojis** in code comments or user-facing messages
+- **Pre-commit:** All changes must pass `black --check` and `isort --check-only`
 
 ## File Structure
 

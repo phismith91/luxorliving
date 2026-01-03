@@ -1,17 +1,17 @@
 """Tests for LUXORliving climate platform."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from homeassistant.components.climate import HVACMode
 from homeassistant.const import ATTR_TEMPERATURE, Platform, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 
 from custom_components.luxor_living.climate import (
-    async_setup_entry,
     LuxorClimate,
+    async_setup_entry,
 )
-from custom_components.luxor_living.const import DOMAIN, DATA_KNX_GATEWAY
+from custom_components.luxor_living.const import DATA_KNX_GATEWAY, DOMAIN
 
 
 @pytest.fixture
