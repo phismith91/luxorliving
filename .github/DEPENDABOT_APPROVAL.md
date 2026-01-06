@@ -1,23 +1,18 @@
-# Dependabot PR Auto-Approval
+# Dependabot PR Approval Policy
 
-This project auto-runs a Dependabot PR validation workflow that attempts to auto-approve Dependabot PRs.
+Automatic approval steps have been removed from the Dependabot validation workflow by design — maintainers must review and approve Dependabot PRs manually.
 
-If the `juliangruber/approve-pull-request-action@v2` step fails with **"Resource not accessible by integration"** or a similar permission error, follow these steps:
+How to approve a Dependabot PR
 
-1. Repository Workflow Permissions
-   - Go to: Settings → Actions → General → Workflow permissions
-   - Ensure **Allow GitHub Actions to create and approve pull requests** (or equivalent) is enabled. This is required for `GITHUB_TOKEN` to create PR reviews.
+1. Open the pull request on GitHub (Pull requests → select PR).
+2. Review the CI job results and the code changes.
+3. Click **Review changes** → choose **Approve** and submit the review.
 
-2. Branch Protection
-   - If branch protection rules limit who can approve, adjust them so that approvals from Actions or token-based automation are permitted when needed.
+Re-enabling automatic approvals (optional)
 
-3. Fallback with PAT (optional)
-   - If your organization restricts workflow permissions and you still want automatic approvals, create a Personal Access Token (PAT) with `repo` scope and add it as a repository secret named `PERSONAL_TOKEN`.
-   - The Dependabot workflow includes a fallback step that will use `PERSONAL_TOKEN` to approve the PR if the primary approve action fails.
+- If you want automatic approvals again in the future, we recommend using a Fine‑grained token scoped to this repository (or a classic PAT with minimal `repo` scope). Add it as the secret `PERSONAL_TOKEN` and reintroduce the approval step.
+- Note: automatic approvals can be risky; prefer manual review for higher assurance.
 
-4. Security Note
-   - Using a PAT is less preferred than enabling Actions permissions because a PAT is a long-lived credential. Use it only when necessary and rotate it regularly.
+Security note
 
-5. Troubleshooting
-   - After changing settings, re-run the Dependabot workflow (Actions → select run → Re-run jobs).
-   - Check the workflow logs for the approve step and the fallback step to see whether approval succeeded and which token was used.
+- Use the minimal permissions required and set a short expiration date for any token. Rotate tokens regularly and never commit them into the repository.
