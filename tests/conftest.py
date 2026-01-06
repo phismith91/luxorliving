@@ -10,11 +10,32 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-if "pytest_socket" in sys.modules:
-    import pytest_socket
+# Some CI setups install the `pytest-socket` plugin which blocks socket.socket by default.
+# Attempt to import and disable it if it's available. Use a try/except so this works
+# regardless of plugin import order.
+try:
+    import pytest_socket  # type: ignore
 
-    # Prevent pytest-socket from blocking sockets
+    # Prevent pytest-socket from blocking sockets used by aiohttp TestServer
     pytest_socket.disable_socket_is_enabled = False
+
+    # Ensure localhost connections are allowed (different pytest-socket versions
+    # expose different helper names; try common variants).
+    try:
+        pytest_socket.socket_allow_hosts("127.0.0.1")
+    except Exception:
+        try:
+            pytest_socket.allow_hosts("127.0.0.1")
+        except Exception:
+            # Last-resort: call enable_socket() if available
+            try:
+                pytest_socket.enable_socket()
+            except Exception:
+                # If all fail, continue — disabling the flag above may suffice
+                pass
+except Exception:
+    # Plugin not available or import failed — nothing to do
+    pass
 
 from custom_components.luxor_living.const import (
     CONF_CONNECTION_TYPE,
