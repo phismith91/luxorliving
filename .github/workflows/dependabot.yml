@@ -4,6 +4,12 @@ on:
     pull_request:
         branches: [main]
 
+# Required permissions for approving PRs via GITHUB_TOKEN
+# Grant explicitly that pull request reviews may be created by Actions
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
     dependabot-validation:
         name: Validate Dependabot PRs
@@ -47,9 +53,32 @@ jobs:
             - name: Validate README
               run: ./scripts/validate_readme.sh
 
-            - name: Auto-approve Dependabot PR
+            - name: Auto-approve Dependabot PR (primary)
+              id: auto_approve
               if: success()
               uses: juliangruber/approve-pull-request-action@v2
+              continue-on-error: true
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   number: ${{ github.event.pull_request.number }}
+
+            - name: Auto-approve Dependabot PR (fallback via PAT)
+              if: ${{ failure() && secrets.PERSONAL_TOKEN != '' }}
+              run: |
+                  # Fallback: use a Personal Access Token (repo scope) stored in secrets.PERSONAL_TOKEN
+                  PR_NUMBER=${{ github.event.pull_request.number }}
+                  REPO_FULL=${{ github.repository }}
+
+                  echo "Fallback: approving PR #$PR_NUMBER using PERSONAL_TOKEN"
+
+                  curl -s -X POST "https://api.github.com/repos/${REPO_FULL}/pulls/${PR_NUMBER}/reviews" \
+                    -H "Accept: application/vnd.github+json" \
+                    -H "Authorization: Bearer ${{ secrets.PERSONAL_TOKEN }}" \
+                    -d '{"event":"APPROVE", "body":"Auto-approved by CI fallback token."}' | jq '.'
+
+            - name: Auto-approve Dependabot PR (report failure)
+              if: ${{ failure() && secrets.PERSONAL_TOKEN == '' }}
+              run: |
+                  echo "Auto-approve failed with GITHUB_TOKEN and no PERSONAL_TOKEN provided."
+                  echo "Please add a repository secret 'PERSONAL_TOKEN' (repo scope) if you want automatic approvals as fallback."
+                  exit 1
