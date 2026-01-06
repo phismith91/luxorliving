@@ -27,8 +27,12 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 ## Current Release
 
+## Current Release
+
 <!-- RELEASE_NOTES_START -->
 
+
+# 🎉 LUXORliving v0.5.4.3 (Final Release)
 
 
 
@@ -66,6 +70,9 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 - Documentation: ./docs/
 <!-- RELEASE_NOTES_END -->
+
+For full release history see [CHANGELOG.md](./CHANGELOG.md).
+
 
 For full release history see [CHANGELOG.md](./CHANGELOG.md).
 
