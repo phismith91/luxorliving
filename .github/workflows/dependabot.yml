@@ -53,8 +53,8 @@ jobs:
             - name: Validate README
               run: ./scripts/validate_readme.sh
 
-            - name: Note: manual approval required
-              if: success()
+            - name: "Note: manual approval required"
+              if: ${{ success() }}
               run: |
                   echo "Automatic approval was intentionally removed from this workflow."
                   echo "Maintainers must review and manually approve Dependabot PRs if CI passes."
