@@ -49,6 +49,16 @@
    GIT_SSH_COMMAND='ssh -F /dev/null' git push origin v0.5.2
    ```
 
+2.5 **README: Nur aktuelles Release anzeigen**
+
+Bevor der GitHub-Release erstellt wird, aktualisiere die `README.md` so, dass **nur** das aktuelle Release als "Current Release" angezeigt wird (die vollständige Historie bleibt in `CHANGELOG.md`). Das Script `./scripts/update_readme_release.sh` übernimmt das Einfügen der passenden `RELEASE_NOTES_v<version>.md` Sektion und committed die Änderung.
+
+```bash
+./scripts/update_readme_release.sh
+# überprüfe und pushe den Commit
+GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main
+```
+
 3. **GitHub Release erstellen (Latest)**
    ```bash
    gh release create v0.5.2 --title "v0.5.2" --notes-file RELEASE_NOTES_v0.5.2.md --latest

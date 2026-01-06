@@ -134,6 +134,34 @@ else
         echo "   ⚠️  No [Unreleased] section (recommended for ongoing work)"
     fi
 fi
+
+echo "6️⃣  Checking README release section..."
+# Check for release markers and that content matches manifest version
+if grep -q "<!-- RELEASE_NOTES_START -->" README.md; then
+    if ! grep -q "<!-- RELEASE_NOTES_END -->" README.md; then
+        echo "   ❌ README release markers incomplete"
+        ERRORS=$((ERRORS + 1))
+    else
+        SECTION=$(awk '/<!-- RELEASE_NOTES_START -->/{flag=1;next}/<!-- RELEASE_NOTES_END -->/{flag=0}flag' README.md)
+        if echo "$SECTION" | grep -q "v$MANIFEST_VERSION"; then
+            echo "   ✅ README current release matches v$MANIFEST_VERSION"
+        else
+            echo "   ❌ README current release does not contain v$MANIFEST_VERSION"
+            ERRORS=$((ERRORS + 1))
+        fi
+    fi
+else
+    echo "   ⚠️  No release markers found in README.md (recommended to add)"
+fi
+
+# Ensure no historical release sections remain in README
+if grep -q "## 🚀 v" README.md; then
+    echo "   ⚠️  Found '## 🚀 v' headers in README.md; move full history to CHANGELOG.md"
+    ERRORS=$((ERRORS + 1))
+else
+    echo "   ✅ No legacy release headers found in README.md"
+fi
+
 echo ""
 
 # 6. Summary

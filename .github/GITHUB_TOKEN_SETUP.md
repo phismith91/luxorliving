@@ -39,6 +39,10 @@ cat > /tmp/release_notes.md << 'EOF'
 ... Release Notes ...
 EOF
 
+# Optional: README für HACS vorbereiten
+# Vor dem Erstellen des GitHub Release die README aktualisieren, damit HACS/HA nur das aktuelle Release anzeigt:
+# ./scripts/update_readme_release.sh
+
 # 2. Python-Script erstellen (falls nicht vorhanden)
 cat > /tmp/create_github_release.py << 'PYTHON_EOF'
 ... Script Code ...
