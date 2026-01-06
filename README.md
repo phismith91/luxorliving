@@ -23,62 +23,58 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 **Working platforms:** Light, Switch, Cover, Climate, Binary Sensor, Sensor
 
-## 🚀 v0.5.4.3 Final Release
+## Current Release
 
-### Focus
-- Automated CI/CD pipeline with GitHub Release creation
-- ZIP archive for HACS/manual installation
-- HTTPS authentication enforcement from pre-release
-- CI pragmatism: skip socket tests in GitHub Actions, full suite locally
+## Current Release
 
-### Quality
-- Test Count Tracking: 209 tests (100% passing)
-- Automated Quality Gates: `./scripts/validate_readme.sh` (version, tests, links, changelog)
-- Local Testing: `python -m pytest tests/` → 209 passed
-- CI/CD Testing: `python -m pytest tests/ -m "not enable_socket"` → 195 passed (14 skipped socket tests)
+<!-- RELEASE_NOTES_START -->
 
----
 
-## 🚀 v0.5.3 Quality Assurance & Release Process
 
-### Quality Gates & Validation
-- **Automated README.md Validation**: Version consistency, test count accuracy, link validation
-- **CHANGELOG.md Quality Gates**: Mandatory release entry validation, version consistency checks
-- **Pre-Release Validation Script**: `./scripts/validate_readme.sh` - 6-step automated quality gate
-- **Release Process Improvements**: Enhanced documentation, SSH workflow, GitHub release templates
 
-### Documentation Updates
-- **Release Operations**: Comprehensive quality gates, automated validation workflows
-- **Agent Coordination**: Enhanced release manager with CHANGELOG.md quality gates
-- **Error Prevention**: Detects versioned [Unreleased] sections, missing release entries
-- **Test Count Tracking**: 209 comprehensive tests (100% passing)
+**Release Date:** 6. Januar 2026
 
----
 
-## 🚀 v0.5.2 Performance & Resilience Features
 
-### Performance Optimizations
-- **Parallel Entity Creation**: All entities are created simultaneously using `asyncio.gather`, reducing startup time by up to 70%
-- **Async Operations**: CPU-intensive tasks run in thread pools to prevent blocking the event loop
-- **Smart Caching**: LXP files are cached with TTL-based expiration and automatic memory management
+## 🔒 HTTPS Enforcement Validation
 
-### Configuration Options
-- **Discovery Timeout**: Configure auto-discovery debounce delay (0.5-10.0 seconds) via Options Flow
-- **Simulation Mode**: Test integration without physical KNX hardware
-- **Log Level Control**: Adjustable logging verbosity for troubleshooting
+- Enforce HTTPS authentication for outbound requests (merged branch copilot/enforce-https-authentication)
 
-### Resilience & Monitoring
-- **Circuit Breaker Pattern**: Automatic failure detection and recovery for network operations
-- **Health Check Endpoint**: Monitor system status at `/api/luxor_living/health`
-- **Performance Benchmarking**: Built-in tools to measure and track performance regressions
-- **Error Scenario Testing**: Comprehensive testing of failure modes and recovery (209 tests)
+- Promoted from pre-release to final
 
-### Developer Tools
-- **Benchmark Framework**: Measure operation performance with detailed statistics
-- **Memory Usage Tracking**: Monitor resource consumption during operations
-- **Regression Detection**: Automated performance regression testing
+
+
+## 🧪 Quality
+
+- Tests: 209/209 passing (100%)
+
+- Quality Gates: README/CHANGELOG validation via `./scripts/validate_readme.sh`
+
+
+
+## 📋 Summary
+
+- Purpose: verify HTTPS request path end-to-end
+
+- Final release with HTTPS enforcement and CI improvements
+
+
+
+## 🔗 Links
+
+- CHANGELOG: ./CHANGELOG.md
+
+- Documentation: ./docs/
+<!-- RELEASE_NOTES_END -->
+
+For full release history see [CHANGELOG.md](./CHANGELOG.md).
+
+
+For full release history see [CHANGELOG.md](./CHANGELOG.md).
 
 ---
+
+
 
 ## Quick Start
 
