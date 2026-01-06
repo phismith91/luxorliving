@@ -1,8 +1,8 @@
 # GitHub Copilot Instructions - LUXORliving Integration
 
-> **Note:** Allgemeine Projekt-Infos, Setup-Commands und Testing-Guidelines sind in [AGENTS.md](../AGENTS.md) dokumentiert.  
-> **Projekt-Context und Architektur:** Siehe [.github/copilot/CONTEXT.md](copilot/CONTEXT.md)  
-> **Context Engineering Skills:** Siehe [.github/copilot/skills/](copilot/skills/)
+> **Note:** Allgemeine Projekt-Infos, Setup-Commands und Testing-Guidelines sind in [AGENTS.md](/AGENTS.md) dokumentiert.  
+> **Projekt-Context und Architektur:** Siehe [.github/copilot/CONTEXT.md](/.github/copilot/CONTEXT.md)  
+> **Context Engineering Skills:** Siehe [.github/copilot/skills/](/.github/copilot/skills/)
 
 ---
 
@@ -157,7 +157,7 @@ gh release delete vX.Y.Z -y
 
 ## 🔗 Wichtige Links
 
-- **Projekt Setup & Tests:** [AGENTS.md](../AGENTS.md)
-- **Projekt Context:** [.github/copilot/CONTEXT.md](.github/copilot/CONTEXT.md)
+- **Projekt Setup & Tests:** [AGENTS.md](/AGENTS.md)
+- **Projekt Context:** [.github/copilot/CONTEXT.md](/.github/copilot/CONTEXT.md)
 - **Repository:** https://github.com/phismith91/luxorliving
 - **Issues:** https://github.com/phismith91/luxorliving/issues
