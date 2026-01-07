@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .knx_gateway import LuxorKNXGateway
+from .rest_client import AuthenticationError
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,6 +29,7 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self,
         hass: HomeAssistant,
         gateway: LuxorKNXGateway,
+        entry: ConfigEntry,
         scan_interval: int = 30,
     ) -> None:
         """Initialize the coordinator.
@@ -32,6 +37,7 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Args:
             hass: Home Assistant instance
             gateway: LuxorKNXGateway instance
+            entry: Config entry for this integration
             scan_interval: Update interval in seconds (default: 30)
         """
         super().__init__(
@@ -41,8 +47,10 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=timedelta(seconds=scan_interval),
         )
         self.gateway = gateway
+        self.entry = entry
         self._state_cache: dict[str, Any] = {}
         self._scan_interval = scan_interval
+        self._auth_failures = 0
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from the KNX gateway.
@@ -72,7 +80,27 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Update cache
             self._state_cache.update(state_updates)
 
+            # Reset auth failure counter on successful update
+            self._auth_failures = 0
+
             return self._state_cache
+
+        except AuthenticationError as err:
+            self._auth_failures += 1
+            _LOGGER.warning(
+                "Authentication error during update (attempt %d): %s",
+                self._auth_failures,
+                err,
+            )
+
+            # Trigger re-authentication flow after 3 consecutive failures
+            if self._auth_failures >= 3:
+                _LOGGER.error("Multiple authentication failures, creating repair issue")
+                from .repairs import create_auth_repair_issue
+
+                await create_auth_repair_issue(self.hass, self.entry, str(err))
+
+            raise UpdateFailed(f"Authentication error: {err}") from err
 
         except Exception as err:
             _LOGGER.error("Error updating LUXORliving data: %s", err)

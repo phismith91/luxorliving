@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Performance tests for LUXORliving integration."""
 
+# Ensure pytest_homeassistant_custom_component plugin is loaded when running tests directly
+pytest_plugins = "pytest_homeassistant_custom_component"
+
 import asyncio
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 
@@ -225,3 +228,126 @@ class TestRealLXPBenchmark:
         from custom_components.luxor_living.benchmark import get_benchmark
 
         assert any(r.operation == result.operation for r in get_benchmark().results)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(
+        not (Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp").exists(),
+        reason="Hauptwohnung.lxp not found",
+    )
+    async def test_integration_entity_creation_benchmark(self, mock_config_entry, mock_knx_gateway):
+        """Benchmark the time to set up the integration entity mapping using a real LXP file.
+
+        This measures entity mapping time including parsing the LXP file and creating
+        the EntityMapper with the real project data.
+        """
+        import time
+        from custom_components.luxor_living.entity_mapper import EntityMapper
+        from custom_components.luxor_living.lxp_parser import LXPParser
+
+        # Point to the real LXP file
+        lxp_path = Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp"
+
+        start = time.perf_counter()
+        
+        # Parse the LXP file
+        project = await LXPParser.parse_cached(str(lxp_path), include_unaffected=False)
+        
+        # Create entity mapper
+        mapper = EntityMapper(project)
+        entity_count = len(mapper.entities)
+        
+        end = time.perf_counter()
+
+        setup_time = end - start
+
+        print(f"LXP parsing + entity mapping time: {setup_time:.4f}s — Entities mapped: {entity_count}")
+
+        assert setup_time > 0
+        assert entity_count > 0  # Should have created some entities from Hauptwohnung.lxp
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(
+        not (Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp").exists(),
+        reason="Hauptwohnung.lxp not found",
+    )
+    async def test_full_entity_creation_benchmark(self, mock_config_entry, mock_knx_gateway, mock_coordinator):
+        """Benchmark the end-to-end entity creation by calling platform setup.
+
+        This test parses the real LXP file, builds the `EntityMapper` and then
+        calls each platform's `async_setup_entry` to simulate entity registration
+        while timing the operation.
+        """
+        import importlib
+        import time
+        from custom_components.luxor_living.entity_mapper import EntityMapper
+        from custom_components.luxor_living.lxp_parser import LXPParser
+        from custom_components.luxor_living.const import DOMAIN
+
+        lxp_path = Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp"
+
+        # Parse real LXP project (blocking on parse_cached)
+        project = await LXPParser.parse_cached(str(lxp_path), include_unaffected=False)
+
+        # Create mapper
+        mapper = EntityMapper(project)
+
+        # Prepare a fake hass object with required data
+        hass = MagicMock()
+        hass.data = {DOMAIN: {mock_config_entry.entry_id: {"mapper": mapper, "knx_gateway": mock_knx_gateway, "config": mock_config_entry.data, "overrides": {}, "coordinator": mock_coordinator}}}
+
+        created_entities = []
+
+        def async_add_entities(entities, update_before_add=False):
+            # Entities are objects; store unique ids for counting
+            created_entities.extend([getattr(e, "unique_id", str(e)) for e in entities])
+
+        # Convert MappedEntity dataclasses to proxy objects that support both
+        # attribute access (used by sensor/light) and dict-like get() (used by cover)
+        def to_proxy(me):
+            proxy = {}
+            proxy["datapoints"] = [{"role": r, "address": a} for r, a in me.datapoints.items()]
+            proxy["unique_id"] = me.unique_id
+            proxy["name"] = me.name
+            proxy["device_id"] = me.device_id
+            proxy["device_name"] = me.device_name
+            proxy["device_model"] = me.attributes.get("device_model", "")
+            proxy["parameters"] = me.parameters
+            proxy["entity_type"] = me.entity_type
+            proxy["platform"] = me.platform
+
+            # also set attributes for attribute-style access
+            class Proxy(dict):
+                pass
+
+            p = Proxy(proxy)
+            # mirror keys as attributes
+            for k, v in proxy.items():
+                setattr(p, k, v)
+
+            # ensure .attributes, .datapoints, .parameters exist
+            p.attributes = me.attributes
+            p.datapoints = me.datapoints
+            p.parameters = me.parameters
+            p.entity_type = me.entity_type
+            p.platform = me.platform
+            return p
+
+        mapper.get_entities_by_platform = lambda platform: [to_proxy(e) for e in mapper.entities if e.platform == platform]
+
+        platforms = ["sensor", "binary_sensor", "light", "switch", "cover", "climate"]
+
+        start = time.perf_counter()
+        for platform in platforms:
+            module = importlib.import_module(f"custom_components.luxor_living.{platform}")
+            await module.async_setup_entry(hass, mock_config_entry, async_add_entities)
+        end = time.perf_counter()
+
+        setup_time = end - start
+        entity_count = len(created_entities)
+
+        print(f"Full entity creation time: {setup_time:.4f}s — Entities created: {entity_count}")
+
+        assert setup_time > 0
+        assert entity_count > 0
+
+

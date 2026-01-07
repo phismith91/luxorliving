@@ -36,6 +36,7 @@ from .entity_mapper import EntityMapper
 from .knx_gateway import LuxorKNXGateway
 from .lxp_parser import LXPParser, get_lxp_cache_stats
 from .overrides import load_overrides
+from .repairs import create_auth_repair_issue, dismiss_auth_repair_issue
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -329,7 +330,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONF_SCAN_INTERVAL,
         entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
-    coordinator = LuxorLivingCoordinator(hass, knx_gateway, scan_interval)
+    coordinator = LuxorLivingCoordinator(hass, knx_gateway, entry, scan_interval)
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
