@@ -71,12 +71,7 @@ Thumbs.db
 .coverage
 
 # Internal agent docs (not part of OSS)
-AGENTS.md
-.github/copilot/agent_*.md
-.github/copilot/archive/
-.github/copilot/CONTEXT.md
-.github/copilot/README.md
-.github/CI_CD_FIX_SUMMARY.md
+# (now tracked in repository)
 
 # Private deployment info (IP addresses, usernames, SSH configs)
 DEPLOYMENT_PRIVATE.md
@@ -84,12 +79,10 @@ scripts/deploy_to_ha.sh
 .ssh_config.local
 
 # Local development environment (personal dev setup)
-.devcontainer/
 Dockerfile.runner
 setup-custom-runner.sh
 
 # Internal documentation (not relevant for HACS users)
-docs/RELEASE_OPERATIONS.md
 docs/LXP_AUDIT_*.md
 docs/TESTS.md
 docs/ROADMAP_*.md
@@ -101,5 +94,4 @@ docs/ARCHITECTURE_REVIEW_*.md
 docs/TUNNELING_AUTHENTICATION.md
 docs/KNX_TUNNELING_SETUP.md
 docs/LXP_VALIDATION.md
-docs/*.pdf
 docs/archive/
