@@ -195,3 +195,33 @@ class TestPerformanceRegression:
         assert (
             memory_increase < 10 * 1024 * 1024
         ), f"Memory leak detected: {memory_increase / 1024 / 1024:.2f}MB increase"
+
+
+class TestRealLXPBenchmark:
+    """Benchmark tests that use real LXP files from the `docs/` folder."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(
+        not (Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp").exists(),
+        reason="Hauptwohnung.lxp not found",
+    )
+    async def test_lxp_parsing_real_file_benchmark(self):
+        """Benchmark parsing using the real `Hauptwohnung.lxp` file.
+
+        This test runs a small number of iterations to keep CI fast while
+        verifying that parsing performs and the benchmark records results.
+        """
+        lxp_path = Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp"
+
+        # Run benchmark with a conservative iteration count to avoid CI slowdowns
+        result = await benchmark_lxp_parsing(str(lxp_path), iterations=3)
+
+        assert "LXP Parsing" in result.operation
+        assert result.iterations == 3
+        assert result.avg_time > 0
+        assert result.throughput > 0
+
+        # Ensure result registered in global benchmark instance
+        from custom_components.luxor_living.benchmark import get_benchmark
+
+        assert any(r.operation == result.operation for r in get_benchmark().results)
