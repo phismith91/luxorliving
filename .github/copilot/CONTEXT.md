@@ -304,16 +304,16 @@ luxorliving/
 
 **Model-Use Guidelines:**
 
-| Task Type | Recommended Model | Reason |
-|-----------|------------------|--------|
-| **Quick edits, git ops** | GPT-4o | Fast, cost-effective, 128k context |
-| **Code reviews** | GPT-4o | Good balance speed/quality |
-| **Complex refactoring** | Claude 3.5 Sonnet | Best code quality, 200k context |
-| **Architecture decisions** | Claude 3.5 Sonnet | Deep reasoning, long context |
-| **LXP/KNX analysis** | Claude 3.5 Sonnet | Handles large files well |
-| **Simple questions** | GPT-4o | Saves Premium quota |
-| **Documentation writing** | GPT-4o | Fast, coherent |
-| **Debugging/reasoning** | o1-preview/mini | Deep analysis (use sparingly!) |
+| Task Type                  | Recommended Model | Reason                             |
+| -------------------------- | ----------------- | ---------------------------------- |
+| **Quick edits, git ops**   | GPT-4o            | Fast, cost-effective, 128k context |
+| **Code reviews**           | GPT-4o            | Good balance speed/quality         |
+| **Complex refactoring**    | Claude 3.5 Sonnet | Best code quality, 200k context    |
+| **Architecture decisions** | Claude 3.5 Sonnet | Deep reasoning, long context       |
+| **LXP/KNX analysis**       | Claude 3.5 Sonnet | Handles large files well           |
+| **Simple questions**       | GPT-4o            | Saves Premium quota                |
+| **Documentation writing**  | GPT-4o            | Fast, coherent                     |
+| **Debugging/reasoning**    | o1-preview/mini   | Deep analysis (use sparingly!)     |
 
 **Premium Quota Management:**
 - ✅ Use GPT-4o as default for most tasks
