@@ -73,7 +73,7 @@ class LuxorLivingHealthView(HomeAssistantView):
                 "timestamp": asyncio.get_event_loop().time(),
                 "integration": {
                     "name": "LUXORliving",
-                    "version": "0.5.0",
+                    "version": "0.6.0-beta.3",
                     "domain": DOMAIN,
                 },
                 "entries": {},
