@@ -229,6 +229,12 @@ This project is licensed under the [LICENSE](LICENSE).
 
 ---
 
+## Support
+
+If you find this project useful, consider buying me a coffee:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Donate-FFDD00?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/philsmith91)
+
 ## Credits
 
 - [Theben AG](https://www.theben.de/) – LUXORliving system
