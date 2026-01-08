@@ -74,6 +74,16 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main
 
 ## Phase 0: Pre-Release Verification (Durchführen vor jedem Release)
 
+**⚠️ CRITICAL LESSONS FROM INCIDENTS (v0.6.0-beta.1-5):**
+
+1. **Zip Structure:** ALWAYS build from integration dir, NOT repo root → prevents nested directories
+2. **Version Consistency:** Verify manifest.json + coordinator.py versions BEFORE tagging
+3. **Coordinator Refactors:** Pass `config_entry` to `super().__init__()` in DataUpdateCoordinator subclasses
+4. **Immutable Releases:** GitHub rules prevent asset replacement → bump version if failed
+5. **Post-Deploy Checks:** Test extraction structure on Remote HA after zip upload
+
+See [docs/RELEASE_INCIDENTS.md](RELEASE_INCIDENTS.md) für Details.
+
 ### Step 0.0: Optional Pre-Release Testing auf Remote HA
 
 **EMPFOHLEN:** Features vor Release auf dem Remote Home Assistant testen.
@@ -118,6 +128,25 @@ ssh -F /dev/null -o StrictHostKeyChecking=no YOUR_USER@YOUR_HA_IP \
 - HA-Dateien gehören root → `sudo` für File-Operationen
 - Git push: `GIT_SSH_COMMAND='ssh -F /dev/null' git push`
 
+**Post-Deployment Verification (MANDATORY):**
+
+```bash
+# Nach Remote HA Deployment - verhindert silent failures (siehe beta.1-3)
+ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
+  "ls -la /config/custom_components/luxor_living/manifest.json"
+# EXPECTED: File exists (nicht in nested subdir!)
+
+# Manifest-Version auf Remote HA prüfen
+ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
+  "cat /config/custom_components/luxor_living/manifest.json | grep version"
+# EXPECTED: Version matcht Git Tag
+
+# Nach HA Restart - HA Logs prüfen
+ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
+  "tail -100 /config/home-assistant.log | grep -i 'luxor_living\|error'"
+# EXPECTED: "Setting up luxor_living" oder ähnlich (KEINE RuntimeError!)
+```
+
 ### Step 0.1: Test Suite Verification
 
 ```bash
@@ -128,6 +157,39 @@ python -m pytest tests/ -q --tb=short
 ```
 
 **Aktueller Status:** ✅ 207/207 passing (100%)
+
+### Step 0.1.5: Version Consistency Pre-Check (CRITICAL)
+
+**MANDATORY vor jedem Tag/Release erstellen!**
+
+Verhindert Version-Mismatch-Incidents (siehe beta.2).
+
+```bash
+# ✅ Zielversion festlegen
+TARGET_VERSION="v0.6.0"  # Beispiel - ersetze mit tatsächlicher Version
+
+# ✅ Manifest-Version prüfen
+grep '"version":' custom_components/luxor_living/manifest.json
+# EXPECTED: "version": "0.6.0" (ohne 'v' prefix)
+
+# ✅ Health-Endpoint-Version prüfen (coordinator.py)
+grep -A 2 'async def _health_check' custom_components/luxor_living/coordinator.py | grep 'version'
+# EXPECTED: "version": "0.6.0"
+
+# ✅ README.md Badge prüfen (optional)
+grep 'badge/Version-' README.md
+# EXPECTED: badge/Version-0.6.0-blue
+
+# ✅ CHANGELOG.md Entry existiert
+grep "## \\[${TARGET_VERSION#v}\\]" CHANGELOG.md
+# EXPECTED: Findet Entry für aktuelle Version
+```
+
+**Bei Mismatch:** 
+- Update manifest.json → version field
+- Update coordinator.py → health check return dict
+- Update README.md → version badge
+- Commit BEFORE tagging!
 
 ### Step 0.2: Code Quality Checks
 
@@ -488,6 +550,73 @@ git ls-remote --tags origin | grep -v "^"
 
 ## Phase 4: GitHub Release Creation
 
+### Step 4.0: Build Release Asset (Zip Package)
+
+**⚠️ CRITICAL: Zip Structure Must Be Correct!**
+
+HACS extracts the zip to `/config/custom_components/luxor_living/`. Files MUST be at zip root, NOT in nested subdirectory.
+
+**❌ WRONG (causes beta.1-4 failure):**
+```bash
+# From repo root - creates nested structure!
+cd /home/phil/gitlab_github/luxorliving
+zip -r /tmp/luxor_living.zip custom_components/luxor_living
+# Result: zip contains custom_components/luxor_living/* → HACS creates nested dir!
+```
+
+**✅ CORRECT:**
+```bash
+# ALWAYS build from integration directory!
+cd /home/phil/gitlab_github/luxorliving/custom_components/luxor_living
+
+# Create zip with files at root
+zip -r /tmp/luxor_living-v0.6.0.zip . \
+  -x "*.pyc" \
+  -x "__pycache__/*" \
+  -x "*.git*" \
+  -x "tests/*" \
+  -x ".pytest_cache/*"
+
+# Verify zip structure (MANDATORY!)
+unzip -l /tmp/luxor_living-v0.6.0.zip | head -20
+# EXPECTED: manifest.json, __init__.py, etc. at root level
+# NOT: custom_components/luxor_living/manifest.json
+```
+
+**Automated Verification:**
+```bash
+# Test extraction to temp dir
+mkdir -p /tmp/luxor_test_extract
+unzip -q /tmp/luxor_living-v0.6.0.zip -d /tmp/luxor_test_extract
+
+# Verify manifest.json at root
+if [ -f "/tmp/luxor_test_extract/manifest.json" ]; then
+  echo "✅ Zip structure correct"
+  cat /tmp/luxor_test_extract/manifest.json | grep version
+else
+  echo "❌ ERROR: Zip structure wrong - manifest.json not at root!"
+  ls -la /tmp/luxor_test_extract
+  exit 1
+fi
+
+# Cleanup
+rm -rf /tmp/luxor_test_extract
+```
+
+**Post-Upload Verification (on Remote HA):**
+```bash
+# After HACS installation - verify no nested directories
+ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
+  "ls -la /config/custom_components/luxor_living/ | head -20"
+# EXPECTED: manifest.json, __init__.py visible
+# NOT: custom_components/ subdirectory!
+
+# Check manifest version matches release
+ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
+  "cat /config/custom_components/luxor_living/manifest.json | grep version"
+# EXPECTED: "version": "0.6.0" (matching release tag)
+```
+
 ### Step 4.1: Create Release via Web UI
 
 **URL:** https://github.com/phismith91/luxorliving/releases
@@ -844,6 +973,68 @@ git push origin v0.X.Y-rc.1
 # Step 5: Announce issue on community channels
 ```
 
+### Emergency 3: Immutable Release Constraints (GitHub)
+
+**Scenario:** GitHub repository rules prevent replacing release assets or recreating tags.
+
+**Symptoms (see beta.2-4):**
+- Cannot delete release or tag
+- Cannot replace uploaded zip asset
+- Asset size/hash differs from rebuilt package
+
+**Root Cause:**
+- Repository protection rules (branch/tag protection)
+- Release marked as "latest" locks metadata
+- Asset already downloaded by users
+
+**Solutions:**
+
+```bash
+# ⚠️ CANNOT: Replace asset or recreate same tag
+# GitHub returns 403/422 error
+
+# ✅ MUST: Increment version and create new release
+# Example: v0.6.0-beta.2 → v0.6.0-beta.3
+
+# Step 1: Bump version locally
+sed -i 's/"version": "0.6.0-beta.2"/"version": "0.6.0-beta.3"/' \
+  custom_components/luxor_living/manifest.json
+
+# Also update coordinator.py health endpoint version!
+sed -i 's/"version": "0.6.0-beta.2"/"version": "0.6.0-beta.3"/' \
+  custom_components/luxor_living/coordinator.py
+
+# Step 2: Commit version bump
+git add custom_components/luxor_living/manifest.json \
+        custom_components/luxor_living/coordinator.py
+git commit -m "chore: bump to v0.6.0-beta.3 (immutable release fix)"
+
+# Step 3: Create new tag
+git tag -a v0.6.0-beta.3 -m "Fix asset packaging (replaces beta.2)"
+GIT_SSH_COMMAND='ssh -F /dev/null' git push origin feature/silver-compliance
+GIT_SSH_COMMAND='ssh -F /dev/null' git push origin v0.6.0-beta.3
+
+# Step 4: Build CORRECT zip (see Phase 4.0)
+cd custom_components/luxor_living
+zip -r /tmp/luxor_living-v0.6.0-beta.3.zip . -x "*.pyc" "__pycache__/*"
+
+# Step 5: Create new GitHub release
+gh release create v0.6.0-beta.3 \
+  --title "v0.6.0-beta.3 (replaces beta.2)" \
+  --notes "Fixes packaging issue from beta.2" \
+  --prerelease \
+  /tmp/luxor_living-v0.6.0-beta.3.zip
+
+# Step 6: Mark old release as superseded (manual)
+# Edit beta.2 release notes on GitHub to add:
+# "⚠️ SUPERSEDED: Use v0.6.0-beta.3 instead"
+```
+
+**Prevention:**
+- Run Step 0.1.5 (Version Consistency Check) BEFORE tagging
+- Verify zip structure (Step 4.0) BEFORE uploading
+- Test on Remote HA before marking release as latest
+
 ---
 
 ## Command Quick Reference
@@ -917,6 +1108,139 @@ python -m pytest tests/ --cov=custom_components/luxor_living
 
 ---
 
-**Version:** 1.0  
-**Last Updated:** 23. Dezember 2025  
-**Next Review:** After v0.3.0 release
+## 🤖 Automation: Recommended Release Script
+
+Basierend auf den Incidents (beta.1-5) ist ein Automation Script empfohlen, das folgende Checks durchführt:
+
+**Datei:** `scripts/release_automation.sh` (siehe Implementierung unten)
+
+**Features:**
+- ✅ Version consistency check (manifest.json ↔ coordinator.py ↔ tag)
+- ✅ Test suite verification (all passing)
+- ✅ Zip build from correct directory
+- ✅ Zip structure validation (manifest at root)
+- ✅ Automatic GitHub release creation
+- ✅ Post-release verification (optional Remote HA test)
+
+**Beispiel-Workflow:**
+```bash
+# Statt manueller Steps 0-4:
+./scripts/release_automation.sh v0.6.0 \
+  --test-suite \
+  --verify-zip \
+  --create-release \
+  --upload-asset
+# Script führt alle Checks durch und stoppt bei Fehler
+```
+
+**Implementierungsvorschlag:**
+
+```bash
+#!/bin/bash
+# scripts/release_automation.sh
+# Automated release workflow with incident prevention
+
+set -e  # Exit on error
+
+VERSION="$1"
+if [ -z "$VERSION" ]; then
+  echo "Usage: $0 v0.X.Y [options]"
+  exit 1
+fi
+
+# Strip 'v' prefix for version comparisons
+VERSION_NUM="${VERSION#v}"
+
+echo "🚀 LUXORliving Release Automation - $VERSION"
+echo "=============================================="
+
+# Step 1: Version Consistency Check
+echo "📋 Step 1: Version Consistency Check..."
+MANIFEST_VER=$(grep '"version"' custom_components/luxor_living/manifest.json | cut -d'"' -f4)
+if [ "$MANIFEST_VER" != "$VERSION_NUM" ]; then
+  echo "❌ ERROR: manifest.json version ($MANIFEST_VER) != tag ($VERSION_NUM)"
+  exit 1
+fi
+echo "✅ Manifest version: $MANIFEST_VER"
+
+# Step 2: Test Suite
+echo "📋 Step 2: Running test suite..."
+python -m pytest tests/ -q --tb=short || {
+  echo "❌ ERROR: Tests failing!"
+  exit 1
+}
+echo "✅ Tests passing"
+
+# Step 3: Build Zip (correct directory!)
+echo "📋 Step 3: Building release zip..."
+cd custom_components/luxor_living
+ZIP_FILE="/tmp/luxor_living-${VERSION}.zip"
+zip -r "$ZIP_FILE" . -x "*.pyc" "__pycache__/*" "*.git*" "tests/*" || {
+  echo "❌ ERROR: Zip build failed"
+  exit 1
+}
+cd ../../
+echo "✅ Zip created: $ZIP_FILE"
+
+# Step 4: Zip Structure Validation
+echo "📋 Step 4: Validating zip structure..."
+TEMP_EXTRACT="/tmp/luxor_extract_$$"
+mkdir -p "$TEMP_EXTRACT"
+unzip -q "$ZIP_FILE" -d "$TEMP_EXTRACT"
+if [ ! -f "$TEMP_EXTRACT/manifest.json" ]; then
+  echo "❌ ERROR: manifest.json not at zip root!"
+  ls -la "$TEMP_EXTRACT"
+  rm -rf "$TEMP_EXTRACT"
+  exit 1
+fi
+rm -rf "$TEMP_EXTRACT"
+echo "✅ Zip structure correct"
+
+# Step 5: Create Git Tag
+echo "📋 Step 5: Creating git tag..."
+git tag -a "$VERSION" -m "Release $VERSION" || {
+  echo "⚠️  Tag already exists - skipping"
+}
+GIT_SSH_COMMAND='ssh -F /dev/null' git push origin "$(git branch --show-current)"
+GIT_SSH_COMMAND='ssh -F /dev/null' git push origin "$VERSION"
+echo "✅ Tag pushed: $VERSION"
+
+# Step 6: Create GitHub Release
+echo "📋 Step 6: Creating GitHub release..."
+gh release create "$VERSION" \
+  --title "LUXORliving $VERSION" \
+  --notes-file "RELEASE_NOTES_${VERSION}.md" \
+  --prerelease \
+  "$ZIP_FILE" || {
+  echo "⚠️  Release creation failed - check manually"
+}
+echo "✅ Release created: $VERSION"
+
+echo ""
+echo "🎉 Release $VERSION completed successfully!"
+echo "📦 Asset: $ZIP_FILE"
+echo "🔗 GitHub: https://github.com/phismith91/luxorliving/releases/tag/$VERSION"
+echo ""
+echo "⚠️  NEXT STEPS:"
+echo "1. Test HACS installation on Remote HA"
+echo "2. Verify /config/custom_components/luxor_living/manifest.json exists"
+echo "3. Check HA logs for 'Setting up luxor_living'"
+```
+
+**Installation:**
+```bash
+chmod +x scripts/release_automation.sh
+./scripts/release_automation.sh v0.6.0
+```
+
+**Vorteile:**
+- Verhindert alle dokumentierten Incidents
+- Atomic workflow (stoppt bei erstem Fehler)
+- Reproduzierbar und versioniert
+- Reduziert manuelle Fehler
+
+---
+
+**Version:** 2.0  
+**Last Updated:** 8. Januar 2026 (post beta.1-5 incidents)  
+**Next Review:** Nach erfolgreichem v0.6.0 stable release
