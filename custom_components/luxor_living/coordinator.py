@@ -45,6 +45,7 @@ class LuxorLivingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER,
             name="Luxor Living",
             update_interval=timedelta(seconds=scan_interval),
+            config_entry=entry,
         )
         self.gateway = gateway
         self.entry = entry
