@@ -10,7 +10,7 @@ pip3 install pytest pytest-homeassistant-custom-component black pylint
 
 # Create config directory
 mkdir -p config/custom_components
-ln -sf $(pwd)/custom_components/luxor_living config/custom_components/
+ln -sf "$(pwd)/custom_components/luxor_living" config/custom_components/
 
 echo "Setup complete!"
 echo ""
