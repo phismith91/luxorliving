@@ -9,7 +9,13 @@
   - Always build release zips from within the integration directory (`cd custom_components/luxor_living && zip -r ...`).
   - Test HACS installation in a clean environment before releasing.
   - Verify extracted structure on remote HA: `/config/custom_components/luxor_living/manifest.json` must exist (not nested).
-
+## 2026-01-09 — README release block outdated after release
+- **Impact:** `README.md` still displayed the previous release (`v0.5.4.3`) even after `v0.6.0` was published. This can confuse users and automated validation checks.
+- **Root cause:** The release notes block inside `README.md` (between `<!-- RELEASE_NOTES_START -->` and `<!-- RELEASE_NOTES_END -->`) was not updated during the release process.
+- **Fix:** Updated `README.md` release block to reflect `v0.6.0` and release date. Added a validation step to the release checklist to compare the manifest and README release block before publishing.
+- **Prevention:**
+  - Add an automated pre-release check to ensure `README` release block matches `custom_components/luxor_living/manifest.json` version (see `RELEASE_OPERATIONS.md` step 0.1.5).
+  - Include `README` release block update in the release script or CI job that assembles the release notes.
 ## 2026-01-08 — v0.6.0-beta.1-3: Silent startup failure (no logs, all entities error)
 - **Impact:** Integration silently failed to load; no log entries; all configured entities showed "unavailable" error state; users had no way to diagnose the failure.
 - **Root cause (after root-cause analysis):** Silver compliance coordinator refactoring added `config_entry` parameter to `__init__` and passed it correctly in `__init__.py`, but **forgot to pass `config_entry` to `super().__init__()` call in `DataUpdateCoordinator`**. Modern Home Assistant (2026.8+) requires this parameter. Missing parameter caused RuntimeError ("Frame helper not set up") on coordinator instantiation, which happened early in `async_setup_entry` and was silently swallowed, preventing any setup logs.

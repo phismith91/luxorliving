@@ -11,6 +11,14 @@ If you find this project useful, consider buying me a coffee:
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/phismith91/luxorliving)](https://github.com/phismith91/luxorliving/releases)
 [![License](https://img.shields.io/github/license/phismith91/luxorliving)](LICENSE)
 
+## Support
+
+If you find this project useful, consider buying me a coffee:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Donate-FFDD00?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/philsmith91)
+
+## What is this Integration about
+
 Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity discovery from LXP project files.
 
 ## Features
@@ -35,15 +43,15 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 <!-- RELEASE_NOTES_START -->
 
 
-# 🎉 LUXORliving v0.5.4.3 (Final Release)
+# 🎉 LUXORliving v0.6.0 (Final Release)
 
 
 
-**Release Date:** 6. Januar 2026
+**Release Date:** 9. Januar 2026
 
 
 
-## 🔒 HTTPS Enforcement Validation
+## ✅ Silver Compliance Release
 
 - Enforce HTTPS authentication for outbound requests (merged branch copilot/enforce-https-authentication)
 
@@ -53,9 +61,9 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 ## 🧪 Quality
 
-- Tests: 209/209 passing (100%)
+- Tests: 212/212 passing (100%)
 
-- Quality Gates: README/CHANGELOG validation via `./scripts/validate_readme.sh`
+- Pre-release validations: zip structure, manifest/README version consistency, HACS install test
 
 
 
@@ -236,6 +244,11 @@ This project is licensed under the [LICENSE](LICENSE).
 
 ---
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 998ba72 (Docs: Document README mismatch incident and update README release block to v0.6.0)
 ## Credits
 
 - [Theben AG](https://www.theben.de/) – LUXORliving system
