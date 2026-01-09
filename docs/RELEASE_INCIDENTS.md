@@ -9,7 +9,14 @@
   - Always build release zips from within the integration directory (`cd custom_components/luxor_living && zip -r ...`).
   - Test HACS installation in a clean environment before releasing.
   - Verify extracted structure on remote HA: `/config/custom_components/luxor_living/manifest.json` must exist (not nested).
-## 2026-01-09 — README release block outdated after release
+## 2026-01-09 — Missing `RELEASE_NOTES_v<version>.md` caused README to omit changelog details
+- **Impact:** The README's "Current Release" block lacked the detailed changelog highlights because no `RELEASE_NOTES_v0.6.0.md` existed. This caused a disparity between `CHANGELOG.md` (complete release details) and README (summary missing), confusing users and tooling.
+- **Root cause:** Release process did not ensure a `RELEASE_NOTES_v<version>.md` file was created or updated from the `CHANGELOG.md` before running the README update script.
+- **Fix:** Added `RELEASE_NOTES_v0.6.0.md` and ran `./scripts/update_readme_release.sh` to populate the README. Also extended `scripts/release_automation.sh` and `docs/RELEASE_OPERATIONS.md` to require a `RELEASE_NOTES_v<version>.md` or `--update-readme` to auto-generate/update it.
+- **Prevention:**
+  - Add `RELEASE_NOTES_v<version>.md` creation into the release checklist and automation script (done)
+  - Ensure `scripts/update_readme_release.sh` is part of the automated release (release script calls it with `--update-readme` if needed)
+  - Add a CI check to fail the release if README release block does not contain the expected version and highlights## 2026-01-09 — README release block outdated after release
 - **Impact:** `README.md` still displayed the previous release (`v0.5.4.3`) even after `v0.6.0` was published. This can confuse users and automated validation checks.
 - **Root cause:** The release notes block inside `README.md` (between `<!-- RELEASE_NOTES_START -->` and `<!-- RELEASE_NOTES_END -->`) was not updated during the release process.
 - **Fix:** Updated `README.md` release block to reflect `v0.6.0` and release date. Added a validation step to the release checklist to compare the manifest and README release block before publishing.
