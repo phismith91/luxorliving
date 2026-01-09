@@ -19,7 +19,7 @@ else
     else
         echo "Release notes file not found in root or docs/releases (expected RELEASE_NOTES_v${MANIFEST_VERSION}.md)" >&2
         # Try to find any candidate in docs/releases
-        CANDIDATE=$(ls docs/releases/RELEASE_NOTES_v${MANIFEST_VERSION}* 2>/dev/null | head -1 || true)
+        CANDIDATE=$(find docs/releases -maxdepth 1 -type f -name "RELEASE_NOTES_v${MANIFEST_VERSION}*" | head -n 1 || true)
         if [ -n "$CANDIDATE" ]; then
             RELEASE_FILE="$CANDIDATE"
             echo "Using candidate $RELEASE_FILE"

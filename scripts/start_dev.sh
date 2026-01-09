@@ -1,7 +1,8 @@
 #!/bin/bash
 # Schnellstart für Entwicklung
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit
+# shellcheck disable=SC1091
 source venv/bin/activate
 
 echo "🚀 LUXORliving Development Environment"
