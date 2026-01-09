@@ -32,7 +32,7 @@ jobs:
           GITHUB_TOKEN: 
 
       - name: Run ShellCheck (blocking)
-        uses: ludeeus/action-shellcheck@v2.0.0
+        uses: ludeeus/action-shellcheck@2.0.0
         with:
           files: scripts/*.sh
         # Pinned action; ShellCheck failures are now blocking to enforce script quality
