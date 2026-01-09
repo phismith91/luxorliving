@@ -46,8 +46,11 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [ "$BRANCH" != "main" ]; then
+# Allow dry-run on any branch for CI/PR validation
+if [ "$BRANCH" != "main" ] && [ "$DRY_RUN" -eq 0 ]; then
   echo "ERROR: release must be performed from 'main' branch (current: $BRANCH)" >&2
+  exit 1
+fi
   exit 1
 fi
 
