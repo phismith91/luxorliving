@@ -248,19 +248,21 @@ class TestRealLXPBenchmark:
         lxp_path = Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp"
 
         start = time.perf_counter()
-        
+
         # Parse the LXP file
         project = await LXPParser.parse_cached(str(lxp_path), include_unaffected=False)
-        
+
         # Create entity mapper
         mapper = EntityMapper(project)
         entity_count = len(mapper.entities)
-        
+
         end = time.perf_counter()
 
         setup_time = end - start
 
-        print(f"LXP parsing + entity mapping time: {setup_time:.4f}s — Entities mapped: {entity_count}")
+        print(
+            f"LXP parsing + entity mapping time: {setup_time:.4f}s — Entities mapped: {entity_count}"
+        )
 
         assert setup_time > 0
         assert entity_count > 0  # Should have created some entities from Hauptwohnung.lxp
@@ -270,7 +272,9 @@ class TestRealLXPBenchmark:
         not (Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp").exists(),
         reason="Hauptwohnung.lxp not found",
     )
-    async def test_full_entity_creation_benchmark(self, mock_config_entry, mock_knx_gateway, mock_coordinator):
+    async def test_full_entity_creation_benchmark(
+        self, mock_config_entry, mock_knx_gateway, mock_coordinator
+    ):
         """Benchmark the end-to-end entity creation by calling platform setup.
 
         This test parses the real LXP file, builds the `EntityMapper` and then
@@ -293,7 +297,17 @@ class TestRealLXPBenchmark:
 
         # Prepare a fake hass object with required data
         hass = MagicMock()
-        hass.data = {DOMAIN: {mock_config_entry.entry_id: {"mapper": mapper, "knx_gateway": mock_knx_gateway, "config": mock_config_entry.data, "overrides": {}, "coordinator": mock_coordinator}}}
+        hass.data = {
+            DOMAIN: {
+                mock_config_entry.entry_id: {
+                    "mapper": mapper,
+                    "knx_gateway": mock_knx_gateway,
+                    "config": mock_config_entry.data,
+                    "overrides": {},
+                    "coordinator": mock_coordinator,
+                }
+            }
+        }
 
         created_entities = []
 
@@ -332,7 +346,9 @@ class TestRealLXPBenchmark:
             p.platform = me.platform
             return p
 
-        mapper.get_entities_by_platform = lambda platform: [to_proxy(e) for e in mapper.entities if e.platform == platform]
+        mapper.get_entities_by_platform = lambda platform: [
+            to_proxy(e) for e in mapper.entities if e.platform == platform
+        ]
 
         platforms = ["sensor", "binary_sensor", "light", "switch", "cover", "climate"]
 
@@ -349,5 +365,3 @@ class TestRealLXPBenchmark:
 
         assert setup_time > 0
         assert entity_count > 0
-
-

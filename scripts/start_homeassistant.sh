@@ -12,6 +12,7 @@ echo "=================================================="
 
 # Activate venv
 echo "📦 Activating virtual environment..."
+# shellcheck disable=SC1091
 source "${PROJECT_DIR}/venv/bin/activate"
 
 # Create config directory if it doesn't exist

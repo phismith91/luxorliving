@@ -32,6 +32,7 @@ echo ""
 # 2. Check test count accuracy
 echo "2️⃣  Checking test count accuracy..."
 if [ -d "venv" ]; then
+    # shellcheck disable=SC1091
     source venv/bin/activate 2>/dev/null || true
 fi
 

@@ -258,6 +258,18 @@ bandit -r custom_components/luxor_living -q
 # EXPECTED: No issues or only info-level findings
 ```
 
+### Linting & Future Improvements 🔧
+
+- Current: We run ShellCheck in `release_checks` (installed in workflow) to validate `scripts/*.sh`. Initial findings were fixed (quoting, `cd` safeguards, safe `source` usage). Contributors should run `shellcheck scripts/*.sh` locally before opening PRs.
+- Next steps (recommended):
+  - Pin a stable ShellCheck Action (e.g., `ludeeus/action-shellcheck@v2.0.0`) and make ShellCheck failures block the Release Checks once scripts are cleaned up.
+  - Add `shfmt` to automatically format shell scripts and include it in CI or pre-commit.
+  - Add `yamllint` for workflow and docs YAML files and `markdownlint` for `README.md` and `RELEASE_NOTES` checks.
+  - Consider adding `shellcheck -x` or a Docker-based runner to ensure consistent behavior across environments.
+
+> Note: HACS brand validation may remain an informational annotation (requires repo registration and logo assets); see `docs/RELEASE_INCIDENTS.md` for background.
+
+
 ### Step 0.3: Coverage Verification
 
 ```bash

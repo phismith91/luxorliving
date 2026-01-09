@@ -31,8 +31,9 @@ jobs:
           # If you need to authenticate gh in workflow, set GITHUB_TOKEN in repo settings
           GITHUB_TOKEN: 
 
-      - name: Lint shell scripts
-        uses: koalaman/shellcheck-action@v1
+      - name: Run ShellCheck (blocking)
+        uses: ludeeus/action-shellcheck@v2.0.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          source: scripts/
+          files: scripts/*.sh
+        # Pinned action; ShellCheck failures are now blocking to enforce script quality
+

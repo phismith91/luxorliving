@@ -65,17 +65,5 @@
             "title": "Authentication Failed for {host}",
             "description": "The authentication to your LUXORliving gateway at {host} has failed.\n\nError: {error}\n\nPlease verify your credentials (username: {username}) and update them if necessary."
         }
-    },
-    "repairs": {
-        "authentication_failed": {
-            "confirm": {
-                "title": "Update Authentication Credentials",
-                "description": "The connection to your LUXORliving gateway at {host} failed due to authentication issues.\n\nCurrent username: {username}\n\nPlease enter your credentials to restore the connection."
-            },
-            "credentials": {
-                "title": "Enter New Credentials",
-                "description": "Enter the updated credentials for your LUXORliving gateway at {host}."
-            }
-        }
     }
 }

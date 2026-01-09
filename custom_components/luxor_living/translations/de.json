@@ -65,17 +65,5 @@
             "title": "Authentifizierung fehlgeschlagen für {host}",
             "description": "Die Authentifizierung bei Ihrem LUXORliving Gateway unter {host} ist fehlgeschlagen.\n\nFehler: {error}\n\nBitte überprüfen Sie Ihre Zugangsdaten (Benutzername: {username}) und aktualisieren Sie diese bei Bedarf."
         }
-    },
-    "repairs": {
-        "authentication_failed": {
-            "confirm": {
-                "title": "Authentifizierungsdaten aktualisieren",
-                "description": "Die Verbindung zu Ihrem LUXORliving Gateway unter {host} ist aufgrund von Authentifizierungsproblemen fehlgeschlagen.\n\nAktueller Benutzername: {username}\n\nBitte geben Sie Ihre Zugangsdaten ein, um die Verbindung wiederherzustellen."
-            },
-            "credentials": {
-                "title": "Neue Zugangsdaten eingeben",
-                "description": "Geben Sie die aktualisierten Zugangsdaten für Ihr LUXORliving Gateway unter {host} ein."
-            }
-        }
     }
 }
