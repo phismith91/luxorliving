@@ -65,17 +65,6 @@
             "title": "Échec de l'authentification pour {host}",
             "description": "L'authentification auprès de votre passerelle LUXORliving à {host} a échoué.\n\nErreur : {error}\n\nVeuillez vérifier vos identifiants (nom d'utilisateur : {username}) et les mettre à jour si nécessaire."
         }
-    },
-    "repairs": {
-        "authentication_failed": {
-            "confirm": {
-                "title": "Mettre à jour les identifiants d'authentification",
-                "description": "La connexion à votre passerelle LUXORliving à {host} a échoué en raison de problèmes d'authentification.\n\nNom d'utilisateur actuel : {username}\n\nVeuillez saisir vos identifiants pour rétablir la connexion."
-            },
-            "credentials": {
-                "title": "Entrer de nouveaux identifiants",
-                "description": "Entrez les identifiants mis à jour pour votre passerelle LUXORliving à {host}."
-            }
-        }
+
     }
 }
