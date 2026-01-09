@@ -8,18 +8,25 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 MANIFEST_VERSION=$(grep '"version"' custom_components/luxor_living/manifest.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+# Prefer release notes in repo root; fallback to docs/releases
 RELEASE_FILE="RELEASE_NOTES_v${MANIFEST_VERSION}.md"
-
-if [ ! -f "$RELEASE_FILE" ]; then
-    echo "Release notes file $RELEASE_FILE not found. Looking for v* match..."
-    # Try to find the newest release notes that starts with the manifest version prefix
-    CANDIDATE=$(ls RELEASE_NOTES_v${MANIFEST_VERSION}* 2>/dev/null | head -1 || true)
-    if [ -n "$CANDIDATE" ]; then
-        RELEASE_FILE="$CANDIDATE"
-        echo "Using $RELEASE_FILE"
+if [ -f "$RELEASE_FILE" ]; then
+    echo "Using $RELEASE_FILE (root)"
+else
+    RELEASE_FILE="docs/releases/RELEASE_NOTES_v${MANIFEST_VERSION}.md"
+    if [ -f "$RELEASE_FILE" ]; then
+        echo "Using $RELEASE_FILE (docs/releases)"
     else
-        echo "No matching release notes found for v$MANIFEST_VERSION. Aborting." >&2
-        exit 1
+        echo "Release notes file not found in root or docs/releases (expected RELEASE_NOTES_v${MANIFEST_VERSION}.md)" >&2
+        # Try to find any candidate in docs/releases
+        CANDIDATE=$(ls docs/releases/RELEASE_NOTES_v${MANIFEST_VERSION}* 2>/dev/null | head -1 || true)
+        if [ -n "$CANDIDATE" ]; then
+            RELEASE_FILE="$CANDIDATE"
+            echo "Using candidate $RELEASE_FILE"
+        else
+            echo "No matching release notes found for v$MANIFEST_VERSION. Aborting." >&2
+            exit 1
+        fi
     fi
 fi
 

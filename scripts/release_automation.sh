@@ -79,6 +79,20 @@ if ! echo "$SECTION" | grep -q "$VERSION"; then
   fi
 fi
 
+# Ensure release notes file exists (root preferred, fallback to docs/releases)
+RELEASE_FILE_ROOT="RELEASE_NOTES_v${VERSION}.md"
+RELEASE_FILE_DOCS="docs/releases/RELEASE_NOTES_v${VERSION}.md"
+if [ -f "$RELEASE_FILE_ROOT" ]; then
+  RELEASE_FILE="$RELEASE_FILE_ROOT"
+elif [ -f "$RELEASE_FILE_DOCS" ]; then
+  RELEASE_FILE="$RELEASE_FILE_DOCS"
+else
+  echo "ERROR: Release notes file for version $VERSION is missing. Create $RELEASE_FILE_ROOT in repo root or $RELEASE_FILE_DOCS in docs/releases, or run with --update-readme to auto-generate it from CHANGELOG." >&2
+  exit 1
+fi
+
+echo "Using release notes file: $RELEASE_FILE"
+
 # 3) Build zip (from integration dir to avoid nested path issue)
 TMP_ZIP="/tmp/luxor_living_${VERSION}.zip"
 pushd custom_components/luxor_living > /dev/null
