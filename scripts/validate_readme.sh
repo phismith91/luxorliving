@@ -39,7 +39,8 @@ fi
 TEST_COUNT=$(python -m pytest tests/ --collect-only -q 2>&1 | grep "tests collected" | awk '{print $1}')
 echo "   Actual tests: $TEST_COUNT"
 
-if grep -q "$TEST_COUNT tests" README.md; then
+# Check for various test count patterns: "212 tests", "212/212", "Tests: 212"
+if grep -qE "($TEST_COUNT tests|$TEST_COUNT/$TEST_COUNT|Tests:? $TEST_COUNT)" README.md; then
     echo "   ✅ Test count $TEST_COUNT found in README.md"
 else
     echo "   ⚠️  Test count $TEST_COUNT NOT mentioned in README.md"
