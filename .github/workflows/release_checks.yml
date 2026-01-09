@@ -34,6 +34,6 @@ jobs:
       - name: Run ShellCheck (blocking)
         uses: ludeeus/action-shellcheck@2.0.0
         with:
-          files: scripts/*.sh
+          scandir: './scripts'
         # Pinned action; ShellCheck failures are now blocking to enforce script quality
 
