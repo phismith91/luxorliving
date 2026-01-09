@@ -77,7 +77,43 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main
 **⚠️ CRITICAL LESSONS FROM INCIDENTS (v0.6.0-beta.1-5):**
 
 1. **Zip Structure:** ALWAYS build from integration dir, NOT repo root → prevents nested directories
-2. **Version Consistency:** Verify manifest.json + coordinator.py versions BEFORE tagging
+2. **Version Consistency:** Verify `manifest.json`, README release block and coordinator versions BEFORE tagging
+3. **README Release Block:** Ensure `README.md` release block (between `<!-- RELEASE_NOTES_START -->` and `<!-- RELEASE_NOTES_END -->`) matches the `manifest.json` version
+4. **Immutable Release Handling:** If GitHub prevents asset replacement, create a new tag (suffix `-rebuild-<ts>`) or ask admin to unprotect the release
+
+---
+
+### Automated release script (recommended) 🔧
+
+Use the included automation script to perform pre-release validation, build a HACS-friendly zip with the correct structure, create tags and GitHub releases, and optionally verify the installation on a remote Home Assistant instance.
+
+Usage:
+
+- Dry run (validate everything without creating tags/releases):
+  ```bash
+  ./scripts/release_automation.sh --dry-run
+  ```
+
+- Normal release flow (will fail if README release block does not match manifest version):
+  ```bash
+  ./scripts/release_automation.sh --update-readme
+  ```
+
+- Release flow with remote verification (optional):
+  ```bash
+  ./scripts/release_automation.sh --remote phil@100.97.159.88
+  ```
+
+What the script enforces:
+
+- Working tree clean and branch is `main`
+- `custom_components/luxor_living/manifest.json` exists and version is read from the file
+- README release block contains same version (or `--update-readme` will update it)
+- Zip is built from inside `custom_components/luxor_living/` (prevents nested `custom_components/` issue)
+- Zip contains `manifest.json` at root
+- Attempts to create GitHub release and will fallback to a `-rebuild-<ts>` tag if the release is immutable
+
+This is the recommended method to avoid the incidents documented in `docs/RELEASE_INCIDENTS.md`.
 3. **Coordinator Refactors:** Pass `config_entry` to `super().__init__()` in DataUpdateCoordinator subclasses
 4. **Immutable Releases:** GitHub rules prevent asset replacement → bump version if failed
 5. **Post-Deploy Checks:** Test extraction structure on Remote HA after zip upload
