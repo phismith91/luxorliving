@@ -17,6 +17,10 @@
 - **Benefit:** Prevents missing README/changelog updates and zip-building mistakes from reaching `main` or being merged without validation.
 - **Recommendation:** Configure branch protection to require this workflow to pass on `main` merges and optionally fail CI if `RELEASE_NOTES_v<version>.md` is missing.
 
+### Branch protection enforced (2026-01-09)
+- **Action taken:** Branch protection for `main` now requires the GitHub Actions workflow **"Release Checks"** to pass (strict mode) and enforces the rule for administrators.
+- **Benefit:** Prevents merges to `main` unless release validation (README/CHANGELOG checks, release notes presence, and dry-run validation) passes.
+
 ### Policy: Release Notes Location
 - **Policy:** Keep the current release notes (the release being published) at repository root as `RELEASE_NOTES_v<version>.md`. Move only older release notes into `docs/releases/` to retain a clean root while keeping the active release accessible.
 - **Script behavior:** Release scripts (`update_readme_release.sh`, `check_release_notes.sh`, `release_automation.sh`) now prefer the root file and fall back to `docs/releases/`.
