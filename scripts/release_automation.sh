@@ -51,8 +51,6 @@ if [ "$BRANCH" != "main" ] && [ "$DRY_RUN" -eq 0 ]; then
   echo "ERROR: release must be performed from 'main' branch (current: $BRANCH)" >&2
   exit 1
 fi
-  exit 1
-fi
 
 # Get version from manifest
 VERSION=$(python3 -c "import json; print(json.load(open('custom_components/luxor_living/manifest.json'))['version'])")
