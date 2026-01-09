@@ -31,9 +31,9 @@ jobs:
           # If you need to authenticate gh in workflow, set GITHUB_TOKEN in repo settings
           GITHUB_TOKEN: 
 
-      - name: Install shellcheck and lint scripts
-        run: |
-          sudo apt-get update && sudo apt-get install -y shellcheck
-          shellcheck scripts/*.sh || true
-        # Allow lint failures to be non-blocking for now; ensure script exists and basic lint runs
+      - name: Run ShellCheck (blocking)
+        uses: ludeeus/action-shellcheck@v2.0.0
+        with:
+          files: scripts/*.sh
+        # Pinned action; ShellCheck failures are now blocking to enforce script quality
 
