@@ -40,6 +40,8 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 ## Current Release
 
+## Current Release
+
 <!-- RELEASE_NOTES_START -->
 
 
@@ -51,36 +53,95 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 
 
-## ✅ Silver Compliance Release
-
-- Enforce HTTPS authentication for outbound requests (merged branch copilot/enforce-https-authentication)
-
-- Promoted from pre-release to final
+### 🥈 Home Assistant Silver Compliance Features
 
 
 
-## 🧪 Quality
-
-- Tests: 212/212 passing (100%)
-
-- Pre-release validations: zip structure, manifest/README version consistency, HACS install test
+This release implements features required for **Home Assistant Silver** quality scale compliance.
 
 
 
-## 📋 Summary
-
-- Purpose: verify HTTPS request path end-to-end
-
-- Final release with HTTPS enforcement and CI improvements
+### ✨ Added
 
 
 
-## 🔗 Links
+- **🔐 Re-Authentication Flow**
 
-- CHANGELOG: ./CHANGELOG.md
+  - Repair flow is triggered after 3 consecutive authentication failures
 
-- Documentation: ./docs/
+  - User-friendly credential update UI and automatic reconnection
+
+  - Integration reload without reconfiguration after successful re-auth
+
+
+
+- **🌍 Multi-Language Support**
+
+  - German (de), French (fr), English (en)
+
+  - Localized config flow, repair messages and UI strings
+
+
+
+- **📚 End-user Documentation**
+
+  - Added examples: Automations, Dashboard configurations, Compatible devices list
+
+
+
+### 🐛 Bug fixes
+
+
+
+- Fixed test fixture issue in performance benchmark tests
+
+- Fixed coordinator initialization for HA 2026.8+ (pass `config_entry` to DataUpdateCoordinator)
+
+
+
+### 🔧 Technical Improvements
+
+
+
+- `repairs.py` added for re-auth repair flows
+
+- Coordinator now tracks authentication failures and creates repair issues
+
+- Improved translations and `strings.json` coverage
+
+- HACS package structure correction (files at zip root)
+
+
+
+### 🧪 Testing & Quality
+
+
+
+- **Tests:** 212/212 passing
+
+- **Quality gates:** README/CHANGELOG validation, HACS install test, zip structure validation
+
+
+
+### ⚡ Upgrade Notes
+
+
+
+- Remove any previously installed beta copies and nested directories before installing
+
+- Install v0.6.0 via HACS and restart Home Assistant
+
+
+
+---
+
+
+
+For full changelog see `CHANGELOG.md`.
 <!-- RELEASE_NOTES_END -->
+
+For full release history see [CHANGELOG.md](./CHANGELOG.md).
+
 
 For full release history see [CHANGELOG.md](./CHANGELOG.md).
 
