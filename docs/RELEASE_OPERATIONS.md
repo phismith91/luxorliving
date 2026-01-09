@@ -8,49 +8,49 @@
 
 ---
 
-## 🎯 Quality Policy: "Wenn dann richtig!"
+## 🎯 Quality Policy: "When we do it, do it right!"
 
-**Grundprinzip:** Keine Technical Debts, keine halben Sachen!
+**Core principle:** No technical debt, no half measures.
 
-### CI/CD Quality Gates (Alle müssen grün sein)
+### CI/CD Quality Gates (All checks must be green)
 
-Bevor **irgendetwas** gemerged oder released wird:
+Before **anything** is merged or released:
 
-✅ **Validate Workflow** - Home Assistant Integration Validation
+✅ **Validate Workflow** - Home Assistant integration validation
 - hassfest (manifest validation, dependency checks, key ordering)
 - HACS validation (repository structure, requirements)
-- **Status:** MUSS grün sein
+- **Status:** MUST be green
 
-✅ **Release Checks Workflow** - Release Readiness Validation
-- README.md Quality Gate (version consistency, documentation links, changelog sync)
-- Release Notes presence check
+✅ **Release Checks Workflow** - Release readiness validation
+- README.md quality gate (version consistency, documentation links, changelog sync)
+- Release notes presence check
 - Release automation dry-run (zip structure, tag creation)
-- **ShellCheck (blocking)** - Alle Shell-Skripte müssen clean sein
-- **Status:** MUSS grün sein
+- **ShellCheck (blocking)** - All shell scripts must be clean
+- **Status:** MUST be green
 
-✅ **CI/CD Pipeline** - Code Quality & Tests
+✅ **CI/CD Pipeline** - Code quality & tests
 - Black (code formatting)
 - isort (import sorting)
 - pytest (212 tests)
 - Coverage reporting
-- **Status:** MUSS grün sein
+- **Status:** MUST be green
 
 ### Enforcement
 
-- **Kein Merge** bei roten Checks
-- **Kein Release** bei roten Checks
-- **Sofortiges Fixen** wenn ein Check rot wird
-- **Keine Ausnahmen** - "fail_ci_if_error: false" nur für non-blocking Features (z.B. Codecov Token)
+- **No merge** on failing checks
+- **No release** on failing checks
+- **Immediate fix** required when a check turns red
+- **No exceptions** - `fail_ci_if_error: false` only for non-blocking features (e.g., Codecov token)
 
 ### Rationale
 
-Jeder rote Check ist ein Zeichen für:
-- Potenzielle Bugs
-- Inkonsistente Versionierung
-- Breaking Changes für User
-- Technische Schulden
+A failing check is an indicator of:
+- Potential bugs
+- Version inconsistencies
+- Breaking changes for users
+- Accumulating technical debt
 
-**Konsequenz:** Lieber 10 Minuten mehr investieren als später Stunden mit Bugfixes verbringen.
+**Consequence:** Spend 10 minutes fixing now rather than hours fixing regressions later.
 
 ---
 
