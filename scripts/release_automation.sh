@@ -99,10 +99,14 @@ pushd custom_components/luxor_living > /dev/null
 run zip -r "$TMP_ZIP" . -x "*.pyc" "*/__pycache__/*" "*.git*"
 popd > /dev/null
 
-# Validate zip has manifest at root
-if ! unzip -l "$TMP_ZIP" | awk '{print $4}' | grep -qx "manifest.json"; then
-  echo "ERROR: package does not contain manifest.json at root (zip structure incorrect)" >&2
-  exit 1
+# Validate zip has manifest at root (skip during dry-run)
+if [ "$DRY_RUN" -eq 1 ]; then
+  echo "DRY RUN: skipping zip content validation"
+else
+  if ! unzip -l "$TMP_ZIP" | awk '{print $4}' | grep -qx "manifest.json"; then
+    echo "ERROR: package does not contain manifest.json at root (zip structure incorrect)" >&2
+    exit 1
+  fi
 fi
 
 # 4) Tag and release
