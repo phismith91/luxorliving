@@ -1,10 +1,56 @@
 # 📋 Release & Tagging Operational Guide
 
 **Author:** Release Manager Agent  
-**Date:** 2. Januar 2026  
-**Purpose:** Step-by-step release procedures and quality gates (current: v0.5.2)
+**Date:** 9. Januar 2026  
+**Purpose:** Step-by-step release procedures and quality gates (current: v0.6.0)
 
 **Note:** Examples use v0.3.0 for illustration. Replace with actual target version.
+
+---
+
+## 🎯 Quality Policy: "Wenn dann richtig!"
+
+**Grundprinzip:** Keine Technical Debts, keine halben Sachen!
+
+### CI/CD Quality Gates (Alle müssen grün sein)
+
+Bevor **irgendetwas** gemerged oder released wird:
+
+✅ **Validate Workflow** - Home Assistant Integration Validation
+- hassfest (manifest validation, dependency checks, key ordering)
+- HACS validation (repository structure, requirements)
+- **Status:** MUSS grün sein
+
+✅ **Release Checks Workflow** - Release Readiness Validation
+- README.md Quality Gate (version consistency, documentation links, changelog sync)
+- Release Notes presence check
+- Release automation dry-run (zip structure, tag creation)
+- **ShellCheck (blocking)** - Alle Shell-Skripte müssen clean sein
+- **Status:** MUSS grün sein
+
+✅ **CI/CD Pipeline** - Code Quality & Tests
+- Black (code formatting)
+- isort (import sorting)
+- pytest (212 tests)
+- Coverage reporting
+- **Status:** MUSS grün sein
+
+### Enforcement
+
+- **Kein Merge** bei roten Checks
+- **Kein Release** bei roten Checks
+- **Sofortiges Fixen** wenn ein Check rot wird
+- **Keine Ausnahmen** - "fail_ci_if_error: false" nur für non-blocking Features (z.B. Codecov Token)
+
+### Rationale
+
+Jeder rote Check ist ein Zeichen für:
+- Potenzielle Bugs
+- Inkonsistente Versionierung
+- Breaking Changes für User
+- Technische Schulden
+
+**Konsequenz:** Lieber 10 Minuten mehr investieren als später Stunden mit Bugfixes verbringen.
 
 ---
 

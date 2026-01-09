@@ -7,7 +7,7 @@ pytest_plugins = "pytest_homeassistant_custom_component"
 import asyncio
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -241,6 +241,7 @@ class TestRealLXPBenchmark:
         the EntityMapper with the real project data.
         """
         import time
+
         from custom_components.luxor_living.entity_mapper import EntityMapper
         from custom_components.luxor_living.lxp_parser import LXPParser
 
@@ -283,9 +284,10 @@ class TestRealLXPBenchmark:
         """
         import importlib
         import time
+
+        from custom_components.luxor_living.const import DOMAIN
         from custom_components.luxor_living.entity_mapper import EntityMapper
         from custom_components.luxor_living.lxp_parser import LXPParser
-        from custom_components.luxor_living.const import DOMAIN
 
         lxp_path = Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp"
 
