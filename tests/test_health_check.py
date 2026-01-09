@@ -66,7 +66,12 @@ class TestLuxorLivingHealthView:
 
         # Verify integration info
         assert data["integration"]["name"] == "LUXORliving"
-        assert data["integration"]["version"] == "0.5.0"
+        # Version should match manifest version
+        import json as _json
+
+        with open("custom_components/luxor_living/manifest.json") as _f:
+            _manifest = _json.load(_f)
+        assert data["integration"]["version"] == _manifest["version"]
 
         # Verify system info
         assert "cache" in data["system"]
