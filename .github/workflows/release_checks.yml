@@ -1,0 +1,38 @@
+name: Release Checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  release_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Run README validation
+        run: ./scripts/validate_readme.sh
+
+      - name: Check release notes file exists
+        run: ./scripts/check_release_notes.sh
+
+      - name: Run release automation dry-run
+        run: ./scripts/release_automation.sh --dry-run
+        env:
+          # If you need to authenticate gh in workflow, set GITHUB_TOKEN in repo settings
+          GITHUB_TOKEN: 
+
+      - name: Lint shell scripts
+        uses: koalaman/shellcheck-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          source: scripts/
