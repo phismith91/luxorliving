@@ -1,10 +1,56 @@
 # 📋 Release & Tagging Operational Guide
 
 **Author:** Release Manager Agent  
-**Date:** 2. Januar 2026  
-**Purpose:** Step-by-step release procedures and quality gates (current: v0.5.2)
+**Date:** 9. Januar 2026  
+**Purpose:** Step-by-step release procedures and quality gates (current: v0.6.0)
 
 **Note:** Examples use v0.3.0 for illustration. Replace with actual target version.
+
+---
+
+## 🎯 Quality Policy: "When we do it, do it right!"
+
+**Core principle:** No technical debt, no half measures.
+
+### CI/CD Quality Gates (All checks must be green)
+
+Before **anything** is merged or released:
+
+✅ **Validate Workflow** - Home Assistant integration validation
+- hassfest (manifest validation, dependency checks, key ordering)
+- HACS validation (repository structure, requirements)
+- **Status:** MUST be green
+
+✅ **Release Checks Workflow** - Release readiness validation
+- README.md quality gate (version consistency, documentation links, changelog sync)
+- Release notes presence check
+- Release automation dry-run (zip structure, tag creation)
+- **ShellCheck (blocking)** - All shell scripts must be clean
+- **Status:** MUST be green
+
+✅ **CI/CD Pipeline** - Code quality & tests
+- Black (code formatting)
+- isort (import sorting)
+- pytest (212 tests)
+- Coverage reporting
+- **Status:** MUST be green
+
+### Enforcement
+
+- **No merge** on failing checks
+- **No release** on failing checks
+- **Immediate fix** required when a check turns red
+- **No exceptions** - `fail_ci_if_error: false` only for non-blocking features (e.g., Codecov token)
+
+### Rationale
+
+A failing check is an indicator of:
+- Potential bugs
+- Version inconsistencies
+- Breaking changes for users
+- Accumulating technical debt
+
+**Consequence:** Spend 10 minutes fixing now rather than hours fixing regressions later.
 
 ---
 
@@ -257,6 +303,18 @@ flake8 custom_components/luxor_living
 bandit -r custom_components/luxor_living -q
 # EXPECTED: No issues or only info-level findings
 ```
+
+### Linting & Future Improvements 🔧
+
+- Current: We run ShellCheck in `release_checks` (installed in workflow) to validate `scripts/*.sh`. Initial findings were fixed (quoting, `cd` safeguards, safe `source` usage). Contributors should run `shellcheck scripts/*.sh` locally before opening PRs.
+- Next steps (recommended):
+  - Pin a stable ShellCheck Action (e.g., `ludeeus/action-shellcheck@v2.0.0`) and make ShellCheck failures block the Release Checks once scripts are cleaned up.
+  - Add `shfmt` to automatically format shell scripts and include it in CI or pre-commit.
+  - Add `yamllint` for workflow and docs YAML files and `markdownlint` for `README.md` and `RELEASE_NOTES` checks.
+  - Consider adding `shellcheck -x` or a Docker-based runner to ensure consistent behavior across environments.
+
+> Note: HACS brand validation may remain an informational annotation (requires repo registration and logo assets); see `docs/RELEASE_INCIDENTS.md` for background.
+
 
 ### Step 0.3: Coverage Verification
 

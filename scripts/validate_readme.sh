@@ -32,13 +32,15 @@ echo ""
 # 2. Check test count accuracy
 echo "2️⃣  Checking test count accuracy..."
 if [ -d "venv" ]; then
+    # shellcheck disable=SC1091
     source venv/bin/activate 2>/dev/null || true
 fi
 
 TEST_COUNT=$(python -m pytest tests/ --collect-only -q 2>&1 | grep "tests collected" | awk '{print $1}')
 echo "   Actual tests: $TEST_COUNT"
 
-if grep -q "$TEST_COUNT tests" README.md; then
+# Check for various test count patterns: "212 tests", "212/212", "Tests: 212"
+if grep -qE "($TEST_COUNT tests|$TEST_COUNT/$TEST_COUNT|Tests:? $TEST_COUNT)" README.md; then
     echo "   ✅ Test count $TEST_COUNT found in README.md"
 else
     echo "   ⚠️  Test count $TEST_COUNT NOT mentioned in README.md"

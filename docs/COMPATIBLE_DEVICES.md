@@ -19,11 +19,11 @@ Note: This list is based on real, tested LXP projects. Other Theben models may a
 
 ### Switching actuators (lights/switches)
 
-| Model | Type | Channels | HA Platform | Status |
-|-------|------|----------|-------------|--------|
-| S4    | Switch actuator | 4 | switch / light | Tested |
-| S8    | Switch actuator | 8 | switch / light | Tested |
-| S16   | Switch actuator | 16 | switch / light | Tested |
+| Model | Type            | Channels | HA Platform    | Status |
+| ----- | --------------- | -------- | -------------- | ------ |
+| S4    | Switch actuator | 4        | switch / light | Tested |
+| S8    | Switch actuator | 8        | switch / light | Tested |
+| S16   | Switch actuator | 16       | switch / light | Tested |
 
 Features:
 - On/off switching
@@ -33,10 +33,10 @@ Features:
 
 ### Dimming actuators (dimmable lights)
 
-| Model | Type | Channels | HA Platform | Status |
-|-------|------|----------|-------------|--------|
-| D2    | Dim actuator | 2 | light | Tested |
-| D4    | Dim actuator | 4 | light | Tested |
+| Model | Type         | Channels | HA Platform | Status |
+| ----- | ------------ | -------- | ----------- | ------ |
+| D2    | Dim actuator | 2        | light       | Tested |
+| D4    | Dim actuator | 4        | light       | Tested |
 
 Features:
 - On/off switching
@@ -47,10 +47,10 @@ Features:
 
 ### Blind/shutter actuators (covers)
 
-| Model | Type | Channels | HA Platform | Status |
-|-------|------|----------|-------------|--------|
-| J4    | Blind actuator | 4 | cover | Tested |
-| J8    | Blind actuator | 8 | cover | Tested |
+| Model | Type           | Channels | HA Platform | Status |
+| ----- | -------------- | -------- | ----------- | ------ |
+| J4    | Blind actuator | 4        | cover       | Tested |
+| J8    | Blind actuator | 8        | cover       | Tested |
 
 Features:
 - Open/close/stop
@@ -66,9 +66,9 @@ Device classes:
 
 ### Heating actuators (climate)
 
-| Model | Type | Channels | HA Platform | Status |
-|-------|------|----------|-------------|--------|
-| H6    | Heating actuator | 6 | climate | Tested |
+| Model | Type             | Channels | HA Platform | Status |
+| ----- | ---------------- | -------- | ----------- | ------ |
+| H6    | Heating actuator | 6        | climate     | Tested |
 
 Features:
 - Current temperature
@@ -85,10 +85,10 @@ Zones:
 
 ### Push buttons (binary sensors / switches)
 
-| Model | Type | Channels | HA Platform | Status |
-|-------|------|----------|-------------|--------|
-| iON8  | 8-button | 8 + 2 | switch / binary_sensor | Tested |
-| E1    | 2-button | 2 | switch / binary_sensor | Tested |
+| Model | Type     | Channels | HA Platform            | Status |
+| ----- | -------- | -------- | ---------------------- | ------ |
+| iON8  | 8-button | 8 + 2    | switch / binary_sensor | Tested |
+| E1    | 2-button | 2        | switch / binary_sensor | Tested |
 
 Features:
 - Binary switch states
@@ -97,8 +97,8 @@ Features:
 
 ### Motion/presence detectors (binary sensors)
 
-| Model | Type | Features | HA Platform | Status |
-|-------|------|----------|-------------|--------|
+| Model | Type              | Features   | HA Platform   | Status |
+| ----- | ----------------- | ---------- | ------------- | ------ |
 | BI180 | Presence detector | 180°, temp | binary_sensor | Tested |
 | BI360 | Presence detector | 360°, temp | binary_sensor | Tested |
 
@@ -111,9 +111,9 @@ Device class: `motion`
 
 ### Weather station (sensors)
 
-| Model | Type | Measurements | HA Platform | Status |
-|-------|------|--------------|-------------|--------|
-| Weather Station 1 | Outdoor sensor | temp, wind, lux | sensor | Tested |
+| Model             | Type           | Measurements    | HA Platform | Status |
+| ----------------- | -------------- | --------------- | ----------- | ------ |
+| Weather Station 1 | Outdoor sensor | temp, wind, lux | sensor      | Tested |
 
 Sensors:
 - Outdoor temperature (°C)
@@ -127,9 +127,9 @@ Device classes:
 
 ### Binary input module
 
-| Model | Type | Inputs | HA Platform | Status |
-|-------|------|--------|-------------|--------|
-| Binary Input 32 | Input module | 32 | binary_sensor | Tested |
+| Model           | Type         | Inputs | HA Platform   | Status |
+| --------------- | ------------ | ------ | ------------- | ------ |
+| Binary Input 32 | Input module | 32     | binary_sensor | Tested |
 
 Use cases:
 - Window contacts
@@ -187,15 +187,15 @@ Statistics:
 - 137 Home Assistant entities
 
 Device distribution:
-| Type | Count | HA Entities |
-|------|-------|-------------|
-| Switch actuators (S4/S8/S16) | 3 | 24 lights |
-| Dim actuators (D2/D4)        | 10 | 19 lights |
-| Blind actuators (J4/J8)      | 2 | 15 covers |
-| Heating actuators (H6)       | 2 | 9 climate |
-| Push buttons (iON8, E1, etc.)| 30+ | 60+ switches |
-| Motion/presence detectors    | 4 | 4 binary sensors |
-| Weather station              | 1 | 5 sensors |
+| Type                          | Count | HA Entities      |
+| ----------------------------- | ----- | ---------------- |
+| Switch actuators (S4/S8/S16)  | 3     | 24 lights        |
+| Dim actuators (D2/D4)         | 10    | 19 lights        |
+| Blind actuators (J4/J8)       | 2     | 15 covers        |
+| Heating actuators (H6)        | 2     | 9 climate        |
+| Push buttons (iON8, E1, etc.) | 30+   | 60+ switches     |
+| Motion/presence detectors     | 4     | 4 binary sensors |
+| Weather station               | 1     | 5 sensors        |
 
 ---
 
@@ -215,16 +215,16 @@ Device distribution:
 
 ## Compatibility matrix
 
-| Device type | Light | Switch | Cover | Climate | Binary sensor | Sensor |
-|-------------|-------|--------|-------|---------|---------------|--------|
-| S4/S8/S16   | Yes   | Yes    | No    | No      | No            | No     |
-| D2/D4       | Yes   | No     | No    | No      | No            | No     |
-| J4/J8       | No    | No     | Yes   | No      | No            | No     |
-| H6          | No    | No     | No    | Yes     | No            | No     |
-| iON8        | No    | Yes    | No    | No      | No            | Yes (temp) |
-| BI180/360   | No    | No     | No    | No      | Yes           | Yes (temp) |
-| Weather station | No | No    | No    | No      | No            | Yes    |
-| Binary input | No   | No     | No    | No      | Yes           | No     |
+| Device type     | Light | Switch | Cover | Climate | Binary sensor | Sensor     |
+| --------------- | ----- | ------ | ----- | ------- | ------------- | ---------- |
+| S4/S8/S16       | Yes   | Yes    | No    | No      | No            | No         |
+| D2/D4           | Yes   | No     | No    | No      | No            | No         |
+| J4/J8           | No    | No     | Yes   | No      | No            | No         |
+| H6              | No    | No     | No    | Yes     | No            | No         |
+| iON8            | No    | Yes    | No    | No      | No            | Yes (temp) |
+| BI180/360       | No    | No     | No    | No      | Yes           | Yes (temp) |
+| Weather station | No    | No     | No    | No      | No            | Yes        |
+| Binary input    | No    | No     | No    | No      | Yes           | No         |
 
 ---
 
@@ -256,11 +256,11 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Schaltaktoren (Switches/Lights)
 
-| Modell | Typ | Kanäle | HA Platform | Status |
-|--------|-----|--------|-------------|--------|
-| **S4** | Schaltaktor | 4 | `switch` / `light` | ✅ Getestet |
-| **S8** | Schaltaktor | 8 | `switch` / `light` | ✅ Getestet |
-| **S16** | Schaltaktor | 16 | `switch` / `light` | ✅ Getestet |
+| Modell  | Typ         | Kanäle | HA Platform        | Status     |
+| ------- | ----------- | ------ | ------------------ | ---------- |
+| **S4**  | Schaltaktor | 4      | `switch` / `light` | ✅ Getestet |
+| **S8**  | Schaltaktor | 8      | `switch` / `light` | ✅ Getestet |
+| **S16** | Schaltaktor | 16     | `switch` / `light` | ✅ Getestet |
 
 **Funktionen:**
 - Ein/Aus-Schaltung
@@ -270,10 +270,10 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Dimmaktoren (Dimmable Lights)
 
-| Modell | Typ | Kanäle | HA Platform | Status |
-|--------|-----|--------|-------------|--------|
-| **D2** | Dimmaktor | 2 | `light` | ✅ Getestet |
-| **D4** | Dimmaktor | 4 | `light` | ✅ Getestet |
+| Modell | Typ       | Kanäle | HA Platform | Status     |
+| ------ | --------- | ------ | ----------- | ---------- |
+| **D2** | Dimmaktor | 2      | `light`     | ✅ Getestet |
+| **D4** | Dimmaktor | 4      | `light`     | ✅ Getestet |
 
 **Funktionen:**
 - Ein/Aus-Schaltung
@@ -284,10 +284,10 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Jalousieaktoren (Covers)
 
-| Modell | Typ | Kanäle | HA Platform | Status |
-|--------|-----|--------|-------------|--------|
-| **J4** | Jalousieaktor | 4 | `cover` | ✅ Getestet |
-| **J8** | Jalousieaktor | 8 | `cover` | ✅ Getestet |
+| Modell | Typ           | Kanäle | HA Platform | Status     |
+| ------ | ------------- | ------ | ----------- | ---------- |
+| **J4** | Jalousieaktor | 4      | `cover`     | ✅ Getestet |
+| **J8** | Jalousieaktor | 8      | `cover`     | ✅ Getestet |
 
 **Funktionen:**
 - Auf/Ab/Stopp
@@ -303,9 +303,9 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Heizungsaktoren (Climate)
 
-| Modell | Typ | Kanäle | HA Platform | Status |
-|--------|-----|--------|-------------|--------|
-| **H6** | Heizungsaktor | 6 | `climate` | ✅ Getestet |
+| Modell | Typ           | Kanäle | HA Platform | Status     |
+| ------ | ------------- | ------ | ----------- | ---------- |
+| **H6** | Heizungsaktor | 6      | `climate`   | ✅ Getestet |
 
 **Funktionen:**
 - Temperatur-Anzeige (Istwert)
@@ -322,10 +322,10 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Taster (Binary Sensors / Switches)
 
-| Modell | Typ | Kanäle | HA Platform | Status |
-|--------|-----|--------|-------------|--------|
-| **iON8** | Taster 8-fach | 8 + 2 | `switch` / `binary_sensor` | ✅ Getestet |
-| **E1** | Taster | 2 | `switch` / `binary_sensor` | ✅ Getestet |
+| Modell   | Typ           | Kanäle | HA Platform                | Status     |
+| -------- | ------------- | ------ | -------------------------- | ---------- |
+| **iON8** | Taster 8-fach | 8 + 2  | `switch` / `binary_sensor` | ✅ Getestet |
+| **E1**   | Taster        | 2      | `switch` / `binary_sensor` | ✅ Getestet |
 
 **Funktionen:**
 - Binäre Schaltzustände
@@ -334,8 +334,8 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Bewegungsmelder (Binary Sensors)
 
-| Modell | Typ | Features | HA Platform | Status |
-|--------|-----|----------|-------------|--------|
+| Modell    | Typ           | Features   | HA Platform     | Status     |
+| --------- | ------------- | ---------- | --------------- | ---------- |
 | **BI180** | Präsenzmelder | 180°, Temp | `binary_sensor` | ✅ Getestet |
 | **BI360** | Präsenzmelder | 360°, Temp | `binary_sensor` | ✅ Getestet |
 
@@ -348,9 +348,9 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Wetterstation (Sensors)
 
-| Modell | Typ | Messwerte | HA Platform | Status |
-|--------|-----|-----------|-------------|--------|
-| **Wetterstation 1** | Außensensor | Temp, Wind, Lux | `sensor` | ✅ Getestet |
+| Modell              | Typ         | Messwerte       | HA Platform | Status     |
+| ------------------- | ----------- | --------------- | ----------- | ---------- |
+| **Wetterstation 1** | Außensensor | Temp, Wind, Lux | `sensor`    | ✅ Getestet |
 
 **Sensoren:**
 - Außentemperatur (°C)
@@ -366,9 +366,9 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Binäreingänge
 
-| Modell | Typ | Eingänge | HA Platform | Status |
-|--------|-----|----------|-------------|--------|
-| **Binäreingang 32** | Eingangsmodul | 32 | `binary_sensor` | ✅ Getestet |
+| Modell              | Typ           | Eingänge | HA Platform     | Status     |
+| ------------------- | ------------- | -------- | --------------- | ---------- |
+| **Binäreingang 32** | Eingangsmodul | 32       | `binary_sensor` | ✅ Getestet |
 
 **Funktionen:**
 - Fensterkontakte
@@ -432,15 +432,15 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 - 137 Home Assistant Entities
 
 **Geräteverteilung:**
-| Typ | Anzahl | HA Entities |
-|-----|--------|-------------|
-| Schaltaktoren (S4/S8/S16) | 3 | 24 Lights |
-| Dimmaktoren (D2/D4) | 10 | 19 Lights |
-| Jalousieaktoren (J4/J8) | 2 | 15 Covers |
-| Heizungsaktoren (H6) | 2 | 9 Climate |
-| Taster (iON8, E1, etc.) | 30+ | 60+ Switches |
-| Bewegungsmelder (BI180/360) | 4 | 4 Binary Sensors |
-| Wetterstation | 1 | 5 Sensors |
+| Typ                         | Anzahl | HA Entities      |
+| --------------------------- | ------ | ---------------- |
+| Schaltaktoren (S4/S8/S16)   | 3      | 24 Lights        |
+| Dimmaktoren (D2/D4)         | 10     | 19 Lights        |
+| Jalousieaktoren (J4/J8)     | 2      | 15 Covers        |
+| Heizungsaktoren (H6)        | 2      | 9 Climate        |
+| Taster (iON8, E1, etc.)     | 30+    | 60+ Switches     |
+| Bewegungsmelder (BI180/360) | 4      | 4 Binary Sensors |
+| Wetterstation               | 1      | 5 Sensors        |
 
 ---
 
@@ -497,16 +497,16 @@ Wenn Sie ein Gerät haben, das nicht in dieser Liste steht:
 
 ### Nach Device Type
 
-| Device Type | Light | Switch | Cover | Climate | Binary Sensor | Sensor |
-|-------------|-------|--------|-------|---------|---------------|--------|
-| **S4/S8/S16** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **D2/D4** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **J4/J8** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **H6** | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| **iON8** | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ (Temp) |
-| **BI180/360** | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ (Temp) |
-| **Wetterstation** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Binäreingang** | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Device Type       | Light | Switch | Cover | Climate | Binary Sensor | Sensor   |
+| ----------------- | ----- | ------ | ----- | ------- | ------------- | -------- |
+| **S4/S8/S16**     | ✅     | ✅      | ❌     | ❌       | ❌             | ❌        |
+| **D2/D4**         | ✅     | ❌      | ❌     | ❌       | ❌             | ❌        |
+| **J4/J8**         | ❌     | ❌      | ✅     | ❌       | ❌             | ❌        |
+| **H6**            | ❌     | ❌      | ❌     | ✅       | ❌             | ❌        |
+| **iON8**          | ❌     | ✅      | ❌     | ❌       | ❌             | ✅ (Temp) |
+| **BI180/360**     | ❌     | ❌      | ❌     | ❌       | ✅             | ✅ (Temp) |
+| **Wetterstation** | ❌     | ❌      | ❌     | ❌       | ❌             | ✅        |
+| **Binäreingang**  | ❌     | ❌      | ❌     | ❌       | ✅             | ❌        |
 
 ---
 

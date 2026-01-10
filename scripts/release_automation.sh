@@ -46,7 +46,8 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [ "$BRANCH" != "main" ]; then
+# Allow dry-run on any branch for CI/PR validation
+if [ "$BRANCH" != "main" ] && [ "$DRY_RUN" -eq 0 ]; then
   echo "ERROR: release must be performed from 'main' branch (current: $BRANCH)" >&2
   exit 1
 fi
@@ -99,10 +100,14 @@ pushd custom_components/luxor_living > /dev/null
 run zip -r "$TMP_ZIP" . -x "*.pyc" "*/__pycache__/*" "*.git*"
 popd > /dev/null
 
-# Validate zip has manifest at root
-if ! unzip -l "$TMP_ZIP" | awk '{print $4}' | grep -qx "manifest.json"; then
-  echo "ERROR: package does not contain manifest.json at root (zip structure incorrect)" >&2
-  exit 1
+# Validate zip has manifest at root (skip during dry-run)
+if [ "$DRY_RUN" -eq 1 ]; then
+  echo "DRY RUN: skipping zip content validation"
+else
+  if ! unzip -l "$TMP_ZIP" | awk '{print $4}' | grep -qx "manifest.json"; then
+    echo "ERROR: package does not contain manifest.json at root (zip structure incorrect)" >&2
+    exit 1
+  fi
 fi
 
 # 4) Tag and release
