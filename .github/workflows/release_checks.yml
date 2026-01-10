@@ -9,6 +9,7 @@ on:
 
 jobs:
   release_checks:
+    name: Release Checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
