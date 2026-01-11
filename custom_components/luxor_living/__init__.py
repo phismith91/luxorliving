@@ -215,14 +215,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             
             # Register state in global registry
             register_integration_state(entry.entry_id, state)
-            
-            # Keep legacy dict storage for backward compatibility (temporary)
-            hass.data.setdefault(DOMAIN, {})
-            hass.data[DOMAIN][entry.entry_id] = {
-                "mapper": mapper,
-                "config": entry.data,
-                "overrides": overrides,
-            }
         except FileNotFoundError as err:
             _LOGGER.error("LXP file not found: %s", lxp_path)
             return False
@@ -332,9 +324,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Store gateway in integration state (type-safe)
     state = get_integration_state(entry.entry_id)
     state.knx_gateway = knx_gateway
-    
-    # Keep legacy dict storage for backward compatibility (temporary)
-    hass.data[DOMAIN][entry.entry_id][DATA_KNX_GATEWAY] = knx_gateway
 
     # Provide GA→labels to gateway for log enrichment (Name + ID)
     try:
@@ -358,9 +347,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Store coordinator in integration state (type-safe)
     state = get_integration_state(entry.entry_id)
     state.coordinator = coordinator
-    
-    # Keep legacy dict storage for backward compatibility (temporary)
-    hass.data[DOMAIN][entry.entry_id]["coordinator"] = coordinator
 
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -449,8 +435,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         # Unregister type-safe state
         unregister_integration_state(entry.entry_id)
-        
-        # Remove legacy dict storage
-        hass.data[DOMAIN].pop(entry.entry_id, None)
 
     return unload_ok
