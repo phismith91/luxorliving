@@ -285,7 +285,8 @@ Each gateway creates separate entities.
 - 📊 [Sensor Platform](docs/SENSOR_PLATFORM.md) – Sensor configuration
 
 ### For Developers
-- 🏗️ [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) – Core design decisions
+- 🏗️ [Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md) – System design & data flow
+- 📐 [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) – Core design decisions
 - 🔧 [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technical protocol details
 - 🧪 [Testing Guide](docs/TESTS.md) – Running and writing tests
 - 🛠️ [Development Setup](AGENTS.md) – Developer environment setup
@@ -293,6 +294,7 @@ Each gateway creates separate entities.
 
 ### For DevOps
 - 🚀 [Release Operations](docs/RELEASE_OPERATIONS.md) – Release process
+- 🚨 [Incident Response](docs/INCIDENT_RESPONSE_RUNBOOK.md) – Emergency procedures
 - 📋 [Documentation Index](docs/INDEX.md) – Complete documentation overview
 
 ---
