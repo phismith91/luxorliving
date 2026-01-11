@@ -7,7 +7,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
+from custom_components.luxor_living.const import DOMAIN
 from custom_components.luxor_living.coordinator import LuxorLivingCoordinator
+from custom_components.luxor_living.integration_state import (
+    IntegrationState,
+    register_integration_state,
+)
 from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
 from custom_components.luxor_living.sensor import LuxorLivingSensor, async_setup_entry
 
@@ -251,7 +256,18 @@ class TestAsyncSetupEntry:
         # Mock KNX gateway discovered sensors
         mock_knx_gateway.get_discovered_sensors.return_value = {}
 
-        # Setup integration data
+        # Create type-safe integration state
+        state = IntegrationState(
+            mapper=mock_mapper,
+            config={},
+            overrides={},
+            knx_gateway=mock_knx_gateway,
+            coordinator=mock_coordinator,
+            entry=mock_config_entry,
+        )
+        register_integration_state(mock_config_entry.entry_id, state)
+        
+        # Keep legacy dict storage for backward compatibility
         mock_hass.data[DOMAIN] = {}
         mock_hass.data[DOMAIN][mock_config_entry.entry_id] = {
             "coordinator": mock_coordinator,
@@ -284,7 +300,18 @@ class TestAsyncSetupEntry:
         # Mock KNX gateway discovered sensors
         mock_knx_gateway.get_discovered_sensors.return_value = {}
 
-        # Setup integration data
+        # Create type-safe integration state with empty entities
+        state = IntegrationState(
+            mapper=mock_mapper,
+            config={},
+            overrides={},
+            knx_gateway=mock_knx_gateway,
+            coordinator=mock_coordinator,
+            entry=mock_config_entry,
+        )
+        register_integration_state(mock_config_entry.entry_id, state)
+        
+        # Keep legacy dict storage
         mock_hass.data[DOMAIN] = {}
         mock_hass.data[DOMAIN][mock_config_entry.entry_id] = {
             "coordinator": mock_coordinator,
@@ -307,14 +334,8 @@ class TestAsyncSetupEntry:
     async def test_async_setup_entry_missing_mapper(
         self, mock_hass, mock_config_entry, mock_coordinator, mock_knx_gateway
     ):
-        """Test setup when mapper is missing."""
-        # Setup integration data without mapper
-        mock_hass.data[DOMAIN] = {}
-        mock_hass.data[DOMAIN][mock_config_entry.entry_id] = {
-            "coordinator": mock_coordinator,
-            "knx_gateway": mock_knx_gateway,
-        }
-
+        """Test setup when mapper is missing (integration state not registered)."""
+        # Don't register state - test error handling when state not found
         async_add_entities = Mock()
 
         # Should return early without error
@@ -326,17 +347,8 @@ class TestAsyncSetupEntry:
     async def test_async_setup_entry_missing_coordinator(
         self, mock_hass, mock_config_entry, mock_knx_gateway
     ):
-        """Test setup when coordinator is missing."""
-        mock_mapper = Mock()
-        mock_mapper.get_entities_by_platform.return_value = []
-
-        # Setup integration data without coordinator
-        mock_hass.data[DOMAIN] = {}
-        mock_hass.data[DOMAIN][mock_config_entry.entry_id] = {
-            "mapper": mock_mapper,
-            "knx_gateway": mock_knx_gateway,
-        }
-
+        """Test setup when coordinator is missing (integration state not registered)."""
+        # Don't register state - test error handling when state not found
         async_add_entities = AsyncMock()
 
         # Should return early without error

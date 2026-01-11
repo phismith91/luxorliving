@@ -33,6 +33,12 @@ from .const import (
 )
 from .coordinator import LuxorLivingCoordinator
 from .entity_mapper import EntityMapper
+from .integration_state import (
+    IntegrationState,
+    get_integration_state,
+    register_integration_state,
+    unregister_integration_state,
+)
 from .knx_gateway import LuxorKNXGateway
 from .lxp_parser import LXPParser, get_lxp_cache_stats
 from .overrides import load_overrides
@@ -161,10 +167,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN]["_health_registered"] = True
         _LOGGER.debug("Health check endpoint registered at /api/luxor_living/health")
 
-    # Store integration data
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {}
-
     # Get configuration
     lxp_file = entry.data.get(CONF_LXP_FILE)
     host = entry.data.get(CONF_HOST, "localhost")
@@ -203,10 +205,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             entity_count = len(mapper.entities)
             _LOGGER.warning("Mapped %d entities from LXP project", entity_count)
 
-            # Store mapper and config in integration data
-            hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
-            hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
-            hass.data[DOMAIN][entry.entry_id]["overrides"] = overrides
+            # Create type-safe integration state
+            state = IntegrationState(
+                mapper=mapper,
+                config=entry.data,
+                overrides=overrides,
+                entry=entry,
+            )
+            
+            # Register state in global registry
+            register_integration_state(entry.entry_id, state)
+            
+            # Keep legacy dict storage for backward compatibility (temporary)
+            hass.data.setdefault(DOMAIN, {})
+            hass.data[DOMAIN][entry.entry_id] = {
+                "mapper": mapper,
+                "config": entry.data,
+                "overrides": overrides,
+            }
         except FileNotFoundError as err:
             _LOGGER.error("LXP file not found: %s", lxp_path)
             return False
@@ -313,7 +329,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Note: Datapoint mapping is now loaded in knx_gateway.async_setup()
     # via _async_load_datapoint_mapping() which fetches from REST API
 
-    # Store gateway in integration data
+    # Store gateway in integration state (type-safe)
+    state = get_integration_state(entry.entry_id)
+    state.knx_gateway = knx_gateway
+    
+    # Keep legacy dict storage for backward compatibility (temporary)
     hass.data[DOMAIN][entry.entry_id][DATA_KNX_GATEWAY] = knx_gateway
 
     # Provide GA→labels to gateway for log enrichment (Name + ID)
@@ -335,7 +355,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
 
-    # Store coordinator in integration data
+    # Store coordinator in integration state (type-safe)
+    state = get_integration_state(entry.entry_id)
+    state.coordinator = coordinator
+    
+    # Keep legacy dict storage for backward compatibility (temporary)
     hass.data[DOMAIN][entry.entry_id]["coordinator"] = coordinator
 
     # Forward setup to platforms
@@ -415,14 +439,18 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.info("Unloading LUXORliving integration")
 
-    # Disconnect KNX gateway
-    knx_gateway = hass.data[DOMAIN][entry.entry_id].get(DATA_KNX_GATEWAY)
-    if knx_gateway:
-        await knx_gateway.async_disconnect()
+    # Disconnect KNX gateway using type-safe state
+    state = get_integration_state(entry.entry_id)
+    if state.knx_gateway:
+        await state.knx_gateway.async_disconnect()
 
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        # Unregister type-safe state
+        unregister_integration_state(entry.entry_id)
+        
+        # Remove legacy dict storage
+        hass.data[DOMAIN].pop(entry.entry_id, None)
 
     return unload_ok
