@@ -7,7 +7,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from homeassistant.const import Platform
 
-from custom_components.luxor_living.entity_mapper import EntityMapper, MappedEntity
+from custom_components.luxor_living.entity_mapper import EntityMapper
+from custom_components.luxor_living.mapped_entity import MappedEntity
+from custom_components.luxor_living.platform_detector import PlatformDetector
 from custom_components.luxor_living.lxp_parser import (
     LXPActuator,
     LXPDatapoint,
@@ -18,28 +20,28 @@ from custom_components.luxor_living.lxp_parser import (
 
 
 def test_mapper_role_to_platform_mapping():
-    """Test role to platform mapping constants."""
-    from custom_components.luxor_living.entity_mapper import EntityMapper
+    """Test role to platform mapping via PlatformDetector."""
+    detector = PlatformDetector()
 
-    # Verify key mappings
-    assert EntityMapper.ROLE_TO_PLATFORM["OnOff"] == Platform.LIGHT
-    assert EntityMapper.ROLE_TO_PLATFORM["Dimmen%"] == Platform.LIGHT
-    assert EntityMapper.ROLE_TO_PLATFORM["UpDown"] == Platform.COVER
-    assert EntityMapper.ROLE_TO_PLATFORM["Temperature"] == Platform.SENSOR
-    assert EntityMapper.ROLE_TO_PLATFORM["MasterSlave"] == Platform.BINARY_SENSOR
-    assert EntityMapper.ROLE_TO_PLATFORM["Setpoint"] == Platform.CLIMATE
+    # Verify key mappings delegated to PlatformDetector
+    assert detector.detect_platform("OnOff") == Platform.LIGHT
+    assert detector.detect_platform("Dimmen%") == Platform.LIGHT
+    assert detector.detect_platform("UpDown") == Platform.COVER
+    assert detector.detect_platform("Temperature") == Platform.SENSOR
+    assert detector.detect_platform("MasterSlave") == Platform.BINARY_SENSOR
+    assert detector.detect_platform("Setpoint") == Platform.CLIMATE
 
 
 def test_mapper_role_to_unit_mapping():
-    """Test role to unit of measurement mapping."""
-    from custom_components.luxor_living.entity_mapper import EntityMapper
+    """Test role to unit of measurement mapping via PlatformDetector."""
+    detector = PlatformDetector()
 
-    # Verify unit mappings
-    assert EntityMapper.ROLE_TO_UNIT["Temperature"] == "°C"
-    assert EntityMapper.ROLE_TO_UNIT["Humidity"] == "%"
-    assert EntityMapper.ROLE_TO_UNIT["Pressure"] == "hPa"
-    assert EntityMapper.ROLE_TO_UNIT["CO2"] == "ppm"
-    assert EntityMapper.ROLE_TO_UNIT["Brightness"] == "lx"
+    # Verify unit mappings delegated to PlatformDetector
+    assert detector.get_unit("Temperature") == "°C"
+    assert detector.get_unit("Humidity") == "%"
+    assert detector.get_unit("Pressure") == "hPa"
+    assert detector.get_unit("CO2") == "ppm"
+    assert detector.get_unit("Brightness") == "lx"
 
 
 def test_mapped_entity_dataclass():
