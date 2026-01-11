@@ -9,10 +9,14 @@ updates:
       time: "09:00"
       timezone: "Europe/Berlin"
     open-pull-requests-limit: 10
+    target-branch: "main"
     reviewers:
       - "phismith91"
     assignees:
       - "phismith91"
+    labels:
+      - "dependencies"
+      - "security"
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"

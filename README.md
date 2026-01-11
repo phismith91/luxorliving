@@ -1,10 +1,3 @@
-# Support
-
-If you find this project useful, consider buying me a coffee:
-
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Donate-FFDD00?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/philsmith91)
-
-
 # LUXORliving KNX Integration
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
@@ -37,8 +30,6 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 - **⚡ Rate limiting** – Prevents "light shows" by blocking rapid on/off cycles (5+ in 1s)
 
 **Working platforms:** Light, Switch, Cover, Climate, Binary Sensor, Sensor
-
-## Current Release
 
 ## Current Release
 
@@ -284,18 +275,25 @@ Each gateway creates separate entities.
 
 ---
 
-## Documentation
+## 📚 Documentation
 
-- [Documentation Index](docs/INDEX.md) – Complete documentation overview
-- [Installation Guide](docs/INSTALLATION.md) – Detailed setup instructions
-- [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technical protocol details
-- [Sensor Platform](docs/SENSOR_PLATFORM.md) – Sensor configuration and usage
-- [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) – Core design decisions
-- [Release Operations](docs/RELEASE_OPERATIONS.md) – Release process and deployment
+### For Users
+- 📖 [Installation Guide](docs/INSTALLATION.md) – Step-by-step setup
+- 🎨 [Dashboard Examples](docs/DASHBOARD_EXAMPLES.md) – UI card configurations
+- 🤖 [Automation Recipes](docs/AUTOMATIONS.md) – Common automation patterns
+- 🔌 [Compatible Devices](docs/COMPATIBLE_DEVICES.md) – Tested hardware
+- 📊 [Sensor Platform](docs/SENSOR_PLATFORM.md) – Sensor configuration
 
-**For Developers:**
-- [Security Policy](SECURITY.md) – Vulnerability reporting
-- Test Suite: 209 tests – Run `pytest tests/ -v` for details
+### For Developers
+- 🏗️ [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) – Core design decisions
+- 🔧 [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technical protocol details
+- 🧪 [Testing Guide](docs/TESTS.md) – Running and writing tests
+- 🛠️ [Development Setup](AGENTS.md) – Developer environment setup
+- 🔐 [Security Policy](SECURITY.md) – Vulnerability reporting
+
+### For DevOps
+- 🚀 [Release Operations](docs/RELEASE_OPERATIONS.md) – Release process
+- 📋 [Documentation Index](docs/INDEX.md) – Complete documentation overview
 
 ---
 
@@ -305,11 +303,6 @@ This project is licensed under the [LICENSE](LICENSE).
 
 ---
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 998ba72 (Docs: Document README mismatch incident and update README release block to v0.6.0)
 ## Credits
 
 - [Theben AG](https://www.theben.de/) – LUXORliving system
