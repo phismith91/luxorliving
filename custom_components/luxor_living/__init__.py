@@ -156,6 +156,85 @@ class LuxorLivingHealthView(HomeAssistantView):
             )
 
 
+class LuxorLivingPushView(HomeAssistantView):
+    """Endpoint to receive externally pushed KNX values (webhook / websocket forwarder)."""
+
+    url = "/api/luxor_living/push"
+    name = "api:luxor_living:push"
+    requires_auth = False  # Token-based auth handled optionally per config entry
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass = hass
+
+    async def post(self, request):
+        """Handle incoming push event.
+
+        Expected JSON payload:
+            {
+                "entry_id": "<config_entry_id>",
+                "address": "1/2/3",
+                "value": true|42|23.5|[...],
+                "value_type": "binary"|"percent"|None
+            }
+
+        Authentication:
+            - If the config entry defines "push_token" in data or options, a matching
+              header "X-LUXOR-PUSH-TOKEN: <token>" is required. If absent, 403 returned.
+            - If no token configured, the endpoint accepts unauthenticated calls (local use).
+        """
+        try:
+            payload = await request.json()
+        except Exception:
+            from aiohttp import web
+
+            return web.json_response({"error": "invalid_json"}, status=400)
+
+        entry_id = payload.get("entry_id")
+        address = payload.get("address")
+        value = payload.get("value")
+        value_type = payload.get("value_type")
+
+        if not entry_id or not address:
+            from aiohttp import web
+
+            return web.json_response({"error": "missing entry_id or address"}, status=400)
+
+        # Authorization: check push token if configured
+        token_header = request.headers.get("X-LUXOR-PUSH-TOKEN")
+        try:
+            state = get_integration_state(entry_id)
+        except KeyError:
+            from aiohttp import web
+
+            return web.json_response({"error": "entry_not_found"}, status=404)
+
+        config_token = state.entry.data.get("push_token") if state.entry else None
+        options_token = state.entry.options.get("push_token") if state.entry else None
+        configured_token = config_token or options_token
+
+        if configured_token and token_header != configured_token:
+            from aiohttp import web
+
+            return web.json_response({"error": "forbidden"}, status=403)
+
+        # Handle push
+        try:
+            gateway = state.get_gateway_or_raise()
+            await gateway.process_incoming_value(address, value, value_type)
+            from aiohttp import web
+
+            return web.json_response({"status": "ok"})
+        except RuntimeError as err:
+            from aiohttp import web
+
+            return web.json_response({"error": str(err)}, status=503)
+        except Exception as err:
+            _LOGGER.exception("Error handling push request: %s", err)
+            from aiohttp import web
+
+            return web.json_response({"error": "internal_error"}, status=500)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up LUXORliving from a config entry."""
     _LOGGER.debug("LUXORliving setup started")
@@ -166,6 +245,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data.setdefault(DOMAIN, {})
         hass.data[DOMAIN]["_health_registered"] = True
         _LOGGER.debug("Health check endpoint registered at /api/luxor_living/health")
+
+    # Register push endpoint (webhook / websocket forwarder) (only once)
+    if not hass.data.get(DOMAIN, {}).get("_push_registered"):
+        hass.http.register_view(LuxorLivingPushView(hass))
+        hass.data.setdefault(DOMAIN, {})
+        hass.data[DOMAIN]["_push_registered"] = True
+        _LOGGER.debug("Push endpoint registered at /api/luxor_living/push")
 
     # Get configuration
     lxp_file = entry.data.get(CONF_LXP_FILE)
