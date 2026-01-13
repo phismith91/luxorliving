@@ -38,6 +38,11 @@ ATTR_ROOM = "room"
 ATTR_FUNCTION = "function"
 ATTR_DEVICE = "device"
 
+# Push / Webhook options
+CONF_PUSH_TOKEN = "push_token"
+CONF_PUSH_WS_URL = "push_ws_url"
+CONF_PUSH_WS_TOKEN = "push_ws_token"
+
 # KNX Gateway
 DATA_KNX_GATEWAY = "knx_gateway"
 DATA_COORDINATOR = "coordinator"

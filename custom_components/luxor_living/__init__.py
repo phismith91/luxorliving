@@ -411,6 +411,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     state = get_integration_state(entry.entry_id)
     state.knx_gateway = knx_gateway
 
+    # If configured, start WebSocket push client
+    push_ws_url = entry.options.get("push_ws_url", entry.data.get("push_ws_url"))
+    push_ws_token = entry.options.get("push_ws_token", entry.data.get("push_ws_token"))
+    if push_ws_url:
+        try:
+            from .push_client import PushClient
+
+            push_client = PushClient(hass, entry.entry_id, push_ws_url, push_ws_token)
+            push_client.start()
+            state.push_client = push_client
+            _LOGGER.info("Started push client for entry %s -> %s", entry.entry_id, push_ws_url)
+        except Exception as err:
+            _LOGGER.exception("Failed to start push client: %s", err)
+
     # Provide GA→labels to gateway for log enrichment (Name + ID)
     try:
         ga_label_map = mapper.get_group_address_label_map()
@@ -519,6 +533,14 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
+        # Stop push client if running
+        try:
+            state = get_integration_state(entry.entry_id)
+            if state.push_client:
+                await state.push_client.stop()
+        except Exception:
+            pass
+
         # Unregister type-safe state
         unregister_integration_state(entry.entry_id)
 

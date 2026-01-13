@@ -35,6 +35,9 @@ class IntegrationState:
     knx_gateway: KNXGateway | None = None
     coordinator: LuxorLivingCoordinator | None = None
     entry: ConfigEntry | None = field(default=None, repr=False)
+    # Optional push client for receiving websocket events
+    push_client: Any | None = None
+
 
     def __post_init__(self) -> None:
         """Validate required fields after initialization."""

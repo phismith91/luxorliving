@@ -25,6 +25,9 @@ from .const import (
     CONF_SCAN_INTERVAL,
     CONF_SIMULATION_MODE,
     CONF_USERNAME,
+    CONF_PUSH_TOKEN,
+    CONF_PUSH_WS_TOKEN,
+    CONF_PUSH_WS_URL,
     CONNECTION_TYPE_ROUTING,
     CONNECTION_TYPE_TUNNELING,
     DEFAULT_CONNECTION_TYPE,
@@ -79,6 +82,10 @@ STEP_GATEWAY_DATA_SCHEMA = vol.Schema(
             ]
         ),
         vol.Optional(CONF_SIMULATION_MODE, default=False): bool,
+        # Optional push config
+        vol.Optional("push_token", default=""): str,
+        vol.Optional("push_ws_url", default=""): str,
+        vol.Optional("push_ws_token", default=""): str,
     }
 )
 
@@ -208,6 +215,19 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_SIMULATION_MODE: user_input.get(CONF_SIMULATION_MODE, False),
             }
 
+            # Optional push settings
+            push_token = user_input.get("push_token")
+            if push_token:
+                data["push_token"] = push_token
+
+            push_ws_url = user_input.get("push_ws_url")
+            if push_ws_url:
+                data["push_ws_url"] = push_ws_url
+
+            push_ws_token = user_input.get("push_ws_token")
+            if push_ws_token:
+                data["push_ws_token"] = push_ws_token
+
             # Create entry
             return self.async_create_entry(
                 title=f"LUXORliving ({self._project_name})",
@@ -296,6 +316,21 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             self.config_entry.data.get(CONF_DISCOVERY_TIMEOUT, DEFAULT_DISCOVERY_TIMEOUT),
         )
 
+        current_push_token = self.config_entry.options.get(
+            "push_token",
+            self.config_entry.data.get("push_token", ""),
+        )
+
+        current_push_ws_url = self.config_entry.options.get(
+            "push_ws_url",
+            self.config_entry.data.get("push_ws_url", ""),
+        )
+
+        current_push_ws_token = self.config_entry.options.get(
+            "push_ws_token",
+            self.config_entry.data.get("push_ws_token", ""),
+        )
+
         options_schema = vol.Schema(
             {
                 vol.Optional(
@@ -314,6 +349,10 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                     CONF_DISCOVERY_TIMEOUT,
                     default=current_discovery_timeout,
                 ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=10.0)),
+                # Push options
+                vol.Optional("push_token", default=current_push_token): str,
+                vol.Optional("push_ws_url", default=current_push_ws_url): str,
+                vol.Optional("push_ws_token", default=current_push_ws_token): str,
             }
         )
 
