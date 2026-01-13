@@ -216,6 +216,19 @@ entities:
 | Tunneling connection fails | Try Routing mode or check BAOS authentication                          |
 | Slow startup               | Check discovery timeout setting (Options → Configure)                  |
 | Performance issues         | Run benchmark: `curl http://localhost:8123/api/luxor_living/benchmark` |
+
+## Push / WebSocket Forwarder 🔁
+
+The integration provides an optional push webhook and WebSocket client to accept external state updates (useful for gateways or cloud forwarders that push KNX values).
+
+- Webhook endpoint: `POST /api/luxor_living/push`
+  - JSON payload: `{ "entry_id": "<entry_id>", "address": "1/2/3", "value": true, "value_type": "binary" }`
+  - Authentication: configurable per config entry: **none**, **token** (header `X-LUXOR-PUSH-TOKEN`), **bearer** (`Authorization: Bearer <token>`), or **hmac** (header `X-LUXOR-PUSH-SIGNATURE` with HMAC-SHA256 hex signature of the JSON body using the configured secret).
+
+- WebSocket client: configure a `push_ws_url` in the integration options to have HA open a websocket to an external forwarder. The WS client supports an optional `push_ws_token` (sent as `Authorization: Bearer <token>`).
+
+This feature improves latency and reduces coordinator polling by letting the gateway push updates directly into the integration.
+
 | Circuit breaker open       | Check network connectivity, circuit auto-recovers after timeout        |
 
 **Enable debug logging:**

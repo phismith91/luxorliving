@@ -42,6 +42,12 @@ ATTR_DEVICE = "device"
 CONF_PUSH_TOKEN = "push_token"
 CONF_PUSH_WS_URL = "push_ws_url"
 CONF_PUSH_WS_TOKEN = "push_ws_token"
+# Push auth method: none | token | bearer | hmac
+CONF_PUSH_AUTH_METHOD = "push_auth_method"
+PUSH_AUTH_NONE = "none"
+PUSH_AUTH_TOKEN = "token"
+PUSH_AUTH_BEARER = "bearer"
+PUSH_AUTH_HMAC = "hmac"
 
 # KNX Gateway
 DATA_KNX_GATEWAY = "knx_gateway"

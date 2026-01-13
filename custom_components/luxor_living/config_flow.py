@@ -86,6 +86,12 @@ STEP_GATEWAY_DATA_SCHEMA = vol.Schema(
         vol.Optional("push_token", default=""): str,
         vol.Optional("push_ws_url", default=""): str,
         vol.Optional("push_ws_token", default=""): str,
+        vol.Optional("push_auth_method", default="none"): vol.In([
+            "none",
+            "token",
+            "bearer",
+            "hmac",
+        ]),
     }
 )
 
@@ -227,6 +233,10 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             push_ws_token = user_input.get("push_ws_token")
             if push_ws_token:
                 data["push_ws_token"] = push_ws_token
+
+            push_auth_method = user_input.get("push_auth_method")
+            if push_auth_method:
+                data["push_auth_method"] = push_auth_method
 
             # Create entry
             return self.async_create_entry(

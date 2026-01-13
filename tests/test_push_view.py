@@ -50,7 +50,7 @@ async def test_push_view_forbidden_when_token_mismatch():
     """Test that push requests are rejected when token is configured but missing/invalid."""
     entry = MagicMock()
     entry.entry_id = "entry_with_token"
-    entry.data = {"push_token": "secret-token"}
+    entry.data = {"push_token": "secret-token", "push_auth_method": "token"}
     entry.options = {}
 
     state = IntegrationState(mapper=MagicMock(), config={}, overrides={}, entry=entry)
@@ -72,3 +72,66 @@ async def test_push_view_forbidden_when_token_mismatch():
 
     assert resp.status == 403
     gateway.process_incoming_value.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_push_view_bearer_auth():
+    """Test that Bearer Authorization header is accepted when configured."""
+    entry = MagicMock()
+    entry.entry_id = "entry_bearer"
+    entry.data = {"push_token": "bearer-secret", "push_auth_method": "bearer"}
+    entry.options = {}
+
+    state = IntegrationState(mapper=MagicMock(), config={}, overrides={}, entry=entry)
+    register_integration_state(entry.entry_id, state)
+
+    gateway = MagicMock()
+    gateway.process_incoming_value = AsyncMock()
+    state.knx_gateway = gateway
+
+    hass = MagicMock()
+    view = LuxorLivingPushView(hass)
+
+    req = MagicMock()
+    req.json = AsyncMock(return_value={"entry_id": entry.entry_id, "address": "1/2/3", "value": True})
+    req.headers = {"Authorization": "Bearer bearer-secret"}
+
+    resp = await view.post(req)
+
+    assert resp.status == 200
+    gateway.process_incoming_value.assert_awaited_once_with("1/2/3", True, None)
+
+
+@pytest.mark.asyncio
+async def test_push_view_hmac_auth():
+    """Test that HMAC signature header is validated when configured."""
+    import hmac
+    import hashlib
+    import json
+
+    entry = MagicMock()
+    entry.entry_id = "entry_hmac"
+    entry.data = {"push_token": "hmac-secret", "push_auth_method": "hmac"}
+    entry.options = {}
+
+    state = IntegrationState(mapper=MagicMock(), config={}, overrides={}, entry=entry)
+    register_integration_state(entry.entry_id, state)
+
+    gateway = MagicMock()
+    gateway.process_incoming_value = AsyncMock()
+    state.knx_gateway = gateway
+
+    hass = MagicMock()
+    view = LuxorLivingPushView(hass)
+
+    payload = {"entry_id": entry.entry_id, "address": "1/2/3", "value": True}
+    sig = hmac.new(entry.data["push_token"].encode(), json.dumps(payload, sort_keys=True).encode(), hashlib.sha256).hexdigest()
+
+    req = MagicMock()
+    req.json = AsyncMock(return_value=payload)
+    req.headers = {"X-LUXOR-PUSH-SIGNATURE": sig}
+
+    resp = await view.post(req)
+
+    assert resp.status == 200
+    gateway.process_incoming_value.assert_awaited_once_with("1/2/3", True, None)

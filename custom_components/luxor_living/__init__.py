@@ -199,8 +199,7 @@ class LuxorLivingPushView(HomeAssistantView):
 
             return web.json_response({"error": "missing entry_id or address"}, status=400)
 
-        # Authorization: check push token if configured
-        token_header = request.headers.get("X-LUXOR-PUSH-TOKEN")
+        # Authorization: check configured auth method
         try:
             state = get_integration_state(entry_id)
         except KeyError:
@@ -208,15 +207,61 @@ class LuxorLivingPushView(HomeAssistantView):
 
             return web.json_response({"error": "entry_not_found"}, status=404)
 
+        # Determine configured values (allow in-data or options)
         config_token = state.entry.data.get("push_token") if state.entry else None
         options_token = state.entry.options.get("push_token") if state.entry else None
         configured_token = config_token or options_token
 
-        if configured_token and token_header != configured_token:
-            from aiohttp import web
+        auth_method = (
+            state.entry.data.get("push_auth_method")
+            if state.entry and state.entry.data.get("push_auth_method")
+            else state.entry.options.get("push_auth_method")
+            if state.entry
+            else None
+        ) or "none"
 
-            return web.json_response({"error": "forbidden"}, status=403)
+        # Token-based (legacy): header X-LUXOR-PUSH-TOKEN must match
+        if auth_method == "token":
+            token_header = request.headers.get("X-LUXOR-PUSH-TOKEN")
+            if configured_token and token_header != configured_token:
+                from aiohttp import web
 
+                return web.json_response({"error": "forbidden"}, status=403)
+
+        # Bearer token: Authorization: Bearer <token>
+        elif auth_method == "bearer":
+            auth_header = request.headers.get("Authorization", "")
+            if configured_token and not auth_header.startswith("Bearer "):
+                from aiohttp import web
+
+                return web.json_response({"error": "forbidden"}, status=403)
+            bearer = auth_header.split(" ", 1)[1] if " " in auth_header else ""
+            if configured_token and bearer != configured_token:
+                from aiohttp import web
+
+                return web.json_response({"error": "forbidden"}, status=403)
+
+        # HMAC: header X-LUXOR-PUSH-SIGNATURE hex-encoded sha256 of sorted-json using token as key
+        elif auth_method == "hmac":
+            sig_header = request.headers.get("X-LUXOR-PUSH-SIGNATURE", "")
+            if not configured_token or not sig_header:
+                from aiohttp import web
+
+                return web.json_response({"error": "forbidden"}, status=403)
+            import hmac
+            import hashlib
+            import json
+
+            # Compute signature over deterministic JSON representation
+            expected = hmac.new(
+                configured_token.encode(), json.dumps(payload, sort_keys=True).encode(), hashlib.sha256
+            ).hexdigest()
+            if not hmac.compare_digest(expected, sig_header):
+                from aiohttp import web
+
+                return web.json_response({"error": "forbidden"}, status=403)
+
+        # else: none -> accept unauthenticated pushes
         # Handle push
         try:
             gateway = state.get_gateway_or_raise()

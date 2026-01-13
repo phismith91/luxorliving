@@ -2,6 +2,16 @@
 
 All notable changes to the LUXORliving Home Assistant integration will be documented in this file.
 
+## Unreleased
+
+### Added
+- **Push webhook & WebSocket client** — optional `POST /api/luxor_living/push` endpoint and configurable WebSocket client (`push_ws_url`) to accept external pushed KNX state updates. Supports configurable authentication: `none`, `token`, `bearer`, and `hmac` (HMAC-SHA256).
+
+### Changed
+- Documented push options and added tests for push handling and WebSocket client.
+
+---
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 

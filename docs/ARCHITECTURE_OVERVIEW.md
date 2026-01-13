@@ -55,6 +55,9 @@ description: System architecture overview for LUXORliving Home Assistant integra
 │  │  │  Health Endpoint & Diagnostics                  │   │  │
 │  │  │  - /api/luxor_living/health                     │   │  │
 │  │  │  - /api/luxor_living/benchmark                  │   │  │
+│  │  │  - /api/luxor_living/push (push webhook)        │   │  │
+
+Push/WebSocket Client: The integration can optionally start a WebSocket client that connects to an external push forwarder and forwards pushed KNX values into the local KNX gateway. This reduces polling and improves latency for state updates.
 │  │  └─────────────────────────────────────────────────┘   │  │
 │  │                                                          │  │
 │  └──────────────────────────────────────────────────────────┘  │
