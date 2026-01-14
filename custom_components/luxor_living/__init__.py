@@ -493,6 +493,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     state = get_integration_state(entry.entry_id)
     state.coordinator = coordinator
 
+    # Also store in hass.data for backward compatibility with platform setup
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = {
+        "coordinator": coordinator,
+        "mapper": mapper,
+        "knx_gateway": knx_gateway,
+    }
+
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
