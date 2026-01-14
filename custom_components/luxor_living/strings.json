@@ -50,12 +50,22 @@
                 "data": {
                     "simulation_mode": "Simulation Mode (Dry-run)",
                     "scan_interval": "Polling Interval (seconds)",
-                    "log_level": "Debug Level"
+                    "log_level": "Debug Level",
+                    "discovery_timeout": "Discovery Timeout (seconds)",
+                    "push_ws_url": "Push WebSocket URL (optional)",
+                    "push_auth_method": "Push Authentication Method",
+                    "push_token": "Push Token/Secret",
+                    "push_ws_token": "Push WebSocket Bearer Token (optional)"
                 },
                 "data_description": {
                     "simulation_mode": "Enable simulation mode for testing without hardware",
                     "scan_interval": "How often to poll the gateway for updates (5-300 seconds)",
-                    "log_level": "Logging verbosity for troubleshooting"
+                    "log_level": "Logging verbosity for troubleshooting",
+                    "discovery_timeout": "How long to wait for sensor auto-discovery (0.5-10 seconds)",
+                    "push_ws_url": "WebSocket URL for real-time KNX updates from external push server. Leave empty to disable.",
+                    "push_auth_method": "Security method: 'none' (local only), 'token' (X-LUXOR-PUSH-TOKEN header), 'bearer' (Authorization header), 'hmac' (cryptographic signature)",
+                    "push_token": "Shared secret for authentication. Required for token/bearer/hmac methods. Not needed for 'none'.",
+                    "push_ws_token": "Optional Bearer token for WebSocket connection if push server requires it"
                 }
             }
         }

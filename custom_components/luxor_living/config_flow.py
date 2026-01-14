@@ -341,6 +341,11 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             self.config_entry.data.get("push_ws_token", ""),
         )
 
+        current_push_auth_method = self.config_entry.options.get(
+            "push_auth_method",
+            self.config_entry.data.get("push_auth_method", "none"),
+        )
+
         options_schema = vol.Schema(
             {
                 vol.Optional(
@@ -359,10 +364,31 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                     CONF_DISCOVERY_TIMEOUT,
                     default=current_discovery_timeout,
                 ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=10.0)),
-                # Push options
-                vol.Optional("push_token", default=current_push_token): str,
-                vol.Optional("push_ws_url", default=current_push_ws_url): str,
-                vol.Optional("push_ws_token", default=current_push_ws_token): str,
+                # Push options (optional - for external KNX state updates)
+                vol.Optional("push_ws_url", default=current_push_ws_url): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=False,
+                        type=selector.TextSelectorType.URL,
+                    ),
+                ),
+                vol.Optional("push_auth_method", default=current_push_auth_method): vol.In([
+                    "none",
+                    "token",
+                    "bearer",
+                    "hmac",
+                ]),
+                vol.Optional("push_token", default=current_push_token): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=False,
+                        type=selector.TextSelectorType.PASSWORD,
+                    ),
+                ),
+                vol.Optional("push_ws_token", default=current_push_ws_token): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=False,
+                        type=selector.TextSelectorType.PASSWORD,
+                    ),
+                ),
             }
         )
 
@@ -372,6 +398,10 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             description_placeholders={
                 "scan_interval_description": "Update interval in seconds (5-300)",
                 "log_level_description": "Logging verbosity for troubleshooting",
+                "push_ws_url_description": "WebSocket URL for real-time KNX updates (optional, leave empty to disable)",
+                "push_auth_method_description": "Authentication: 'none' (local), 'token' (X-LUXOR-PUSH-TOKEN header), 'bearer' (Authorization header), 'hmac' (signed)",
+                "push_token_description": "Shared secret for token/bearer/hmac authentication (not needed for 'none')",
+                "push_ws_token_description": "Optional WebSocket Bearer token (if push server requires it)",
             },
         )
 
