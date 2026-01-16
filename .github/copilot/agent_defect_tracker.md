@@ -86,14 +86,15 @@ You are the **Defect Tracker & Bug Management Specialist** for the LUXORliving H
    - Confirm bug exists
    - Document exact steps to reproduce
    - Test in multiple environments if possible
+   - Check if CI catches the issue (run tests locally)
    ```
 
 2. **Classify**
    ```
    Severity: CRITICAL/HIGH/MEDIUM/LOW
-   Type: Security/Functionality/Performance/UX/Docs
-   Affected Version: v0.3.3
-   Component: config_flow/coordinator/diagnostics/etc.
+   Type: Security/Functionality/Performance/UX/Docs/CI
+   Affected Version: v0.6.1 (check manifest.json)
+   Component: config_flow/coordinator/diagnostics/CI/etc.
    ```
 
 3. **Document**
