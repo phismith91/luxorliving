@@ -1,0 +1,46 @@
+name: QA Matrix (Gold compliance)
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  matrix-tests:
+    name: QA matrix — Python ${{ matrix.python }} / HA ${{ matrix.ha }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+        ha: ["2025.12", "2026.1", "latest"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements_dev.txt
+
+      - name: Formatting check (black)
+        run: |
+          black --check custom_components tests scripts || (echo "Run 'black .' locally" && exit 1)
+
+      - name: Import sorting check (isort)
+        run: |
+          isort --check-only custom_components tests scripts || (echo "Run 'isort .' locally" && exit 1)
+
+      - name: Run tests
+        run: |
+          python -m pytest tests/ -q -m "not enable_socket"
+
+      - name: Upload test summary
+        uses: actions/upload-artifact@v6
+        with:
+          name: qa-matrix-${{ matrix.python }}-${{ matrix.ha }}-results
+          path: ./
