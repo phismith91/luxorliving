@@ -22,6 +22,9 @@ from .const import (
     CONF_LOG_LEVEL,
     CONF_LXP_FILE,
     CONF_PASSWORD,
+    CONF_PUSH_TOKEN,
+    CONF_PUSH_WS_TOKEN,
+    CONF_PUSH_WS_URL,
     CONF_SCAN_INTERVAL,
     CONF_SIMULATION_MODE,
     CONF_USERNAME,
@@ -79,6 +82,18 @@ STEP_GATEWAY_DATA_SCHEMA = vol.Schema(
             ]
         ),
         vol.Optional(CONF_SIMULATION_MODE, default=False): bool,
+        # Optional push config
+        vol.Optional("push_token", default=""): str,
+        vol.Optional("push_ws_url", default=""): str,
+        vol.Optional("push_ws_token", default=""): str,
+        vol.Optional("push_auth_method", default="none"): vol.In(
+            [
+                "none",
+                "token",
+                "bearer",
+                "hmac",
+            ]
+        ),
     }
 )
 
@@ -208,6 +223,23 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_SIMULATION_MODE: user_input.get(CONF_SIMULATION_MODE, False),
             }
 
+            # Optional push settings
+            push_token = user_input.get("push_token")
+            if push_token:
+                data["push_token"] = push_token
+
+            push_ws_url = user_input.get("push_ws_url")
+            if push_ws_url:
+                data["push_ws_url"] = push_ws_url
+
+            push_ws_token = user_input.get("push_ws_token")
+            if push_ws_token:
+                data["push_ws_token"] = push_ws_token
+
+            push_auth_method = user_input.get("push_auth_method")
+            if push_auth_method:
+                data["push_auth_method"] = push_auth_method
+
             # Create entry
             return self.async_create_entry(
                 title=f"LUXORliving ({self._project_name})",
@@ -296,8 +328,30 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             self.config_entry.data.get(CONF_DISCOVERY_TIMEOUT, DEFAULT_DISCOVERY_TIMEOUT),
         )
 
+        current_push_token = self.config_entry.options.get(
+            "push_token",
+            self.config_entry.data.get("push_token", ""),
+        )
+
+        current_push_ws_url = self.config_entry.options.get(
+            "push_ws_url",
+            self.config_entry.data.get("push_ws_url", ""),
+        )
+
+        current_push_ws_token = self.config_entry.options.get(
+            "push_ws_token",
+            self.config_entry.data.get("push_ws_token", ""),
+        )
+
+        current_push_auth_method = self.config_entry.options.get(
+            "push_auth_method",
+            self.config_entry.data.get("push_auth_method", "none"),
+        )
+
+        # Build options schema with clear sections
         options_schema = vol.Schema(
             {
+                # Basic settings
                 vol.Optional(
                     CONF_SIMULATION_MODE,
                     default=current_simulation_mode,
@@ -314,6 +368,33 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                     CONF_DISCOVERY_TIMEOUT,
                     default=current_discovery_timeout,
                 ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=10.0)),
+                # --- Advanced: Push Webhook (for external real-time updates) ---
+                vol.Optional("push_ws_url", default=current_push_ws_url): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=False,
+                        type=selector.TextSelectorType.URL,
+                    ),
+                ),
+                vol.Optional("push_auth_method", default=current_push_auth_method): vol.In(
+                    [
+                        "none",
+                        "token",
+                        "bearer",
+                        "hmac",
+                    ]
+                ),
+                vol.Optional("push_token", default=current_push_token): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=False,
+                        type=selector.TextSelectorType.PASSWORD,
+                    ),
+                ),
+                vol.Optional("push_ws_token", default=current_push_ws_token): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=False,
+                        type=selector.TextSelectorType.PASSWORD,
+                    ),
+                ),
             }
         )
 
@@ -321,8 +402,13 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             step_id="init",
             data_schema=options_schema,
             description_placeholders={
+                "description": "Configure basic settings below. Advanced users: Push Webhook options at the bottom are optional and only needed for external real-time KNX state updates.",
                 "scan_interval_description": "Update interval in seconds (5-300)",
                 "log_level_description": "Logging verbosity for troubleshooting",
+                "push_ws_url_description": "⚙️ ADVANCED: WebSocket URL for real-time KNX updates (leave empty to disable)",
+                "push_auth_method_description": "⚙️ ADVANCED: Authentication method",
+                "push_token_description": "⚙️ ADVANCED: Shared secret for authentication",
+                "push_ws_token_description": "⚙️ ADVANCED: Optional WebSocket Bearer token",
             },
         )
 

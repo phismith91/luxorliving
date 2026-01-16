@@ -2,10 +2,137 @@
 
 All notable changes to the LUXORliving Home Assistant integration will be documented in this file.
 
+## Unreleased
+
+### Added
+- Placeholder
+
+### Changed
+- Placeholder
+
+---
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.0] - 2026-01-09
+## [0.6.1] - 2026-01-16
+
+### Added
+- **Push webhook & WebSocket client** — optional `POST /api/luxor_living/push` endpoint and configurable WebSocket client (`push_ws_url`) to accept external pushed KNX state updates. Supports configurable authentication: `none`, `token`, `bearer`, and `hmac` (HMAC-SHA256).
+
+### Changed
+- Documented push options and added tests for push handling and WebSocket client.
+
+### Testing
+- All 287 tests passing (unit + integration-style), including push client/view, integration_state, platform_detector, override_handler, and coordinator auth suites.
+
+## [0.6.0] - 2026-01-11
+
+### 🚀 Major Refactoring & Audit Compliance
+
+This release implements all critical findings from Week 2-3 external audit reviews, significantly improving code quality, security, and maintainability.
+
+### ✨ Added
+
+- **🔒 Security Scanning** - Automated vulnerability detection
+  - `bandit` security linter in CI workflow
+  - `pip-audit` dependency vulnerability scanning
+  - Security policy enforcement via GitHub Actions
+  - Dependabot configuration with security labels
+
+- **📐 Type-Safe State Management** (Issue #5)
+  - New `IntegrationState` dataclass replacing global dict storage
+  - Runtime validation of required fields
+  - IDE autocomplete and type checking support
+  - Helper methods: `get_gateway_or_raise()`, `get_coordinator_or_raise()`, `is_ready()`
+  - Global state registry with `register/unregister/get_integration_state()`
+  - Comprehensive test coverage (16 new tests)
+
+- **📚 Comprehensive Documentation**
+  - **Architecture Overview** - System design, component responsibilities, data flows
+  - **Incident Response Runbook** - Emergency procedures (P0-P3 severity classification)
+  - **README restructure** - Organized by audience (Users/Developers/DevOps)
+
+### 🔧 Refactoring
+
+- **EntityMapper Modularization** (Issue #2)
+  - Split 523 LOC god object into focused modules:
+    - `PlatformDetector` (160 LOC, 100% coverage, 33 tests)
+    - `OverrideHandler` (180 LOC, 93.75% coverage, 17 tests)
+    - `MappedEntity` dataclass (27 LOC)
+  - Dependency injection for testability
+  - EntityMapper reduced to 405 LOC (-23%)
+
+- **State Management** (Issue #5)
+  - Removed all `hass.data[DOMAIN][entry_id]` dict access
+  - All platforms use type-safe `get_integration_state()`
+  - Updated: light, switch, cover, climate, sensor, binary_sensor
+  - Backward compatibility removed for cleaner codebase
+
+### 🧪 Testing Improvements (Issue #3)
+
+- **Coverage Increase**: 55% → 68.99% (+25%)
+- **New Test Suites**:
+  - `test_coordinator_auth.py` (9 tests, coordinator auth failure handling)
+  - `test_circuit_breaker.py` (15 tests, 100% state machine coverage)
+  - `test_integration_state.py` (16 tests, state management validation)
+- **Total Tests**: 221 → 287 (+66 tests, +30%)
+- **All 287 tests passing** ✅
+
+### 📊 Quality Metrics
+
+| Metric              | Before | After  | Change |
+| ------------------- | ------ | ------ | ------ |
+| Test Coverage       | 55%    | 68.99% | +25%   |
+| EntityMapper LOC    | 523    | 405    | -23%   |
+| Tests               | 221    | 287    | +30%   |
+| Documentation Pages | 8      | 10     | +25%   |
+
+### 🐛 Bug Fixes
+
+- Fixed circular import in EntityMapper refactoring
+- Fixed async fixture error in performance benchmarks
+- Fixed integration state registry cleanup between tests
+
+### ⚠️ Breaking Changes
+
+- **State Management**: Custom integrations accessing `hass.data[DOMAIN]` directly must migrate to `get_integration_state()`
+- **EntityMapper API**: Direct instantiation now requires dependency injection
+
+### 🔐 Re-Authentication Flow (from 0.5.x)
+
+- Automatic credential recovery after 3 consecutive authentication failures
+- User-friendly credential update UI
+- Automatic reconnection after successful re-authentication
+
+### 🌍 Multi-Language Support (from 0.5.x)
+
+- 🇩🇪 German (de) translation
+- 🇫🇷 French (fr) translation
+- 🇬🇧 English (en) translation
+
+### 📊 Quality Scale Status
+
+| Tier   | Status        | Progress |
+| ------ | ------------- | -------- |
+| Bronze | ✅ Complete    | 100%     |
+| Silver | ✅ Complete    | 100%     |
+| Gold   | ⚠️ In Progress | 45%      |
+
+**Audit Compliance:**
+- ✅ Issue #1: Security Posture (bandit + pip-audit)
+- ✅ Issue #2: EntityMapper Complexity (refactored with DI)
+- ✅ Issue #3: Test Coverage Gaps (55% → 69%)
+- ✅ Issue #4: Documentation Discoverability (new architecture docs)
+- ✅ Issue #5: Global Dict Storage (type-safe IntegrationState)
+
+**Next Steps to Gold:**
+- Automatic gateway discovery (SSDP/mDNS)
+- Full reconfiguration flow (IP/credentials via UI)
+
+---
+
+## [0.5.4] - 2026-01-09
 
 ### 🥈 Home Assistant Silver Compliance Features
 
@@ -39,11 +166,11 @@ This release implements critical features to achieve **Home Assistant Silver Qua
 
 ### 📊 Quality Scale Status
 
-| Tier   | Status          | Progress |
-| ------ | --------------- | -------- |
-| Bronze | ✅ Complete      | 100%     |
-| Silver | ✅ Complete      | 100%     |
-| Gold   | ⚠️ In Progress  | 40%      |
+| Tier   | Status        | Progress |
+| ------ | ------------- | -------- |
+| Bronze | ✅ Complete    | 100%     |
+| Silver | ✅ Complete    | 100%     |
+| Gold   | ⚠️ In Progress | 40%      |
 
 **Next Steps to Gold:**
 - Automatic gateway discovery (SSDP/mDNS)
@@ -98,11 +225,11 @@ This release implements critical features to achieve **Home Assistant Silver Qua
 
 ### 📊 Quality Scale Status
 
-| Tier   | Status          | Progress |
-| ------ | --------------- | -------- |
-| Bronze | ✅ Complete      | 100%     |
-| Silver | ✅ Complete      | 100%     |
-| Gold   | ⚠️ In Progress  | 40%      |
+| Tier   | Status        | Progress |
+| ------ | ------------- | -------- |
+| Bronze | ✅ Complete    | 100%     |
+| Silver | ✅ Complete    | 100%     |
+| Gold   | ⚠️ In Progress | 40%      |
 
 **Next Steps to Gold:**
 - Automatic gateway discovery (SSDP/mDNS)
@@ -174,6 +301,25 @@ python -m pytest tests/ -v  # 212 tests passing
 ---
 
 ## [Unreleased]
+
+### Added
+- Placeholder
+
+### Changed
+- Placeholder
+
+---
+
+## [0.6.1-beta.4] - 2026-01-16
+
+### Added
+- **Push webhook & WebSocket client** — optional `POST /api/luxor_living/push` endpoint and configurable WebSocket client (`push_ws_url`) to accept external pushed KNX state updates. Supports configurable authentication: `none`, `token`, `bearer`, and `hmac` (HMAC-SHA256).
+
+### Changed
+- Documented push options and added tests for push handling and WebSocket client.
+
+### Testing
+- All 287 tests passing (unit + integration-style), including push client/view, integration_state, platform_detector, override_handler, and coordinator auth suites.
 
 ### Planned
 

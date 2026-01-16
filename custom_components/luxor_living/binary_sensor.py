@@ -19,6 +19,7 @@ from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
 from .entity_mapper import EntityMapper
+from .integration_state import get_integration_state
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,16 +32,13 @@ async def async_setup_entry(
     """Set up LUXORliving binary sensors from a config entry."""
     _LOGGER.info("Setting up LUXORliving binary sensors")
 
-    # Get coordinator and mapper from integration data
+    # Get type-safe integration state
     try:
-        integration_data = hass.data[DOMAIN][entry.entry_id]
-        if not isinstance(integration_data, dict):
-            _LOGGER.error("Integration data is not a dictionary: %s", type(integration_data))
-            return
-        coordinator: LuxorLivingCoordinator = integration_data.get("coordinator")
-        mapper: EntityMapper = integration_data.get("mapper")
+        state = get_integration_state(entry.entry_id)
+        coordinator = state.coordinator
+        mapper = state.mapper
     except (KeyError, AttributeError) as err:
-        _LOGGER.error("Failed to get integration data: %s", err)
+        _LOGGER.error("Failed to get integration state: %s", err)
         return
 
     if not mapper:

@@ -44,6 +44,32 @@ The following versions of the LUXORliving integration are currently supported wi
 - I will explain the decision to you
 - If needed, the issue will be treated as a regular GitHub issue
 
+## Automated Security Scanning
+
+This project uses automated security scanning to detect vulnerabilities:
+
+- **Python Code Security:** `bandit` runs on every pull request and push to main
+- **Dependency Vulnerabilities:** `pip-audit` scans dependencies weekly
+- **Dependency Updates:** Dependabot creates PRs for outdated dependencies weekly
+- **Workflow:** Security scans run automatically via GitHub Actions (see `.github/workflows/security.yml`)
+
+### Security Scan Reports
+
+Security scan results are available as workflow artifacts:
+1. Go to [Actions](../../actions/workflows/security.yml)
+2. Select latest workflow run
+3. Download `bandit-security-report` or `pip-audit-report` artifacts
+
+### Security Best Practices
+
+This integration follows security best practices:
+
+1. **No Hardcoded Secrets:** All credentials stored in Home Assistant's secure storage
+2. **HTTPS Only:** API communication uses HTTPS when available
+3. **Input Validation:** User inputs are validated before processing
+4. **Pinned Dependencies:** All dependencies pinned in `manifest.json`
+5. **Repair Flows:** Automatic credential update flows for authentication issues
+
 ## Security Aspects of the LUXORliving Integration
 
 Since LUXORliving is a Home Assistant integration, please note:

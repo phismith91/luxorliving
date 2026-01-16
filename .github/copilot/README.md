@@ -42,34 +42,40 @@ This directory contains specialized Copilot agents that assist with different as
 - GitHub issue tracking
 - Regression prevention
 - Fix verification
+- **CI failure classification** (formatting, tests, version, docs)
+- **Version verification** (always from manifest.json, never hardcoded)
 
-**When to use:** Bug reports, code review findings, regression testing, quality metrics
+**When to use:** Bug reports, code review findings, regression testing, CI failures, quality metrics
 
 ---
 
 ### 🚀 **agent_release_manager.md**
-**Role:** Release Coordination & Deployment  
+**Role:** Release Coordination, Merge Authority & Deployment  
 **Responsibilities:**
-- Version management (semver)
-- Changelog generation
-- Release notes
+- **EXCLUSIVE:** Merges to main branch (PR-only workflow)
+- Enforces formatting-first (black/isort before commits)
+- Version management (semver, consistency checks)
+- Changelog & release notes generation
 - GitHub release creation
-- Deployment coordination
+- Deployment coordination (remote HA SSH)
+- Local validation scripts (validate_readme.sh, check_release_notes.sh)
 
-**When to use:** Version bumps, releases, hotfixes, deployment planning
+**When to use:** Merging PRs, version bumps, releases, hotfixes, deployment, CI failures
 
 ---
 
 ### 🧪 **agent_testing.md**
-**Role:** Test Strategy & CI/CD  
+**Role:** Test Strategy & CI/CD Quality Assurance  
 **Responsibilities:**
-- Test coverage requirements
+- Test coverage requirements (80%+ target)
 - Unit and integration test design
-- CI/CD pipeline
+- CI/CD pipeline maintenance
+- **Sync test count in README.md** with pytest output
+- Never skip failing tests (fix root cause)
 - Simulation testing
 - Test quality review
 
-**When to use:** Writing tests, test failures, coverage analysis, CI/CD setup
+**When to use:** Writing tests, test failures, coverage analysis, CI/CD setup, README test count updates
 
 ---
 
@@ -178,9 +184,10 @@ agent_luxor_expert: What's the maximum number of group addresses supported by IP
 ### Decision Hierarchy
 
 1. **agent_architect** has final authority on architecture and code quality
-2. Specialist agents provide expertise in their domains
-3. **agent_defect_tracker** coordinates bug fixes across agents
-4. **agent_release_manager** coordinates releases with all agents
+2. **agent_release_manager** has exclusive authority on merges to main and releases
+3. Specialist agents provide expertise in their domains
+4. **agent_defect_tracker** coordinates bug fixes across agents
+5. All agents must format code (black/isort) before any commit
 
 ### Cross-Agent Workflow
 
@@ -189,10 +196,12 @@ agent_luxor_expert: What's the maximum number of group addresses supported by IP
 1. **architect** → Defines architecture and module structure
 2. **testing** → Plans test strategy and coverage
 3. **[specialist]** → Implements domain-specific logic
-4. **architect** → Reviews code quality
-5. **testing** → Validates test coverage
-6. **defect_tracker** → Tracks any bugs found
-7. **release_manager** → Coordinates release when ready
+4. **[any agent]** → **Formats code** (black + isort) before commit
+5. **architect** → Reviews code quality
+6. **testing** → Validates test coverage, syncs test count to README
+7. **defect_tracker** → Tracks any bugs found
+8. **[any agent]** → Creates PR with changes (never push to main directly)
+9. **release_manager** → Reviews PR, merges after green CI, coordinates release
 
 ---
 
@@ -202,19 +211,22 @@ agent_luxor_expert: What's the maximum number of group addresses supported by IP
 
 ### Enthält:
 - 🏗️ **Production Environment:** Remote SSH deployment (100.97.159.88)
-- 📊 **Current Status:** v0.3.3 → v0.3.4, development roadmap
-- 🔧 **Development Stack:** Python 3.13.9, HA 2025.12.4, pytest
+- 📊 **Current Status:** v0.6.1 (Released 2026-01-16), v0.7.0 roadmap
+- 🔧 **Development Stack:** Python 3.13.11, HA 2026.1.x, pytest 9.0.0
 - 🏛️ **Architecture:** Layer design, core decisions
-- 🚀 **Release Process:** Semver, deployment workflow
-- 🔒 **Security:** SSH config, credentials management
-- 🤖 **Agent Rules:** Decision hierarchy, coordination
+- 🚀 **Release Process:** PR-only workflow, formatting-first, merge ownership
+- 🔒 **Security:** SSH config (`-F /dev/null`), credentials management
+- 🤖 **Agent Rules:** Decision hierarchy, coordination, quality gates
 
 ### Agent Requirements:
 - ✅ **Read CONTEXT.md first** before working on any task
+- ✅ **Format before commit:** Run black/isort ALWAYS before staging changes
 - ✅ **Follow production environment** (Remote-first development)
 - ✅ **Respect architecture principles** (Separation of concerns)
 - ✅ **Use correct SSH syntax** (`ssh -F /dev/null`)
-- ✅ **Maintain quality standards** (Tests, type hints, reviews)
+- ✅ **Maintain quality standards** (Tests, type hints, formatting)
+- ✅ **Defer merges to Release Manager:** Only Release Manager merges to main
+- ✅ **Never skip tests:** Fix root cause, never bypass
 
 **Bei Widersprüchen zwischen Dokumenten hat CONTEXT.md Priorität.**
 
@@ -267,6 +279,6 @@ agent_luxor_expert: What's the maximum number of group addresses supported by IP
 
 ---
 
-Last Updated: 2025-12-26  
+Last Updated: 2026-01-16  
 Active Agents: 7  
 Archived Agents: 6

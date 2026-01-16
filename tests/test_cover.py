@@ -17,6 +17,10 @@ from custom_components.luxor_living.cover import (
     LuxorCover,
     async_setup_entry,
 )
+from custom_components.luxor_living.integration_state import (
+    IntegrationState,
+    register_integration_state,
+)
 
 
 @pytest.fixture
@@ -298,6 +302,17 @@ class TestAsyncSetupEntry:
 
         mock_mapper.get_entities_by_platform.return_value = [shutter_mapped_entity]
 
+        # Register type-safe integration state
+        state = IntegrationState(
+            mapper=mock_mapper,
+            config={},
+            overrides={},
+            knx_gateway=mock_knx_gateway,
+            coordinator=mock_coordinator,
+            entry=entry,
+        )
+        register_integration_state(entry.entry_id, state)
+
         hass.data = {
             DOMAIN: {
                 "test_entry": {
@@ -331,6 +346,17 @@ class TestAsyncSetupEntry:
 
         mock_mapper.get_entities_by_platform.return_value = [blind_mapped_entity]
 
+        # Register type-safe integration state
+        state = IntegrationState(
+            mapper=mock_mapper,
+            config={},
+            overrides={},
+            knx_gateway=mock_knx_gateway,
+            coordinator=mock_coordinator,
+            entry=entry,
+        )
+        register_integration_state(entry.entry_id, state)
+
         hass.data = {
             DOMAIN: {
                 "test_entry": {
@@ -361,6 +387,17 @@ class TestAsyncSetupEntry:
         entry.entry_id = "test_entry"
 
         mock_mapper.get_entities_by_platform.return_value = []
+
+        # Register type-safe integration state
+        state = IntegrationState(
+            mapper=mock_mapper,
+            config={},
+            overrides={},
+            knx_gateway=mock_knx_gateway,
+            coordinator=mock_coordinator,
+            entry=entry,
+        )
+        register_integration_state(entry.entry_id, state)
 
         hass.data = {
             DOMAIN: {
@@ -393,6 +430,17 @@ class TestAsyncSetupEntry:
         # Empty list means no covers found
         mock_mapper.get_entities_by_platform.return_value = []
 
+        # Register type-safe integration state
+        state = IntegrationState(
+            mapper=mock_mapper,
+            config={},
+            overrides={},
+            knx_gateway=mock_knx_gateway,
+            coordinator=mock_coordinator,
+            entry=entry,
+        )
+        register_integration_state(entry.entry_id, state)
+
         hass.data = {
             DOMAIN: {
                 "test_entry": {
@@ -422,6 +470,17 @@ class TestAsyncSetupEntry:
 
         # Return empty list (mapper would filter out invalid devices)
         mock_mapper.get_entities_by_platform.return_value = []
+
+        # Register type-safe integration state
+        state = IntegrationState(
+            mapper=mock_mapper,
+            config={},
+            overrides={},
+            knx_gateway=mock_knx_gateway,
+            coordinator=mock_coordinator,
+            entry=entry,
+        )
+        register_integration_state(entry.entry_id, state)
 
         hass.data = {
             DOMAIN: {

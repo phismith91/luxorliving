@@ -1,10 +1,3 @@
-# Support
-
-If you find this project useful, consider buying me a coffee:
-
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Donate-FFDD00?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/philsmith91)
-
-
 # LUXORliving KNX Integration
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
@@ -40,24 +33,14 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 ## Current Release
 
-## Current Release
-
 <!-- RELEASE_NOTES_START -->
 
 
-# 🎉 LUXORliving v0.6.0 (Final Release)
+# 🎉 LUXORliving v0.6.1
 
 
 
-**Release Date:** 9. Januar 2026
-
-
-
-### 🥈 Home Assistant Silver Compliance Features
-
-
-
-This release implements features required for **Home Assistant Silver** quality scale compliance.
+**Release Date:** 16. Januar 2026
 
 
 
@@ -65,51 +48,21 @@ This release implements features required for **Home Assistant Silver** quality 
 
 
 
-- **🔐 Re-Authentication Flow**
+- **Push webhook & WebSocket client**
 
-  - Repair flow is triggered after 3 consecutive authentication failures
+  - Optional `POST /api/luxor_living/push` endpoint
 
-  - User-friendly credential update UI and automatic reconnection
+  - Configurable WebSocket client (`push_ws_url`) for external KNX state pushes
 
-  - Integration reload without reconfiguration after successful re-auth
-
-
-
-- **🌍 Multi-Language Support**
-
-  - German (de), French (fr), English (en)
-
-  - Localized config flow, repair messages and UI strings
+  - Authentication modes: `none`, `token`, `bearer`, `hmac` (HMAC-SHA256)
 
 
 
-- **📚 End-user Documentation**
-
-  - Added examples: Automations, Dashboard configurations, Compatible devices list
+### 🛠️ Changed
 
 
 
-### 🐛 Bug fixes
-
-
-
-- Fixed test fixture issue in performance benchmark tests
-
-- Fixed coordinator initialization for HA 2026.8+ (pass `config_entry` to DataUpdateCoordinator)
-
-
-
-### 🔧 Technical Improvements
-
-
-
-- `repairs.py` added for re-auth repair flows
-
-- Coordinator now tracks authentication failures and creates repair issues
-
-- Improved translations and `strings.json` coverage
-
-- HACS package structure correction (files at zip root)
+- Documented push options and added tests for push handling and WebSocket client
 
 
 
@@ -117,7 +70,7 @@ This release implements features required for **Home Assistant Silver** quality 
 
 
 
-- **Tests:** 212/212 passing
+- **Tests:** 294/294 passing (unit + integration-style)
 
 - **Quality gates:** README/CHANGELOG validation, HACS install test, zip structure validation
 
@@ -127,9 +80,9 @@ This release implements features required for **Home Assistant Silver** quality 
 
 
 
-- Remove any previously installed beta copies and nested directories before installing
+- If you used earlier betas, remove nested copies before installing
 
-- Install v0.6.0 via HACS and restart Home Assistant
+- Install v0.6.1 via HACS and restart Home Assistant
 
 
 
@@ -225,6 +178,19 @@ entities:
 | Tunneling connection fails | Try Routing mode or check BAOS authentication                          |
 | Slow startup               | Check discovery timeout setting (Options → Configure)                  |
 | Performance issues         | Run benchmark: `curl http://localhost:8123/api/luxor_living/benchmark` |
+
+## Push / WebSocket Forwarder 🔁
+
+The integration provides an optional push webhook and WebSocket client to accept external state updates (useful for gateways or cloud forwarders that push KNX values).
+
+- Webhook endpoint: `POST /api/luxor_living/push`
+  - JSON payload: `{ "entry_id": "<entry_id>", "address": "1/2/3", "value": true, "value_type": "binary" }`
+  - Authentication: configurable per config entry: **none**, **token** (header `X-LUXOR-PUSH-TOKEN`), **bearer** (`Authorization: Bearer <token>`), or **hmac** (header `X-LUXOR-PUSH-SIGNATURE` with HMAC-SHA256 hex signature of the JSON body using the configured secret).
+
+- WebSocket client: configure a `push_ws_url` in the integration options to have HA open a websocket to an external forwarder. The WS client supports an optional `push_ws_token` (sent as `Authorization: Bearer <token>`).
+
+This feature improves latency and reduces coordinator polling by letting the gateway push updates directly into the integration.
+
 | Circuit breaker open       | Check network connectivity, circuit auto-recovers after timeout        |
 
 **Enable debug logging:**
@@ -284,18 +250,27 @@ Each gateway creates separate entities.
 
 ---
 
-## Documentation
+## 📚 Documentation
 
-- [Documentation Index](docs/INDEX.md) – Complete documentation overview
-- [Installation Guide](docs/INSTALLATION.md) – Detailed setup instructions
-- [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technical protocol details
-- [Sensor Platform](docs/SENSOR_PLATFORM.md) – Sensor configuration and usage
-- [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) – Core design decisions
-- [Release Operations](docs/RELEASE_OPERATIONS.md) – Release process and deployment
+### For Users
+- 📖 [Installation Guide](docs/INSTALLATION.md) – Step-by-step setup
+- 🎨 [Dashboard Examples](docs/DASHBOARD_EXAMPLES.md) – UI card configurations
+- 🤖 [Automation Recipes](docs/AUTOMATIONS.md) – Common automation patterns
+- 🔌 [Compatible Devices](docs/COMPATIBLE_DEVICES.md) – Tested hardware
+- 📊 [Sensor Platform](docs/SENSOR_PLATFORM.md) – Sensor configuration
 
-**For Developers:**
-- [Security Policy](SECURITY.md) – Vulnerability reporting
-- Test Suite: 209 tests – Run `pytest tests/ -v` for details
+### For Developers
+- 🏗️ [Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md) – System design & data flow
+- 📐 [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) – Core design decisions
+- 🔧 [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technical protocol details
+- 🧪 [Testing Guide](docs/TESTS.md) – Running and writing tests
+- 🛠️ [Development Setup](AGENTS.md) – Developer environment setup
+- 🔐 [Security Policy](SECURITY.md) – Vulnerability reporting
+
+### For DevOps
+- 🚀 [Release Operations](docs/RELEASE_OPERATIONS.md) – Release process
+- 🚨 [Incident Response](docs/INCIDENT_RESPONSE_RUNBOOK.md) – Emergency procedures
+- 📋 [Documentation Index](docs/INDEX.md) – Complete documentation overview
 
 ---
 
@@ -305,11 +280,6 @@ This project is licensed under the [LICENSE](LICENSE).
 
 ---
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 998ba72 (Docs: Document README mismatch incident and update README release block to v0.6.0)
 ## Credits
 
 - [Theben AG](https://www.theben.de/) – LUXORliving system
