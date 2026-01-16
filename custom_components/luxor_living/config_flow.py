@@ -22,12 +22,12 @@ from .const import (
     CONF_LOG_LEVEL,
     CONF_LXP_FILE,
     CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
-    CONF_SIMULATION_MODE,
-    CONF_USERNAME,
     CONF_PUSH_TOKEN,
     CONF_PUSH_WS_TOKEN,
     CONF_PUSH_WS_URL,
+    CONF_SCAN_INTERVAL,
+    CONF_SIMULATION_MODE,
+    CONF_USERNAME,
     CONNECTION_TYPE_ROUTING,
     CONNECTION_TYPE_TUNNELING,
     DEFAULT_CONNECTION_TYPE,
@@ -86,12 +86,14 @@ STEP_GATEWAY_DATA_SCHEMA = vol.Schema(
         vol.Optional("push_token", default=""): str,
         vol.Optional("push_ws_url", default=""): str,
         vol.Optional("push_ws_token", default=""): str,
-        vol.Optional("push_auth_method", default="none"): vol.In([
-            "none",
-            "token",
-            "bearer",
-            "hmac",
-        ]),
+        vol.Optional("push_auth_method", default="none"): vol.In(
+            [
+                "none",
+                "token",
+                "bearer",
+                "hmac",
+            ]
+        ),
     }
 )
 
@@ -373,12 +375,14 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                         type=selector.TextSelectorType.URL,
                     ),
                 ),
-                vol.Optional("push_auth_method", default=current_push_auth_method): vol.In([
-                    "none",
-                    "token",
-                    "bearer",
-                    "hmac",
-                ]),
+                vol.Optional("push_auth_method", default=current_push_auth_method): vol.In(
+                    [
+                        "none",
+                        "token",
+                        "bearer",
+                        "hmac",
+                    ]
+                ),
                 vol.Optional("push_token", default=current_push_token): selector.TextSelector(
                     selector.TextSelectorConfig(
                         multiline=False,

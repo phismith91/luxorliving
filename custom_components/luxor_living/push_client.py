@@ -14,6 +14,7 @@ The expected message format is JSON:
 The client performs exponential backoff on reconnects and supports an optional
 `Authorization: Bearer <token>` header when `ws_token` is configured.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -80,7 +81,9 @@ class PushClient:
             except asyncio.CancelledError:
                 raise
             except Exception as err:
-                _LOGGER.warning("Push websocket connection error: %s - retrying in %.1fs", err, backoff)
+                _LOGGER.warning(
+                    "Push websocket connection error: %s - retrying in %.1fs", err, backoff
+                )
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, 60.0)
 
@@ -98,7 +101,11 @@ class PushClient:
 
                 entry_id = payload.get("entry_id")
                 if entry_id != self.entry_id:
-                    _LOGGER.debug("Push for different entry_id %s (expected %s) - ignoring", entry_id, self.entry_id)
+                    _LOGGER.debug(
+                        "Push for different entry_id %s (expected %s) - ignoring",
+                        entry_id,
+                        self.entry_id,
+                    )
                     continue
 
                 address = payload.get("address")
@@ -113,7 +120,9 @@ class PushClient:
                     state = get_integration_state(self.entry_id)
                     gateway = state.get_gateway_or_raise()
                     # schedule processing in hass loop
-                    self.hass.async_create_task(gateway.process_incoming_value(address, value, value_type))
+                    self.hass.async_create_task(
+                        gateway.process_incoming_value(address, value, value_type)
+                    )
                 except Exception as err:
                     _LOGGER.error("Failed to process push message: %s", err, exc_info=True)
             else:

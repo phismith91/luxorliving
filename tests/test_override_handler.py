@@ -53,9 +53,7 @@ class TestSensorOverrides:
 
     def test_apply_overrides_uses_default_device_name(self):
         """Override without device_name uses default 'Overrides'."""
-        overrides = {
-            "sensors": [{"role": "Temperature", "address": "1/2/3", "name": "Temp"}]
-        }
+        overrides = {"sensors": [{"role": "Temperature", "address": "1/2/3", "name": "Temp"}]}
         handler = OverrideHandler(overrides)
         entities = []
 
@@ -116,9 +114,7 @@ class TestSensorOverrides:
     def test_apply_overrides_skips_invalid_address(self):
         """Override with invalid address is skipped."""
         overrides = {
-            "sensors": [
-                {"role": "Temperature", "address": "invalid/address", "name": "Temp"}
-            ]
+            "sensors": [{"role": "Temperature", "address": "invalid/address", "name": "Temp"}]
         }
         handler = OverrideHandler(overrides)
         entities = []

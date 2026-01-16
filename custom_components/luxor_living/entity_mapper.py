@@ -11,20 +11,20 @@ from xknx.telegram.address import GroupAddress
 from .const import DOMAIN
 from .lxp_parser import LXPActuator, LXPDevice, LXPProject, LXPSensor
 from .mapped_entity import MappedEntity
-from .platform_detector import PlatformDetector
 from .override_handler import OverrideHandler
+from .platform_detector import PlatformDetector
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class EntityMapper:
     """Maps LXP devices to Home Assistant entities.
-    
+
     Uses dependency injection to delegate platform detection and override handling
     to specialized modules:
     - PlatformDetector: Determines HA platform from KNX role
     - OverrideHandler: Applies user-defined sensor overrides
-    
+
     This design reduces EntityMapper from 523 to ~250 LOC by removing duplicate logic.
     """
 
@@ -36,7 +36,7 @@ class EntityMapper:
         override_handler: OverrideHandler | None = None,
     ) -> None:
         """Initialize the mapper with optional dependency injection.
-        
+
         Args:
             project: LXP project to map
             overrides: Override configuration dict
@@ -46,11 +46,11 @@ class EntityMapper:
         self.project = project
         self.entities: list[MappedEntity] = []
         self._overrides = overrides or {}
-        
+
         # Dependency injection - use provided instances or create defaults
         self.platform_detector = platform_detector or PlatformDetector()
         self.override_handler = override_handler or OverrideHandler(self._overrides)
-        
+
         # Automatically map all entities on init
         self.map_all()
 
@@ -277,7 +277,7 @@ class EntityMapper:
 
     def _determine_platform(self, datapoints: dict[str, int]) -> Platform | None:
         """Determine the platform based on datapoint roles.
-        
+
         Delegates to PlatformDetector for role-to-platform mapping.
         """
         # Priority order for role detection
@@ -344,7 +344,7 @@ class EntityMapper:
 
         Wetterstation sensors have multiple roles (Temperatur, HelligkeitMitte, etc.)
         but are marked affected=0. We create separate entities for each role.
-        
+
         Uses PlatformDetector for role-to-attributes mapping.
         """
         # Role -> entity_name_suffix mapping (uses PlatformDetector for class/unit)

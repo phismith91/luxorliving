@@ -6,8 +6,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from custom_components.luxor_living.integration_state import (
+    IntegrationState,
+    register_integration_state,
+)
 from custom_components.luxor_living.push_client import PushClient
-from custom_components.luxor_living.integration_state import register_integration_state, IntegrationState
 
 
 @pytest.mark.asyncio

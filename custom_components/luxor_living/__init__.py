@@ -215,9 +215,7 @@ class LuxorLivingPushView(HomeAssistantView):
         auth_method = (
             state.entry.data.get("push_auth_method")
             if state.entry and state.entry.data.get("push_auth_method")
-            else state.entry.options.get("push_auth_method")
-            if state.entry
-            else None
+            else state.entry.options.get("push_auth_method") if state.entry else None
         ) or "none"
 
         # Token-based (legacy): header X-LUXOR-PUSH-TOKEN must match
@@ -248,13 +246,15 @@ class LuxorLivingPushView(HomeAssistantView):
                 from aiohttp import web
 
                 return web.json_response({"error": "forbidden"}, status=403)
-            import hmac
             import hashlib
+            import hmac
             import json
 
             # Compute signature over deterministic JSON representation
             expected = hmac.new(
-                configured_token.encode(), json.dumps(payload, sort_keys=True).encode(), hashlib.sha256
+                configured_token.encode(),
+                json.dumps(payload, sort_keys=True).encode(),
+                hashlib.sha256,
             ).hexdigest()
             if not hmac.compare_digest(expected, sig_header):
                 from aiohttp import web
@@ -343,7 +343,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 overrides=overrides,
                 entry=entry,
             )
-            
+
             # Register state in global registry
             register_integration_state(entry.entry_id, state)
         except FileNotFoundError as err:

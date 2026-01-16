@@ -2,14 +2,15 @@
 """Audit script for Hauptwohnung.lxp file against our LXP parser."""
 
 import asyncio
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add the custom_components directory to Python path
 sys.path.insert(0, str(Path(__file__).parent / "custom_components" / "luxor_living"))
 
 from lxp_parser import LXPCache
+
 
 async def audit_lxp_file():
     """Audit the Hauptwohnung.lxp file."""
@@ -57,8 +58,9 @@ async def audit_lxp_file():
 
             sensors_count = len(device.sensors)
             actuators_count = len(device.actuators)
-            datapoints_count = sum(len(s.datapoints) for s in device.sensors) + \
-                             sum(len(a.datapoints) for a in device.actuators)
+            datapoints_count = sum(len(s.datapoints) for s in device.sensors) + sum(
+                len(a.datapoints) for a in device.actuators
+            )
 
             print(f"• {device.name}")
             print(f"  Seriennummer: {device.serial_number}")
@@ -86,8 +88,7 @@ async def audit_lxp_file():
 
         # Check for devices without datapoints
         devices_without_datapoints = [
-            d for d in project.devices
-            if not d.sensors and not d.actuators
+            d for d in project.devices if not d.sensors and not d.actuators
         ]
         if devices_without_datapoints:
             issues.append(f"Geräte ohne Datenpunkte: {len(devices_without_datapoints)}")
@@ -124,6 +125,7 @@ async def audit_lxp_file():
         # Performance test
         print("\n⏱️  Performance-Test:")
         import time
+
         start_time = time.time()
         for _ in range(5):  # Parse 5 times
             await cache.get_or_parse(lxp_path, include_unaffected=True)
@@ -161,8 +163,10 @@ async def audit_lxp_file():
     except Exception as e:
         print(f"❌ Fehler beim Parsing: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 if __name__ == "__main__":
     success = asyncio.run(audit_lxp_file())

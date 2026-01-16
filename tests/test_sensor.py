@@ -266,7 +266,7 @@ class TestAsyncSetupEntry:
             entry=mock_config_entry,
         )
         register_integration_state(mock_config_entry.entry_id, state)
-        
+
         # Keep legacy dict storage for backward compatibility
         mock_hass.data[DOMAIN] = {}
         mock_hass.data[DOMAIN][mock_config_entry.entry_id] = {
@@ -310,7 +310,7 @@ class TestAsyncSetupEntry:
             entry=mock_config_entry,
         )
         register_integration_state(mock_config_entry.entry_id, state)
-        
+
         # Keep legacy dict storage
         mock_hass.data[DOMAIN] = {}
         mock_hass.data[DOMAIN][mock_config_entry.entry_id] = {

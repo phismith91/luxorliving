@@ -74,9 +74,7 @@ class TestCoordinatorStateCache:
     """Test coordinator state cache management."""
 
     @pytest.mark.asyncio
-    async def test_get_state_returns_cached_value(
-        self, coordinator: LuxorLivingCoordinator
-    ):
+    async def test_get_state_returns_cached_value(self, coordinator: LuxorLivingCoordinator):
         """get_state returns cached value for known address."""
         coordinator._state_cache["1/2/3"] = 42
         assert coordinator.get_state("1/2/3") == 42
@@ -95,9 +93,7 @@ class TestCoordinatorStateCache:
         assert coordinator._state_cache["1/2/3"] == 100
 
     @pytest.mark.asyncio
-    async def test_set_state_triggers_update_event(
-        self, coordinator: LuxorLivingCoordinator
-    ):
+    async def test_set_state_triggers_update_event(self, coordinator: LuxorLivingCoordinator):
         """set_state triggers coordinator update event."""
         with patch.object(coordinator, "async_set_updated_data") as mock_update:
             coordinator.set_state("1/2/3", 50)

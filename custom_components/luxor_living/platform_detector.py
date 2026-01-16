@@ -15,10 +15,10 @@ from homeassistant.const import Platform
 
 class PlatformDetector:
     """Detects Home Assistant platform from KNX datapoint role.
-    
+
     This class provides mapping from KNX datapoint roles to Home Assistant
     platforms, units of measurement, and device classes.
-    
+
     Example:
         detector = PlatformDetector()
         platform = detector.detect_platform("OnOff")  # Platform.LIGHT
@@ -96,10 +96,10 @@ class PlatformDetector:
 
     def detect_platform(self, role: str) -> Optional[Platform]:
         """Detect Home Assistant platform from KNX datapoint role.
-        
+
         Args:
             role: KNX datapoint role (e.g., "OnOff", "Temperature", "Dimmen%")
-            
+
         Returns:
             Platform enum if role maps to a platform, None otherwise.
             None is returned for:
@@ -107,7 +107,7 @@ class PlatformDetector:
             - Paired roles (e.g., "DimmenRel", "StopStep")
             - Special roles (e.g., "ZentralAus", "Panik")
             - Unknown roles
-            
+
         Example:
             >>> detector = PlatformDetector()
             >>> detector.detect_platform("OnOff")
@@ -121,13 +121,13 @@ class PlatformDetector:
 
     def get_unit(self, role: str) -> Optional[str]:
         """Get unit of measurement for sensor role.
-        
+
         Args:
             role: KNX datapoint role (e.g., "Temperature", "Humidity")
-            
+
         Returns:
             Unit of measurement string or None if role has no unit.
-            
+
         Example:
             >>> detector = PlatformDetector()
             >>> detector.get_unit("Temperature")
@@ -141,13 +141,13 @@ class PlatformDetector:
 
     def get_device_class(self, role: str) -> Optional[str]:
         """Get Home Assistant device class for sensor role.
-        
+
         Args:
             role: KNX datapoint role (e.g., "Temperature", "Humidity")
-            
+
         Returns:
             Device class string or None if role has no device class.
-            
+
         Example:
             >>> detector = PlatformDetector()
             >>> detector.get_device_class("Temperature")

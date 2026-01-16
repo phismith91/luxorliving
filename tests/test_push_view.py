@@ -1,7 +1,8 @@
 """Tests for Push webhook / WebSocket forwarder endpoint."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from custom_components.luxor_living.__init__ import LuxorLivingPushView
 from custom_components.luxor_living.integration_state import (
@@ -33,7 +34,9 @@ async def test_push_view_calls_gateway():
 
     # Fake request with JSON coroutine and headers
     req = MagicMock()
-    req.json = AsyncMock(return_value={"entry_id": entry.entry_id, "address": "1/2/3", "value": True})
+    req.json = AsyncMock(
+        return_value={"entry_id": entry.entry_id, "address": "1/2/3", "value": True}
+    )
     req.headers = {}
 
     resp = await view.post(req)
@@ -65,7 +68,9 @@ async def test_push_view_forbidden_when_token_mismatch():
     view = LuxorLivingPushView(hass)
 
     req = MagicMock()
-    req.json = AsyncMock(return_value={"entry_id": entry.entry_id, "address": "1/2/3", "value": True})
+    req.json = AsyncMock(
+        return_value={"entry_id": entry.entry_id, "address": "1/2/3", "value": True}
+    )
     req.headers = {"X-LUXOR-PUSH-TOKEN": "wrong-token"}
 
     resp = await view.post(req)
@@ -93,7 +98,9 @@ async def test_push_view_bearer_auth():
     view = LuxorLivingPushView(hass)
 
     req = MagicMock()
-    req.json = AsyncMock(return_value={"entry_id": entry.entry_id, "address": "1/2/3", "value": True})
+    req.json = AsyncMock(
+        return_value={"entry_id": entry.entry_id, "address": "1/2/3", "value": True}
+    )
     req.headers = {"Authorization": "Bearer bearer-secret"}
 
     resp = await view.post(req)
@@ -105,8 +112,8 @@ async def test_push_view_bearer_auth():
 @pytest.mark.asyncio
 async def test_push_view_hmac_auth():
     """Test that HMAC signature header is validated when configured."""
-    import hmac
     import hashlib
+    import hmac
     import json
 
     entry = MagicMock()
@@ -125,7 +132,11 @@ async def test_push_view_hmac_auth():
     view = LuxorLivingPushView(hass)
 
     payload = {"entry_id": entry.entry_id, "address": "1/2/3", "value": True}
-    sig = hmac.new(entry.data["push_token"].encode(), json.dumps(payload, sort_keys=True).encode(), hashlib.sha256).hexdigest()
+    sig = hmac.new(
+        entry.data["push_token"].encode(),
+        json.dumps(payload, sort_keys=True).encode(),
+        hashlib.sha256,
+    ).hexdigest()
 
     req = MagicMock()
     req.json = AsyncMock(return_value=payload)

@@ -228,7 +228,7 @@ class TestAsyncSetupEntry:
             entry=entry,
         )
         register_integration_state(entry.entry_id, state)
-        
+
         # Keep legacy dict storage
         hass.data = {
             DOMAIN: {
@@ -273,7 +273,7 @@ class TestAsyncSetupEntry:
             entry=entry,
         )
         register_integration_state(entry.entry_id, state)
-        
+
         hass.data = {
             DOMAIN: {
                 "test_entry": {

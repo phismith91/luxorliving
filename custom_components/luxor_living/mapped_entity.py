@@ -11,7 +11,7 @@ from homeassistant.const import Platform
 @dataclass
 class MappedEntity:
     """Represents a mapped Home Assistant entity.
-    
+
     Extracted to separate module to avoid circular imports
     when used by both EntityMapper and OverrideHandler.
     """

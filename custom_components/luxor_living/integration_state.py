@@ -38,7 +38,6 @@ class IntegrationState:
     # Optional push client for receiving websocket events
     push_client: Any | None = None
 
-
     def __post_init__(self) -> None:
         """Validate required fields after initialization."""
         if self.mapper is None:

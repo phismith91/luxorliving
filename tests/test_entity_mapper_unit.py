@@ -8,8 +8,6 @@ import pytest
 from homeassistant.const import Platform
 
 from custom_components.luxor_living.entity_mapper import EntityMapper
-from custom_components.luxor_living.mapped_entity import MappedEntity
-from custom_components.luxor_living.platform_detector import PlatformDetector
 from custom_components.luxor_living.lxp_parser import (
     LXPActuator,
     LXPDatapoint,
@@ -17,6 +15,8 @@ from custom_components.luxor_living.lxp_parser import (
     LXPProject,
     LXPSensor,
 )
+from custom_components.luxor_living.mapped_entity import MappedEntity
+from custom_components.luxor_living.platform_detector import PlatformDetector
 
 
 def test_mapper_role_to_platform_mapping():

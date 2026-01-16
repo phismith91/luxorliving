@@ -576,7 +576,10 @@ class LuxorKNXGateway:
             _LOGGER.error("Error processing incoming telegram: %s", err, exc_info=True)
 
     async def process_incoming_value(
-        self, group_address: str, value: bool | int | float | bytes | tuple | list, value_type: str | None = None
+        self,
+        group_address: str,
+        value: bool | int | float | bytes | tuple | list,
+        value_type: str | None = None,
     ) -> None:
         """Process an externally pushed value (e.g., from webhook or websocket push).
 
