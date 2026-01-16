@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Prefer local virtualenv binaries if present
+if [ -d "venv/bin" ]; then
+  PATH="venv/bin:$PATH"
+elif [ -d ".venv/bin" ]; then
+  PATH=".venv/bin:$PATH"
+fi
+
 # check_release_notes.sh
 # Verify that a RELEASE_NOTES_v<version>.md file exists and contains the version heading
 
