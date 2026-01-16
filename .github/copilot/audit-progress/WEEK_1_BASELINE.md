@@ -65,15 +65,15 @@
 
 #### Inferred Access Matrix
 
-| Agent | Primary Files | Secondary Files | Implicit Dependencies |
-|-------|---------------|-----------------|----------------------|
-| **Architect** | All code (6369 LOC Python) | All docs | Quality gates, test results |
-| **Release Manager** | manifest.json, CHANGELOG.md, README.md | RELEASE_OPERATIONS.md | CI/CD workflows, pytest results |
-| **Testing** | tests/ (212 tests) | pytest.ini, conftest.py | Code under test |
-| **HACS Compliance** | hacs.json, manifest.json | README.md | hassfest, HACS validation |
-| **Defect Tracker** | GitHub Issues | RELEASE_INCIDENTS.md | Code modules, test failures |
-| **LUXORliving Expert** | LXP files, entity_mapper.py | ARCHITECTURE_DECISION.md | KNX protocol specs |
-| **KNX Protocol** | knx_gateway.py, rest_client.py | KNX_IMPLEMENTATION.md | API docs (PDF) |
+| Agent                  | Primary Files                          | Secondary Files          | Implicit Dependencies           |
+| ---------------------- | -------------------------------------- | ------------------------ | ------------------------------- |
+| **Architect**          | All code (6369 LOC Python)             | All docs                 | Quality gates, test results     |
+| **Release Manager**    | manifest.json, CHANGELOG.md, README.md | RELEASE_OPERATIONS.md    | CI/CD workflows, pytest results |
+| **Testing**            | tests/ (212 tests)                     | pytest.ini, conftest.py  | Code under test                 |
+| **HACS Compliance**    | hacs.json, manifest.json               | README.md                | hassfest, HACS validation       |
+| **Defect Tracker**     | GitHub Issues                          | RELEASE_INCIDENTS.md     | Code modules, test failures     |
+| **LUXORliving Expert** | LXP files, entity_mapper.py            | ARCHITECTURE_DECISION.md | KNX protocol specs              |
+| **KNX Protocol**       | knx_gateway.py, rest_client.py         | KNX_IMPLEMENTATION.md    | API docs (PDF)                  |
 
 #### Access Control Assessment
 
@@ -117,13 +117,13 @@ HACS validation   Dependencies    Version tag
 
 #### Shared Artifacts (Contention Points)
 
-| File | Writers | Readers | Conflict Risk |
-|------|---------|---------|---------------|
-| **manifest.json** | Release Manager, HACS Compliance | All agents | Medium |
-| **CHANGELOG.md** | Release Manager, Architect | All agents | High |
-| **README.md** | Architect, Release Manager | All agents | Medium |
-| **CONTEXT.md** | Architect | All agents | Low |
-| **Test files** | Testing Agent, Architect | Release Manager | Low |
+| File              | Writers                          | Readers         | Conflict Risk |
+| ----------------- | -------------------------------- | --------------- | ------------- |
+| **manifest.json** | Release Manager, HACS Compliance | All agents      | Medium        |
+| **CHANGELOG.md**  | Release Manager, Architect       | All agents      | High          |
+| **README.md**     | Architect, Release Manager       | All agents      | Medium        |
+| **CONTEXT.md**    | Architect                        | All agents      | Low           |
+| **Test files**    | Testing Agent, Architect         | Release Manager | Low           |
 
 **Blocking Dependencies:**
 - CI/CD must pass before merge (enforced by branch protection)
@@ -215,15 +215,15 @@ HACS validation   Dependencies    Version tag
 
 ### 📊 Summary Metrics
 
-| Metric | Value | Assessment |
-|--------|-------|------------|
-| **Total Documentation Files** | 44 .md files | Good coverage |
-| **Active Agents** | 7 | Manageable |
-| **Archived Agents** | 6 | Cleanup successful |
-| **Agent Coordination Files** | 4 (CONTEXT, README, AGENTS, copilot-instructions) | Redundancy exists |
-| **Shared Artifacts (High Contention)** | 3 (manifest.json, CHANGELOG.md, README.md) | Needs coordination |
-| **Knowledge Silos Identified** | 5 | Medium risk |
-| **Undocumented Workflows** | 3 (Testing→Release, Agent→Defect, HACS→Release) | Low risk |
+| Metric                                 | Value                                             | Assessment         |
+| -------------------------------------- | ------------------------------------------------- | ------------------ |
+| **Total Documentation Files**          | 44 .md files                                      | Good coverage      |
+| **Active Agents**                      | 7                                                 | Manageable         |
+| **Archived Agents**                    | 6                                                 | Cleanup successful |
+| **Agent Coordination Files**           | 4 (CONTEXT, README, AGENTS, copilot-instructions) | Redundancy exists  |
+| **Shared Artifacts (High Contention)** | 3 (manifest.json, CHANGELOG.md, README.md)        | Needs coordination |
+| **Knowledge Silos Identified**         | 5                                                 | Medium risk        |
+| **Undocumented Workflows**             | 3 (Testing→Release, Agent→Defect, HACS→Release)   | Low risk           |
 
 ### 🎯 Key Findings
 
@@ -287,33 +287,33 @@ HACS validation   Dependencies    Version tag
 
 ### 2.2 Quality Gate Coverage Matrix
 
-| Category | Gate | Workflow | Blocking? | Coverage |
-|----------|------|----------|-----------|----------|
-| **Manifest** | hassfest validation | Validate | ✅ Yes | Manifest schema, dependencies, keys |
-| **HACS** | HACS validation | Validate | ✅ Yes | Repository structure, branding |
-| **Code Format** | Black | CI/CD Pipeline | ✅ Yes | Line length 100, Python 3.13+ |
-| **Import Sort** | isort | CI/CD Pipeline | ✅ Yes | Black-compatible, profile=black |
-| **Type Hints** | mypy | - | ❌ No | Optional (not enforced in CI) |
-| **Tests** | pytest | CI/CD Pipeline | ✅ Yes | 212 tests, must pass |
-| **Coverage** | pytest-cov | CI/CD Pipeline | ⚠️ Partial | ~55% (informational only) |
-| **Shell Scripts** | ShellCheck | Release Checks | ✅ Yes | v0.9.0 local, v2.0.0 action |
-| **README** | validate_readme.sh | Release Checks | ✅ Yes | Version consistency, test count, links |
-| **Release Notes** | check_release_notes.sh | Release Checks | ✅ Yes | RELEASE_NOTES_v*.md existence |
-| **Release Dry-Run** | release_automation.sh | Release Checks | ✅ Yes | Version consistency, test suite |
-| **Security** | bandit | - | ❌ No | Not implemented |
-| **Dependencies** | pip-audit | - | ❌ No | Not implemented |
-| **Documentation** | Linters (markdown, yaml) | - | ❌ No | Not implemented |
+| Category            | Gate                     | Workflow       | Blocking? | Coverage                               |
+| ------------------- | ------------------------ | -------------- | --------- | -------------------------------------- |
+| **Manifest**        | hassfest validation      | Validate       | ✅ Yes     | Manifest schema, dependencies, keys    |
+| **HACS**            | HACS validation          | Validate       | ✅ Yes     | Repository structure, branding         |
+| **Code Format**     | Black                    | CI/CD Pipeline | ✅ Yes     | Line length 100, Python 3.13+          |
+| **Import Sort**     | isort                    | CI/CD Pipeline | ✅ Yes     | Black-compatible, profile=black        |
+| **Type Hints**      | mypy                     | -              | ❌ No      | Optional (not enforced in CI)          |
+| **Tests**           | pytest                   | CI/CD Pipeline | ✅ Yes     | 212 tests, must pass                   |
+| **Coverage**        | pytest-cov               | CI/CD Pipeline | ⚠️ Partial | ~55% (informational only)              |
+| **Shell Scripts**   | ShellCheck               | Release Checks | ✅ Yes     | v0.9.0 local, v2.0.0 action            |
+| **README**          | validate_readme.sh       | Release Checks | ✅ Yes     | Version consistency, test count, links |
+| **Release Notes**   | check_release_notes.sh   | Release Checks | ✅ Yes     | RELEASE_NOTES_v*.md existence          |
+| **Release Dry-Run** | release_automation.sh    | Release Checks | ✅ Yes     | Version consistency, test suite        |
+| **Security**        | bandit                   | -              | ❌ No      | Not implemented                        |
+| **Dependencies**    | pip-audit                | -              | ❌ No      | Not implemented                        |
+| **Documentation**   | Linters (markdown, yaml) | -              | ❌ No      | Not implemented                        |
 
 ### 2.3 Baseline Performance Metrics
 
 #### Workflow Execution Times (Last 50 Runs)
 
-| Workflow | Avg Duration | Min | Max | Status |
-|----------|--------------|-----|-----|--------|
-| **Validate** | ~60 seconds | ~45s | ~90s | ✅ Stable |
-| **Release Checks** | ~10 seconds | ~8s | ~15s | ✅ Fast |
-| **CI/CD Pipeline** | ~120 seconds | ~90s | ~180s | ⚠️ Slow |
-| **Dependabot** | N/A | - | - | ⚠️ Skipped |
+| Workflow           | Avg Duration | Min  | Max   | Status    |
+| ------------------ | ------------ | ---- | ----- | --------- |
+| **Validate**       | ~60 seconds  | ~45s | ~90s  | ✅ Stable  |
+| **Release Checks** | ~10 seconds  | ~8s  | ~15s  | ✅ Fast    |
+| **CI/CD Pipeline** | ~120 seconds | ~90s | ~180s | ⚠️ Slow    |
+| **Dependabot**     | N/A          | -    | -     | ⚠️ Skipped |
 
 #### Success Rate Trends
 
@@ -391,13 +391,13 @@ git push origin main
 
 **Documented Incidents:** 5 (v0.6.0-beta.1 through beta.5)
 
-| Incident | Root Cause | Prevention Implemented |
-|----------|-----------|------------------------|
-| **beta.1** | Version mismatch (manifest vs coordinator) | release_automation.sh version checks |
-| **beta.2** | Zip structure invalid (manifest not at root) | Zip validation in automation script |
-| **beta.3** | Tests not run before release | Test suite verification added |
-| **beta.4** | CHANGELOG missing entry | README validation enforces CHANGELOG |
-| **beta.5** | SSH config issues | Documented `-F /dev/null` workaround |
+| Incident   | Root Cause                                   | Prevention Implemented               |
+| ---------- | -------------------------------------------- | ------------------------------------ |
+| **beta.1** | Version mismatch (manifest vs coordinator)   | release_automation.sh version checks |
+| **beta.2** | Zip structure invalid (manifest not at root) | Zip validation in automation script  |
+| **beta.3** | Tests not run before release                 | Test suite verification added        |
+| **beta.4** | CHANGELOG missing entry                      | README validation enforces CHANGELOG |
+| **beta.5** | SSH config issues                            | Documented `-F /dev/null` workaround |
 
 **Lessons Applied:**
 - ✅ Release automation script created (scripts/release_automation.sh)
@@ -414,16 +414,16 @@ git push origin main
 
 ### 📊 Summary Metrics
 
-| Metric | Value | Target | Assessment |
-|--------|-------|--------|------------|
-| **Active Workflows** | 4 production | - | Good |
-| **Quality Gates** | 11 implemented | 14 desired | 79% |
-| **Validate Success Rate** | 95% | >95% | ✅ On target |
-| **CI/CD Success Rate** | 40% | >90% | ⚠️ Improving |
-| **Avg Workflow Duration** | 64s | <120s | ✅ Good |
-| **GitHub Actions Utilization** | ~5% | <50% | ✅ Efficient |
-| **Documented Incidents** | 5 | - | Good |
-| **Prevention Rate** | 100% | >80% | ✅ Excellent |
+| Metric                         | Value          | Target     | Assessment  |
+| ------------------------------ | -------------- | ---------- | ----------- |
+| **Active Workflows**           | 4 production   | -          | Good        |
+| **Quality Gates**              | 11 implemented | 14 desired | 79%         |
+| **Validate Success Rate**      | 95%            | >95%       | ✅ On target |
+| **CI/CD Success Rate**         | 40%            | >90%       | ⚠️ Improving |
+| **Avg Workflow Duration**      | 64s            | <120s      | ✅ Good      |
+| **GitHub Actions Utilization** | ~5%            | <50%       | ✅ Efficient |
+| **Documented Incidents**       | 5              | -          | Good        |
+| **Prevention Rate**            | 100%           | >80%       | ✅ Excellent |
 
 ### 🎯 Key Findings
 
@@ -565,15 +565,15 @@ git push origin main
 
 ### 📊 Summary Metrics
 
-| Metric | Value | Target | Assessment |
-|--------|-------|--------|------------|
-| **Total Documentation Files** | 44 .md files | - | Good |
-| **User-Facing Docs** | 19 files | - | Comprehensive |
-| **Developer Docs** | 11 files | - | Good |
-| **English Coverage (Dev Docs)** | 100% | 100% | ✅ On target |
-| **German User Docs** | ~70% | - | Appropriate |
-| **Docstring Coverage (Estimated)** | ~60% | 80% | ⚠️ Needs improvement |
-| **Cross-Reference Issues** | Low | 0 | ⚠️ Needs validation |
+| Metric                             | Value        | Target | Assessment          |
+| ---------------------------------- | ------------ | ------ | ------------------- |
+| **Total Documentation Files**      | 44 .md files | -      | Good                |
+| **User-Facing Docs**               | 19 files     | -      | Comprehensive       |
+| **Developer Docs**                 | 11 files     | -      | Good                |
+| **English Coverage (Dev Docs)**    | 100%         | 100%   | ✅ On target         |
+| **German User Docs**               | ~70%         | -      | Appropriate         |
+| **Docstring Coverage (Estimated)** | ~60%         | 80%    | ⚠️ Needs improvement |
+| **Cross-Reference Issues**         | Low          | 0      | ⚠️ Needs validation  |
 
 ### 🎯 Key Findings
 
@@ -609,11 +609,11 @@ git push origin main
 
 ### Key Metrics Snapshot
 
-| Audit | Files Analyzed | Metrics Collected | Findings |
-|-------|----------------|-------------------|----------|
-| **Agent Collaboration** | 44 docs, 7 agents | Access matrix, workflows | 5 silos, 3 undocumented workflows |
-| **CI/CD** | 4 workflows, 50 runs | Success rates, durations | 79% gate coverage, 5% Actions usage |
-| **Documentation** | 44 .md files, 6369 LOC | Language, coverage, links | 60% docstring, mixed language user docs |
+| Audit                   | Files Analyzed         | Metrics Collected         | Findings                                |
+| ----------------------- | ---------------------- | ------------------------- | --------------------------------------- |
+| **Agent Collaboration** | 44 docs, 7 agents      | Access matrix, workflows  | 5 silos, 3 undocumented workflows       |
+| **CI/CD**               | 4 workflows, 50 runs   | Success rates, durations  | 79% gate coverage, 5% Actions usage     |
+| **Documentation**       | 44 .md files, 6369 LOC | Language, coverage, links | 60% docstring, mixed language user docs |
 
 ### Critical Findings
 

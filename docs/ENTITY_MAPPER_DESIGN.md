@@ -51,13 +51,13 @@ entity_mapper.py (523 lines total)
 
 ### Success Metrics
 
-| Metric | Before | Target | Improvement |
-|--------|--------|--------|-------------|
-| **EntityMapper LOC** | 523 | 250 | -52% |
-| **Avg Module LOC** | 523 | 173 | Smaller modules |
-| **Test Coverage** | 62.75% | 85%+ | +35% |
-| **Responsibilities** | 3 | 1 | SRP compliant |
-| **Time to Add Platform** | 2 hours | 30 min | -75% |
+| Metric                   | Before  | Target | Improvement     |
+| ------------------------ | ------- | ------ | --------------- |
+| **EntityMapper LOC**     | 523     | 250    | -52%            |
+| **Avg Module LOC**       | 523     | 173    | Smaller modules |
+| **Test Coverage**        | 62.75%  | 85%+   | +35%            |
+| **Responsibilities**     | 3       | 1      | SRP compliant   |
+| **Time to Add Platform** | 2 hours | 30 min | -75%            |
 
 ### Design Principles
 
@@ -415,12 +415,12 @@ mapper = EntityMapper(
 
 ### Code Metrics
 
-| Metric | Before | After | Status |
-|--------|--------|-------|--------|
-| **EntityMapper LOC** | 523 | 250 | 🎯 -52% |
-| **Modules** | 1 | 3 | 🎯 Better organized |
-| **Test Coverage** | 62.75% | 85%+ | 🎯 +35% |
-| **Avg Module LOC** | 523 | 173 | 🎯 Maintainable |
+| Metric               | Before | After | Status             |
+| -------------------- | ------ | ----- | ------------------ |
+| **EntityMapper LOC** | 523    | 250   | 🎯 -52%             |
+| **Modules**          | 1      | 3     | 🎯 Better organized |
+| **Test Coverage**    | 62.75% | 85%+  | 🎯 +35%             |
+| **Avg Module LOC**   | 523    | 173   | 🎯 Maintainable     |
 
 ### Quality Gates
 

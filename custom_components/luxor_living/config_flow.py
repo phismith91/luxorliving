@@ -346,8 +346,10 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             self.config_entry.data.get("push_auth_method", "none"),
         )
 
+        # Build options schema with clear sections
         options_schema = vol.Schema(
             {
+                # Basic settings
                 vol.Optional(
                     CONF_SIMULATION_MODE,
                     default=current_simulation_mode,
@@ -364,7 +366,7 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                     CONF_DISCOVERY_TIMEOUT,
                     default=current_discovery_timeout,
                 ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=10.0)),
-                # Push options (optional - for external KNX state updates)
+                # --- Advanced: Push Webhook (for external real-time updates) ---
                 vol.Optional("push_ws_url", default=current_push_ws_url): selector.TextSelector(
                     selector.TextSelectorConfig(
                         multiline=False,
@@ -396,12 +398,13 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             step_id="init",
             data_schema=options_schema,
             description_placeholders={
+                "description": "Configure basic settings below. Advanced users: Push Webhook options at the bottom are optional and only needed for external real-time KNX state updates.",
                 "scan_interval_description": "Update interval in seconds (5-300)",
                 "log_level_description": "Logging verbosity for troubleshooting",
-                "push_ws_url_description": "WebSocket URL for real-time KNX updates (optional, leave empty to disable)",
-                "push_auth_method_description": "Authentication: 'none' (local), 'token' (X-LUXOR-PUSH-TOKEN header), 'bearer' (Authorization header), 'hmac' (signed)",
-                "push_token_description": "Shared secret for token/bearer/hmac authentication (not needed for 'none')",
-                "push_ws_token_description": "Optional WebSocket Bearer token (if push server requires it)",
+                "push_ws_url_description": "⚙️ ADVANCED: WebSocket URL for real-time KNX updates (leave empty to disable)",
+                "push_auth_method_description": "⚙️ ADVANCED: Authentication method",
+                "push_token_description": "⚙️ ADVANCED: Shared secret for authentication",
+                "push_ws_token_description": "⚙️ ADVANCED: Optional WebSocket Bearer token",
             },
         )
 

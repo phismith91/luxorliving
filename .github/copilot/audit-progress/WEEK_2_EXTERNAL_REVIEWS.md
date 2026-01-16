@@ -71,11 +71,11 @@ jobs:
 
 #### Execution Time Breakdown
 
-| Workflow | Avg Duration | Bottleneck | Optimization Potential |
-|----------|--------------|------------|------------------------|
-| **validate.yml** | ~60s | hassfest download | LOW (external dependency) |
-| **release_checks.yml** | ~10s | Shell scripts | LOW (already fast) |
-| **ci-cd.yml** | ~120s | Dependency install | **HIGH** (no caching) |
+| Workflow               | Avg Duration | Bottleneck         | Optimization Potential    |
+| ---------------------- | ------------ | ------------------ | ------------------------- |
+| **validate.yml**       | ~60s         | hassfest download  | LOW (external dependency) |
+| **release_checks.yml** | ~10s         | Shell scripts      | LOW (already fast)        |
+| **ci-cd.yml**          | ~120s        | Dependency install | **HIGH** (no caching)     |
 
 #### Detailed Analysis: ci-cd.yml
 
@@ -155,19 +155,19 @@ test:
 
 #### Current Gates (11 implemented)
 
-| Gate | Tool | Workflow | Blocking | Coverage Level |
-|------|------|----------|----------|----------------|
-| Manifest validation | hassfest | validate | ✅ | Excellent |
-| HACS validation | HACS Action | validate | ✅ | Excellent |
-| Code formatting | black | ci-cd | ✅ | Excellent |
-| Import sorting | isort | ci-cd | ✅ | Excellent |
-| Unit tests | pytest | ci-cd | ✅ | Good (~55% coverage) |
-| Shell linting | ShellCheck | release_checks | ✅ | Good |
-| README validation | validate_readme.sh | release_checks | ✅ | Good |
-| Release notes check | check_release_notes.sh | release_checks | ✅ | Good |
-| Version consistency | release_automation.sh | release_checks | ✅ | Excellent |
-| Coverage reporting | codecov | ci-cd | ❌ No | Informational only |
-| Type checking | mypy | - | ❌ No | Not enforced |
+| Gate                | Tool                   | Workflow       | Blocking | Coverage Level       |
+| ------------------- | ---------------------- | -------------- | -------- | -------------------- |
+| Manifest validation | hassfest               | validate       | ✅        | Excellent            |
+| HACS validation     | HACS Action            | validate       | ✅        | Excellent            |
+| Code formatting     | black                  | ci-cd          | ✅        | Excellent            |
+| Import sorting      | isort                  | ci-cd          | ✅        | Excellent            |
+| Unit tests          | pytest                 | ci-cd          | ✅        | Good (~55% coverage) |
+| Shell linting       | ShellCheck             | release_checks | ✅        | Good                 |
+| README validation   | validate_readme.sh     | release_checks | ✅        | Good                 |
+| Release notes check | check_release_notes.sh | release_checks | ✅        | Good                 |
+| Version consistency | release_automation.sh  | release_checks | ✅        | Excellent            |
+| Coverage reporting  | codecov                | ci-cd          | ❌ No     | Informational only   |
+| Type checking       | mypy                   | -              | ❌ No     | Not enforced         |
 
 #### Missing Critical Gates
 
@@ -348,12 +348,12 @@ jobs:
 
 #### Rollback Readiness Score
 
-| Aspect | Current | Target | Gap |
-|--------|---------|--------|-----|
-| **Detection Time** | Hours-Days (user reports) | Minutes (monitoring) | ❌ High |
-| **Decision Time** | Manual assessment | Automated threshold | ❌ High |
-| **Execution Time** | Manual git ops | One-command script | ⚠️ Medium |
-| **Verification** | User confirmation | Smoke tests | ❌ High |
+| Aspect             | Current                   | Target               | Gap      |
+| ------------------ | ------------------------- | -------------------- | -------- |
+| **Detection Time** | Hours-Days (user reports) | Minutes (monitoring) | ❌ High   |
+| **Decision Time**  | Manual assessment         | Automated threshold  | ❌ High   |
+| **Execution Time** | Manual git ops            | One-command script   | ⚠️ Medium |
+| **Verification**   | User confirmation         | Smoke tests          | ❌ High   |
 
 **Rating:** ⭐⭐☆☆☆ **2/5** - Basic deployment, lacks safety nets
 
@@ -373,13 +373,13 @@ jobs:
 
 **Incident → Prevention Mapping:**
 
-| Incident | Root Cause | Prevention | Status |
-|----------|-----------|------------|--------|
-| **beta.1** | Version mismatch | release_automation.sh version check | ✅ Implemented |
-| **beta.2** | Zip structure wrong | Zip validation in script | ✅ Implemented |
-| **beta.3** | Tests not run | Test verification in CI | ✅ Implemented |
-| **beta.4** | CHANGELOG missing | README validation | ✅ Implemented |
-| **beta.5** | SSH config broken | GIT_SSH_COMMAND workaround | ✅ Implemented |
+| Incident   | Root Cause          | Prevention                          | Status        |
+| ---------- | ------------------- | ----------------------------------- | ------------- |
+| **beta.1** | Version mismatch    | release_automation.sh version check | ✅ Implemented |
+| **beta.2** | Zip structure wrong | Zip validation in script            | ✅ Implemented |
+| **beta.3** | Tests not run       | Test verification in CI             | ✅ Implemented |
+| **beta.4** | CHANGELOG missing   | README validation                   | ✅ Implemented |
+| **beta.5** | SSH config broken   | GIT_SSH_COMMAND workaround          | ✅ Implemented |
 
 **Prevention Effectiveness:** 100% (5/5 incidents prevented by automation)
 
@@ -421,20 +421,20 @@ jobs:
 
 ### 1.7 DevOps Best Practices Scorecard
 
-| Practice | Implemented | Rating | Notes |
-|----------|-------------|--------|-------|
-| **Continuous Integration** | ✅ Yes | ⭐⭐⭐⭐☆ | Good coverage, needs optimization |
-| **Continuous Deployment** | ⚠️ Partial | ⭐⭐☆☆☆ | Manual tag trigger only |
-| **Infrastructure as Code** | ✅ Yes | ⭐⭐⭐⭐⭐ | GitHub Actions YAML |
-| **Configuration Management** | ✅ Yes | ⭐⭐⭐⭐☆ | Version in manifest.json |
-| **Automated Testing** | ✅ Yes | ⭐⭐⭐⭐☆ | 212 tests, 55% coverage |
-| **Security Scanning** | ❌ No | ⭐☆☆☆☆ | Critical gap |
-| **Monitoring & Alerting** | ❌ No | ⭐☆☆☆☆ | Reactive only |
-| **Canary Deployments** | ❌ No | ⭐☆☆☆☆ | All-or-nothing releases |
-| **Rollback Automation** | ⚠️ Partial | ⭐⭐☆☆☆ | Manual process documented |
-| **Incident Management** | ✅ Yes | ⭐⭐⭐⭐⭐ | Excellent learning loop |
-| **Documentation** | ✅ Yes | ⭐⭐⭐⭐⭐ | Comprehensive |
-| **Dependency Management** | ⚠️ Partial | ⭐⭐⭐☆☆ | Dependabot configured, no audit |
+| Practice                     | Implemented | Rating | Notes                             |
+| ---------------------------- | ----------- | ------ | --------------------------------- |
+| **Continuous Integration**   | ✅ Yes       | ⭐⭐⭐⭐☆  | Good coverage, needs optimization |
+| **Continuous Deployment**    | ⚠️ Partial   | ⭐⭐☆☆☆  | Manual tag trigger only           |
+| **Infrastructure as Code**   | ✅ Yes       | ⭐⭐⭐⭐⭐  | GitHub Actions YAML               |
+| **Configuration Management** | ✅ Yes       | ⭐⭐⭐⭐☆  | Version in manifest.json          |
+| **Automated Testing**        | ✅ Yes       | ⭐⭐⭐⭐☆  | 212 tests, 55% coverage           |
+| **Security Scanning**        | ❌ No        | ⭐☆☆☆☆  | Critical gap                      |
+| **Monitoring & Alerting**    | ❌ No        | ⭐☆☆☆☆  | Reactive only                     |
+| **Canary Deployments**       | ❌ No        | ⭐☆☆☆☆  | All-or-nothing releases           |
+| **Rollback Automation**      | ⚠️ Partial   | ⭐⭐☆☆☆  | Manual process documented         |
+| **Incident Management**      | ✅ Yes       | ⭐⭐⭐⭐⭐  | Excellent learning loop           |
+| **Documentation**            | ✅ Yes       | ⭐⭐⭐⭐⭐  | Comprehensive                     |
+| **Dependency Management**    | ⚠️ Partial   | ⭐⭐⭐☆☆  | Dependabot configured, no audit   |
 
 **Overall DevOps Maturity:** ⭐⭐⭐☆☆ **3.2/5** (Good foundation, room for improvement)
 
@@ -473,13 +473,13 @@ jobs:
 
 #### Estimated Impact
 
-| Recommendation | Time to Implement | Impact | ROI |
-|----------------|-------------------|--------|-----|
-| Security scanning | 1-2 hours | HIGH | ⭐⭐⭐⭐⭐ |
-| Fix pip caching | 30 minutes | MEDIUM | ⭐⭐⭐⭐⭐ |
-| Canary deployment | 4-8 hours | HIGH | ⭐⭐⭐⭐☆ |
-| Smoke tests | 2-4 hours | MEDIUM | ⭐⭐⭐⭐☆ |
-| Rollback automation | 2-3 hours | MEDIUM | ⭐⭐⭐☆☆ |
+| Recommendation      | Time to Implement | Impact | ROI   |
+| ------------------- | ----------------- | ------ | ----- |
+| Security scanning   | 1-2 hours         | HIGH   | ⭐⭐⭐⭐⭐ |
+| Fix pip caching     | 30 minutes        | MEDIUM | ⭐⭐⭐⭐⭐ |
+| Canary deployment   | 4-8 hours         | HIGH   | ⭐⭐⭐⭐☆ |
+| Smoke tests         | 2-4 hours         | MEDIUM | ⭐⭐⭐⭐☆ |
+| Rollback automation | 2-3 hours         | MEDIUM | ⭐⭐⭐☆☆ |
 
 **Final Rating:** ⭐⭐⭐⭐☆ **4/5**  
 *"Solid DevOps foundation with excellent incident learning. Missing critical security gates and deployment safety nets. Quick wins available with caching and security scanning."*
@@ -679,12 +679,12 @@ Option B: Manual Path
 ⚠️ **Confusion:** "File copied automatically" - Where to? Do I need to keep original?
 
 **INSTALLATION.md - Step 3: Gateway Config:**
-| Field | Value | Notes |
-|-------|-------|-------|
-| Gateway IP | 192.168.1.3 | Find in router... |
-| Connection Type | Tunneling | Recommended... |
-| Username | admin | Default |
-| Password | admin | Default |
+| Field           | Value       | Notes             |
+| --------------- | ----------- | ----------------- |
+| Gateway IP      | 192.168.1.3 | Find in router... |
+| Connection Type | Tunneling   | Recommended...    |
+| Username        | admin       | Default           |
+| Password        | admin       | Default           |
 
 ✅ **Excellent:** Table format is perfect  
 ✅ **Helpful:** Default values shown  
@@ -1010,13 +1010,13 @@ ping <gateway-ip>             # English command
 
 ### Recommended Quick Wins (< 1 hour each)
 
-| Fix | Time | Impact | Effort | ROI |
-|-----|------|--------|--------|-----|
-| Remove duplicate Support | 2 min | HIGH | Minimal | ⭐⭐⭐⭐⭐ |
-| Fix German/English mix | 15 min | HIGH | Low | ⭐⭐⭐⭐⭐ |
-| Link user docs in README | 5 min | HIGH | Minimal | ⭐⭐⭐⭐⭐ |
-| Add post-setup section | 30 min | MEDIUM | Low | ⭐⭐⭐⭐☆ |
-| Improve 3 error messages | 20 min | MEDIUM | Low | ⭐⭐⭐☆☆ |
+| Fix                      | Time   | Impact | Effort  | ROI   |
+| ------------------------ | ------ | ------ | ------- | ----- |
+| Remove duplicate Support | 2 min  | HIGH   | Minimal | ⭐⭐⭐⭐⭐ |
+| Fix German/English mix   | 15 min | HIGH   | Low     | ⭐⭐⭐⭐⭐ |
+| Link user docs in README | 5 min  | HIGH   | Minimal | ⭐⭐⭐⭐⭐ |
+| Add post-setup section   | 30 min | MEDIUM | Low     | ⭐⭐⭐⭐☆ |
+| Improve 3 error messages | 20 min | MEDIUM | Low     | ⭐⭐⭐☆☆ |
 
 **Estimated Total:** 72 minutes for 5 high-impact fixes
 
@@ -1709,18 +1709,18 @@ PLATFORMS = list(PLATFORM_REGISTRY.keys())
 
 #### Code Quality Scorecard
 
-| Aspect | Rating | Notes |
-|--------|--------|-------|
-| **Architecture** | ⭐⭐⭐⭐☆ | Layered design, coordinator pattern ✅ |
-| **Async Patterns** | ⭐⭐⭐⭐☆ | Good discipline, minor placeholder issues |
-| **Error Handling** | ⭐⭐⭐⭐⭐ | Excellent circuit breaker + repair flows |
-| **Type Hints** | ⭐⭐⭐⭐☆ | Comprehensive, could be more specific |
-| **Docstrings** | ⭐⭐⭐⭐☆ | Google style, some gaps |
-| **Test Coverage** | ⭐⭐⭐☆☆ | 55% (target: 75%+), critical gaps |
-| **Dependencies** | ⭐⭐⭐⭐☆ | Minimal, pinned, no auto-audit |
-| **Code Smells** | ⭐⭐⭐☆☆ | Some magic numbers, dict storage |
-| **Performance** | ⭐⭐⭐☆☆ | Good caching, sequential mapping |
-| **Maintainability** | ⭐⭐⭐⭐☆ | Clear structure, minor coupling |
+| Aspect              | Rating | Notes                                     |
+| ------------------- | ------ | ----------------------------------------- |
+| **Architecture**    | ⭐⭐⭐⭐☆  | Layered design, coordinator pattern ✅     |
+| **Async Patterns**  | ⭐⭐⭐⭐☆  | Good discipline, minor placeholder issues |
+| **Error Handling**  | ⭐⭐⭐⭐⭐  | Excellent circuit breaker + repair flows  |
+| **Type Hints**      | ⭐⭐⭐⭐☆  | Comprehensive, could be more specific     |
+| **Docstrings**      | ⭐⭐⭐⭐☆  | Google style, some gaps                   |
+| **Test Coverage**   | ⭐⭐⭐☆☆  | 55% (target: 75%+), critical gaps         |
+| **Dependencies**    | ⭐⭐⭐⭐☆  | Minimal, pinned, no auto-audit            |
+| **Code Smells**     | ⭐⭐⭐☆☆  | Some magic numbers, dict storage          |
+| **Performance**     | ⭐⭐⭐☆☆  | Good caching, sequential mapping          |
+| **Maintainability** | ⭐⭐⭐⭐☆  | Clear structure, minor coupling           |
 
 **Overall Code Quality:** ⭐⭐⭐⭐☆ **3.9/5**
 
@@ -1752,13 +1752,13 @@ PLATFORMS = list(PLATFORM_REGISTRY.keys())
 
 ### Estimated Impact
 
-| Recommendation | Effort | Impact | Technical Debt Reduction |
-|----------------|--------|--------|--------------------------|
-| Increase test coverage | 2-3 days | HIGH | 40% reduction |
-| Fix global state | 4 hours | MEDIUM | 20% reduction |
-| Refactor EntityMapper | 1-2 days | MEDIUM | 25% reduction |
-| Extract health endpoint | 2 hours | LOW | 5% reduction |
-| Parallelize mapping | 4-6 hours | LOW-MED | 10% reduction |
+| Recommendation          | Effort    | Impact  | Technical Debt Reduction |
+| ----------------------- | --------- | ------- | ------------------------ |
+| Increase test coverage  | 2-3 days  | HIGH    | 40% reduction            |
+| Fix global state        | 4 hours   | MEDIUM  | 20% reduction            |
+| Refactor EntityMapper   | 1-2 days  | MEDIUM  | 25% reduction            |
+| Extract health endpoint | 2 hours   | LOW     | 5% reduction             |
+| Parallelize mapping     | 4-6 hours | LOW-MED | 10% reduction            |
 
 **Priority Focus:** Test coverage + global state fix = 60% technical debt reduction for ~3 days effort
 

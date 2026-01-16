@@ -232,14 +232,14 @@ async def test_circuit_breaker_recovery():
 
 ### Immediate (< 1 week, ~15 hours effort)
 
-| Priority | Recommendation | Effort | Impact | Reviewers |
-|----------|----------------|--------|--------|-----------|
-| 🔴 P0 | Add security scanning (bandit + pip-audit) | 2h | HIGH | DevOps |
-| 🔴 P0 | Remove duplicate "Support" in README | 2min | HIGH | User |
-| 🔴 P0 | Fix language mixing (INSTALLATION.md) | 15min | HIGH | User |
-| 🔴 P0 | Link user docs in README | 5min | HIGH | User |
-| 🔴 P0 | Fix pip caching (setup-python cache: 'pip') | 30min | MED | DevOps |
-| 🔴 P0 | Extract magic numbers to constants | 1h | MED | Dev |
+| Priority | Recommendation                              | Effort | Impact | Reviewers |
+| -------- | ------------------------------------------- | ------ | ------ | --------- |
+| 🔴 P0     | Add security scanning (bandit + pip-audit)  | 2h     | HIGH   | DevOps    |
+| 🔴 P0     | Remove duplicate "Support" in README        | 2min   | HIGH   | User      |
+| 🔴 P0     | Fix language mixing (INSTALLATION.md)       | 15min  | HIGH   | User      |
+| 🔴 P0     | Link user docs in README                    | 5min   | HIGH   | User      |
+| 🔴 P0     | Fix pip caching (setup-python cache: 'pip') | 30min  | MED    | DevOps    |
+| 🔴 P0     | Extract magic numbers to constants          | 1h     | MED    | Dev       |
 
 **Total:** ~4 hours, 6 high-impact fixes
 
@@ -247,14 +247,14 @@ async def test_circuit_breaker_recovery():
 
 ### Short-term (1-2 weeks, ~40 hours effort)
 
-| Priority | Recommendation | Effort | Impact | Reviewers |
-|----------|----------------|--------|--------|-----------|
-| 🟡 P1 | Increase test coverage 55% → 75% | 2-3 days | HIGH | Dev, DevOps |
-| 🟡 P1 | Fix global dict storage (use dataclass) | 4h | MED | Dev |
-| 🟡 P1 | Parallelize pytest (3x speedup) | 4h | MED | DevOps |
-| 🟡 P1 | Add post-setup guide to docs | 30min | MED | User |
-| 🟡 P1 | Improve 3 error messages | 20min | MED | User |
-| 🟡 P1 | Create incident response runbook | 2h | LOW | DevOps |
+| Priority | Recommendation                          | Effort   | Impact | Reviewers   |
+| -------- | --------------------------------------- | -------- | ------ | ----------- |
+| 🟡 P1     | Increase test coverage 55% → 75%        | 2-3 days | HIGH   | Dev, DevOps |
+| 🟡 P1     | Fix global dict storage (use dataclass) | 4h       | MED    | Dev         |
+| 🟡 P1     | Parallelize pytest (3x speedup)         | 4h       | MED    | DevOps      |
+| 🟡 P1     | Add post-setup guide to docs            | 30min    | MED    | User        |
+| 🟡 P1     | Improve 3 error messages                | 20min    | MED    | User        |
+| 🟡 P1     | Create incident response runbook        | 2h       | LOW    | DevOps      |
 
 **Total:** ~4 days (32 hours)
 
@@ -262,13 +262,13 @@ async def test_circuit_breaker_recovery():
 
 ### Medium-term (1-2 months, ~80 hours effort)
 
-| Priority | Recommendation | Effort | Impact | Reviewers |
-|----------|----------------|--------|--------|-----------|
-| 🟢 P2 | Refactor EntityMapper (523 → 3 modules) | 1-2 days | MED | Dev |
-| 🟢 P2 | Add canary deployment | 8h | MED | DevOps |
-| 🟢 P2 | Add screenshots to docs | 2h | LOW | User |
-| 🟢 P2 | Implement post-deploy smoke tests | 4h | MED | DevOps |
-| 🟢 P2 | Extract health endpoint to health.py | 2h | LOW | Dev |
+| Priority | Recommendation                          | Effort   | Impact | Reviewers |
+| -------- | --------------------------------------- | -------- | ------ | --------- |
+| 🟢 P2     | Refactor EntityMapper (523 → 3 modules) | 1-2 days | MED    | Dev       |
+| 🟢 P2     | Add canary deployment                   | 8h       | MED    | DevOps    |
+| 🟢 P2     | Add screenshots to docs                 | 2h       | LOW    | User      |
+| 🟢 P2     | Implement post-deploy smoke tests       | 4h       | MED    | DevOps    |
+| 🟢 P2     | Extract health endpoint to health.py    | 2h       | LOW    | Dev       |
 
 **Total:** ~2.5 weeks (100 hours)
 
@@ -278,31 +278,31 @@ async def test_circuit_breaker_recovery():
 
 ### DevOps KPIs
 
-| Metric | Current | Target (3 months) | Improvement |
-|--------|---------|-------------------|-------------|
-| **CI Success Rate** | 40% (CI/CD), 95% (Validate) | 95% (all) | +137% |
-| **Avg Workflow Time** | 64s | 30s | -53% |
-| **Security Gates** | 0/14 | 3/14 | +∞ |
-| **Incident Prevention** | 100% (5/5) | 100% | ✅ Maintain |
+| Metric                  | Current                     | Target (3 months) | Improvement |
+| ----------------------- | --------------------------- | ----------------- | ----------- |
+| **CI Success Rate**     | 40% (CI/CD), 95% (Validate) | 95% (all)         | +137%       |
+| **Avg Workflow Time**   | 64s                         | 30s               | -53%        |
+| **Security Gates**      | 0/14                        | 3/14              | +∞          |
+| **Incident Prevention** | 100% (5/5)                  | 100%              | ✅ Maintain  |
 
 ### User Experience KPIs
 
-| Metric | Current | Target (3 months) | Improvement |
-|--------|---------|-------------------|-------------|
-| **First Impression** | ⭐⭐☆☆☆ | ⭐⭐⭐⭐☆ | +100% |
-| **Doc Discoverability** | ⭐⭐☆☆☆ | ⭐⭐⭐⭐⭐ | +150% |
-| **Post-Setup Clarity** | ⭐⭐⭐☆☆ | ⭐⭐⭐⭐⭐ | +67% |
-| **GitHub Issues (confusion)** | Baseline | -50% | Target |
+| Metric                        | Current  | Target (3 months) | Improvement |
+| ----------------------------- | -------- | ----------------- | ----------- |
+| **First Impression**          | ⭐⭐☆☆☆    | ⭐⭐⭐⭐☆             | +100%       |
+| **Doc Discoverability**       | ⭐⭐☆☆☆    | ⭐⭐⭐⭐⭐             | +150%       |
+| **Post-Setup Clarity**        | ⭐⭐⭐☆☆    | ⭐⭐⭐⭐⭐             | +67%        |
+| **GitHub Issues (confusion)** | Baseline | -50%              | Target      |
 
 ### Code Quality KPIs
 
-| Metric | Current | Target (3 months) | Improvement |
-|--------|---------|-------------------|-------------|
-| **Test Coverage** | 55% | 75%+ | +36% |
-| **Type Hint Coverage** | ~80% | 95% | +19% |
-| **Avg Module Size** | 180 LOC | <200 LOC | Maintain |
-| **Technical Debt** | Baseline | -60% | Target |
-| **HA Tier** | Silver | Gold | ✅ |
+| Metric                 | Current  | Target (3 months) | Improvement |
+| ---------------------- | -------- | ----------------- | ----------- |
+| **Test Coverage**      | 55%      | 75%+              | +36%        |
+| **Type Hint Coverage** | ~80%     | 95%               | +19%        |
+| **Avg Module Size**    | 180 LOC  | <200 LOC          | Maintain    |
+| **Technical Debt**     | Baseline | -60%              | Target      |
+| **HA Tier**            | Silver   | Gold              | ✅           |
 
 ---
 

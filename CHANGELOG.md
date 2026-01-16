@@ -102,11 +102,11 @@ This release implements all critical findings from Week 2-3 external audit revie
 
 ### 📊 Quality Scale Status
 
-| Tier   | Status          | Progress |
-| ------ | --------------- | -------- |
-| Bronze | ✅ Complete      | 100%     |
-| Silver | ✅ Complete      | 100%     |
-| Gold   | ⚠️ In Progress  | 45%      |
+| Tier   | Status        | Progress |
+| ------ | ------------- | -------- |
+| Bronze | ✅ Complete    | 100%     |
+| Silver | ✅ Complete    | 100%     |
+| Gold   | ⚠️ In Progress | 45%      |
 
 **Audit Compliance:**
 - ✅ Issue #1: Security Posture (bandit + pip-audit)
@@ -155,11 +155,11 @@ This release implements critical features to achieve **Home Assistant Silver Qua
 
 ### 📊 Quality Scale Status
 
-| Tier   | Status          | Progress |
-| ------ | --------------- | -------- |
-| Bronze | ✅ Complete      | 100%     |
-| Silver | ✅ Complete      | 100%     |
-| Gold   | ⚠️ In Progress  | 40%      |
+| Tier   | Status        | Progress |
+| ------ | ------------- | -------- |
+| Bronze | ✅ Complete    | 100%     |
+| Silver | ✅ Complete    | 100%     |
+| Gold   | ⚠️ In Progress | 40%      |
 
 **Next Steps to Gold:**
 - Automatic gateway discovery (SSDP/mDNS)
@@ -214,11 +214,11 @@ This release implements critical features to achieve **Home Assistant Silver Qua
 
 ### 📊 Quality Scale Status
 
-| Tier   | Status          | Progress |
-| ------ | --------------- | -------- |
-| Bronze | ✅ Complete      | 100%     |
-| Silver | ✅ Complete      | 100%     |
-| Gold   | ⚠️ In Progress  | 40%      |
+| Tier   | Status        | Progress |
+| ------ | ------------- | -------- |
+| Bronze | ✅ Complete    | 100%     |
+| Silver | ✅ Complete    | 100%     |
+| Gold   | ⚠️ In Progress | 40%      |
 
 **Next Steps to Gold:**
 - Automatic gateway discovery (SSDP/mDNS)

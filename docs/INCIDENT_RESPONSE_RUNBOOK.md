@@ -6,12 +6,12 @@ description: Emergency procedures and incident response for LUXORliving integrat
 
 ## Quick Reference
 
-| Severity | Response Time | Examples |
-|----------|---------------|----------|
-| 🔴 **P0 - Critical** | <1 hour | Auth broken, crash on startup, all devices offline |
-| 🟠 **P1 - High** | <4 hours | Major feature broken, workaround exists |
-| 🟡 **P2 - Medium** | <24 hours | Minor bug, UI issue, performance degradation |
-| 🟢 **P3 - Low** | Best effort | Documentation typo, enhancement request |
+| Severity            | Response Time | Examples                                           |
+| ------------------- | ------------- | -------------------------------------------------- |
+| 🔴 **P0 - Critical** | <1 hour       | Auth broken, crash on startup, all devices offline |
+| 🟠 **P1 - High**     | <4 hours      | Major feature broken, workaround exists            |
+| 🟡 **P2 - Medium**   | <24 hours     | Minor bug, UI issue, performance degradation       |
+| 🟢 **P3 - Low**      | Best effort   | Documentation typo, enhancement request            |
 
 ---
 

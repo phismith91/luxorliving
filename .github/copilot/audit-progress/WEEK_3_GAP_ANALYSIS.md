@@ -38,12 +38,12 @@ Issues identified across reviews fall into **5 categories**:
 
 ### Impact Assessment
 
-| Stakeholder | Risk | Impact Level |
-|-------------|------|--------------|
-| **Users** | Vulnerable to exploits | 🔴 HIGH |
-| **Developers** | Can't detect security issues early | 🔴 HIGH |
-| **DevOps** | Manual security reviews required | 🟡 MEDIUM |
-| **Project** | Reputation damage if breach occurs | 🔴 HIGH |
+| Stakeholder    | Risk                               | Impact Level |
+| -------------- | ---------------------------------- | ------------ |
+| **Users**      | Vulnerable to exploits             | 🔴 HIGH       |
+| **Developers** | Can't detect security issues early | 🔴 HIGH       |
+| **DevOps**     | Manual security reviews required   | 🟡 MEDIUM     |
+| **Project**    | Reputation damage if breach occurs | 🔴 HIGH       |
 
 ### Dependencies
 
@@ -176,12 +176,12 @@ updates:
 
 ### Success Metrics
 
-| Metric | Before | After (3 months) | Target |
-|--------|--------|------------------|--------|
-| **Vulnerabilities Detected** | Unknown | Tracked | 0 critical |
-| **Security Workflow Runs** | 0/week | 7/week | >5/week |
-| **Dependabot Security PRs** | 0 | Auto-created | 100% merged <7 days |
-| **CVE Response Time** | N/A | <7 days | <48 hours |
+| Metric                       | Before  | After (3 months) | Target              |
+| ---------------------------- | ------- | ---------------- | ------------------- |
+| **Vulnerabilities Detected** | Unknown | Tracked          | 0 critical          |
+| **Security Workflow Runs**   | 0/week  | 7/week           | >5/week             |
+| **Dependabot Security PRs**  | 0       | Auto-created     | 100% merged <7 days |
+| **CVE Response Time**        | N/A     | <7 days          | <48 hours           |
 
 ### Priority: 🔴 **P0 - Critical**
 
@@ -210,14 +210,14 @@ updates:
 
 ### Coverage Gaps by Module
 
-| Module | Current Coverage | Missing Tests | Priority |
-|--------|------------------|---------------|----------|
-| **circuit_breaker.py** | ~0% | State transitions (closed→open→half_open→closed) | 🔴 HIGH |
-| **coordinator.py** | ~30% | Auth failure handling (3 failures → repair), state caching | 🔴 HIGH |
-| **repairs.py** | ~40% | Repair issue creation, dismissal, re-auth flow | 🔴 HIGH |
-| **health.py** | ~30% | Error cases (missing data, exceptions) | 🟡 MEDIUM |
-| **overrides.py** | ~50% | Override parsing, sensor discovery | 🟡 MEDIUM |
-| **lxp_cache.py** | ~60% | Cache eviction, TTL expiry | 🟢 LOW |
+| Module                 | Current Coverage | Missing Tests                                              | Priority |
+| ---------------------- | ---------------- | ---------------------------------------------------------- | -------- |
+| **circuit_breaker.py** | ~0%              | State transitions (closed→open→half_open→closed)           | 🔴 HIGH   |
+| **coordinator.py**     | ~30%             | Auth failure handling (3 failures → repair), state caching | 🔴 HIGH   |
+| **repairs.py**         | ~40%             | Repair issue creation, dismissal, re-auth flow             | 🔴 HIGH   |
+| **health.py**          | ~30%             | Error cases (missing data, exceptions)                     | 🟡 MEDIUM |
+| **overrides.py**       | ~50%             | Override parsing, sensor discovery                         | 🟡 MEDIUM |
+| **lxp_cache.py**       | ~60%             | Cache eviction, TTL expiry                                 | 🟢 LOW    |
 
 ### Dependencies
 
@@ -392,21 +392,21 @@ def test_climate_updates_coordinator_on_setpoint_change():
 
 ### Coverage Goals by Phase
 
-| Phase | Duration | Target Coverage | Modules |
-|-------|----------|-----------------|---------|
-| **Phase 1** | 2 days | 65% (+10%) | circuit_breaker, coordinator, repairs |
-| **Phase 2** | 2 days | 72% (+7%) | health, overrides, entity_mapper |
-| **Phase 3** | 3 days | 78% (+6%) | light, switch, cover, climate |
-| **Total** | 7 days | **78% coverage** | All critical paths |
+| Phase       | Duration | Target Coverage  | Modules                               |
+| ----------- | -------- | ---------------- | ------------------------------------- |
+| **Phase 1** | 2 days   | 65% (+10%)       | circuit_breaker, coordinator, repairs |
+| **Phase 2** | 2 days   | 72% (+7%)        | health, overrides, entity_mapper      |
+| **Phase 3** | 3 days   | 78% (+6%)        | light, switch, cover, climate         |
+| **Total**   | 7 days   | **78% coverage** | All critical paths                    |
 
 ### Success Metrics
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Overall Coverage** | 55% | 78% | +42% |
-| **Critical Path Coverage** | ~30% | 90% | +200% |
-| **Production Bugs** | Baseline | -36% | Fewer bugs |
-| **Refactoring Confidence** | LOW | HIGH | Fearless refactoring |
+| Metric                     | Before   | After | Improvement          |
+| -------------------------- | -------- | ----- | -------------------- |
+| **Overall Coverage**       | 55%      | 78%   | +42%                 |
+| **Critical Path Coverage** | ~30%     | 90%   | +200%                |
+| **Production Bugs**        | Baseline | -36%  | Fewer bugs           |
+| **Refactoring Confidence** | LOW      | HIGH  | Fearless refactoring |
 
 ### Priority: 🔴 **P0 - Critical**
 
@@ -457,12 +457,12 @@ def test_climate_updates_coordinator_on_setpoint_change():
 
 ### Impact by Stakeholder
 
-| Stakeholder | Impact | Consequence |
-|-------------|--------|-------------|
-| **New Users** | Can't find automation examples | Frustration, abandonment |
-| **Developers** | Can't understand EntityMapper | Slower onboarding, bugs |
-| **DevOps** | No emergency procedures | Slower incident response |
-| **Community** | Can't contribute easily | Fewer contributions |
+| Stakeholder    | Impact                         | Consequence              |
+| -------------- | ------------------------------ | ------------------------ |
+| **New Users**  | Can't find automation examples | Frustration, abandonment |
+| **Developers** | Can't understand EntityMapper  | Slower onboarding, bugs  |
+| **DevOps**     | No emergency procedures        | Slower incident response |
+| **Community**  | Can't contribute easily        | Fewer contributions      |
 
 ### Dependencies
 
@@ -779,12 +779,12 @@ We apologize for the inconvenience.
 
 ### Success Metrics
 
-| Metric | Before | After (3 months) | Target |
-|--------|--------|------------------|--------|
-| **Doc Discoverability** | ⭐⭐☆☆☆ | ⭐⭐⭐⭐⭐ | 5/5 stars |
-| **User "How do I?" Issues** | Baseline | -60% | Fewer questions |
-| **Developer Onboarding Time** | ~4 hours | ~1 hour | -75% |
-| **Incident Response Time** | Variable | <1 hour (P0) | SLA met |
+| Metric                        | Before   | After (3 months) | Target          |
+| ----------------------------- | -------- | ---------------- | --------------- |
+| **Doc Discoverability**       | ⭐⭐☆☆☆    | ⭐⭐⭐⭐⭐            | 5/5 stars       |
+| **User "How do I?" Issues**   | Baseline | -60%             | Fewer questions |
+| **Developer Onboarding Time** | ~4 hours | ~1 hour          | -75%            |
+| **Incident Response Time**    | Variable | <1 hour (P0)     | SLA met         |
 
 ### Priority: 🔴 **P0 - High**
 
@@ -909,11 +909,11 @@ Badges
 
 ### Success Metrics
 
-| Metric | Before | After | Target |
-|--------|--------|-------|--------|
-| **First Impression Rating** | ⭐⭐☆☆☆ | ⭐⭐⭐⭐⭐ | 5/5 |
-| **Bounce Rate** | 40% (est.) | 15% | <20% |
-| **HACS Stars** | Baseline | +20% (3 months) | Growth |
+| Metric                      | Before     | After           | Target |
+| --------------------------- | ---------- | --------------- | ------ |
+| **First Impression Rating** | ⭐⭐☆☆☆      | ⭐⭐⭐⭐⭐           | 5/5    |
+| **Bounce Rate**             | 40% (est.) | 15%             | <20%   |
+| **HACS Stars**              | Baseline   | +20% (3 months) | Growth |
 
 ### Priority: 🔴 **P0 - Critical**
 
@@ -1112,12 +1112,12 @@ Total:                 523 lines → 520 lines (same LOC, better organized)
 
 ### Success Metrics
 
-| Metric | Before | After | Target |
-|--------|--------|-------|--------|
-| **EntityMapper LOC** | 523 | 250 | <300 |
-| **Avg Module LOC** | 180 | 173 | <200 |
-| **Test Coverage** | 70% | 85% | >80% |
-| **Time to Add Platform** | 2 hours | 30 min | -75% |
+| Metric                   | Before  | After  | Target |
+| ------------------------ | ------- | ------ | ------ |
+| **EntityMapper LOC**     | 523     | 250    | <300   |
+| **Avg Module LOC**       | 180     | 173    | <200   |
+| **Test Coverage**        | 70%     | 85%    | >80%   |
+| **Time to Add Platform** | 2 hours | 30 min | -75%   |
 
 ### Priority: 🟡 **P1 - High**
 
