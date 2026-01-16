@@ -7,9 +7,9 @@ detailed reports about configuration problems.
 
 import asyncio
 import sys
-from pathlib import Path
-from typing import Dict, List, Any
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Add the custom_components directory to Python path
 parent_dir = Path(__file__).parent.parent
@@ -119,9 +119,7 @@ class LXPValidator:
             "total_devices": len(project.devices),
             "total_sensors": sum(len(d.sensors) for d in project.devices),
             "total_actuators": sum(len(d.actuators) for d in project.devices),
-            "total_datapoints": sum(
-                len(s.datapoints) for d in project.devices for s in d.sensors
-            )
+            "total_datapoints": sum(len(s.datapoints) for d in project.devices for s in d.sensors)
             + sum(len(a.datapoints) for d in project.devices for a in d.actuators),
             "devices_without_datapoints": sum(
                 1 for d in project.devices if not d.sensors and not d.actuators

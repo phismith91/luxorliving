@@ -435,3 +435,50 @@ class TestLuxorKNXGateway:
         # After setup
         asyncio.run(gateway.async_setup())
         assert gateway.connected is True
+
+    @pytest.mark.asyncio
+    async def test_process_incoming_value_calls_listeners(self, mock_hass):
+        """Test that externally pushed values notify registered listeners."""
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=True,
+        )
+
+        callback = MagicMock()
+        gateway.register_listener("1/2/3", callback)
+
+        await gateway.process_incoming_value("1/2/3", True, "binary")
+
+        callback.assert_called_once_with("1/2/3", True)
+
+    @pytest.mark.asyncio
+    async def test_process_incoming_value_discovery(self, mock_hass):
+        """Test that pushed float values are considered for auto-discovery."""
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=True,
+        )
+
+        # Ensure no known addresses and a small debounce for test speed
+        gateway.set_known_addresses(set())
+        gateway.discovery_timeout = 0.01
+
+        # Push three stable float values to trigger discovery
+        await gateway.process_incoming_value("5/1/10", 23.5)
+        await gateway.process_incoming_value("5/1/10", 23.6)
+        await gateway.process_incoming_value("5/1/10", 23.4)
+
+        # Allow debounce task to run
+        await asyncio.sleep(0.05)
+
+        discovered = gateway.get_discovered_sensors()
+        assert "5/1/10" in discovered
+        assert discovered["5/1/10"]["type"] in {"temperature", "humidity", "generic_sensor"}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,12 @@ from .const import (
 )
 from .coordinator import LuxorLivingCoordinator
 from .entity_mapper import EntityMapper
+from .integration_state import (
+    IntegrationState,
+    get_integration_state,
+    register_integration_state,
+    unregister_integration_state,
+)
 from .knx_gateway import LuxorKNXGateway
 from .lxp_parser import LXPParser, get_lxp_cache_stats
 from .overrides import load_overrides
@@ -49,6 +56,18 @@ PLATFORMS: list[Platform] = [
     Platform.CLIMATE,
     Platform.COVER,
 ]
+
+
+def _get_manifest_version() -> str:
+    """Return version from manifest.json, fallback to unknown."""
+    manifest_path = Path(__file__).parent / "manifest.json"
+    try:
+        return json.loads(manifest_path.read_text()).get("version", "unknown")
+    except FileNotFoundError:
+        return "unknown"
+
+
+_MANIFEST_VERSION = _get_manifest_version()
 
 
 class LuxorLivingHealthView(HomeAssistantView):
@@ -73,7 +92,7 @@ class LuxorLivingHealthView(HomeAssistantView):
                 "timestamp": asyncio.get_event_loop().time(),
                 "integration": {
                     "name": "LUXORliving",
-                    "version": "0.6.0",
+                    "version": _MANIFEST_VERSION,
                     "domain": DOMAIN,
                 },
                 "entries": {},
@@ -150,6 +169,130 @@ class LuxorLivingHealthView(HomeAssistantView):
             )
 
 
+class LuxorLivingPushView(HomeAssistantView):
+    """Endpoint to receive externally pushed KNX values (webhook / websocket forwarder)."""
+
+    url = "/api/luxor_living/push"
+    name = "api:luxor_living:push"
+    requires_auth = False  # Token-based auth handled optionally per config entry
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass = hass
+
+    async def post(self, request):
+        """Handle incoming push event.
+
+        Expected JSON payload:
+            {
+                "entry_id": "<config_entry_id>",
+                "address": "1/2/3",
+                "value": true|42|23.5|[...],
+                "value_type": "binary"|"percent"|None
+            }
+
+        Authentication:
+            - If the config entry defines "push_token" in data or options, a matching
+              header "X-LUXOR-PUSH-TOKEN: <token>" is required. If absent, 403 returned.
+            - If no token configured, the endpoint accepts unauthenticated calls (local use).
+        """
+        try:
+            payload = await request.json()
+        except Exception:
+            from aiohttp import web
+
+            return web.json_response({"error": "invalid_json"}, status=400)
+
+        entry_id = payload.get("entry_id")
+        address = payload.get("address")
+        value = payload.get("value")
+        value_type = payload.get("value_type")
+
+        if not entry_id or not address:
+            from aiohttp import web
+
+            return web.json_response({"error": "missing entry_id or address"}, status=400)
+
+        # Authorization: check configured auth method
+        try:
+            state = get_integration_state(entry_id)
+        except KeyError:
+            from aiohttp import web
+
+            return web.json_response({"error": "entry_not_found"}, status=404)
+
+        # Determine configured values (allow in-data or options)
+        config_token = state.entry.data.get("push_token") if state.entry else None
+        options_token = state.entry.options.get("push_token") if state.entry else None
+        configured_token = config_token or options_token
+
+        auth_method = (
+            state.entry.data.get("push_auth_method")
+            if state.entry and state.entry.data.get("push_auth_method")
+            else state.entry.options.get("push_auth_method") if state.entry else None
+        ) or "none"
+
+        # Token-based (legacy): header X-LUXOR-PUSH-TOKEN must match
+        if auth_method == "token":
+            token_header = request.headers.get("X-LUXOR-PUSH-TOKEN")
+            if configured_token and token_header != configured_token:
+                from aiohttp import web
+
+                return web.json_response({"error": "forbidden"}, status=403)
+
+        # Bearer token: Authorization: Bearer <token>
+        elif auth_method == "bearer":
+            auth_header = request.headers.get("Authorization", "")
+            if configured_token and not auth_header.startswith("Bearer "):
+                from aiohttp import web
+
+                return web.json_response({"error": "forbidden"}, status=403)
+            bearer = auth_header.split(" ", 1)[1] if " " in auth_header else ""
+            if configured_token and bearer != configured_token:
+                from aiohttp import web
+
+                return web.json_response({"error": "forbidden"}, status=403)
+
+        # HMAC: header X-LUXOR-PUSH-SIGNATURE hex-encoded sha256 of sorted-json using token as key
+        elif auth_method == "hmac":
+            sig_header = request.headers.get("X-LUXOR-PUSH-SIGNATURE", "")
+            if not configured_token or not sig_header:
+                from aiohttp import web
+
+                return web.json_response({"error": "forbidden"}, status=403)
+            import hashlib
+            import hmac
+            import json
+
+            # Compute signature over deterministic JSON representation
+            expected = hmac.new(
+                configured_token.encode(),
+                json.dumps(payload, sort_keys=True).encode(),
+                hashlib.sha256,
+            ).hexdigest()
+            if not hmac.compare_digest(expected, sig_header):
+                from aiohttp import web
+
+                return web.json_response({"error": "forbidden"}, status=403)
+
+        # else: none -> accept unauthenticated pushes
+        # Handle push
+        try:
+            gateway = state.get_gateway_or_raise()
+            await gateway.process_incoming_value(address, value, value_type)
+            from aiohttp import web
+
+            return web.json_response({"status": "ok"})
+        except RuntimeError as err:
+            from aiohttp import web
+
+            return web.json_response({"error": str(err)}, status=503)
+        except Exception as err:
+            _LOGGER.exception("Error handling push request: %s", err)
+            from aiohttp import web
+
+            return web.json_response({"error": "internal_error"}, status=500)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up LUXORliving from a config entry."""
     _LOGGER.debug("LUXORliving setup started")
@@ -161,9 +304,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN]["_health_registered"] = True
         _LOGGER.debug("Health check endpoint registered at /api/luxor_living/health")
 
-    # Store integration data
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {}
+    # Register push endpoint (webhook / websocket forwarder) (only once)
+    if not hass.data.get(DOMAIN, {}).get("_push_registered"):
+        hass.http.register_view(LuxorLivingPushView(hass))
+        hass.data.setdefault(DOMAIN, {})
+        hass.data[DOMAIN]["_push_registered"] = True
+        _LOGGER.debug("Push endpoint registered at /api/luxor_living/push")
 
     # Get configuration
     lxp_file = entry.data.get(CONF_LXP_FILE)
@@ -203,10 +349,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             entity_count = len(mapper.entities)
             _LOGGER.warning("Mapped %d entities from LXP project", entity_count)
 
-            # Store mapper and config in integration data
-            hass.data[DOMAIN][entry.entry_id]["mapper"] = mapper
-            hass.data[DOMAIN][entry.entry_id]["config"] = entry.data
-            hass.data[DOMAIN][entry.entry_id]["overrides"] = overrides
+            # Create type-safe integration state
+            state = IntegrationState(
+                mapper=mapper,
+                config=entry.data,
+                overrides=overrides,
+                entry=entry,
+            )
+
+            # Register state in global registry
+            register_integration_state(entry.entry_id, state)
         except FileNotFoundError as err:
             _LOGGER.error("LXP file not found: %s", lxp_path)
             return False
@@ -313,8 +465,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Note: Datapoint mapping is now loaded in knx_gateway.async_setup()
     # via _async_load_datapoint_mapping() which fetches from REST API
 
-    # Store gateway in integration data
-    hass.data[DOMAIN][entry.entry_id][DATA_KNX_GATEWAY] = knx_gateway
+    # Store gateway in integration state (type-safe)
+    state = get_integration_state(entry.entry_id)
+    state.knx_gateway = knx_gateway
+
+    # If configured, start WebSocket push client
+    push_ws_url = entry.options.get("push_ws_url", entry.data.get("push_ws_url"))
+    push_ws_token = entry.options.get("push_ws_token", entry.data.get("push_ws_token"))
+    if push_ws_url:
+        try:
+            from .push_client import PushClient
+
+            push_client = PushClient(hass, entry.entry_id, push_ws_url, push_ws_token)
+            push_client.start()
+            state.push_client = push_client
+            _LOGGER.info("Started push client for entry %s -> %s", entry.entry_id, push_ws_url)
+        except Exception as err:
+            _LOGGER.exception("Failed to start push client: %s", err)
 
     # Provide GA→labels to gateway for log enrichment (Name + ID)
     try:
@@ -335,8 +502,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
 
-    # Store coordinator in integration data
-    hass.data[DOMAIN][entry.entry_id]["coordinator"] = coordinator
+    # Store coordinator in integration state (type-safe)
+    state = get_integration_state(entry.entry_id)
+    state.coordinator = coordinator
+
+    # Also store in hass.data for backward compatibility with platform setup
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = {
+        "coordinator": coordinator,
+        "mapper": mapper,
+        "knx_gateway": knx_gateway,
+    }
 
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -415,14 +591,23 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.info("Unloading LUXORliving integration")
 
-    # Disconnect KNX gateway
-    knx_gateway = hass.data[DOMAIN][entry.entry_id].get(DATA_KNX_GATEWAY)
-    if knx_gateway:
-        await knx_gateway.async_disconnect()
+    # Disconnect KNX gateway using type-safe state
+    state = get_integration_state(entry.entry_id)
+    if state.knx_gateway:
+        await state.knx_gateway.async_disconnect()
 
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        # Stop push client if running
+        try:
+            state = get_integration_state(entry.entry_id)
+            if state.push_client:
+                await state.push_client.stop()
+        except Exception:
+            pass
+
+        # Unregister type-safe state
+        unregister_integration_state(entry.entry_id)
 
     return unload_ok

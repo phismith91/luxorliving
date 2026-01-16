@@ -50,12 +50,22 @@
                 "data": {
                     "simulation_mode": "Simulation Mode (Dry-run)",
                     "scan_interval": "Polling Interval (seconds)",
-                    "log_level": "Debug Level"
+                    "log_level": "Debug Level",
+                    "discovery_timeout": "Discovery Timeout (seconds)",
+                    "push_ws_url": "⚙️ Push WebSocket URL (Advanced)",
+                    "push_auth_method": "⚙️ Push Auth Method (Advanced)",
+                    "push_token": "⚙️ Push Token (Advanced)",
+                    "push_ws_token": "⚙️ Push WS Token (Advanced)"
                 },
                 "data_description": {
                     "simulation_mode": "Enable simulation mode for testing without hardware",
                     "scan_interval": "How often to poll the gateway for updates (5-300 seconds)",
-                    "log_level": "Logging verbosity for troubleshooting"
+                    "log_level": "Logging verbosity for troubleshooting",
+                    "discovery_timeout": "How long to wait for sensor auto-discovery (0.5-10 seconds)",
+                    "push_ws_url": "ADVANCED: WebSocket URL for external push server. Leave empty unless you have a custom KNX forwarder.",
+                    "push_auth_method": "ADVANCED: Security method for push endpoint (only needed if using external push server)",
+                    "push_token": "ADVANCED: Shared secret for authentication (leave empty unless using push server)",
+                    "push_ws_token": "ADVANCED: Optional WebSocket Bearer token (rarely needed)"
                 }
             }
         }

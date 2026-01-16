@@ -209,27 +209,27 @@ rm -rf /config/custom_components/luxor_living
 
 Restart Home Assistant.
 
-**Ursache:** Netzwerkverbindung zum Gateway
+**Cause:** Network connectivity to gateway
 
-**Lösung:**
+**Solution:**
 ```bash
-# Ping testen
+# Test ping
 ping 192.168.1.3
 
-# Port testen
+# Test ports
 nc -zv 192.168.1.3 80    # REST API
 nc -zv 192.168.1.3 3671  # KNX Tunneling
 
-# Firewall prüfen
-# - Port 80 (HTTP) muss offen sein
-# - Port 3671 (KNX) muss offen sein
+# Check firewall
+# - Port 80 (HTTP) must be open
+# - Port 3671 (KNX) must be open
 ```
 
 ### Problem: "Entities unavailable"
 
-**Ursache:** KNX-Verbindung nicht aktiv
+**Cause:** KNX connection not active
 
-**Lösung:**
+**Solution:**
 ```
 1. Logs prüfen:
    - "✅ Successfully connected" → OK
@@ -245,13 +245,13 @@ nc -zv 192.168.1.3 3671  # KNX Tunneling
 
 ### Problem: LXP-Datei wird nicht akzeptiert
 
-**Ursache:** Korrupte oder falsche Datei
+**Cause:** Corrupted or invalid file
 
-**Lösung:**
-1. Datei mit Editor öffnen
-2. Prüfe: Beginnt mit `<?xml version="1.0"?>`
-3. Enthält: `<Project>`-Tags
-4. Neu exportieren aus LUXORPlug
+**Solution:**
+1. Open file with text editor
+2. Check: Starts with `<?xml version="1.0"?>`
+3. Contains: `<Project>` tags
+4. Re-export from LUXORPlug
 
 ### Problem: Tunneling funktioniert nicht
 
@@ -339,8 +339,8 @@ ha core restart
 **Nicht empfohlen**, aber möglich:
 
 ```
-Problem: BAOS 777 hat nur 1 Tunnel-Slot
-Lösung: Nur 1 System gleichzeitig aktiv
+Problem: BAOS 777 has only 1 tunnel slot
+Solution: Only 1 system active at a time
 
 Option 1: Automation
   - LuxorPlug VM automatisch stoppen wenn HA startet

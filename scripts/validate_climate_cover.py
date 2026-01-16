@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Validate Climate and Cover entity creation from Hauptwohnung.lxp."""
 
-import sys
 import asyncio
+import sys
 from pathlib import Path
 
 # Add parent directory to path for imports
@@ -41,12 +41,14 @@ async def main():
             dp_roles = {dp.role for dp in actuator.datapoints}
 
             if "Istwert" in dp_roles and "Sollwert" in dp_roles:
-                climate_entities.append({
-                    "device": device.name,
-                    "actuator": actuator.name,
-                    "channel": actuator.channel,
-                    "datapoints": list(dp_roles),
-                })
+                climate_entities.append(
+                    {
+                        "device": device.name,
+                        "actuator": actuator.name,
+                        "channel": actuator.channel,
+                        "datapoints": list(dp_roles),
+                    }
+                )
 
                 print(f"✅ {device.name} - {actuator.name}")
                 print(f"   Channel: {actuator.channel}")
@@ -54,9 +56,7 @@ async def main():
                 print()
 
     # Find cover devices (J8/J4)
-    cover_devices = [
-        d for d in project.devices if d.app_id in ["18520", "18516"]
-    ]
+    cover_devices = [d for d in project.devices if d.app_id in ["18520", "18516"]]
     cover_entities = []
 
     print("🪟 COVER ENTITIES (J8/J4 Shutter/Blind Actuators)")
@@ -70,13 +70,15 @@ async def main():
                 has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
                 device_type = "Blind (with tilt)" if has_tilt else "Shutter"
 
-                cover_entities.append({
-                    "device": device.name,
-                    "actuator": actuator.name,
-                    "channel": actuator.channel,
-                    "type": device_type,
-                    "datapoints": list(dp_roles),
-                })
+                cover_entities.append(
+                    {
+                        "device": device.name,
+                        "actuator": actuator.name,
+                        "channel": actuator.channel,
+                        "type": device_type,
+                        "datapoints": list(dp_roles),
+                    }
+                )
 
                 print(f"✅ {device.name} - {actuator.name}")
                 print(f"   Channel: {actuator.channel}")
@@ -106,18 +108,14 @@ async def main():
         required = {"Istwert", "Sollwert"}
         missing = required - set(entity["datapoints"])
         if missing:
-            issues.append(
-                f"Climate entity '{entity['actuator']}' missing: {', '.join(missing)}"
-            )
+            issues.append(f"Climate entity '{entity['actuator']}' missing: {', '.join(missing)}")
 
     # Check for cover entities without required datapoints
     for entity in cover_entities:
         required = {"UpDown", "StepStop"}
         has_required = any(dp in entity["datapoints"] for dp in required)
         if not has_required:
-            issues.append(
-                f"Cover entity '{entity['actuator']}' missing UpDown or StepStop"
-            )
+            issues.append(f"Cover entity '{entity['actuator']}' missing UpDown or StepStop")
 
     if issues:
         print("⚠️  VALIDATION ISSUES")

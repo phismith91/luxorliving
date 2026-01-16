@@ -1,8 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Prefer local virtualenv binaries if present
+if [ -d "venv/bin" ]; then
+  PATH="venv/bin:$PATH"
+elif [ -d ".venv/bin" ]; then
+  PATH=".venv/bin:$PATH"
+fi
+
 # check_release_notes.sh
 # Verify that a RELEASE_NOTES_v<version>.md file exists and contains the version heading
+
+# Formatting guards (prevent releasing unformatted code)
+if ! command -v black >/dev/null 2>&1; then
+  echo "Missing dependency: black" >&2
+  exit 1
+fi
+if ! command -v isort >/dev/null 2>&1; then
+  echo "Missing dependency: isort" >&2
+  exit 1
+fi
+
+echo "Running black --check ..."
+black --check custom_components tests scripts
+
+echo "Running isort --check-only ..."
+isort --check-only custom_components tests scripts
 
 MANIFEST="custom_components/luxor_living/manifest.json"
 if [ ! -f "$MANIFEST" ]; then

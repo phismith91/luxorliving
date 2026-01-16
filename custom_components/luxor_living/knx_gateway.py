@@ -575,6 +575,68 @@ class LuxorKNXGateway:
         except Exception as err:
             _LOGGER.error("Error processing incoming telegram: %s", err, exc_info=True)
 
+    async def process_incoming_value(
+        self,
+        group_address: str,
+        value: bool | int | float | bytes | tuple | list,
+        value_type: str | None = None,
+    ) -> None:
+        """Process an externally pushed value (e.g., from webhook or websocket push).
+
+        This normalizes the incoming value similarly to telegram payload processing and
+        notifies registered listeners as if a telegram was received. It's used by the
+        webhook/WebSocket push spike to integrate external push events into the system.
+        """
+        try:
+            # Normalize value similar to _telegram_received_callback
+            processed_value = value
+
+            # If explicit type provided, coerce accordingly
+            if value_type == "binary" or isinstance(value, bool):
+                processed_value = bool(value)
+            elif value_type == "percent":
+                processed_value = int(float(value)) if value is not None else 0
+            elif isinstance(value, (list, tuple, bytes)) and len(value) == 2:
+                # Attempt to decode 2-byte float
+                try:
+                    processed_value = DPT2ByteFloat().from_knx(DPTArray(value))
+                except Exception:
+                    processed_value = value
+            elif isinstance(value, int):
+                # Preserve integer semantics (e.g., 0/1 for binary)
+                processed_value = bool(value) if value in (0, 1) else value
+            # else leave as-is (float, DPTArray-like, etc.)
+
+            # Log incoming push
+            _LOGGER.info("📥 External push: %s = %s", group_address, processed_value)
+
+            # Notify listeners if any
+            if group_address in self._listeners:
+                callbacks = list(self._listeners[group_address])
+                for callback in callbacks:
+                    if callback not in self._listeners.get(group_address, []):
+                        continue
+                    try:
+                        loop = getattr(self.hass, "loop", None)
+                        call_in_loop = getattr(loop, "call_soon_threadsafe", None) if loop else None
+                        if callable(call_in_loop):
+                            call_in_loop(callback, group_address, processed_value)
+                        else:
+                            callback(group_address, processed_value)
+                    except Exception as err:
+                        _LOGGER.error(
+                            "Error scheduling listener callback for pushed value %s: %s",
+                            group_address,
+                            err,
+                        )
+
+            # Run discovery logic for float values
+            if isinstance(processed_value, float) and group_address not in self._known_addresses:
+                await self._process_discovery_candidate(group_address, processed_value)
+
+        except Exception as err:
+            _LOGGER.error("Error processing incoming pushed value: %s", err, exc_info=True)
+
     @property
     def connected(self) -> bool:
         """Return connection status."""

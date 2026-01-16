@@ -18,6 +18,7 @@ from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
 from .entity_mapper import EntityMapper
+from .integration_state import get_integration_state
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,17 +32,14 @@ async def async_setup_entry(
     """Set up LUXORliving sensors from a config entry."""
     _LOGGER.info("Setting up LUXORliving sensors")
 
-    # Get coordinator, mapper and KNX gateway from integration data
+    # Get type-safe integration state
     try:
-        integration_data = hass.data[DOMAIN][entry.entry_id]
-        if not isinstance(integration_data, dict):
-            _LOGGER.error("Integration data is not a dictionary: %s", type(integration_data))
-            return
-        coordinator: LuxorLivingCoordinator = integration_data.get("coordinator")
-        mapper: EntityMapper = integration_data.get("mapper")
-        knx_gateway: LuxorKNXGateway = integration_data.get("knx_gateway")
+        state = get_integration_state(entry.entry_id)
+        coordinator = state.coordinator
+        mapper = state.mapper
+        knx_gateway = state.knx_gateway
     except (KeyError, AttributeError) as err:
-        _LOGGER.error("Failed to get integration data: %s", err)
+        _LOGGER.error("Failed to get integration state: %s", err)
         return
 
     if not mapper:
