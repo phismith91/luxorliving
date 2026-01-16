@@ -12,7 +12,7 @@ pylint==4.0.4
 mypy==1.19.1
 
 # Type stubs
-types-requests==2.32.4.20250913
+types-requests==2.32.4.20260107
 
 # Code complexity analysis
 radon==6.0.1
