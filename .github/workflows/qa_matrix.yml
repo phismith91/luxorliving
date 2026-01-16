@@ -44,3 +44,22 @@ jobs:
         with:
           name: qa-matrix-${{ matrix.python }}-${{ matrix.ha }}-results
           path: ./
+
+  render-plantuml:
+    name: Render PlantUML diagrams
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Render PlantUML diagrams (Docker)
+        run: |
+          mkdir -p docs/img
+          docker run --rm -v "${{ github.workspace }}":/workspace plantuml/plantuml:latest -tsvg -o docs/img docs/*.puml || \
+            docker run --rm -v "${{ github.workspace }}":/workspace plantuml/plantuml:latest -tpng -o docs/img docs/*.puml
+
+      - name: Upload PlantUML images
+        uses: actions/upload-artifact@v6
+        with:
+          name: plantuml-diagrams
+          path: docs/img

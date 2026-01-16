@@ -117,6 +117,20 @@ Akzeptanzkriterium: grüne Matrix für die oben genannten Versionen.
 
 ---
 
+## PlantUML / Diagram Rendering
+- CI: PlantUML diagrams in `docs/*.puml` are rendered via Docker in the `QA Matrix` workflow and uploaded as artifacts (`plantuml-diagrams`) for PR previews.
+- Local: Render diagrams locally with Docker:
+
+```bash
+mkdir -p docs/img
+docker run --rm -v "$(pwd)":/workspace plantuml/plantuml:latest -tsvg -o docs/img docs/*.puml
+```
+
+Or install PlantUML locally and run `plantuml -tsvg docs/*.puml`.
+
+Note: Generated images are uploaded as CI artifacts by default; if you prefer, we can commit generated images into `docs/img/` inside PRs (this is optional and may lead to merge conflicts for regenerated images).
+---
+
 ## Weiteres Vorgehen (nächste PRs) ➕
 - [x] Initial ARCHITECTURE.md Draft (dieser PR)
 - [ ] Add CI QA matrix job (GitHub Actions)
