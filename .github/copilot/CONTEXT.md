@@ -1,8 +1,8 @@
 # LUXORliving Integration - Project Context
 
-**Last Updated:** 2026-01-02  
-**Version:** v0.5.2 (HACS-ready)  
-**Status:** Active Development (Private Repository)  
+**Last Updated:** 2026-01-16  
+**Version:** v0.6.1 (Production)  
+**Status:** Active Development (Public Repository, HACS-ready)  
 **Subscription:** GitHub Copilot Individual ($10/month)
 
 ---
@@ -26,9 +26,10 @@
 - **Deterministic Mapping** - Role-based auto-mapping aus LXP-Daten
 
 ### Current Version Status
-- **Stable:** v0.3.3
-- **Next Release:** v0.3.4 (Critical fixes + enhanced diagnostics)
-- **Roadmap:** v0.4.0 (Coordinator polling strategy, HACS prep)
+- **Stable:** v0.6.1 (2026-01-16)
+- **Quality:** Silver (Home Assistant Compliance)
+- **Next Milestone:** Gold Compliance (Enhanced diagnostics, QA automation)
+- **Roadmap:** v0.7.0 (Advanced features, community feedback)
 
 ---
 
@@ -133,11 +134,12 @@ luxorliving/
 ## 🔧 Development Stack
 
 ### Python Environment
-- **Python:** 3.13.9
-- **Home Assistant:** 2025.12.4 (OS)
+- **Python:** 3.13.11 (local), 3.11/3.13 (CI)
+- **Home Assistant:** 2026.1.x (OS)
 - **Test Framework:** pytest 9.0.0
-- **pytest-homeassistant-custom-component:** 0.13.300
+- **pytest-homeassistant-custom-component:** 0.13.306
 - **Venv:** `/home/phil/gitlab_github/luxorliving/venv/`
+- **Formatters:** black, isort (enforced in CI)
 
 ### Key Dependencies
 - `homeassistant` - Core HA
@@ -147,9 +149,11 @@ luxorliving/
 - `black`, `isort`, `mypy` - Code quality
 
 ### Quality Gates
-- ✅ All tests passing (`python -m pytest tests/ -v`)
-- ✅ Code formatted (black, isort)
-- ✅ Type checking (mypy)
+- ✅ All tests passing (`pytest tests/ -v -m "not enable_socket"` → 294/294)
+- ✅ Code formatted (black/isort) - MANDATORY before commits
+- ✅ Local validation scripts pass (`./scripts/validate_readme.sh`, `./scripts/check_release_notes.sh`)
+- ✅ Type checking (mypy) - Optional but recommended
+- ✅ CI checks green (Release Checks, Code Quality, Tests)
 - ✅ Optional: Pre-Release Testing auf Remote HA
 
 ---
@@ -185,33 +189,40 @@ luxorliving/
 
 ## 📊 Current Development Status
 
-### v0.3.4 (Ready for Release)
+### v0.6.1 (Released 2026-01-16)
 
-**Critical Fixes:**
-- ✅ Test fixtures fehlen → `conftest.py` mit MockConfigEntry
-- ✅ Options Flow reload → Verifiziert (bereits korrekt)
+**Major Features:**
+- ✅ Push webhook & WebSocket client for external KNX state updates
+- ✅ Configurable authentication modes (none, token, bearer, HMAC-SHA256)
+- ✅ Health endpoint with dynamic manifest version loading
+- ✅ Comprehensive test suite (294/294 passing)
+- ✅ Black/isort formatting enforcement in CI
 
-**High Priority:**
-- ✅ Passwords in diagnostics → Redacted (`**REDACTED**`)
-- ✅ Entity handling → Enhanced mit detailed list + summary
-- ✅ CONF_SCAN_INTERVAL → Konsistent verwendet
+**Quality Improvements:**
+- ✅ Hardcoded versions eliminated (health endpoint loads from manifest.json)
+- ✅ README.md test count sync (294 tests)
+- ✅ Release checks include formatting validation
+- ✅ CI workflow installs black/isort dependencies
+- ✅ Release notes file structure standardized
 
-**Agent Reorganization:**
-- ✅ Created `agent_defect_tracker.md`
-- ✅ Expanded `agent_architect.md` mit code quality
-- ✅ Archived 6 obsolete agents (12 → 7 active)
-- ✅ Created `.github/copilot/README.md`
+**Agent System Updates:**
+- ✅ Release Manager owns all merge operations
+- ✅ Formatting-first workflow enforced
+- ✅ Testing agent tracks test count in README
+- ✅ Architect defers merges to Release Manager
 
 **Status:**
-- ✅ 86/86 tests passing
-- ✅ Deployed to remote HA
-- ⏳ Awaiting HA restart + manual testing
-- ⏳ Git commit pending
+- ✅ 294/294 tests passing (unit + integration-style)
+- ✅ All CI checks green
+- ✅ HACS-ready structure validated
+- ✅ Silver compliance achieved
 
-### v0.4.0 (Planned)
-- ⏳ Coordinator polling strategy evaluation
-- ⏳ HACS submission preparation
-- ⏳ Core integration readiness
+### v0.7.0 (Planned - Gold Compliance)
+- ⏳ Enhanced diagnostics with consent UI
+- ⏳ Automated QA matrix (HA versions, Python versions)
+- ⏳ Blueprint automation examples
+- ⏳ Dashboard templates
+- ⏳ Error/retry policy documentation
 
 ### Known Limitations
 
@@ -233,14 +244,20 @@ luxorliving/
 
 ### Release Checklist
 
-1. `python -m pytest tests/ -v` (all passing)
-2. Optional: Deploy + Test auf Remote HA
-3. Bump `manifest.json` "version"
-4. Update `CHANGELOG.md`
-5. Git commit, tag, push (siehe copilot-instructions.md)
-6. Create GitHub Release with `gh release create`
+1. **Format Code:** `black custom_components tests scripts && isort custom_components tests scripts`
+2. **Run Tests:** `pytest tests/ -v -m "not enable_socket"` (all 294 passing)
+3. **Validate Locally:** `./scripts/validate_readme.sh && ./scripts/check_release_notes.sh`
+4. **Update Metadata:**
+   - Bump `manifest.json` "version"
+   - Update `CHANGELOG.md` (move [Unreleased] to [X.Y.Z])
+   - Update README.md release section and test count
+   - Create `RELEASE_NOTES_vX.Y.Z.md`
+5. **Create PR:** Push to branch, open PR, wait for green CI
+6. **Merge PR:** Only after all checks pass (Release Manager authority)
+7. **Tag & Release:** Create tag, build ZIP, `gh release create`
+8. Optional: Deploy + Test auf Remote HA
 
-**Siehe `.github/copilot-instructions.md` für detaillierte Release-Commands**
+**Siehe `agent_release_manager.md` für vollständigen Workflow**
 
 ---
 
@@ -286,15 +303,15 @@ luxorliving/
 
 ### Context Budgets (Context Engineering)
 
-| Agent               | Level | Budget     | Primary Sources                       | Monitor |
-| ------------------- | ----- | ---------- | ------------------------------------- | ------- |
-| **Architect**       | L1    | 50k tokens | CONTEXT.md, ARCHITECTURE_DECISION.md  | <80%    |
-| **KNX Protocol**    | L2    | 80k tokens | KNX_IMPLEMENTATION.md, lxp_parser.py  | <80%    |
-| **Testing**         | L2    | 30k tokens | tests/, TESTS.md                      | <80%    |
-| **Release Manager** | L2    | 35k tokens | RELEASE_OPERATIONS.md, deploy scripts | <80%    |
-| **Documentation**   | L2    | 40k tokens | docs/                                 | <80%    |
-| **HACS Compliance** | L2    | 25k tokens | hacs.json, manifest.json              | <80%    |
-| **Code Quality**    | L3    | 20k tokens | requirements_style.txt                | <80%    |
+| Agent                | Level | Budget     | Primary Sources                          | Monitor | Authority               |
+| -------------------- | ----- | ---------- | ---------------------------------------- | ------- | ----------------------- |
+| **Architect**        | L1    | 50k tokens | CONTEXT.md, ARCHITECTURE_DECISION.md     | <80%    | Architecture, Standards |
+| **Release Manager**  | L2    | 40k tokens | agent_release_manager.md, CI workflows   | <80%    | Merges, Releases        |
+| **KNX Protocol**     | L2    | 80k tokens | KNX_IMPLEMENTATION.md, lxp_parser.py     | <80%    | KNX Specs               |
+| **Testing**          | L2    | 35k tokens | tests/, TESTS.md, pytest.ini             | <80%    | Test Strategy           |
+| **Defect Tracker**   | L2    | 30k tokens | GitHub Issues, test failures             | <80%    | Bug Triage              |
+| **HACS Compliance**  | L2    | 25k tokens | hacs.json, manifest.json                 | <80%    | HACS Standards          |
+| **Luxor Expert**     | L2    | 30k tokens | LXP files, hardware docs                 | <80%    | Hardware Specs          |
 
 **Skills Reference**: [skills/](skills/) - Context Engineering Patterns
 
@@ -335,13 +352,16 @@ luxorliving/
 
 ### All Agents Must:
 
-1. ✅ Respect production environment (Remote SSH)
-2. ✅ Use `ssh -F /dev/null` (lokale config defekt)
-3. ✅ Follow architecture principles
+1. ✅ **Read CONTEXT.md first** (Single Source of Truth)
+2. ✅ Respect production environment (Remote SSH, `-F /dev/null`)
+3. ✅ Follow architecture principles and code quality standards
 4. ✅ Monitor context budget (<80% efficiency target)
-4. ✅ Maintain quality (type hints, tests, reviews)
-5. ✅ Track bugs via agent_defect_tracker
-6. ✅ **Read CONTEXT.md first** (Single Source of Truth)
+5. ✅ Maintain quality (type hints, tests, formatting)
+6. ✅ Track bugs via agent_defect_tracker
+7. ✅ **Format before commit:** black/isort ALWAYS run first
+8. ✅ **Never skip tests:** Fix root cause, never bypass
+9. ✅ **Defer merges to Release Manager:** Only Release Manager merges to main
+10. ✅ **Validate locally:** Run scripts before push (validate_readme.sh, check_release_notes.sh)
 
 ---
 
