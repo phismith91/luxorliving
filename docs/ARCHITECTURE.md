@@ -31,9 +31,38 @@ Ziel: klare Systemgrenzen, Verantwortlichkeiten, Kompatibilitätsmatrix und Ents
 4) KNX‑Events → `knx_gateway` → Coordinator → Entitäten aktualisieren und emit events
 5) Push/Webhook → Auth Layer → Push View → Validierung → Vermittlung an `knx_gateway`
 
-ASCII Übersicht:
+PlantUML Übersicht (siehe `docs/architecture.puml`):
 
+```plantuml
+@startuml
+title LUXORliving Integration - High Level
+actor "Home Assistant" as HA
+participant "Integration Entrypoint" as Entry
+participant "Coordinator" as Coord
+participant "REST Client (BAOS)" as REST
+participant "KNX Gateway" as KNX
+participant "LXP Parser" as LXP
+participant "Entity Mapper" as Mapper
+participant "External Push" as Push
+
+HA -> Entry: setup
+Entry -> Coord: create coordinator
+Coord -> REST: poll / fetch / push
+REST -> KNX: transport
+LXP -> Mapper: parse LXP
+Mapper -> Entry: create entities
+Push -> Entry: POST /api/luxor_living/push
+Entry -> Push: auth (token/bearer/hmac)
+Entry -> KNX: forward push
+KNX --> Coord: incoming telegram
+Coord --> Entry: update entities
+@enduml
 ```
+
+---
+
+```text
+ASCII Übersicht (backwards-compatible):
 [Home Assistant] <-> [Integration Entrypoint]
                       |-- Coordinator -- REST Client --> BAOS/Device
                       |-- LXP Parser --> Entity Mapper --> HA Entities
