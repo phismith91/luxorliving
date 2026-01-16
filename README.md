@@ -70,7 +70,7 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 
 
 
-- **Tests:** 287/287 passing (unit + integration-style)
+- **Tests:** 294/294 passing (unit + integration-style)
 
 - **Quality gates:** README/CHANGELOG validation, HACS install test, zip structure validation
 

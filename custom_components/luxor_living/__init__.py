@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -57,6 +58,18 @@ PLATFORMS: list[Platform] = [
 ]
 
 
+def _get_manifest_version() -> str:
+    """Return version from manifest.json, fallback to unknown."""
+    manifest_path = Path(__file__).parent / "manifest.json"
+    try:
+        return json.loads(manifest_path.read_text()).get("version", "unknown")
+    except FileNotFoundError:
+        return "unknown"
+
+
+_MANIFEST_VERSION = _get_manifest_version()
+
+
 class LuxorLivingHealthView(HomeAssistantView):
     """Health check endpoint for LUXORliving integration."""
 
@@ -79,7 +92,7 @@ class LuxorLivingHealthView(HomeAssistantView):
                 "timestamp": asyncio.get_event_loop().time(),
                 "integration": {
                     "name": "LUXORliving",
-                    "version": "0.6.0",
+                    "version": _MANIFEST_VERSION,
                     "domain": DOMAIN,
                 },
                 "entries": {},
