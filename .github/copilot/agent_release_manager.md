@@ -41,6 +41,14 @@ Responsibilities:
     * `RELEASE_NOTES_vX.Y.Z.md` exists in repo root
     * Contains version heading and release date
     * Matches CHANGELOG.md section content
+  - **CONTEXT.md Update (MANDATORY for releases):**
+    * Update "Version" field to match manifest.json (e.g., v0.6.1)
+    * Update "Last Updated" timestamp (YYYY-MM-DD)
+    * Update "Current Version Status" section with new release info
+    * Update "Development Status" section if new features added
+    * Update test count in "Quality Gates" section
+    * Verify agent budget table is current
+    * Coordinate with architect for major architecture changes
 
 * **Version Management:**
   - Update version in `manifest.json` (`custom_components/luxor_living/manifest.json`)
