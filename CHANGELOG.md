@@ -5,15 +5,26 @@ All notable changes to the LUXORliving Home Assistant integration will be docume
 ## Unreleased
 
 ### Added
-- **Push webhook & WebSocket client** — optional `POST /api/luxor_living/push` endpoint and configurable WebSocket client (`push_ws_url`) to accept external pushed KNX state updates. Supports configurable authentication: `none`, `token`, `bearer`, and `hmac` (HMAC-SHA256).
+- Placeholder
 
 ### Changed
-- Documented push options and added tests for push handling and WebSocket client.
+- Placeholder
 
 ---
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.6.1] - 2026-01-16
+
+### Added
+- **Push webhook & WebSocket client** — optional `POST /api/luxor_living/push` endpoint and configurable WebSocket client (`push_ws_url`) to accept external pushed KNX state updates. Supports configurable authentication: `none`, `token`, `bearer`, and `hmac` (HMAC-SHA256).
+
+### Changed
+- Documented push options and added tests for push handling and WebSocket client.
+
+### Testing
+- All 287 tests passing (unit + integration-style), including push client/view, integration_state, platform_detector, override_handler, and coordinator auth suites.
 
 ## [0.6.0] - 2026-01-11
 
@@ -290,6 +301,25 @@ python -m pytest tests/ -v  # 212 tests passing
 ---
 
 ## [Unreleased]
+
+### Added
+- Placeholder
+
+### Changed
+- Placeholder
+
+---
+
+## [0.6.1-beta.4] - 2026-01-16
+
+### Added
+- **Push webhook & WebSocket client** — optional `POST /api/luxor_living/push` endpoint and configurable WebSocket client (`push_ws_url`) to accept external pushed KNX state updates. Supports configurable authentication: `none`, `token`, `bearer`, and `hmac` (HMAC-SHA256).
+
+### Changed
+- Documented push options and added tests for push handling and WebSocket client.
+
+### Testing
+- All 287 tests passing (unit + integration-style), including push client/view, integration_state, platform_detector, override_handler, and coordinator auth suites.
 
 ### Planned
 

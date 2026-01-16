@@ -36,19 +36,11 @@ Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity disco
 <!-- RELEASE_NOTES_START -->
 
 
-# 🎉 LUXORliving v0.6.0 (Final Release)
+# 🎉 LUXORliving v0.6.1
 
 
 
-**Release Date:** 9. Januar 2026
-
-
-
-### 🥈 Home Assistant Silver Compliance Features
-
-
-
-This release implements features required for **Home Assistant Silver** quality scale compliance.
+**Release Date:** 16. Januar 2026
 
 
 
@@ -56,51 +48,21 @@ This release implements features required for **Home Assistant Silver** quality 
 
 
 
-- **🔐 Re-Authentication Flow**
+- **Push webhook & WebSocket client**
 
-  - Repair flow is triggered after 3 consecutive authentication failures
+  - Optional `POST /api/luxor_living/push` endpoint
 
-  - User-friendly credential update UI and automatic reconnection
+  - Configurable WebSocket client (`push_ws_url`) for external KNX state pushes
 
-  - Integration reload without reconfiguration after successful re-auth
-
-
-
-- **🌍 Multi-Language Support**
-
-  - German (de), French (fr), English (en)
-
-  - Localized config flow, repair messages and UI strings
+  - Authentication modes: `none`, `token`, `bearer`, `hmac` (HMAC-SHA256)
 
 
 
-- **📚 End-user Documentation**
-
-  - Added examples: Automations, Dashboard configurations, Compatible devices list
+### 🛠️ Changed
 
 
 
-### 🐛 Bug fixes
-
-
-
-- Fixed test fixture issue in performance benchmark tests
-
-- Fixed coordinator initialization for HA 2026.8+ (pass `config_entry` to DataUpdateCoordinator)
-
-
-
-### 🔧 Technical Improvements
-
-
-
-- `repairs.py` added for re-auth repair flows
-
-- Coordinator now tracks authentication failures and creates repair issues
-
-- Improved translations and `strings.json` coverage
-
-- HACS package structure correction (files at zip root)
+- Documented push options and added tests for push handling and WebSocket client
 
 
 
@@ -108,7 +70,7 @@ This release implements features required for **Home Assistant Silver** quality 
 
 
 
-- **Tests:** 212/212 passing
+- **Tests:** 287/287 passing (unit + integration-style)
 
 - **Quality gates:** README/CHANGELOG validation, HACS install test, zip structure validation
 
@@ -118,9 +80,9 @@ This release implements features required for **Home Assistant Silver** quality 
 
 
 
-- Remove any previously installed beta copies and nested directories before installing
+- If you used earlier betas, remove nested copies before installing
 
-- Install v0.6.0 via HACS and restart Home Assistant
+- Install v0.6.1 via HACS and restart Home Assistant
 
 
 
