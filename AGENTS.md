@@ -69,6 +69,9 @@ Guidelines:
 - You can also trigger the QA Matrix by commenting `/run-qa-matrix` on the PR — the CI will add the label and start the matrix.
 - Use pre-commit locally before pushing to avoid trivial pipeline failures.
 
+## Branch protection
+See `docs/BRANCH_PROTECTION.md` for recommended `main` branch protection settings and an example `gh api` payload an admin can use to apply them.
+
 ## File Structure
 
 ```
