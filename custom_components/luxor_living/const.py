@@ -49,6 +49,10 @@ PUSH_AUTH_TOKEN = "token"
 PUSH_AUTH_BEARER = "bearer"
 PUSH_AUTH_HMAC = "hmac"
 
+# Diagnostics consent option
+CONF_ALLOW_DIAGNOSTICS = "allow_diagnostics"
+DEFAULT_ALLOW_DIAGNOSTICS = False
+
 # KNX Gateway
 DATA_KNX_GATEWAY = "knx_gateway"
 DATA_COORDINATOR = "coordinator"

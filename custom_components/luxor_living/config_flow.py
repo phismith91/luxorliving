@@ -28,6 +28,8 @@ from .const import (
     CONF_SCAN_INTERVAL,
     CONF_SIMULATION_MODE,
     CONF_USERNAME,
+    CONF_ALLOW_DIAGNOSTICS,
+    DEFAULT_ALLOW_DIAGNOSTICS,
     CONNECTION_TYPE_ROUTING,
     CONNECTION_TYPE_TUNNELING,
     DEFAULT_CONNECTION_TYPE,
@@ -348,6 +350,11 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             self.config_entry.data.get("push_auth_method", "none"),
         )
 
+        current_allow_diagnostics = self.config_entry.options.get(
+            CONF_ALLOW_DIAGNOSTICS,
+            self.config_entry.data.get(CONF_ALLOW_DIAGNOSTICS, DEFAULT_ALLOW_DIAGNOSTICS),
+        )
+
         # Build options schema with clear sections
         options_schema = vol.Schema(
             {
@@ -368,6 +375,11 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                     CONF_DISCOVERY_TIMEOUT,
                     default=current_discovery_timeout,
                 ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=10.0)),
+                # Diagnostics sharing consent
+                vol.Optional(
+                    CONF_ALLOW_DIAGNOSTICS,
+                    default=current_allow_diagnostics,
+                ): bool,
                 # --- Advanced: Push Webhook (for external real-time updates) ---
                 vol.Optional("push_ws_url", default=current_push_ws_url): selector.TextSelector(
                     selector.TextSelectorConfig(
