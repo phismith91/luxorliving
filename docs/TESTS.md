@@ -1,17 +1,32 @@
-# Tests
+# TESTS - LUXORliving
 
-## How to run
+This document explains the test strategies and how we run tests for the project.
 
-- `python -m pytest tests/ -v`
-- `python -m pytest --cov=custom_components.luxor_living tests/` (coverage optional)
+## Test Tiers
+- Smoke tests (`pytest -m smoke`) — quick, critical checks used in early CI steps
+- Integration subset (`pytest -m integration`) — medium-length tests that run in the QA matrix for PR feedback
+- Full tests (`pytest`) — full suite run in CI matrix per axis
+- E2E tests (`pytest -m e2e`) — manual / on-demand end-to-end style tests (trigger via GitHub Actions workflow)
 
-## Current status
+## Running tests locally
+- Quick smoke: `./venv/bin/python -m pytest tests/ -q -m "smoke and not enable_socket"`
+- Integration subset: `./venv/bin/python -m pytest tests/ -q -m "integration and not enable_socket"`
+- Full suite: `./venv/bin/python -m pytest tests/ -q -m "not enable_socket"`
+- E2E (on-demand): `./venv/bin/python -m pytest tests/ -q -m "e2e and not enable_socket"`
 
-- Total tests: 287 (unit + integration-style)
-- Key suites: push client/webhook, integration_state, platform detector, override handler, coordinator auth, circuit breaker, platform entities.
-- Quality gates: black/isort, README/CHANGELOG validation, HACS structure check.
+## CI jobs
+- `qa_matrix` job: runs Smoke → Integration subset → Full tests for each Python/HA axis
+- `hacs-validation` job: validates `hacs.json` and `manifest.json` and runs HACS-related tests
+- `render-plantuml` job: renders diagrams for PR previews
+- `e2e-consent` job: on-demand workflow job to run E2E consent tests and upload logs
 
-## CI expectations
+## Adding tests
+- Mark small/focused tests as `@pytest.mark.smoke` to get fast PR feedback
+- Mark medium-length tests as `@pytest.mark.integration` to run in the QA matrix
+- Use `@pytest.mark.e2e` sparingly for manual/integration tests (may require environment setup)
 
-- All tests must pass on the supported HA/Python matrix.
-- Release checks validate version consistency (manifest, README, CHANGELOG) and documentation links.
+## Guidelines
+- Never skip failing tests; add a failing test & fix code if needed
+- Keep test data in `tests/` and add fixtures in `tests/conftest.py` when re-used across files
+- Keep runtime-sensitive tests behind markers and skip them in CI where appropriate
+
