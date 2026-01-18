@@ -52,6 +52,7 @@ async def async_get_config_entry_diagnostics(
     overrides = data.get("overrides", {})
 
     diagnostics = {
+        "diagnostics_allowed": True,
         "config_entry": {
             "entry_id": entry.entry_id,
             "title": entry.title,
