@@ -72,6 +72,15 @@ Guidelines:
 ## Branch protection
 See `docs/BRANCH_PROTECTION.md` for recommended `main` branch protection settings and an example `gh api` payload an admin can use to apply them.
 
+Admins can apply the recommended settings automatically using `scripts/apply_branch_protection.sh` (requires GH CLI and repo admin permissions):
+
+```bash
+# Requires gh cli and admin rights
+./scripts/apply_branch_protection.sh
+# Quick check
+./scripts/check_branch_protection.sh
+```
+
 ## File Structure
 
 ```
