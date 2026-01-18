@@ -31,6 +31,21 @@ async def async_get_config_entry_diagnostics(
     except (KeyError, AttributeError):
         data = {}
 
+    # Respect user consent for diagnostics. If disabled, return a minimal payload.
+    allow_diagnostics = entry.options.get("allow_diagnostics", False)
+    if not allow_diagnostics:
+        return {
+            "config_entry": {
+                "entry_id": entry.entry_id,
+                "title": entry.title,
+                "version": entry.version,
+                "domain": entry.domain,
+                "state": entry.state.value if entry.state else "unknown",
+                "options": entry.options,
+            },
+            "diagnostics_allowed": False,
+        }
+
     knx_gateway = data.get(DATA_KNX_GATEWAY)
     mapper = data.get("mapper")
     coordinator = data.get("coordinator")

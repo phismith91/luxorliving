@@ -38,7 +38,7 @@ def mock_config_entry():
         CONF_SIMULATION_MODE: False,
         CONF_LXP_FILE: "/path/to/project.lxp",
     }
-    entry.options = {"scan_interval": 30}
+    entry.options = {"scan_interval": 30, "allow_diagnostics": True}
     return entry
 
 
