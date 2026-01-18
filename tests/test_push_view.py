@@ -11,6 +11,7 @@ from custom_components.luxor_living.integration_state import (
 )
 
 
+@pytest.mark.smoke
 @pytest.mark.asyncio
 async def test_push_view_calls_gateway():
     """Test that the push view forwards payloads to the configured gateway."""
