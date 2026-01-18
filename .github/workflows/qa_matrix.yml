@@ -1,12 +1,16 @@
 name: QA Matrix (Gold compliance)
 
 on:
+  workflow_dispatch: {}
   pull_request:
-    branches: [ main ]
+    types: [labeled]
+# To run the full QA matrix on a PR add the `run-qa-matrix` label to the PR.
+# This prevents the expensive matrix from running on every push/sync.
 
 jobs:
   matrix-tests:
     name: QA matrix — Python ${{ matrix.python }} / HA ${{ matrix.ha }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.label.name == 'run-qa-matrix') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
