@@ -39,6 +39,10 @@ jobs:
         run: |
           python -m pytest tests/ -q -m "smoke and not enable_socket"
 
+      - name: Integration subset tests
+        run: |
+          python -m pytest tests/ -q -m "integration and not enable_socket"
+
       - name: Run full tests
         run: |
           python -m pytest tests/ -q -m "not enable_socket"
