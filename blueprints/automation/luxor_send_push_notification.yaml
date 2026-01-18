@@ -1,0 +1,36 @@
+blueprint:
+  name: Send notification on LUXOR push
+  description: Send a notification when LUXORliving push webhook reports a change
+  domain: automation
+  input:
+    entry_id:
+      name: Config entry id
+      selector:
+        text: {}
+    notify_service:
+      name: Notify service
+      description: Service id to call (e.g., notify.mobile_app_phil)
+      selector:
+        entity: {}
+
+trigger:
+  - platform: event
+    event_type: luxor_living_push
+
+variables:
+  entry_id: !input entry_id
+  notify_service: !input notify_service
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.event.data.entry_id == entry_id }}"
+        sequence:
+          - service: "{{ notify_service }}"
+            data:
+              title: "LUXOR Push: {{ trigger.event.data.address }}"
+              message: "Wert: {{ trigger.event.data.value }}"
+mode: single

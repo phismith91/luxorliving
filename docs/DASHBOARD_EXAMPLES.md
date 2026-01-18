@@ -256,6 +256,13 @@ This automation demonstrates how external pushes can be used to trigger user-fac
 
 ---
 
+## Blueprints
+
+### Notification on LUXOR push
+A simple automation blueprint is available at `blueprints/automation/luxor_send_push_notification.yaml` — use it to create instance automations that notify mobile apps or other services when a push arrives from a specific `entry_id`.
+
+---
+
 ## Custom cards (HACS)
 
 Install via HACS → Frontend.
