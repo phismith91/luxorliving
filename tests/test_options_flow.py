@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from custom_components.luxor_living.config_flow import LuxorLivingOptionsFlow
 from custom_components.luxor_living.const import CONF_ALLOW_DIAGNOSTICS

@@ -1,10 +1,11 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from custom_components.luxor_living.const import DATA_KNX_GATEWAY, DOMAIN
 from custom_components.luxor_living.diagnostics import async_get_config_entry_diagnostics
-from custom_components.luxor_living.const import DOMAIN, DATA_KNX_GATEWAY
 
 
 @pytest.mark.asyncio
