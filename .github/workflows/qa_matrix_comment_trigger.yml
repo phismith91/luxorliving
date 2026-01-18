@@ -1,0 +1,41 @@
+name: QA Matrix — Comment trigger
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  comment-trigger:
+    if: contains(github.event.comment.body, '/run-qa-matrix') && github.event.issue.pull_request != null
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: write
+      contents: read
+
+    steps:
+      - name: Add `run-qa-matrix` label to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            await github.issues.addLabels({
+              owner,
+              repo,
+              issue_number: issue.number,
+              labels: ['run-qa-matrix'],
+            });
+
+      - name: Acknowledge request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            await github.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: '✅ `run-qa-matrix` label added — the full QA Matrix will run shortly. If you prefer manual control, you can also use the Actions tab to dispatch the QA Matrix workflow.'
+            });

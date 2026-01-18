@@ -66,6 +66,7 @@ CI also runs `pre-commit run --all-files` as a fast, fail-fast gate on pushes an
 
 Guidelines:
 - Add `run-qa-matrix` label to request the full QA matrix only after the PR is review-ready or heavy changes are made.
+- You can also trigger the QA Matrix by commenting `/run-qa-matrix` on the PR — the CI will add the label and start the matrix.
 - Use pre-commit locally before pushing to avoid trivial pipeline failures.
 
 ## File Structure
