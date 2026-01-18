@@ -231,6 +231,31 @@ cards:
 
 ---
 
+## Push Webhook Example Automation (Practical Example)
+
+```yaml
+alias: 'Forward LUXOR push to notification'
+description: 'Example automation that reacts to push webhook and sends a notification.'
+trigger:
+  - platform: event
+    event_type: luxor_living_push
+    event_data:
+      entry_id: 'entry_1'
+
+condition: []
+
+action:
+  - service: notify.mobile_app_phil
+    data:
+      title: 'LUXOR Push'
+      message: "Address {{ trigger.event.data.address }} changed to {{ trigger.event.data.value }}"
+mode: single
+```
+
+This automation demonstrates how external pushes can be used to trigger user-facing actions; adapt the service and message to your environment.
+
+---
+
 ## Custom cards (HACS)
 
 Install via HACS → Frontend.
