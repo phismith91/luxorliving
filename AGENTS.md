@@ -58,6 +58,16 @@ pre-commit run --all-files
 
 CI also runs `pre-commit run --all-files` as a fast, fail-fast gate on pushes and PRs.
 
+## CI workflow behavior
+
+- **Pushes (feature branches):** A lightweight preflight workflow runs automatic checks (black/isort + quick smoke tests). This provides a fast fail‑fast feedback loop for common issues.
+- **Pull requests:** A fast PR checks workflow runs on each PR update (lint + smoke). To run the full QA matrix (Python × HA) you can either add the label `run-qa-matrix` to the PR or use the Actions tab to manually dispatch the QA Matrix workflow.
+- **E2E / long tests:** These are intentionally run on demand (via workflow_dispatch) or on scheduled runs to save CI time.
+
+Guidelines:
+- Add `run-qa-matrix` label to request the full QA matrix only after the PR is review-ready or heavy changes are made.
+- Use pre-commit locally before pushing to avoid trivial pipeline failures.
+
 ## File Structure
 
 ```
