@@ -35,7 +35,11 @@ jobs:
         run: |
           isort --check-only custom_components tests scripts || (echo "Run 'isort .' locally" && exit 1)
 
-      - name: Run tests
+      - name: Quick smoke tests
+        run: |
+          python -m pytest tests/ -q -m "smoke and not enable_socket"
+
+      - name: Run full tests
         run: |
           python -m pytest tests/ -q -m "not enable_socket"
 

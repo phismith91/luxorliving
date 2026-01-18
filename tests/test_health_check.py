@@ -43,6 +43,7 @@ class TestLuxorLivingHealthView:
         """Create health view instance."""
         return LuxorLivingHealthView(mock_hass)
 
+    @pytest.mark.smoke
     @pytest.mark.asyncio
     async def test_health_endpoint_success(self, health_view, mock_hass):
         """Test successful health check response."""
