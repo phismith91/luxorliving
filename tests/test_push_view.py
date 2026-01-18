@@ -80,6 +80,7 @@ async def test_push_view_forbidden_when_token_mismatch():
     gateway.process_incoming_value.assert_not_awaited()
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_push_view_bearer_auth():
     """Test that Bearer Authorization header is accepted when configured."""
@@ -110,6 +111,7 @@ async def test_push_view_bearer_auth():
     gateway.process_incoming_value.assert_awaited_once_with("1/2/3", True, None)
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_push_view_hmac_auth():
     """Test that HMAC signature header is validated when configured."""

@@ -90,6 +90,7 @@ class TestLuxorKNXGateway:
         assert gateway.connected is True
         assert gateway._xknx is None
 
+    @pytest.mark.integration
     @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
@@ -168,6 +169,7 @@ class TestLuxorKNXGateway:
         assert result is False
         assert gateway.connected is False
 
+    @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_async_send_telegram_simulation(self, mock_hass):
         """Test sending telegram in simulation mode."""

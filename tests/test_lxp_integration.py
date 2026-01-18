@@ -17,6 +17,7 @@ LXP_FAMILIE_SCHMIDT = Path(__file__).parent.parent / "docs" / "Familie Schmidt_0
 
 
 @pytest.mark.skipif(not LXP_HAUPTWOHNUNG.exists(), reason="Hauptwohnung.lxp not found")
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_hauptwohnung_lxp_parsing():
     """Test parsing of Hauptwohnung.lxp (contains IO devices like Wetterstation)."""
@@ -55,6 +56,7 @@ async def test_hauptwohnung_lxp_parsing():
 
 
 @pytest.mark.skipif(not LXP_HAUPTWOHNUNG.exists(), reason="Hauptwohnung.lxp not found")
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_hauptwohnung_entity_mapping():
     """Test entity mapping for Hauptwohnung.lxp."""
@@ -99,6 +101,7 @@ async def test_hauptwohnung_entity_mapping():
 
 
 @pytest.mark.skipif(not LXP_HAUPTWOHNUNG.exists(), reason="Hauptwohnung.lxp not found")
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_hauptwohnung_io_devices():
     """Test that IO devices (Wetterstation, ION Temperature) are parsed correctly."""
