@@ -149,8 +149,7 @@ luxorliving/
 - `black`, `isort`, `mypy` - Code quality
 
 ### Quality Gates
-- ✅ All tests passing (`pytest tests/ -v -m "not enable_socket"` → 294/294)
-- ✅ Code formatted (black/isort) - MANDATORY before commits
+- ✅ All tests passing (`pytest tests/ -v -m "not enable_socket"` → 294/294)- ✅ **Gold Gates** enforced in CI: Smoke → Integration subset → HACS validation → Release dry-run (all must pass before merge)- ✅ Code formatted (black/isort) - MANDATORY before commits
 - ✅ Local validation scripts pass (`./scripts/validate_readme.sh`, `./scripts/check_release_notes.sh`)
 - ✅ Type checking (mypy) - Optional but recommended
 - ✅ CI checks green (Release Checks, Code Quality, Tests)
