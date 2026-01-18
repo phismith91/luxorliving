@@ -18,6 +18,7 @@ class TestErrorScenarios:
     """Test error scenarios and resilience."""
 
     @pytest.mark.asyncio
+    @pytest.mark.integration
     async def test_circuit_breaker_failure_recovery(self):
         """Test circuit breaker failure and recovery."""
         config = CircuitBreakerConfig(
