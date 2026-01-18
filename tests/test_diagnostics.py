@@ -185,6 +185,7 @@ async def test_diagnostics_knx_gateway_info(mock_config_entry, mock_hass_data):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_diagnostics_entities(mock_config_entry, mock_hass_data):
     """Test entity information in diagnostics."""
     hass = MagicMock(spec=HomeAssistant)
@@ -214,6 +215,7 @@ async def test_diagnostics_entities(mock_config_entry, mock_hass_data):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_diagnostics_devices(mock_config_entry, mock_hass_data):
     """Test device information in diagnostics."""
     hass = MagicMock(spec=HomeAssistant)
@@ -306,6 +308,7 @@ async def test_diagnostics_missing_entry_data(mock_config_entry):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_diagnostics_gateway_exception(mock_config_entry, mock_hass_data):
     """Test diagnostics when gateway handles exceptions gracefully."""
     hass = MagicMock(spec=HomeAssistant)
