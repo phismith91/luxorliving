@@ -45,7 +45,15 @@ async def test_diagnostics_consent_enabled(mock_config_entry):
     mock_coordinator.update_interval.total_seconds = MagicMock(return_value=30.0)
     mock_coordinator._scan_interval = 30
 
-    hass.data = {DOMAIN: {mock_config_entry.entry_id: {"mapper": mock_mapper, DATA_KNX_GATEWAY: mock_gateway, "coordinator": mock_coordinator}}}
+    hass.data = {
+        DOMAIN: {
+            mock_config_entry.entry_id: {
+                "mapper": mock_mapper,
+                DATA_KNX_GATEWAY: mock_gateway,
+                "coordinator": mock_coordinator,
+            }
+        }
+    }
 
     diag = await async_get_config_entry_diagnostics(hass, mock_config_entry)
 
