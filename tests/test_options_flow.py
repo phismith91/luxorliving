@@ -13,7 +13,9 @@ async def test_options_flow_contains_allow_diagnostics(mock_config_entry):
     # Emulate Home Assistant linking: handler == config_entry.entry_id
     flow.handler = mock_config_entry.entry_id
     # Ensure hass.config_entries.async_get_known_entry returns the config entry
-    flow.hass.config_entries = MagicMock(async_get_known_entry=MagicMock(return_value=mock_config_entry))
+    flow.hass.config_entries = MagicMock(
+        async_get_known_entry=MagicMock(return_value=mock_config_entry)
+    )
 
     # Show options form
     result = await flow.async_step_init()
