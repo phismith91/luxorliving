@@ -47,7 +47,16 @@ mypy custom_components/luxor_living/
 - **Type hints:** Required for all functions (checked with `mypy`)
 - **Docstrings:** Use Google style for classes and public methods
 - **No emojis** in code comments or user-facing messages
-- **Pre-commit:** All changes must pass `black --check` and `isort --check-only`
+- **Pre-commit:** Use `pre-commit` hooks to enforce formatting, sorting and basic checks. Run once in your checkout:
+
+```bash
+pip install -r requirements_style.txt
+pre-commit install
+# Optional: run all hooks locally
+pre-commit run --all-files
+```
+
+CI also runs `pre-commit run --all-files` as a fast, fail-fast gate on pushes and PRs.
 
 ## File Structure
 
