@@ -43,15 +43,22 @@ jobs:
         run: |
           python -m pytest tests/ -q -m "integration and not enable_socket"
 
-      - name: Run full tests
+      - name: Run tests (with coverage XML)
         run: |
-          python -m pytest tests/ -q -m "not enable_socket"
+          python -m pytest tests/ -q -m "not enable_socket" --cov=custom_components.luxor_living --cov-report=xml
 
       - name: Upload test summary
         uses: actions/upload-artifact@v6
         with:
           name: qa-matrix-${{ matrix.python }}-${{ matrix.ha }}-results
           path: ./
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   render-plantuml:
     name: Render PlantUML diagrams
