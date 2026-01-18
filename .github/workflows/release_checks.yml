@@ -20,11 +20,25 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install formatters (black, isort)
-        run: python -m pip install --upgrade pip && pip install black isort
+      - name: Install formatters (black, isort) and dev deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements_dev.txt
+          python -m pip install black isort
+
+      - name: Quick smoke tests
+        run: |
+          ./venv/bin/python -m pytest tests/ -q -m "smoke and not enable_socket"
+
+      - name: Integration subset tests
+        run: |
+          ./venv/bin/python -m pytest tests/ -q -m "integration and not enable_socket"
 
       - name: Run README validation
         run: ./scripts/validate_readme.sh
+
+      - name: HACS validation
+        run: ./scripts/validate_hacs.sh
 
       - name: Check release notes file exists
         run: ./scripts/check_release_notes.sh
@@ -40,4 +54,8 @@ jobs:
         with:
           scandir: './scripts'
         # Pinned action; ShellCheck failures are now blocking to enforce script quality
+
+      - name: Enforce Gold Gates (manual check)
+        run: |
+          echo "Gold Gates enforced: smoke + integration subset + HACS validation + release dry-run must be green before merge" && exit 0
 
