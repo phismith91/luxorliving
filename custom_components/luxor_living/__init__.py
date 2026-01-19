@@ -62,7 +62,12 @@ def _get_manifest_version() -> str:
     """Return version from manifest.json, fallback to unknown."""
     manifest_path = Path(__file__).parent / "manifest.json"
     try:
-        return json.loads(manifest_path.read_text()).get("version", "unknown")
+        data = json.loads(manifest_path.read_text())
+        if isinstance(data, dict):
+            version = data.get("version")
+            if isinstance(version, str):
+                return version
+        return "unknown"
     except FileNotFoundError:
         return "unknown"
 
