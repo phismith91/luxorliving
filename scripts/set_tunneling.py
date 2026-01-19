@@ -29,10 +29,10 @@ def set_tunneling(gateway_ip: str):
 
             changed = True
 
-            print(f"✅ LUXORliving Konfiguration aktualisiert:")
+            print("✅ LUXORliving Konfiguration aktualisiert:")
             print(f"   Connection Type: {old_type} → tunneling")
             print(f"   Host: {old_host} → {gateway_ip}")
-            print(f"   Port: 3671")
+            print("   Port: 3671")
             break
 
     if not changed:
@@ -44,8 +44,8 @@ def set_tunneling(gateway_ip: str):
         json.dump(data, f, indent=2)
 
     print(f"\n💾 Änderungen gespeichert in: {storage_file}")
-    print(f"\n⚠️  WICHTIG: Home Assistant neu starten!")
-    print(f"    pkill -f 'hass -c' && sleep 2 && ./scripts/start_homeassistant.sh")
+    print("\n⚠️  WICHTIG: Home Assistant neu starten!")
+    print("    pkill -f 'hass -c' && sleep 2 && ./scripts/start_homeassistant.sh")
 
     return True
 
