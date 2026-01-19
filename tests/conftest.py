@@ -1,5 +1,15 @@
 """Pytest fixtures for LUXORliving tests."""
 
+import pytest
+
+# Register custom markers in pytest hook (alternative to pytest.ini)
+def pytest_configure(config):
+    """Register custom pytest markers."""
+    config.addinivalue_line("markers", "smoke: quick smoke tests for PRs")
+    config.addinivalue_line("markers", "integration: medium-length integration tests")
+    config.addinivalue_line("markers", "e2e: end-to-end style tests")
+    config.addinivalue_line("markers", "enable_socket: marks tests that require socket access")
+
 # Disable pytest-socket immediately to allow aiohttp mock servers
 # Must be done before any test modules are imported
 import sys
