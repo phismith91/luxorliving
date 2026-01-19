@@ -80,10 +80,10 @@ async def test_hauptwohnung_entity_mapping():
     assert len(platform_counts) >= 2, "Should have multiple platforms"
 
     # Check for typical platforms
-    lights = mapper.get_entities_by_platform(Platform.LIGHT)
-    switches = mapper.get_entities_by_platform(Platform.SWITCH)
+    _lights = mapper.get_entities_by_platform(Platform.LIGHT)
+    _switches = mapper.get_entities_by_platform(Platform.SWITCH)
     sensors = mapper.get_entities_by_platform(Platform.SENSOR)
-    binary_sensors = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)
+    _binary_sensors = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)
 
     # Log results
     print("\n=== Entity Mapping ===")
@@ -154,7 +154,7 @@ async def test_hauptwohnung_io_devices():
         assert len(sensors) > 0, "Should have sensor entities from IO devices"
 
         # Check for weather-related sensors
-        sensor_names = [s.name for s in sensors]
+        _sensor_names = [s.name for s in sensors]
         print(f"\n=== Sensor Entities ({len(sensors)}) ===")
         for sensor in sensors[:10]:  # First 10
             print(f"  - {sensor.name} ({sensor.entity_type})")
@@ -245,14 +245,14 @@ async def test_compare_io_vs_standard_devices():
     switches_hw = mapper_hw.get_entities_by_platform(Platform.SWITCH)
     switches_fs = mapper_fs.get_entities_by_platform(Platform.SWITCH)
 
-    print(f"\n=== IO vs Standard Comparison ===")
-    print(f"Hauptwohnung (IO-heavy):")
+    print("\n=== IO vs Standard Comparison ===")
+    print("Hauptwohnung (IO-heavy):")
     print(f"  Sensors: {len(sensors_hw)}")
     print(f"  Lights: {len(lights_hw)}")
     print(f"  Switches: {len(switches_hw)}")
     print(f"  Total entities: {len(mapper_hw.entities)}")
 
-    print(f"\nFamilie Schmidt (Standard):")
+    print("\nFamilie Schmidt (Standard):")
     print(f"  Sensors: {len(sensors_fs)}")
     print(f"  Lights: {len(lights_fs)}")
     print(f"  Switches: {len(switches_fs)}")
@@ -287,9 +287,9 @@ async def test_unique_id_stability_with_real_lxp():
     assert len(unique_ids_1) == len(mapper1.entities), "All unique IDs should be unique"
     assert len(unique_ids_2) == len(mapper2.entities), "All unique IDs should be unique"
 
-    print(f"\n=== Unique ID Stability ===")
+    print("\n=== Unique ID Stability ===")
     print(f"Total unique entities: {len(unique_ids_1)}")
-    print(f"✓ Unique IDs are stable across parses")
+    print("✓ Unique IDs are stable across parses")
 
 
 @pytest.mark.skipif(not LXP_HAUPTWOHNUNG.exists(), reason="Hauptwohnung.lxp not found")
@@ -302,7 +302,7 @@ def test_lxp_cache_functionality():
 
     # First parse should be a cache miss
     stats_before = _lxp_cache.get_stats()
-    print(f"\n=== Cache Stats (before) ===")
+    print("\n=== Cache Stats (before) ===")
     print(f"Hits: {stats_before['hits']}")
     print(f"Misses: {stats_before['misses']}")
 
