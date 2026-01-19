@@ -26,10 +26,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const issue = context.payload.pull_request;
             await github.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: issue.number,
-          body: ":information_source: Reminder: please ensure branch protection for **main** is configured before merging. See docs/BRANCH_PROTECTION.md. To request the QA Matrix, comment with \"/run-qa-matrix\" or add the `run-qa-matrix` label."
-            });
+              issue_number: context.payload.pull_request.number,
+              body: ":information_source: Reminder: please ensure branch protection for **main** is configured before merging. See docs/BRANCH_PROTECTION.md. To request the QA Matrix, comment '/run-qa-matrix'.",
