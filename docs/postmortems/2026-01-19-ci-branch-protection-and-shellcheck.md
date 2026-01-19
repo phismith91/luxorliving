@@ -37,6 +37,17 @@ Next steps
 - Search repo for other usages of `github.issues` and update to `github.rest.issues` where required.
 - Add a short CI test or workflow lint step to detect common `actions/github-script` misuse (optional).
 
+Artifacts & Failure Details
+-------------------------
+- First failing run: 21143448300 (job 60803095480) — TypeError: Cannot read properties of undefined (reading 'createComment').
+- Subsequent run: 21143690418 — 403 HttpError: Resource not accessible by integration when calling POST /repos/.../issues/53/comments
+- Relevant PR: #53 (fix/shellcheck-quote) — contained the following commits:
+  - 5aa9a53: ci(shellcheck): quote gh api paths to satisfy SC2086
+  - 98d0c5d: ci(workflows): use github.rest.issues API in github-script v7 steps
+  - a8e8a0b: ci(workflows): use pull_request_target for comment step to allow posting comments
+- Pre-commit formatting changed `tests/conftest.py` (black) causing pre-commit checks to fail until the formatting commit was pushed.
+- Branch-protection: `enforce_admins: true` blocked an immediate admin merge until checks were green; a temporary toggle was used to allow merging the fix after validation.
+
 References
 ----------
 - PR #53 — fixes for ShellCheck and workflows
