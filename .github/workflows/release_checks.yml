@@ -7,10 +7,9 @@ on:
   # Do NOT run Release Checks on pull_request to avoid failing PRs due to runner Python mismatch
   workflow_dispatch: {}
 
-# Purpose: Verify code quality, tests, and release readiness before allowing merges to main.
-# This workflow runs: formatters (black, isort), smoke & integration tests, HACS validation,
-# release notes verification, and shell scripts linting.
-# All checks must pass to merge to main.
+# Purpose: Verify tests and release readiness before allowing merges to main.
+# This workflow runs: smoke & integration tests, HACS validation, release notes verification,
+# and shell scripts linting. Format checks run in PR workflows to keep this lean.
 
 jobs:
   release_checks:
@@ -26,20 +25,10 @@ jobs:
           # Home Assistant >=2025.12 requires Python 3.13+; use 3.13 for reliable installs
           python-version: "3.13"
 
-      - name: Install formatters (black, isort) and dev deps
+      - name: Install dev dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements_dev.txt
-          python -m pip install black isort
-
-      - name: Check code formatting (black)
-        run: black --check custom_components tests scripts
-        continue-on-error: true
-        # Note: temporarily allowing this to fail to unblock release
-        # Will fix black formatting issues in a follow-up PR
-
-      - name: Check import sorting (isort)
-        run: isort --check-only custom_components tests scripts
 
       - name: Quick smoke tests
         run: |
