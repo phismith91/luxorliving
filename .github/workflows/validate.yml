@@ -20,7 +20,7 @@ jobs:
         uses: hacs/action@main
         with:
           category: "integration"
-        continue-on-error: true  # optional: allow brands check to fail (repo may not be registered)
+        continue-on-error: true # optional: allow brands check to fail (repo may not be registered)
 
   validate-hassfest:
     runs-on: ubuntu-latest

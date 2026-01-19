@@ -29,4 +29,3 @@ This document explains the test strategies and how we run tests for the project.
 - Never skip failing tests; add a failing test & fix code if needed
 - Keep test data in `tests/` and add fixtures in `tests/conftest.py` when re-used across files
 - Keep runtime-sensitive tests behind markers and skip them in CI where appropriate
-

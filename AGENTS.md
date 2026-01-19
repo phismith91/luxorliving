@@ -2,9 +2,11 @@
 
 ## Project Overview
 
-LUXORliving Home Assistant Integration for controlling LUXOR Living KNX/BAOS devices via REST API.
+LUXORliving Home Assistant Integration for controlling LUXOR Living KNX/BAOS
+devices via REST API.
 
 **Tech Stack:**
+
 - Python 3.11+
 - Home Assistant Custom Component
 - KNX/BAOS REST API
@@ -36,7 +38,8 @@ mypy custom_components/luxor_living/
 
 - **Run all tests:** `python -m pytest tests/ -v`
 - **Run specific test:** `python -m pytest tests/test_config_flow.py -v`
-- **Coverage report:** `python -m pytest --cov=custom_components.luxor_living tests/`
+- **Coverage report:**
+  `python -m pytest --cov=custom_components.luxor_living tests/`
 - **All tests must pass before commits**
 - Tests are located in `tests/` directory
 
@@ -47,7 +50,8 @@ mypy custom_components/luxor_living/
 - **Type hints:** Required for all functions (checked with `mypy`)
 - **Docstrings:** Use Google style for classes and public methods
 - **No emojis** in code comments or user-facing messages
-- **Pre-commit:** Use `pre-commit` hooks to enforce formatting, sorting and basic checks. Run once in your checkout:
+- **Pre-commit:** Use `pre-commit` hooks to enforce formatting, sorting and
+  basic checks. Run once in your checkout:
 
 ```bash
 pip install -r requirements_style.txt
@@ -56,23 +60,37 @@ pre-commit install
 pre-commit run --all-files
 ```
 
-CI also runs `pre-commit run --all-files` as a fast, fail-fast gate on pushes and PRs.
+CI also runs `pre-commit run --all-files` as a fast, fail-fast gate on pushes
+and PRs.
 
 ## CI workflow behavior
 
-- **Pushes (feature branches):** A lightweight preflight workflow runs automatic checks (black/isort + quick smoke tests). This provides a fast fail‑fast feedback loop for common issues.
-- **Pull requests:** A fast PR checks workflow runs on each PR update (lint + smoke). To run the full QA matrix (Python × HA) you can either add the label `run-qa-matrix` to the PR or use the Actions tab to manually dispatch the QA Matrix workflow.
-- **E2E / long tests:** These are intentionally run on demand (via workflow_dispatch) or on scheduled runs to save CI time.
+- **Pushes (feature branches):** A lightweight preflight workflow runs automatic
+  checks (black/isort + quick smoke tests). This provides a fast fail‑fast
+  feedback loop for common issues.
+- **Pull requests:** A fast PR checks workflow runs on each PR update (lint +
+  smoke). To run the full QA matrix (Python × HA) you can either add the label
+  `run-qa-matrix` to the PR or use the Actions tab to manually dispatch the QA
+  Matrix workflow.
+- **E2E / long tests:** These are intentionally run on demand (via
+  workflow_dispatch) or on scheduled runs to save CI time.
 
 Guidelines:
-- Add `run-qa-matrix` label to request the full QA matrix only after the PR is review-ready or heavy changes are made.
-- You can also trigger the QA Matrix by commenting `/run-qa-matrix` on the PR — the CI will add the label and start the matrix.
+
+- Add `run-qa-matrix` label to request the full QA matrix only after the PR is
+  review-ready or heavy changes are made.
+- You can also trigger the QA Matrix by commenting `/run-qa-matrix` on the PR —
+  the CI will add the label and start the matrix.
 - Use pre-commit locally before pushing to avoid trivial pipeline failures.
 
 ## Branch protection
-See `docs/BRANCH_PROTECTION.md` for recommended `main` branch protection settings and an example `gh api` payload an admin can use to apply them.
 
-Admins can apply the recommended settings automatically using `scripts/apply_branch_protection.sh` (requires GH CLI and repo admin permissions):
+See `docs/BRANCH_PROTECTION.md` for recommended `main` branch protection
+settings and an example `gh api` payload an admin can use to apply them.
+
+Admins can apply the recommended settings automatically using
+`scripts/apply_branch_protection.sh` (requires GH CLI and repo admin
+permissions):
 
 ```bash
 # Requires gh cli and admin rights
@@ -108,7 +126,8 @@ No build step required - Python source files are used directly.
 
 ### Pre-Release Testing (SSH to Remote HA)
 
-**IMPORTANT:** Remote HA uses s6-overlay (not systemd) and SSH key authentication.
+**IMPORTANT:** Remote HA uses s6-overlay (not systemd) and SSH key
+authentication.
 
 ```bash
 # Deploy to remote HA (100.97.159.88 via Tailscale)
@@ -129,6 +148,7 @@ ssh -F /dev/null phil@100.97.159.88 \
 ```
 
 **SSH Configuration:**
+
 - Host: `100.97.159.88` (Tailscale VPN)
 - User: `phil`
 - Auth: SSH key (`~/.ssh/id_rsa`)
@@ -160,7 +180,9 @@ ssh -F /dev/null phil@100.97.159.88 \
 
 ### Git Operations
 
-**CRITICAL:** Always use `GIT_SSH_COMMAND='ssh -F /dev/null'` for git operations:
+**CRITICAL:** Always use `GIT_SSH_COMMAND='ssh -F /dev/null'` for git
+operations:
+
 - Local `~/.ssh/config` has invalid entries
 - Example: `GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main`
 
@@ -194,7 +216,8 @@ Before any commit/release:
 - `docs/RELEASE_OPERATIONS.md` - Release procedures
 - `.github/copilot-instructions.md` - GitHub Copilot deployment workflows
 - `.github/copilot/CONTEXT.md` - Project status & agent coordination
-- `.github/copilot/skills/` - Context engineering skills for multi-agent optimization
+- `.github/copilot/skills/` - Context engineering skills for multi-agent
+  optimization
 
 ## Common Commands
 
@@ -222,7 +245,8 @@ python scripts/setup_integration.sh
 
 ## Conventions
 
-- Use Home Assistant's `async` patterns (not `asyncio.run()` in integration code)
+- Use Home Assistant's `async` patterns (not `asyncio.run()` in integration
+  code)
 - Follow HA integration quality checklist
 - Use `_attr_*` attributes for entity properties
 - Implement `async_setup_entry` and `async_unload_entry`

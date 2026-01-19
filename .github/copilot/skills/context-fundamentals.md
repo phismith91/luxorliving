@@ -1,6 +1,8 @@
 ---
 name: context-fundamentals
-description: Context Engineering Fundamentals für GitHub Copilot - Management von Context Windows, Progressive Disclosure und Attention Budgets für Multi-Agent Systeme
+description:
+  Context Engineering Fundamentals für GitHub Copilot - Management von Context
+  Windows, Progressive Disclosure und Attention Budgets für Multi-Agent Systeme
 ---
 
 # Context Engineering Fundamentals für LUXORliving
@@ -8,20 +10,24 @@ description: Context Engineering Fundamentals für GitHub Copilot - Management v
 ## When to Activate
 
 - Wenn Agent-Koordination zwischen den 7 Copilot Agents optimiert werden soll
-- Bei Context-bezogenen Performance-Problemen (z.B. Agent "vergisst" vorherige Änderungen)
+- Bei Context-bezogenen Performance-Problemen (z.B. Agent "vergisst" vorherige
+  Änderungen)
 - Wenn neue Agent-Instruktionen entworfen werden
 - Bei LXP Parser Optimierung (3-Level Loading Pattern)
 
 ## Core Concepts
 
-**Context als finite Resource**: Jeder Token reduziert das Attention Budget. LLMs haben wie Menschen ein limitiertes Working Memory.
+**Context als finite Resource**: Jeder Token reduziert das Attention Budget.
+LLMs haben wie Menschen ein limitiertes Working Memory.
 
 **Progressive Disclosure**: Information nur laden wenn benötigt:
+
 - **L1 (Discovery)**: Skill Name + Description (~50 tokens)
-- **L2 (Activation)**: Vollständige Instructions (~200-500 tokens)  
+- **L2 (Activation)**: Vollständige Instructions (~200-500 tokens)
 - **L3 (Execution)**: Referenced Files, Data (~1000+ tokens)
 
 **Attention Budget**: Context Position matters:
+
 - **Start**: Höchste Attention → System Prompts, Critical Tasks
 - **Middle**: Niedrigste Attention (Lost-in-Middle) → Bulk Data
 - **End**: Hohe Attention → Key Findings, Current Task
@@ -34,11 +40,11 @@ description: Context Engineering Fundamentals für GitHub Copilot - Management v
 | ----------------- | -------------------------- | -------------- | --------------------------------------- |
 | **Architect**     | Architektur-Entscheidungen | 50k tokens     | CONTEXT.md, Architecture Docs           |
 | **KNX Protocol**  | BAOS/KNX Technical         | 80k tokens     | KNX_IMPLEMENTATION.md, LXP Parser       |
-| **Testing**       | Test-Suite Management      | 30k tokens     | test_*.py, TESTS.md                     |
+| **Testing**       | Test-Suite Management      | 30k tokens     | test\_\*.py, TESTS.md                   |
 | **Documentation** | Docs + Changelog           | 40k tokens     | docs/, CHANGELOG.md                     |
 | **Deployment**    | Release + SSH Deploy       | 35k tokens     | deploy scripts, copilot-instructions.md |
 | **Security**      | Credentials + SSH Keys     | 25k tokens     | SECURITY.md, SSH procedures             |
-| **Code Style**    | Python Best Practices      | 20k tokens     | requirements_*.txt, PEP 8               |
+| **Code Style**    | Python Best Practices      | 20k tokens     | requirements\_\*.txt, PEP 8             |
 
 **Total Budget**: ~280k tokens across all agents
 
@@ -67,30 +73,32 @@ def load_full_element(element_id: str):
 
 ```markdown
 <!-- Für jede Agent Instruction -->
-<AGENT_IDENTITY>
-Name: KNX Protocol Expert
-Role: BAOS REST API + LXP File Parsing
-</AGENT_IDENTITY>
+
+<AGENT_IDENTITY> Name: KNX Protocol Expert Role: BAOS REST API + LXP File
+Parsing </AGENT_IDENTITY>
 
 <CRITICAL_CONTEXT>
+
 <!-- Position: START (höchste Attention) -->
+
 - Current Task: Parse Hauptwohnung.lxp
 - Active Platform: Light (D1/D3 Dimmers)
-- Context Budget: 80k tokens (70% used)
-</CRITICAL_CONTEXT>
+- Context Budget: 80k tokens (70% used) </CRITICAL_CONTEXT>
 
 <DETAILED_INFORMATION>
+
 <!-- Position: MIDDLE (bulk data, weniger kritisch) -->
+
 - 243 KNX Elements parsed
 - 7 Element Categories supported
-- DPT Mapping: DPT1.001 (Switch), DPT5.001 (Dim%)
-</DETAILED_INFORMATION>
+- DPT Mapping: DPT1.001 (Switch), DPT5.001 (Dim%) </DETAILED_INFORMATION>
 
 <CURRENT_TASK>
+
 <!-- Position: END (hohe Attention) -->
-Goal: Implement H6 Climate Platform for Heating Actuators
-Next Step: Parse DPT9.001 Temperature Values
-</CURRENT_TASK>
+
+Goal: Implement H6 Climate Platform for Heating Actuators Next Step: Parse
+DPT9.001 Temperature Values </CURRENT_TASK>
 ```
 
 ## Practical Guidance
@@ -113,11 +121,12 @@ context = glob.glob("**/*.py")  # 280k+ tokens!
 
 ```markdown
 <!-- .github/copilot/CONTEXT.md -->
+
 ## Active Agents
 
-**Primary Agent**: KNX Protocol Expert
-**Supporting Agents**: Testing, Code Style
-**Context Sharing**: 
+**Primary Agent**: KNX Protocol Expert **Supporting Agents**: Testing, Code
+Style **Context Sharing**:
+
 - Primary loads: lxp_parser.py (full)
 - Testing loads: test_lxp_parser.py (full)
 - Code Style loads: both (linting only)
@@ -142,17 +151,15 @@ def check_context_budget():
 ```markdown
 # Von Architecture Agent zu KNX Protocol Agent
 
-[HANDOFF]
-Previous Agent: Architecture
-Decision: Use H6 Climate Platform for heating
-Context Passed:
+[HANDOFF] Previous Agent: Architecture Decision: Use H6 Climate Platform for
+heating Context Passed:
+
 - DPT9.001 Temperature datapoints identified
 - 12 heating actuators in Hauptwohnung.lxp
 - Reference: docs/KNX_IMPLEMENTATION.md#L120-L145
 
-Current Agent: KNX Protocol
-Task: Implement Climate Platform
-Context Loaded:
+Current Agent: KNX Protocol Task: Implement Climate Platform Context Loaded:
+
 - climate.py (L1-L200)
 - lxp_parser.py (only get_climate_elements method)
 - test_climate.py (framework, not tests yet)
@@ -194,12 +201,11 @@ element_43 = get_full_element_details("43")
 ## References
 
 - [Agent Skills Repository](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
-- [.github/copilot/CONTEXT.md](../.github/copilot/CONTEXT.md) - Single Source of Truth
+- [.github/copilot/CONTEXT.md](../.github/copilot/CONTEXT.md) - Single Source of
+  Truth
 - [AGENTS.md](../../AGENTS.md) - Setup + Testing Instructions
 
 ---
 
-**Created**: 2026-01-01  
-**Last Updated**: 2026-01-01  
-**Author**: LUXORliving Context Engineering  
-**Version**: 1.0.0
+**Created**: 2026-01-01 **Last Updated**: 2026-01-01 **Author**: LUXORliving
+Context Engineering **Version**: 1.0.0

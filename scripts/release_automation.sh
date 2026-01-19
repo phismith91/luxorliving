@@ -113,7 +113,7 @@ fi
 # 4) Tag and release
 TAG="v${VERSION}"
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-  echo "Tag $TAG already exists. Will attempt to attach release to existing tag." 
+  echo "Tag $TAG already exists. Will attempt to attach release to existing tag."
 fi
 
 run git tag -a "$TAG" -m "$TAG" || true

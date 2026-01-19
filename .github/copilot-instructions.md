@@ -1,8 +1,10 @@
 # GitHub Copilot Instructions - LUXORliving Integration
 
-> **Note:** Allgemeine Projekt-Infos, Setup-Commands und Testing-Guidelines sind in [AGENTS.md](/AGENTS.md) dokumentiert.  
-> **Projekt-Context und Architektur:** Siehe [.github/copilot/CONTEXT.md](/.github/copilot/CONTEXT.md)  
-> **Context Engineering Skills:** Siehe [.github/copilot/skills/](/.github/copilot/skills/)
+> **Note:** Allgemeine Projekt-Infos, Setup-Commands und Testing-Guidelines sind
+> in [AGENTS.md](/AGENTS.md) dokumentiert. **Projekt-Context und Architektur:**
+> Siehe [.github/copilot/CONTEXT.md](/.github/copilot/CONTEXT.md) **Context
+> Engineering Skills:** Siehe
+> [.github/copilot/skills/](/.github/copilot/skills/)
 
 ---
 
@@ -13,10 +15,12 @@
 **WICHTIG:** Development und Testing erfolgt auf Remote HA via SSH!
 
 **Connection Details:**
+
 - **Host:** 100.97.159.88 (via Tailscale VPN)
 - **User:** phil
 - **Auth:** SSH-Key (`~/.ssh/id_rsa`) - passwortlos
-- **Target:** `/config/custom_components/luxor_living/` (root-owned, needs `sudo`)
+- **Target:** `/config/custom_components/luxor_living/` (root-owned, needs
+  `sudo`)
 - **System:** Home Assistant OS mit s6-overlay (nicht systemd!)
 
 ### SSH-Besonderheiten
@@ -24,12 +28,14 @@
 **CRITICAL:** Lokale `~/.ssh/config` hat ungültige Einträge!
 
 **Lösung:** Immer `-F /dev/null` verwenden:
+
 ```bash
 ssh -F /dev/null phil@100.97.159.88 "command"
 GIT_SSH_COMMAND='ssh -F /dev/null' git push
 ```
 
 **System-Details:**
+
 - Init: s6-overlay (nicht systemd)
 - SSH: `/etc/ssh/authorized_keys` (nicht `~/.ssh/authorized_keys`)
 - HA Restart via SSH: **funktioniert nicht** → UI verwenden
@@ -74,6 +80,7 @@ ssh -F /dev/null phil@100.97.159.88 \
 ### Vor jedem Release
 
 **1. Tests laufen lassen:**
+
 ```bash
 python -m pytest tests/ -v
 # ERWARTUNG: Alle Tests passing
@@ -82,10 +89,12 @@ python -m pytest tests/ -v
 **2. Optional:** Deploy + Test auf Remote HA (siehe oben)
 
 **3. Version bumpen:**
+
 - `custom_components/luxor_living/manifest.json` → "version"
 - `CHANGELOG.md` aktualisieren
 
 **4. Git Operations (mit SSH workaround!):**
+
 ```bash
 git add -A
 git commit -m "Release vX.Y.Z"
@@ -97,6 +106,7 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push origin vX.Y.Z
 ```
 
 **5. GitHub Release erstellen:**
+
 ```bash
 gh release create vX.Y.Z \
   --title "vX.Y.Z - Title" \
@@ -117,6 +127,7 @@ gh release create vX.Y.Z \
 ### SSH Key Authentication
 
 **Setup:**
+
 - Local: `~/.ssh/id_rsa`
 - Remote: `/etc/ssh/authorized_keys` (auf HA-Server)
 - **NEVER commit** SSH keys oder credentials!
@@ -124,6 +135,7 @@ gh release create vX.Y.Z \
 ### Credentials Management
 
 **NEVER commit:**
+
 - Passwords, tokens, API keys
 - SSH private keys
 - Deployment scripts mit hardcoded credentials

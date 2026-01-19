@@ -1,6 +1,7 @@
 # GitHub Copilot Agents - LUXORliving Integration
 
-This directory contains specialized Copilot agents that assist with different aspects of the LUXORliving Home Assistant integration development.
+This directory contains specialized Copilot agents that assist with different
+aspects of the LUXORliving Home Assistant integration development.
 
 ## 📁 File Structure
 
@@ -9,11 +10,12 @@ This directory contains specialized Copilot agents that assist with different as
 1. **[CONTEXT.md](CONTEXT.md)** - Single Source of Truth
    - Production environment, architecture, current status
    - **All agents MUST read this first**
-   
+
 2. **[README.md](README.md)** - This file (Agent Documentation)
    - Agent overview, invocation syntax, coordination
-   
-3. **[../copilot-instructions.md](../copilot-instructions.md)** - Operational Workflows
+
+3. **[../copilot-instructions.md](../copilot-instructions.md)** - Operational
+   Workflows
    - SSH deployment, release process, security
    - Attached to Copilot globally (siehe attachments in instructions)
 
@@ -22,21 +24,24 @@ This directory contains specialized Copilot agents that assist with different as
 ## Active Agents (7)
 
 ### 🏗️ **agent_architect.md** (Primary Authority)
-**Role:** System Architecture & Code Quality  
-**Responsibilities:**
+
+**Role:** System Architecture & Code Quality **Responsibilities:**
+
 - Final authority on all architectural decisions
 - Code quality standards and reviews
 - Module structure and data flow design
 - Release quality gates
 - Technical debt management
 
-**When to use:** Architecture decisions, code reviews, refactoring, pre-release audits
+**When to use:** Architecture decisions, code reviews, refactoring, pre-release
+audits
 
 ---
 
 ### 🐛 **agent_defect_tracker.md**
-**Role:** Bug Management & Quality Assurance  
-**Responsibilities:**
+
+**Role:** Bug Management & Quality Assurance **Responsibilities:**
+
 - Bug triage and prioritization (CRITICAL/HIGH/MEDIUM/LOW)
 - Root cause analysis
 - GitHub issue tracking
@@ -45,13 +50,16 @@ This directory contains specialized Copilot agents that assist with different as
 - **CI failure classification** (formatting, tests, version, docs)
 - **Version verification** (always from manifest.json, never hardcoded)
 
-**When to use:** Bug reports, code review findings, regression testing, CI failures, quality metrics
+**When to use:** Bug reports, code review findings, regression testing, CI
+failures, quality metrics
 
 ---
 
 ### 🚀 **agent_release_manager.md**
-**Role:** Release Coordination, Merge Authority & Deployment  
+
+**Role:** Release Coordination, Merge Authority & Deployment
 **Responsibilities:**
+
 - **EXCLUSIVE:** Merges to main branch (PR-only workflow)
 - Enforces formatting-first (black/isort before commits)
 - Version management (semver, consistency checks)
@@ -60,13 +68,15 @@ This directory contains specialized Copilot agents that assist with different as
 - Deployment coordination (remote HA SSH)
 - Local validation scripts (validate_readme.sh, check_release_notes.sh)
 
-**When to use:** Merging PRs, version bumps, releases, hotfixes, deployment, CI failures
+**When to use:** Merging PRs, version bumps, releases, hotfixes, deployment, CI
+failures
 
 ---
 
 ### 🧪 **agent_testing.md**
-**Role:** Test Strategy & CI/CD Quality Assurance  
-**Responsibilities:**
+
+**Role:** Test Strategy & CI/CD Quality Assurance **Responsibilities:**
+
 - Test coverage requirements (80%+ target)
 - Unit and integration test design
 - CI/CD pipeline maintenance
@@ -75,13 +85,15 @@ This directory contains specialized Copilot agents that assist with different as
 - Simulation testing
 - Test quality review
 
-**When to use:** Writing tests, test failures, coverage analysis, CI/CD setup, README test count updates
+**When to use:** Writing tests, test failures, coverage analysis, CI/CD setup,
+README test count updates
 
 ---
 
 ### 📦 **agent_hacs_compliance.md**
-**Role:** HACS & Home Assistant Core Standards  
-**Responsibilities:**
+
+**Role:** HACS & Home Assistant Core Standards **Responsibilities:**
+
 - HACS integration requirements
 - Home Assistant core compliance
 - Integration quality checklist
@@ -92,8 +104,9 @@ This directory contains specialized Copilot agents that assist with different as
 ---
 
 ### 🔌 **agent_knx_protocol.md**
-**Role:** KNX Protocol Expert  
-**Responsibilities:**
+
+**Role:** KNX Protocol Expert **Responsibilities:**
+
 - KNX specifications and standards
 - Group address interpretation
 - Datapoint types (DPT)
@@ -105,8 +118,9 @@ This directory contains specialized Copilot agents that assist with different as
 ---
 
 ### 🏠 **agent_luxor_expert.md**
-**Role:** LUXORliving Hardware & Protocol Specialist  
-**Responsibilities:**
+
+**Role:** LUXORliving Hardware & Protocol Specialist **Responsibilities:**
+
 - Theben LUXORliving specifics
 - IP1 interface details
 - LXP file format
@@ -119,7 +133,8 @@ This directory contains specialized Copilot agents that assist with different as
 
 ## Archive
 
-Agents moved to `archive/` are no longer actively used (features completed or merged into other agents):
+Agents moved to `archive/` are no longer actively used (features completed or
+merged into other agents):
 
 - `agent_code_quality.md` → Merged into **agent_architect.md**
 - `agent_documentation.md` → Documentation handled by architect
@@ -133,6 +148,7 @@ Agents moved to `archive/` are no longer actively used (features completed or me
 ## Agent Invocation
 
 ### Syntax
+
 ```
 agent_[name]: [your question or request]
 ```
@@ -140,17 +156,20 @@ agent_[name]: [your question or request]
 ### Examples
 
 **Architecture Decision:**
+
 ```
 agent_architect: Should we use polling or event-based updates for the coordinator?
 ```
 
 **Bug Triage:**
+
 ```
 agent_defect_tracker: Triage this error:
 [paste error log]
 ```
 
 **Release Preparation:**
+
 ```
 agent_release_manager: Prepare v0.3.4 release with these changes:
 - Fixed Options Flow reload
@@ -158,21 +177,25 @@ agent_release_manager: Prepare v0.3.4 release with these changes:
 ```
 
 **Test Coverage:**
+
 ```
 agent_testing: What tests are missing for the new scan_interval feature?
 ```
 
 **HACS Compliance:**
+
 ```
 agent_hacs_compliance: Check if we meet all HACS requirements
 ```
 
 **KNX Question:**
+
 ```
 agent_knx_protocol: How do I interpret DPT 9.001 (temperature) telegrams?
 ```
 
 **Hardware Question:**
+
 ```
 agent_luxor_expert: What's the maximum number of group addresses supported by IP1?
 ```
@@ -184,7 +207,8 @@ agent_luxor_expert: What's the maximum number of group addresses supported by IP
 ### Decision Hierarchy
 
 1. **agent_architect** has final authority on architecture and code quality
-2. **agent_release_manager** has exclusive authority on merges to main and releases
+2. **agent_release_manager** has exclusive authority on merges to main and
+   releases
 3. Specialist agents provide expertise in their domains
 4. **agent_defect_tracker** coordinates bug fixes across agents
 5. All agents must format code (black/isort) before any commit
@@ -207,9 +231,11 @@ agent_luxor_expert: What's the maximum number of group addresses supported by IP
 
 ## 📋 Project Context File
 
-**[CONTEXT.md](CONTEXT.md)** ist die **Single Source of Truth** für alle Agents und Copilot.
+**[CONTEXT.md](CONTEXT.md)** ist die **Single Source of Truth** für alle Agents
+und Copilot.
 
 ### Enthält:
+
 - 🏗️ **Production Environment:** Remote SSH deployment (100.97.159.88)
 - 📊 **Current Status:** v0.6.1 (Released 2026-01-16), v0.7.0 roadmap
 - 🔧 **Development Stack:** Python 3.13.11, HA 2026.1.x, pytest 9.0.0
@@ -219,6 +245,7 @@ agent_luxor_expert: What's the maximum number of group addresses supported by IP
 - 🤖 **Agent Rules:** Decision hierarchy, coordination, quality gates
 
 ### Agent Requirements:
+
 - ✅ **Read CONTEXT.md first** before working on any task
 - ✅ **Format before commit:** Run black/isort ALWAYS before staging changes
 - ✅ **Follow production environment** (Remote-first development)
@@ -279,6 +306,4 @@ agent_luxor_expert: What's the maximum number of group addresses supported by IP
 
 ---
 
-Last Updated: 2026-01-16  
-Active Agents: 7  
-Archived Agents: 6
+Last Updated: 2026-01-16 Active Agents: 7 Archived Agents: 6

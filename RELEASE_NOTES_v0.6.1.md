@@ -5,7 +5,8 @@
 ### ✨ Added
 
 - **Push webhook & WebSocket client**
-  - Optional `POST /api/luxor_living/push` endpoint for external KNX state pushes
+  - Optional `POST /api/luxor_living/push` endpoint for external KNX state
+    pushes
   - Configurable WebSocket client (`push_ws_url`) for push-forwarders
   - Authentication modes: `none`, `token`, `bearer`, `hmac` (HMAC-SHA256)
 
@@ -16,7 +17,8 @@
 ### 🧪 Testing & Quality
 
 - **Tests:** 287/287 passing (unit + integration-style)
-- **Quality gates:** README/CHANGELOG validation, HACS install test, zip structure validation
+- **Quality gates:** README/CHANGELOG validation, HACS install test, zip
+  structure validation
 
 ### ⚡ Upgrade Notes
 

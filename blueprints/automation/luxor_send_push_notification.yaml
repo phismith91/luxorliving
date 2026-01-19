@@ -1,6 +1,7 @@
 blueprint:
   name: Send notification on LUXOR push
-  description: Send a notification when LUXORliving push webhook reports a change
+  description:
+    Send a notification when LUXORliving push webhook reports a change
   domain: automation
   input:
     entry_id:

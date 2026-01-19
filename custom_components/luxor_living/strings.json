@@ -1,79 +1,79 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "LUXORliving - LXP Project File",
-                "description": "Browse and select your LXP project file from Theben LUXORPlug",
-                "data": {
-                    "lxp_file": "LXP Project File"
-                },
-                "data_description": {
-                    "lxp_file": "Select your .lxp project file using the file browser"
-                }
-            },
-            "gateway": {
-                "title": "LUXORliving - KNX/IP Gateway",
-                "description": "Configure your KNX/IP gateway connection and credentials for project: {project_name}",
-                "data": {
-                    "host": "Gateway IP Address",
-                    "username": "Username",
-                    "password": "Password",
-                    "connection_type": "Connection Type",
-                    "simulation_mode": "Simulation Mode"
-                },
-                "data_description": {
-                    "host": "IP address of your Theben LUXORliving KNX/IP gateway",
-                    "username": "REST API username (default: admin)",
-                    "password": "REST API password",
-                    "connection_type": "KNX connection type (tunneling recommended)",
-                    "simulation_mode": "Test mode without real hardware connection"
-                }
-            }
+  "config": {
+    "step": {
+      "user": {
+        "title": "LUXORliving - LXP Project File",
+        "description": "Browse and select your LXP project file from Theben LUXORPlug",
+        "data": {
+          "lxp_file": "LXP Project File"
         },
-        "error": {
-            "cannot_connect": "Failed to connect to the gateway",
-            "invalid_auth": "Invalid username or password. Please check your credentials.",
-            "file_not_found": "LXP file not found. Please select a valid .lxp file.",
-            "invalid_lxp": "Invalid or corrupted LXP file. Please check the file format.",
-            "unknown": "Unexpected error occurred"
+        "data_description": {
+          "lxp_file": "Select your .lxp project file using the file browser"
+        }
+      },
+      "gateway": {
+        "title": "LUXORliving - KNX/IP Gateway",
+        "description": "Configure your KNX/IP gateway connection and credentials for project: {project_name}",
+        "data": {
+          "host": "Gateway IP Address",
+          "username": "Username",
+          "password": "Password",
+          "connection_type": "Connection Type",
+          "simulation_mode": "Simulation Mode"
         },
-        "abort": {
-            "already_configured": "This device is already configured",
-            "not_implemented": "This feature is not yet implemented"
+        "data_description": {
+          "host": "IP address of your Theben LUXORliving KNX/IP gateway",
+          "username": "REST API username (default: admin)",
+          "password": "REST API password",
+          "connection_type": "KNX connection type (tunneling recommended)",
+          "simulation_mode": "Test mode without real hardware connection"
         }
+      }
     },
-    "options": {
-        "step": {
-            "init": {
-                "title": "LUXORliving Options",
-                "description": "Configure LUXORliving integration behavior",
-                "data": {
-                    "simulation_mode": "Simulation Mode (Dry-run)",
-                    "scan_interval": "Polling Interval (seconds)",
-                    "log_level": "Debug Level",
-                    "discovery_timeout": "Discovery Timeout (seconds)",
-                    "push_ws_url": "⚙️ Push WebSocket URL (Advanced)",
-                    "push_auth_method": "⚙️ Push Auth Method (Advanced)",
-                    "push_token": "⚙️ Push Token (Advanced)",
-                    "push_ws_token": "⚙️ Push WS Token (Advanced)"
-                },
-                "data_description": {
-                    "simulation_mode": "Enable simulation mode for testing without hardware",
-                    "scan_interval": "How often to poll the gateway for updates (5-300 seconds)",
-                    "log_level": "Logging verbosity for troubleshooting",
-                    "discovery_timeout": "How long to wait for sensor auto-discovery (0.5-10 seconds)",
-                    "push_ws_url": "ADVANCED: WebSocket URL for external push server. Leave empty unless you have a custom KNX forwarder.",
-                    "push_auth_method": "ADVANCED: Security method for push endpoint (only needed if using external push server)",
-                    "push_token": "ADVANCED: Shared secret for authentication (leave empty unless using push server)",
-                    "push_ws_token": "ADVANCED: Optional WebSocket Bearer token (rarely needed)"
-                }
-            }
-        }
+    "error": {
+      "cannot_connect": "Failed to connect to the gateway",
+      "invalid_auth": "Invalid username or password. Please check your credentials.",
+      "file_not_found": "LXP file not found. Please select a valid .lxp file.",
+      "invalid_lxp": "Invalid or corrupted LXP file. Please check the file format.",
+      "unknown": "Unexpected error occurred"
     },
-    "issues": {
-        "authentication_failed": {
-            "title": "Authentication Failed for {host}",
-            "description": "The authentication to your LUXORliving gateway at {host} has failed.\n\nError: {error}\n\nPlease verify your credentials (username: {username}) and update them if necessary."
-        }
+    "abort": {
+      "already_configured": "This device is already configured",
+      "not_implemented": "This feature is not yet implemented"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "LUXORliving Options",
+        "description": "Configure LUXORliving integration behavior",
+        "data": {
+          "simulation_mode": "Simulation Mode (Dry-run)",
+          "scan_interval": "Polling Interval (seconds)",
+          "log_level": "Debug Level",
+          "discovery_timeout": "Discovery Timeout (seconds)",
+          "push_ws_url": "⚙️ Push WebSocket URL (Advanced)",
+          "push_auth_method": "⚙️ Push Auth Method (Advanced)",
+          "push_token": "⚙️ Push Token (Advanced)",
+          "push_ws_token": "⚙️ Push WS Token (Advanced)"
+        },
+        "data_description": {
+          "simulation_mode": "Enable simulation mode for testing without hardware",
+          "scan_interval": "How often to poll the gateway for updates (5-300 seconds)",
+          "log_level": "Logging verbosity for troubleshooting",
+          "discovery_timeout": "How long to wait for sensor auto-discovery (0.5-10 seconds)",
+          "push_ws_url": "ADVANCED: WebSocket URL for external push server. Leave empty unless you have a custom KNX forwarder.",
+          "push_auth_method": "ADVANCED: Security method for push endpoint (only needed if using external push server)",
+          "push_token": "ADVANCED: Shared secret for authentication (leave empty unless using push server)",
+          "push_ws_token": "ADVANCED: Optional WebSocket Bearer token (rarely needed)"
+        }
+      }
+    }
+  },
+  "issues": {
+    "authentication_failed": {
+      "title": "Authentication Failed for {host}",
+      "description": "The authentication to your LUXORliving gateway at {host} has failed.\n\nError: {error}\n\nPlease verify your credentials (username: {username}) and update them if necessary."
+    }
+  }
 }

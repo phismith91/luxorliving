@@ -1,8 +1,12 @@
 # Automation Examples – LUXORliving
 
-Practical, copy-ready Home Assistant automations for the LUXORliving integration.
+Practical, copy-ready Home Assistant automations for the LUXORliving
+integration.
 
-Note: Replace entity IDs and notify services with your own setup (e.g., `light.front_entry`, `cover.bedroom`, `notify.mobile_app_your_device`). Avoid `entity_id: all` unless you intentionally want to affect every entity in the domain.
+Note: Replace entity IDs and notify services with your own setup (e.g.,
+`light.front_entry`, `cover.bedroom`, `notify.mobile_app_your_device`). Avoid
+`entity_id: all` unless you intentionally want to affect every entity in the
+domain.
 
 ## Contents
 
@@ -142,7 +146,8 @@ automation:
             - light.kitchen_island
 ```
 
-Note: Prefer explicit lists, areas, or groups instead of `entity_id: all` for safer control.
+Note: Prefer explicit lists, areas, or groups instead of `entity_id: all` for
+safer control.
 
 ---
 
@@ -379,7 +384,8 @@ automation:
 
 ## Scenes & scripts (with services)
 
-Scenes define states; for reliable cover/heating control prefer service-based automations.
+Scenes define states; for reliable cover/heating control prefer service-based
+automations.
 
 ### "Home theater"
 
@@ -464,9 +470,12 @@ script:
 
 ## Notes and tips
 
-- Notifications: Replace `notify.mobile_app_your_device` with your specific notify service (check `services` in the Developer Tools).
-- Presence: Prefer zone triggers and template conditions, or use a people group (`group.household`) for simpler automations.
-- Avoid `entity_id: all`: Prefer explicit lists, areas, or groups for safer control.
+- Notifications: Replace `notify.mobile_app_your_device` with your specific
+  notify service (check `services` in the Developer Tools).
+- Presence: Prefer zone triggers and template conditions, or use a people group
+  (`group.household`) for simpler automations.
+- Avoid `entity_id: all`: Prefer explicit lists, areas, or groups for safer
+  control.
 - Traces: Use Home Assistant’s Trace to debug failing automations.
 - Conditions: Add conditions to avoid unwanted triggers (e.g., only at night).
 - Delays: Use short delays to avoid flicker with motion sensors.

@@ -1,15 +1,20 @@
 reload:
   name: Reload integration
-  description: Reload the LUXORliving integration without restarting Home Assistant.
+  description:
+    Reload the LUXORliving integration without restarting Home Assistant.
   fields: {}
 
 list_entities:
   name: List entities
-  description: List all entity IDs for switches, lights, and sensors. Useful for updating automations after configuration changes.
+  description:
+    List all entity IDs for switches, lights, and sensors. Useful for updating
+    automations after configuration changes.
   fields:
     platform:
       name: Platform
-      description: Filter by platform (switch, light, sensor, binary_sensor). Leave empty for all.
+      description:
+        Filter by platform (switch, light, sensor, binary_sensor). Leave empty
+        for all.
       required: false
       selector:
         select:

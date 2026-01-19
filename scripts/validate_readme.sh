@@ -61,7 +61,7 @@ for LINK in $LINKS; do
     if [[ "$LINK" =~ ^http ]]; then
         continue
     fi
-    
+
     if [ -f "$LINK" ]; then
         echo "   ✅ $LINK"
     else
@@ -97,7 +97,7 @@ for PATTERN in "${OUTDATED_PATTERNS[@]}"; do
     if [ "$PATTERN" == "v$MANIFEST_VERSION" ]; then
         continue
     fi
-    
+
     if grep -q "$PATTERN" README.md 2>/dev/null; then
         echo "   ⚠️  Found potentially outdated: $PATTERN"
         # Not counting as error, just warning
@@ -120,7 +120,7 @@ else
         echo "      (Expected: ## [$MANIFEST_VERSION] - YYYY-MM-DD)"
         ERRORS=$((ERRORS + 1))
     fi
-    
+
     # Check for [Unreleased] section with version number (common mistake)
     if grep -q "## \[Unreleased\] - v[0-9]" CHANGELOG.md; then
         echo "   ❌ Found versioned [Unreleased] section (should be released!)"
@@ -128,7 +128,7 @@ else
     else
         echo "   ✅ No versioned [Unreleased] sections"
     fi
-    
+
     # Check if there's an [Unreleased] section at all
     if grep -q "## \[Unreleased\]" CHANGELOG.md; then
         echo "   ✅ [Unreleased] section exists"

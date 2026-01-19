@@ -1,13 +1,14 @@
 ---
-description: Emergency procedures and incident response for LUXORliving integration
+description:
+  Emergency procedures and incident response for LUXORliving integration
 ---
 
 # Incident Response Runbook
 
 ## Quick Reference
 
-| Severity            | Response Time | Examples                                           |
-| ------------------- | ------------- | -------------------------------------------------- |
+| Severity             | Response Time | Examples                                           |
+| -------------------- | ------------- | -------------------------------------------------- |
 | 🔴 **P0 - Critical** | <1 hour       | Auth broken, crash on startup, all devices offline |
 | 🟠 **P1 - High**     | <4 hours      | Major feature broken, workaround exists            |
 | 🟡 **P2 - Medium**   | <24 hours     | Minor bug, UI issue, performance degradation       |
@@ -19,9 +20,11 @@ description: Emergency procedures and incident response for LUXORliving integrat
 
 ### 🔴 P0 - Critical
 
-**Definition:** Integration completely broken, users can't control devices or HA breaks
+**Definition:** Integration completely broken, users can't control devices or HA
+breaks
 
 **Examples:**
+
 - Integration fails to load on startup
 - Circuit breaker stuck in OPEN state
 - Coordinator crashes on every poll
@@ -29,6 +32,7 @@ description: Emergency procedures and incident response for LUXORliving integrat
 - Configuration breaks HA on reload
 
 **Response:**
+
 1. **Acknowledge** (within 30 min): Comment on GitHub issue
 2. **Assess Impact:** How many users? All versions or specific?
 3. **Evaluate Options:**
@@ -43,6 +47,7 @@ description: Emergency procedures and incident response for LUXORliving integrat
 6. **Post-Incident:** Review root cause within 24 hours
 
 **Example Scenario:**
+
 ```
 USER: "Integration won't load, HA errors: ModuleNotFoundError"
 RESPONSE:
@@ -60,12 +65,14 @@ RESPONSE:
 **Definition:** Major feature broken, workaround exists, users frustrated
 
 **Examples:**
+
 - Dimming broken but on/off works
 - Cover position reading incorrect
 - Sensors only update on restart
 - Auth repair flow not triggering
 
 **Response:**
+
 1. Create GitHub issue (label: `bug`, `P1`)
 2. Reproduce issue locally
 3. Investigate root cause
@@ -80,12 +87,14 @@ RESPONSE:
 **Definition:** Minor bug, limited impact, users can work around
 
 **Examples:**
+
 - Entity name incorrect
 - UI label typo
 - Performance regression (5-10% slower)
 - Warning in logs
 
 **Response:**
+
 1. Create GitHub issue (label: `bug`, `P2`)
 2. Add to next release milestone
 3. Include in CHANGELOG
@@ -98,12 +107,14 @@ RESPONSE:
 **Definition:** Cosmetic issue, feature request, no user impact
 
 **Examples:**
+
 - Documentation typo
 - Translation missing
 - README outdated
 - Feature enhancement idea
 
 **Response:**
+
 1. Create GitHub issue (label: `enhancement`)
 2. Community can contribute
 3. No timeline commitment
@@ -139,6 +150,7 @@ v0.6.1 hotfix coming in 2 hours"
 ```
 
 **Post-Rollback:**
+
 - Document root cause
 - Create fix + test
 - Release hotfix version
@@ -196,6 +208,7 @@ git branch -d hotfix/critical-fix
 ```
 
 **Post-Release:**
+
 - Announce in README
 - Update CHANGELOG
 - Thank contributors
@@ -207,6 +220,7 @@ git branch -d hotfix/critical-fix
 **When:** Circuit breaker opens and won't recover
 
 **Symptoms:**
+
 ```
 ERROR: Circuit breaker OPEN, rejecting calls
 (stuck for >timeout seconds)
@@ -251,6 +265,7 @@ sudo systemctl restart homeassistant
 **When:** User can't complete setup, stuck in config flow
 
 **Symptoms:**
+
 ```
 - "Add integration" button does nothing
 - Form submission hangs
@@ -296,25 +311,29 @@ sudo systemctl restart homeassistant
 ```markdown
 ## 🚨 Critical Issue Identified
 
-**Severity:** P0 - Integration May Not Work  
-**Affected:** v0.6.0  
-**Status:** INVESTIGATING  
+**Severity:** P0 - Integration May Not Work **Affected:** v0.6.0 **Status:**
+INVESTIGATING
 
 ### What Happened
+
 [Brief description of issue]
 
 ### What We're Doing
+
 - [Investigating root cause]
 - [Developing fix]
 - [Testing solution]
 
 ### What You Should Do
+
 **Immediate action** (optional): Downgrade to v0.5.4.3
+
 - Settings → Devices & Services → LUXORliving → ...
 
 **ETA for fix:** ~2 hours
 
 ### Updates
+
 - 10:00 UTC: Issue identified, working on fix
 - 10:30 UTC: Fix ready, testing
 - 11:00 UTC: v0.6.1 hotfix released
@@ -327,22 +346,24 @@ Follow this issue for updates!
 ```markdown
 ## ✅ Issue Resolved
 
-**Severity:** P0 - Critical Bug  
-**Affected:** v0.6.0  
-**Fixed in:** v0.6.1  
+**Severity:** P0 - Critical Bug **Affected:** v0.6.0 **Fixed in:** v0.6.1
 
 ### Root Cause
+
 [Technical explanation of what went wrong]
 
 ### Solution
+
 [What we fixed]
 
 ### What to Do
+
 1. Update to v0.6.1 (Settings → Devices & Services → Custom integrations)
 2. Reload integration
 3. Report if issue persists
 
 ### Prevention
+
 [What we'll do to prevent this in future]
 
 Thanks for your patience! 🙏
@@ -353,27 +374,29 @@ Thanks for your patience! 🙏
 ```markdown
 ## Post-Incident Review: Issue Name
 
-**Date:** 2026-01-11  
-**Severity:** P0  
-**Duration:** 1 hour  
-**Users Affected:** ~50  
+**Date:** 2026-01-11 **Severity:** P0 **Duration:** 1 hour **Users Affected:**
+~50
 
 ### Timeline
+
 - 10:00 UTC: Issue reported
 - 10:15 UTC: Root cause identified
 - 10:30 UTC: Fix ready
 - 11:00 UTC: Release published
 
 ### Root Cause
+
 [Technical details]
 
 ### Preventions
+
 - [ ] Add test to prevent this
 - [ ] Improve error handling
 - [ ] Update documentation
 - [ ] Code review checklist
 
 ### Action Items
+
 - [ ] Assign owner for follow-up
 - [ ] Schedule implementation
 - [ ] Update runbook
@@ -482,13 +505,11 @@ Update documentation
 
 ## Contact
 
-**Security Issues:** Don't open public issue  
-**Report:** GitHub Security Advisory (private)  
-**Response Time:** <48 hours acknowledgment
+**Security Issues:** Don't open public issue **Report:** GitHub Security
+Advisory (private) **Response Time:** <48 hours acknowledgment
 
-**General Issues:** GitHub Issues tracker  
-**Feature Requests:** GitHub Discussions  
-**HA Community:** HA Forums
+**General Issues:** GitHub Issues tracker **Feature Requests:** GitHub
+Discussions **HA Community:** HA Forums
 
 ---
 

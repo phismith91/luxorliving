@@ -1,8 +1,7 @@
 # 🔍 Week 3: Gap Analysis & Dependency Mapping
 
-**Date:** 10. Januar 2026  
-**Phase:** 3 - Analysis & Prioritization  
-**Purpose:** Identify cross-cutting issues and map implementation dependencies
+**Date:** 10. Januar 2026 **Phase:** 3 - Analysis & Prioritization **Purpose:**
+Identify cross-cutting issues and map implementation dependencies
 
 ---
 
@@ -23,11 +22,13 @@ Issues identified across reviews fall into **5 categories**:
 ## 🔗 Issue 1: Security Posture (Critical - All Reviewers)
 
 ### Identified By
+
 - ✅ **DevOps Engineer** (P0): "No security scanning in CI/CD"
 - ✅ **Senior Developer** (P1): "No dependency audit, pip-audit missing"
 - ⚠️ **HA User** (Implicit): Expects secure integration
 
 ### Current State
+
 ```
 ❌ No bandit (Python code security scanner)
 ❌ No pip-audit (dependency vulnerability scanner)
@@ -40,22 +41,25 @@ Issues identified across reviews fall into **5 categories**:
 
 | Stakeholder    | Risk                               | Impact Level |
 | -------------- | ---------------------------------- | ------------ |
-| **Users**      | Vulnerable to exploits             | 🔴 HIGH       |
-| **Developers** | Can't detect security issues early | 🔴 HIGH       |
-| **DevOps**     | Manual security reviews required   | 🟡 MEDIUM     |
-| **Project**    | Reputation damage if breach occurs | 🔴 HIGH       |
+| **Users**      | Vulnerable to exploits             | 🔴 HIGH      |
+| **Developers** | Can't detect security issues early | 🔴 HIGH      |
+| **DevOps**     | Manual security reviews required   | 🟡 MEDIUM    |
+| **Project**    | Reputation damage if breach occurs | 🔴 HIGH      |
 
 ### Dependencies
 
 **Blocks:**
+
 - Home Assistant Gold tier (requires security scanning)
 - Public release confidence
 - Enterprise adoption
 
 **Blocked By:**
+
 - None (can implement immediately)
 
 **Enables:**
+
 - Automated vulnerability detection
 - CVE tracking
 - Security-first culture
@@ -63,6 +67,7 @@ Issues identified across reviews fall into **5 categories**:
 ### Implementation Plan
 
 **Phase 1: Basic Scanning (2 hours)**
+
 ```yaml
 # .github/workflows/security.yml (NEW FILE)
 name: Security Scan
@@ -73,7 +78,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: '0 0 * * 0'  # Weekly on Sunday
+    - cron: "0 0 * * 0" # Weekly on Sunday
 
 jobs:
   bandit:
@@ -84,10 +89,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      
+
       - name: Install bandit
         run: pip install bandit[toml]
-      
+
       - name: Run bandit
         run: |
           bandit -r custom_components/luxor_living/ \
@@ -110,10 +115,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      
+
       - name: Install pip-audit
         run: pip install pip-audit
-      
+
       - name: Audit dependencies
         run: |
           pip install -r requirements_dev.txt
@@ -129,6 +134,7 @@ jobs:
 ```
 
 **Phase 2: Dependabot Security (15 min)**
+
 ```yaml
 # .github/dependabot.yml (UPDATE)
 version: 2
@@ -144,10 +150,11 @@ updates:
       - "phismith91"
     labels:
       - "dependencies"
-      - "security"  # NEW
+      - "security" # NEW
 ```
 
 **Phase 3: Security Policy (30 min)**
+
 ```markdown
 # SECURITY.md (UPDATE)
 
@@ -185,19 +192,21 @@ updates:
 
 ### Priority: 🔴 **P0 - Critical**
 
-**Effort:** 2-3 hours  
-**Impact:** HIGH (prevents vulnerabilities, enables Gold tier)  
-**ROI:** ⭐⭐⭐⭐⭐
+**Effort:** 2-3 hours **Impact:** HIGH (prevents vulnerabilities, enables Gold
+tier) **ROI:** ⭐⭐⭐⭐⭐
 
 ---
 
 ## 🔗 Issue 2: Test Coverage Gaps (Critical - DevOps + Developer)
 
 ### Identified By
-- ✅ **Senior Developer** (P0): "55% coverage, critical gaps in circuit breaker, coordinator, auth"
+
+- ✅ **Senior Developer** (P0): "55% coverage, critical gaps in circuit breaker,
+  coordinator, auth"
 - ✅ **DevOps Engineer** (Implied): "CI catches only 55% of bugs"
 
 ### Current State
+
 ```
 ✅ 212 tests passing (100% success rate)
 ⚠️ 55% code coverage (target: 75%+)
@@ -210,8 +219,8 @@ updates:
 
 ### Coverage Gaps by Module
 
-| Module                 | Current Coverage | Missing Tests                                              | Priority |
-| ---------------------- | ---------------- | ---------------------------------------------------------- | -------- |
+| Module                 | Current Coverage | Missing Tests                                              | Priority  |
+| ---------------------- | ---------------- | ---------------------------------------------------------- | --------- |
 | **circuit_breaker.py** | ~0%              | State transitions (closed→open→half_open→closed)           | 🔴 HIGH   |
 | **coordinator.py**     | ~30%             | Auth failure handling (3 failures → repair), state caching | 🔴 HIGH   |
 | **repairs.py**         | ~40%             | Repair issue creation, dismissal, re-auth flow             | 🔴 HIGH   |
@@ -222,14 +231,17 @@ updates:
 ### Dependencies
 
 **Blocks:**
+
 - Safe refactoring (can't refactor EntityMapper without tests)
 - Home Assistant Gold tier (requires 90%+ coverage)
 - Confident releases (55% = 45% of code untested)
 
 **Blocked By:**
+
 - None (can start immediately)
 
 **Enables:**
+
 - Fearless refactoring
 - Faster development (TDD)
 - Fewer production bugs (36% reduction at 75% coverage)
@@ -247,64 +259,64 @@ from custom_components.luxor_living.circuit_breaker import CircuitBreaker
 
 class TestCircuitBreakerStateTransitions:
     """Test state machine transitions."""
-    
+
     def test_closed_to_open_after_threshold(self):
         """Circuit opens after failure threshold."""
         cb = CircuitBreaker(failure_threshold=3, timeout=60)
         assert cb.state == "closed"
-        
+
         # Record failures
         for i in range(2):
             cb.record_failure()
             assert cb.state == "closed", f"Should stay closed at {i+1} failures"
-        
+
         # Third failure opens circuit
         cb.record_failure()
         assert cb.state == "open", "Should open after 3 failures"
-    
+
     async def test_open_to_half_open_after_timeout(self):
         """Circuit transitions to half-open after timeout."""
         cb = CircuitBreaker(failure_threshold=2, timeout=1)
-        
+
         # Open circuit
         cb.record_failure()
         cb.record_failure()
         assert cb.state == "open"
-        
+
         # Wait for timeout
         await asyncio.sleep(1.1)
-        
+
         # Next operation should transition to half-open
         assert cb.can_execute() == True  # Triggers half-open
         assert cb.state == "half_open"
-    
+
     def test_half_open_to_closed_on_success(self):
         """Circuit closes on successful operation in half-open state."""
         cb = CircuitBreaker(failure_threshold=2, timeout=0.1)
-        
+
         # Open circuit
         cb.record_failure()
         cb.record_failure()
-        
+
         # Wait and transition to half-open
         time.sleep(0.2)
         cb.can_execute()
         assert cb.state == "half_open"
-        
+
         # Success closes circuit
         cb.record_success()
         assert cb.state == "closed"
-    
+
     def test_half_open_to_open_on_failure(self):
         """Circuit reopens on failure in half-open state."""
         cb = CircuitBreaker(failure_threshold=2, timeout=0.1)
-        
+
         # Get to half-open state
         cb.record_failure()
         cb.record_failure()
         time.sleep(0.2)
         cb.can_execute()
-        
+
         # Failure in half-open reopens
         cb.record_failure()
         assert cb.state == "open"
@@ -320,12 +332,12 @@ from custom_components.luxor_living.rest_client import AuthenticationError
 async def test_coordinator_creates_repair_after_3_auth_failures(hass, mock_gateway, mock_entry):
     """Coordinator creates repair issue after 3 consecutive auth failures."""
     coordinator = LuxorLivingCoordinator(hass, mock_gateway, mock_entry)
-    
+
     # Mock gateway to raise AuthenticationError
     coordinator.gateway.some_method = AsyncMock(
         side_effect=AuthenticationError("Invalid credentials")
     )
-    
+
     # Simulate 3 update cycles
     with patch('custom_components.luxor_living.repairs.create_auth_repair_issue') as mock_repair:
         for i in range(3):
@@ -333,7 +345,7 @@ async def test_coordinator_creates_repair_after_3_auth_failures(hass, mock_gatew
                 await coordinator._async_update_data()
             except:
                 pass  # Expected to fail
-        
+
         # Assert repair created after 3rd failure
         assert mock_repair.call_count == 1
         assert coordinator._auth_failures == 3
@@ -342,13 +354,13 @@ async def test_coordinator_creates_repair_after_3_auth_failures(hass, mock_gatew
 async def test_coordinator_resets_failure_count_on_success(hass, mock_gateway, mock_entry):
     """Auth failure counter resets on successful update."""
     coordinator = LuxorLivingCoordinator(hass, mock_gateway, mock_entry)
-    
+
     # Simulate 2 failures
     coordinator._auth_failures = 2
-    
+
     # Successful update
     await coordinator._async_update_data()
-    
+
     # Failure count reset
     assert coordinator._auth_failures == 0
 ```
@@ -410,9 +422,8 @@ def test_climate_updates_coordinator_on_setpoint_change():
 
 ### Priority: 🔴 **P0 - Critical**
 
-**Effort:** 7 days (56 hours)  
-**Impact:** HIGH (enables safe refactoring, Gold tier)  
-**ROI:** ⭐⭐⭐⭐⭐
+**Effort:** 7 days (56 hours) **Impact:** HIGH (enables safe refactoring, Gold
+tier) **ROI:** ⭐⭐⭐⭐⭐
 
 **Dependency Note:** Should start BEFORE EntityMapper refactoring (Issue 5)
 
@@ -421,13 +432,16 @@ def test_climate_updates_coordinator_on_setpoint_change():
 ## 🔗 Issue 3: Documentation Discoverability (High - All Reviewers)
 
 ### Identified By
-- ✅ **HA User** (P0): "Best docs hidden (DASHBOARD_EXAMPLES, AUTOMATIONS not linked)"
+
+- ✅ **HA User** (P0): "Best docs hidden (DASHBOARD_EXAMPLES, AUTOMATIONS not
+  linked)"
 - ✅ **DevOps Engineer** (P2): "No incident response runbook"
 - ✅ **Senior Developer** (Implied): "EntityMapper complexity undocumented"
 
 ### Current State
 
 **User-Facing Docs (19 files):**
+
 ```
 ✅ Linked in README:
    - INSTALLATION.md
@@ -442,6 +456,7 @@ def test_climate_updates_coordinator_on_setpoint_change():
 ```
 
 **Developer Docs:**
+
 ```
 ✅ AGENTS.md (setup, testing)
 ❌ No architecture overview diagram
@@ -449,6 +464,7 @@ def test_climate_updates_coordinator_on_setpoint_change():
 ```
 
 **Process Docs:**
+
 ```
 ✅ RELEASE_OPERATIONS.md (comprehensive)
 ❌ No incident response runbook
@@ -467,14 +483,17 @@ def test_climate_updates_coordinator_on_setpoint_change():
 ### Dependencies
 
 **Blocks:**
+
 - User adoption (can't use features they can't discover)
 - Developer contributions (can't contribute without docs)
 - Incident response (no runbook = chaos)
 
 **Blocked By:**
+
 - None (docs already exist, just need linking!)
 
 **Enables:**
+
 - Faster onboarding
 - Community contributions
 - Professional incident management
@@ -489,24 +508,32 @@ def test_climate_updates_coordinator_on_setpoint_change():
 ## 📚 Documentation
 
 ### For Users
+
 - 📖 [Installation Guide](docs/INSTALLATION.md) - Step-by-step setup
-- 🎨 [Dashboard Examples](docs/DASHBOARD_EXAMPLES.md) - UI card configurations ← ADD
+- 🎨 [Dashboard Examples](docs/DASHBOARD_EXAMPLES.md) - UI card configurations ←
+  ADD
 - 🤖 [Automation Recipes](docs/AUTOMATIONS.md) - Common patterns ← ADD
 - 🔌 [Compatible Devices](docs/COMPATIBLE_DEVICES.md) - Tested hardware ← ADD
 - 📊 [Sensors & Weather](docs/SENSOR_PLATFORM.md) - Sensor configuration ← ADD
 
 ### For Developers
-- 🏗️ [Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md) - System design ← CREATE
-- 📐 [EntityMapper Design](docs/ENTITY_MAPPER_DESIGN.md) - Mapping logic ← CREATE
+
+- 🏗️ [Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md) - System design ←
+  CREATE
+- 📐 [EntityMapper Design](docs/ENTITY_MAPPER_DESIGN.md) - Mapping logic ←
+  CREATE
 - 🧪 [Testing Guide](docs/TESTS.md) - Running tests
 - 🛠️ [Setup & Development](AGENTS.md) - Developer setup
 
 ### For DevOps
+
 - 🚀 [Release Operations](docs/RELEASE_OPERATIONS.md) - Release process
-- 🚨 [Incident Response](docs/INCIDENT_RESPONSE_RUNBOOK.md) - Emergency procedures ← CREATE
+- 🚨 [Incident Response](docs/INCIDENT_RESPONSE_RUNBOOK.md) - Emergency
+  procedures ← CREATE
 - 📊 [Monitoring & Health](docs/MONITORING.md) - Health endpoint usage ← CREATE
 
 ### API Documentation
+
 - 🔧 [LUXORliving REST API](docs/LUXORliving_API_Documentation_EN.pdf)
 - 📡 [BAOS Protocol](docs/weinzierl-777-knx-ip-baos-5193-manual-de.pdf)
 ```
@@ -515,14 +542,17 @@ def test_climate_updates_coordinator_on_setpoint_change():
 
 ```markdown
 # docs/ARCHITECTURE_OVERVIEW.md (NEW FILE)
+
 # LUXORliving Integration - Architecture Overview
 
 ## System Design
 
 ### Layered Architecture
+
 [Diagram: Platform Layer → Coordinator → Gateway → Parser/Mapper]
 
 ### Component Responsibilities
+
 - **LuxorKNXGateway:** KNX protocol abstraction, REST API client
 - **LuxorLivingCoordinator:** State management, polling orchestration
 - **EntityMapper:** LXP → HA entity translation
@@ -530,27 +560,33 @@ def test_climate_updates_coordinator_on_setpoint_change():
 - **Circuit Breaker:** Error resilience, failure isolation
 
 ### Data Flow
+
 [Diagram: User Input → Config Flow → LXP Upload → Parsing → Entity Creation]
 
 ### State Management
+
 [Diagram: KNX Telegram → Gateway → Coordinator → Entity State Update]
 
 ## Key Design Decisions
+
 - Why REST API over direct tunneling? (See ARCHITECTURE_DECISION.md)
 - Why coordinator pattern? (HA best practice, state consistency)
 - Why LXP over ETS? (No ETS dependency, user-friendly)
 ```
 
-```markdown
+````markdown
 # docs/ENTITY_MAPPER_DESIGN.md (NEW FILE)
+
 # EntityMapper - Design Documentation
 
 ## Purpose
+
 Translates LXP project structure into Home Assistant entities.
 
 ## Architecture
 
 ### Role-Based Mapping
+
 ```python
 ROLE_TO_PLATFORM = {
     "OnOff": Platform.LIGHT,
@@ -559,8 +595,10 @@ ROLE_TO_PLATFORM = {
     ...
 }
 ```
+````
 
 ### Mapping Process
+
 1. **Parse LXP:** Extract devices, actuators, sensors
 2. **Detect Roles:** Identify datapoint roles (OnOff, Dimmen%, etc.)
 3. **Map Platform:** Role → Platform (e.g., OnOff → Light)
@@ -568,7 +606,9 @@ ROLE_TO_PLATFORM = {
 5. **Create Entities:** Generate MappedEntity objects
 
 ### Override System
+
 Users can customize sensor mappings via YAML:
+
 ```yaml
 discovered_sensors:
   "1/2/3":
@@ -578,15 +618,18 @@ discovered_sensors:
 ```
 
 ## Complexity Analysis
+
 - **LOC:** 523 lines (target: split into 3 modules)
 - **Responsibilities:** Mapping + Override handling + Platform detection
 - **Refactoring Plan:** See Issue 5 (EntityMapper Decomposition)
 
 ## Extension Points
+
 - Adding new platforms: Update ROLE_TO_PLATFORM
 - Custom mapping rules: Override system
 - Platform-specific logic: Platform files (light.py, etc.)
-```
+
+````
 
 ```markdown
 # docs/INCIDENT_RESPONSE_RUNBOOK.md (NEW FILE)
@@ -663,9 +706,10 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push origin ":refs/tags/$VERSION"
 
 # 3. Notify users (GitHub issue + release notes)
 echo "Emergency rollback: $VERSION removed due to critical bug"
-```
+````
 
 ### Emergency 2: Hotfix Release
+
 ```bash
 # 1. Create hotfix branch from last stable tag
 git checkout -b hotfix/critical-fix v0.5.4.3
@@ -685,7 +729,9 @@ git push origin main
 ```
 
 ### Emergency 3: Circuit Breaker Override
+
 If circuit breaker incorrectly opens:
+
 ```python
 # Temporary override in coordinator.py
 # (Remove after root cause fixed!)
@@ -696,24 +742,27 @@ if self._force_close_circuit:  # Emergency flag
 ## Communication Templates
 
 ### User Notification (GitHub Issue)
+
 ```markdown
 ## ⚠️ Critical Issue Identified
 
-**Version Affected:** v0.6.0
-**Status:** Investigating / Fix in Progress / Resolved
-**Workaround:** [If available]
+**Version Affected:** v0.6.0 **Status:** Investigating / Fix in Progress /
+Resolved **Workaround:** [If available]
 
 We've identified a critical issue affecting [description].
 
 **Impact:**
+
 - [Specific impact, e.g., "Lights not responding"]
 - [Affected configurations, e.g., "Only IP1 gateways"]
 
 **Next Steps:**
+
 1. [Immediate action, e.g., "Rollback to v0.5.4.3"]
 2. [Timeline, e.g., "Hotfix release within 4 hours"]
 
 **Updates:**
+
 - [Timestamp]: Issue identified
 - [Timestamp]: Root cause found
 - [Timestamp]: Fix deployed
@@ -723,34 +772,34 @@ We apologize for the inconvenience.
 
 ## Post-Incident Review Template
 
-**Incident Date:** YYYY-MM-DD  
-**Severity:** P0/P1/P2  
-**Duration:** XX hours  
+**Incident Date:** YYYY-MM-DD **Severity:** P0/P1/P2 **Duration:** XX hours
 **Impact:** XX users affected
 
 **Timeline:**
+
 - HH:MM - Incident detected
 - HH:MM - Response initiated
 - HH:MM - Root cause identified
 - HH:MM - Fix deployed
 - HH:MM - Incident resolved
 
-**Root Cause:**
-[Technical explanation]
+**Root Cause:** [Technical explanation]
 
-**Resolution:**
-[How it was fixed]
+**Resolution:** [How it was fixed]
 
 **Prevention:**
+
 - [ ] Add test coverage for this scenario
 - [ ] Update documentation
 - [ ] Add monitoring/alerting
 - [ ] Process improvement
 
 **Action Items:**
+
 - [ ] Task 1 (Owner: X, Due: YYYY-MM-DD)
 - [ ] Task 2 (Owner: Y, Due: YYYY-MM-DD)
-```
+
+````
 
 **Phase 3: Update docs/INDEX.md (15 min)**
 
@@ -766,7 +815,7 @@ We apologize for the inconvenience.
 - [Compatible Devices](COMPATIBLE_DEVICES.md) ← ADD
 - [Sensor Platform](SENSOR_PLATFORM.md)
 
-### Developer Guides  
+### Developer Guides
 - [Architecture Overview](ARCHITECTURE_OVERVIEW.md) ← ADD
 - [EntityMapper Design](ENTITY_MAPPER_DESIGN.md) ← ADD
 - [Testing Guide](TESTS.md)
@@ -775,52 +824,56 @@ We apologize for the inconvenience.
 - [Release Operations](RELEASE_OPERATIONS.md)
 - [Incident Response](INCIDENT_RESPONSE_RUNBOOK.md) ← ADD
 - [Monitoring & Health](MONITORING.md) ← ADD
-```
+````
 
 ### Success Metrics
 
 | Metric                        | Before   | After (3 months) | Target          |
 | ----------------------------- | -------- | ---------------- | --------------- |
-| **Doc Discoverability**       | ⭐⭐☆☆☆    | ⭐⭐⭐⭐⭐            | 5/5 stars       |
+| **Doc Discoverability**       | ⭐⭐☆☆☆  | ⭐⭐⭐⭐⭐       | 5/5 stars       |
 | **User "How do I?" Issues**   | Baseline | -60%             | Fewer questions |
 | **Developer Onboarding Time** | ~4 hours | ~1 hour          | -75%            |
 | **Incident Response Time**    | Variable | <1 hour (P0)     | SLA met         |
 
 ### Priority: 🔴 **P0 - High**
 
-**Effort:** 5 hours  
-**Impact:** HIGH (all stakeholders benefit)  
-**ROI:** ⭐⭐⭐⭐⭐
+**Effort:** 5 hours **Impact:** HIGH (all stakeholders benefit) **ROI:**
+⭐⭐⭐⭐⭐
 
-**Dependency Note:** Some docs already exist (just need linking), new docs enable other work
+**Dependency Note:** Some docs already exist (just need linking), new docs
+enable other work
 
 ---
 
 ## 🔗 Issue 4: README First Impression (Critical - User Experience)
 
 ### Identified By
+
 - ✅ **HA User** (P0): "Duplicate 'Support' section damages credibility"
 - ⚠️ **Implicit**: First 10 seconds determine if user continues
 
 ### Current State
 
 **Lines 1-20 of README.md:**
+
 ```markdown
-# Support                           ← Line 1
+# Support ← Line 1
 
-Buy Me A Coffee badge               ← Line 3-5
+Buy Me A Coffee badge ← Line 3-5
 
-# LUXORliving KNX Integration       ← Line 7
+# LUXORliving KNX Integration ← Line 7
+
 Badges (HACS, release, license)
 
-## Support                           ← Line 13 (DUPLICATE!)
+## Support ← Line 13 (DUPLICATE!)
 
-Buy Me A Coffee badge               ← Line 15-17 (DUPLICATE!)
+Buy Me A Coffee badge ← Line 15-17 (DUPLICATE!)
 
-## What is this Integration about   ← Line 19
+## What is this Integration about ← Line 19
 ```
 
-❌ **Critical UX Failure:** 
+❌ **Critical UX Failure:**
+
 - "Support" appears TWICE in first 20 lines
 - Looks like copy-paste error (unprofessional)
 - User's first thought: "Is this maintained?"
@@ -828,12 +881,14 @@ Buy Me A Coffee badge               ← Line 15-17 (DUPLICATE!)
 ### Impact Assessment
 
 **User Journey:**
+
 1. User searches GitHub for "Home Assistant LUXORliving"
 2. Lands on README.md
 3. Sees duplicate section → **"Looks abandoned or poorly maintained"**
 4. 40% bounce rate (estimated)
 
 **Credibility Damage:**
+
 - Professional projects don't have duplicate sections
 - Suggests lack of attention to detail
 - Users question code quality if docs are sloppy
@@ -841,14 +896,17 @@ Buy Me A Coffee badge               ← Line 15-17 (DUPLICATE!)
 ### Dependencies
 
 **Blocks:**
+
 - User adoption (first impression matters!)
 - HACS visibility (README is primary discovery)
 - Community trust
 
 **Blocked By:**
+
 - None (trivial fix)
 
 **Enables:**
+
 - Professional appearance
 - User confidence
 - HACS recommendation
@@ -859,37 +917,48 @@ Buy Me A Coffee badge               ← Line 15-17 (DUPLICATE!)
 
 ```markdown
 # BEFORE (lines 1-20):
+
 # Support
+
 Buy Me A Coffee badge
 
 # LUXORliving KNX Integration
+
 Badges
 
-## Support  ← DELETE
-Buy Me A Coffee badge  ← DELETE
+## Support ← DELETE
+
+Buy Me A Coffee badge ← DELETE
 
 ## What is this Integration about
+
 ...
 
 # AFTER (lines 1-13):
+
 # LUXORliving KNX Integration
+
 Badges (HACS, release, license)
 
 ## What is this Integration about
+
 Integrate Theben LUXORliving...
 
 ## Features
+
 - Automatic entity discovery
-- KNX/IP native
-...
+- KNX/IP native ...
 
 ## Support
-Buy Me A Coffee badge  ← MOVE TO BOTTOM
+
+Buy Me A Coffee badge ← MOVE TO BOTTOM
 ```
 
 **Best Practice Structure:**
+
 ```markdown
 # Project Title
+
 Badges
 
 ## Description (1-2 sentences)
@@ -911,15 +980,14 @@ Badges
 
 | Metric                      | Before     | After           | Target |
 | --------------------------- | ---------- | --------------- | ------ |
-| **First Impression Rating** | ⭐⭐☆☆☆      | ⭐⭐⭐⭐⭐           | 5/5    |
+| **First Impression Rating** | ⭐⭐☆☆☆    | ⭐⭐⭐⭐⭐      | 5/5    |
 | **Bounce Rate**             | 40% (est.) | 15%             | <20%   |
 | **HACS Stars**              | Baseline   | +20% (3 months) | Growth |
 
 ### Priority: 🔴 **P0 - Critical**
 
-**Effort:** 2 minutes  
-**Impact:** HIGH (first impression is everything)  
-**ROI:** ⭐⭐⭐⭐⭐ (highest ROI of all fixes)
+**Effort:** 2 minutes **Impact:** HIGH (first impression is everything) **ROI:**
+⭐⭐⭐⭐⭐ (highest ROI of all fixes)
 
 **Dependency Note:** Zero dependencies, implement FIRST
 
@@ -928,26 +996,30 @@ Badges
 ## 🔗 Issue 5: EntityMapper Complexity (Medium - Developer Experience)
 
 ### Identified By
-- ✅ **Senior Developer** (P1): "523 lines, god object pattern, needs decomposition"
+
+- ✅ **Senior Developer** (P1): "523 lines, god object pattern, needs
+  decomposition"
 - ⚠️ **Implicit**: Hard to test, hard to extend, maintenance burden
 
 ### Current State
 
 **entity_mapper.py:**
+
 ```python
 class EntityMapper:
     """Maps LXP devices to Home Assistant entities."""
-    
+
     # Lines 15-70: Role mappings (ROLE_TO_PLATFORM, ROLE_TO_UNIT, etc.)
     # Lines 71-140: __init__, map_all (orchestration)
     # Lines 141-280: _map_device, _map_actuator, _map_sensor (core logic)
     # Lines 281-420: _apply_overrides, _discover_sensors (customization)
     # Lines 421-523: Helper methods (_detect_platform, _create_entity, etc.)
-    
+
     # Total: 523 lines, 15+ methods, 3 responsibilities
 ```
 
 **Responsibilities (SRP Violation):**
+
 1. **Platform Detection** (ROLE_TO_PLATFORM logic)
 2. **Entity Mapping** (core mapping algorithm)
 3. **Override Handling** (user customizations)
@@ -955,11 +1027,14 @@ class EntityMapper:
 ### Impact Assessment
 
 **Maintainability:**
-- Adding new platform: Edit 3 places (ROLE_TO_PLATFORM, _detect_platform, mapping logic)
+
+- Adding new platform: Edit 3 places (ROLE_TO_PLATFORM, \_detect_platform,
+  mapping logic)
 - Debugging: 523 lines to search
 - Testing: Hard to mock, hard to isolate failures
 
 **Extensibility:**
+
 - Scene platform delayed (complex to add)
 - Custom mapping rules difficult
 - Can't swap detection algorithm
@@ -967,14 +1042,17 @@ class EntityMapper:
 ### Dependencies
 
 **Blocks:**
+
 - Scene platform implementation
 - Custom mapping plugin system
 - AI-based mapping (future)
 
 **Blocked By:**
+
 - ⚠️ **Issue 2 (Test Coverage)** - Need 75%+ coverage BEFORE refactoring
 
 **Enables:**
+
 - Faster platform additions
 - Community contributions
 - Maintainable codebase
@@ -982,6 +1060,7 @@ class EntityMapper:
 ### Implementation Plan
 
 **Prerequisites:**
+
 1. ✅ Increase test coverage to 75%+ (Issue 2)
 2. ✅ Create EntityMapper design doc (Issue 3)
 
@@ -996,20 +1075,20 @@ from typing import Optional
 
 class PlatformDetector:
     """Detects Home Assistant platform from KNX datapoint role."""
-    
+
     # Move from EntityMapper:
     ROLE_TO_PLATFORM = {...}
     ROLE_TO_UNIT = {...}
     ROLE_TO_DEVICE_CLASS = {...}
-    
+
     def detect_platform(self, role: str) -> Optional[Platform]:
         """Detect platform from role."""
         return self.ROLE_TO_PLATFORM.get(role)
-    
+
     def get_unit(self, role: str) -> Optional[str]:
         """Get unit of measurement for role."""
         return self.ROLE_TO_UNIT.get(role)
-    
+
     def get_device_class(self, role: str) -> Optional[str]:
         """Get device class for role."""
         return self.ROLE_TO_DEVICE_CLASS.get(role)
@@ -1035,14 +1114,14 @@ from typing import Any
 
 class OverrideHandler:
     """Handles user customizations from YAML overrides."""
-    
+
     def __init__(self, overrides: dict[str, Any]):
         self._overrides = overrides
-    
+
     def apply_sensor_overrides(self, entities: list[MappedEntity]) -> list[MappedEntity]:
         """Apply sensor overrides to entities."""
         # Move _apply_overrides logic here
-    
+
     def discover_sensors(self, discovered: dict) -> list[MappedEntity]:
         """Create entities from discovered sensors."""
         # Move _discover_sensors logic here
@@ -1064,33 +1143,33 @@ from .override_handler import OverrideHandler
 
 class EntityMapper:
     """Maps LXP devices to Home Assistant entities.
-    
+
     Now focused ONLY on core mapping logic.
     Delegates to:
     - PlatformDetector for role → platform detection
     - OverrideHandler for user customizations
     """
-    
+
     def __init__(self, project: LXPProject, overrides: dict | None = None):
         self.project = project
         self.entities: list[MappedEntity] = []
-        
+
         # Inject dependencies (testable!)
         self._platform_detector = PlatformDetector()
         self._override_handler = OverrideHandler(overrides or {})
-        
+
         self.map_all()
-    
+
     def map_all(self) -> list[MappedEntity]:
         """Map all devices to entities."""
         for device in self.project.devices:
             self._map_device(device)
-        
+
         # Delegate to override handler
         self.entities = self._override_handler.apply_sensor_overrides(self.entities)
-        
+
         return self.entities
-    
+
     def _map_device(self, device: LXPDevice) -> None:
         """Map a single device (core logic only)."""
         for actuator in device.actuators:
@@ -1102,6 +1181,7 @@ class EntityMapper:
 ```
 
 **Result:**
+
 ```
 entity_mapper.py:      523 lines → 250 lines (-53%)
 platform_detector.py:    0 lines → 150 lines (NEW)
@@ -1121,9 +1201,8 @@ Total:                 523 lines → 520 lines (same LOC, better organized)
 
 ### Priority: 🟡 **P1 - High**
 
-**Effort:** 3 days (24 hours)  
-**Impact:** MEDIUM (developer experience, extensibility)  
-**ROI:** ⭐⭐⭐⭐☆
+**Effort:** 3 days (24 hours) **Impact:** MEDIUM (developer experience,
+extensibility) **ROI:** ⭐⭐⭐⭐☆
 
 **Critical Dependency:** MUST complete Issue 2 (test coverage) FIRST
 
@@ -1134,21 +1213,21 @@ Total:                 523 lines → 520 lines (same LOC, better organized)
 ```mermaid
 graph TD
     I4[Issue 4: README Fix] -->|Enables| UserTrust[User Trust]
-    
+
     I1[Issue 1: Security] -->|Enables| GoldTier[HA Gold Tier]
     I2[Issue 2: Test Coverage] -->|Blocks| I5[Issue 5: EntityMapper Refactor]
     I2 -->|Enables| GoldTier
-    
+
     I3[Issue 3: Documentation] -->|Enables| I2
     I3 -->|Enables| UserOnboarding[User Onboarding]
-    
+
     I5 -->|Enables| NewPlatforms[New Platforms]
-    
+
     UserTrust -->|Increases| Adoption[User Adoption]
     UserOnboarding -->|Increases| Adoption
     GoldTier -->|Increases| Adoption
     NewPlatforms -->|Increases| FeatureSet[Feature Richness]
-    
+
     style I4 fill:#ff0000
     style I1 fill:#ff6600
     style I2 fill:#ff6600
@@ -1159,11 +1238,13 @@ graph TD
 ### Critical Path
 
 **Sequence 1 (User Experience):**
+
 ```
 README Fix (2 min) → Documentation (5 hours) → User Onboarding ↑
 ```
 
 **Sequence 2 (Quality & Safety):**
+
 ```
 Security (2 hours) → Test Coverage (7 days) → EntityMapper Refactor (3 days) → New Platforms
                             ↓
@@ -1171,10 +1252,12 @@ Security (2 hours) → Test Coverage (7 days) → EntityMapper Refactor (3 days)
 ```
 
 **Parallelizable:**
+
 - README Fix + Security (can run in parallel)
 - Documentation + Security (can run in parallel)
 
 **Sequential (MUST follow order):**
+
 - Test Coverage → EntityMapper Refactor (hard dependency)
 
 ---
@@ -1182,6 +1265,7 @@ Security (2 hours) → Test Coverage (7 days) → EntityMapper Refactor (3 days)
 ## 🎯 Implementation Roadmap
 
 ### Week 1: Quick Wins
+
 ```
 Day 1-2:
 ✅ README duplicate fix (2 min)
@@ -1193,6 +1277,7 @@ Impact: User trust ↑, Security ↑, Discovery ↑
 ```
 
 ### Week 2-3: Test Coverage Sprint
+
 ```
 Day 1-7:
 ✅ Circuit breaker tests (Day 1-2)
@@ -1204,6 +1289,7 @@ Impact: Refactoring confidence ↑, HA Gold tier progress
 ```
 
 ### Week 4-5: EntityMapper Refactoring
+
 ```
 Day 1: Extract PlatformDetector (4 hours)
 Day 2: Extract OverrideHandler (4 hours)
@@ -1214,6 +1300,7 @@ Impact: Maintainability ↑, Extensibility ↑
 ```
 
 ### Month 2-3: Advanced Features
+
 ```
 ✅ Canary deployment (Week 6)
 ✅ Post-deploy smoke tests (Week 7)
@@ -1225,5 +1312,5 @@ Impact: Production safety ↑, Feature richness ↑
 
 ---
 
-**Status:** Cross-cutting analysis complete  
-**Next:** Week 3 final summary with implementation timeline
+**Status:** Cross-cutting analysis complete **Next:** Week 3 final summary with
+implementation timeline
