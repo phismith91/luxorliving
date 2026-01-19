@@ -2,9 +2,9 @@ name: Release Checks
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [main]
+  # Release Checks are heavy and require specific Python; run manually or on pushes to main only.
+  # Do NOT run Release Checks on pull_request to avoid failing PRs due to runner Python mismatch
   workflow_dispatch: {}
 
 jobs:
@@ -18,7 +18,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          # Home Assistant >=2025.12 requires Python 3.13+; use 3.13 for reliable installs
+          python-version: "3.13"
 
       - name: Install formatters (black, isort) and dev deps
         run: |
@@ -47,15 +48,14 @@ jobs:
         run: ./scripts/release_automation.sh --dry-run
         env:
           # If you need to authenticate gh in workflow, set GITHUB_TOKEN in repo settings
-          GITHUB_TOKEN: 
+          GITHUB_TOKEN:
 
       - name: Run ShellCheck (blocking)
         uses: ludeeus/action-shellcheck@2.0.0
         with:
-          scandir: './scripts'
+          scandir: "./scripts"
         # Pinned action; ShellCheck failures are now blocking to enforce script quality
 
       - name: Enforce Gold Gates (manual check)
         run: |
           echo "Gold Gates enforced: smoke + integration subset + HACS validation + release dry-run must be green before merge" && exit 0
-

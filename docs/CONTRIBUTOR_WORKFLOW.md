@@ -1,3 +1,51 @@
+# Contributor Workflow — Short Guide
+
+Goal: A concise, clear guide for contributors and maintainers.
+
+1) Create a branch (local)
+- Follow branch naming rules in `docs/BRANCHING_STRATEGY.md`.
+- Examples: `feature/...`, `bugfix/...`, `docs/...`, `chore/...`.
+
+2) Local setup (one-time)
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements_dev.txt
+pip install -r requirements_style.txt
+pre-commit install
+```
+- Run `pre-commit run --all-files` and fix issues locally.
+
+3) Work & commit
+- Write small, focused commits: `feat:`, `fix:`, `docs:`.
+- Format: `black . && isort .` or use `pre-commit`.
+
+4) Push & open PR
+```bash
+git push origin feature/your-branch
+# open PR against main and fill the PR template
+```
+- The PR template should include: short description, testing steps, checklist.
+
+5) Pipelines
+- Push/PR run fast checks (preflight/fast checks): `black --check`, `isort --check-only`, smoke tests.
+- Full QA Matrix runs only after adding the `run-qa-matrix` label or commenting `/run-qa-matrix`.
+
+6) Review & merge
+- At least one approval required (branch protection).
+- Merge only when fast checks are green. For large changes, request QA Matrix.
+
+7) Maintainers / Releases
+- Maintainers update `manifest.json`, `CHANGELOG.md`, `RELEASE_NOTES.md` before releases.
+- Run `./scripts/release_automation.sh --dry-run` before tagging.
+
+Troubleshooting (brief)
+- `black --check` / `isort --check-only` failed: run `black .` / `isort .` locally and push the fix.
+- Smoke tests failed: run `pytest tests/ -v` locally, fix, and push.
+
+See also: `docs/TESTS.md`, `docs/BRANCHING_STRATEGY.md`.
+
+If anything is unclear, comment on the PR or open an issue.
 # Contributor Workflow — Step by Step
 
 This guide is for **anyone** who wants to contribute to LUXORliving — you don't need admin access or special knowledge. Just follow these steps.
