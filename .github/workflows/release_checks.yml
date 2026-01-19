@@ -32,6 +32,12 @@ jobs:
           python -m pip install -r requirements_dev.txt
           python -m pip install black isort
 
+      - name: Check code formatting (black)
+        run: black --check custom_components tests scripts
+
+      - name: Check import sorting (isort)
+        run: isort --check-only custom_components tests scripts
+
       - name: Quick smoke tests
         run: |
           python -m pytest tests/ -q -m "smoke and not enable_socket"
