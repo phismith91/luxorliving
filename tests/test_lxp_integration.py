@@ -80,10 +80,7 @@ async def test_hauptwohnung_entity_mapping():
     assert len(platform_counts) >= 2, "Should have multiple platforms"
 
     # Check for typical platforms
-    _lights = mapper.get_entities_by_platform(Platform.LIGHT)
-    _switches = mapper.get_entities_by_platform(Platform.SWITCH)
     sensors = mapper.get_entities_by_platform(Platform.SENSOR)
-    _binary_sensors = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)
 
     # Log results
     print("\n=== Entity Mapping ===")
@@ -154,7 +151,6 @@ async def test_hauptwohnung_io_devices():
         assert len(sensors) > 0, "Should have sensor entities from IO devices"
 
         # Check for weather-related sensors
-        _sensor_names = [s.name for s in sensors]
         print(f"\n=== Sensor Entities ({len(sensors)}) ===")
         for sensor in sensors[:10]:  # First 10
             print(f"  - {sensor.name} ({sensor.entity_type})")
