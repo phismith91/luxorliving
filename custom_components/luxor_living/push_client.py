@@ -20,7 +20,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any
 
 from aiohttp import ClientSession, ClientWebSocketResponse
 
@@ -30,7 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class PushClient:
-    """Simple WebSocket push client with reconnection/backoff logic."""
+    """Implement a WebSocket push client with reconnection/backoff logic."""
 
     def __init__(self, hass, entry_id: str, ws_url: str, ws_token: str | None = None) -> None:
         """Initialize push client."""
@@ -64,7 +63,7 @@ class PushClient:
                 pass
 
     async def _run(self) -> None:
-        """Connection loop with exponential backoff."""
+        """Run connection loop with exponential backoff."""
         backoff = 1.0
         self._session = ClientSession()
 
