@@ -2,9 +2,11 @@
 
 ## Overview
 
-The Sensor platform in LUXORliving provides automatic detection and integration of float/string-based sensor values from KNX devices.
+The Sensor platform in LUXORliving provides automatic detection and integration
+of float/string-based sensor values from KNX devices.
 
 **Supported sensor types:**
+
 - Temperature (°C)
 - Humidity (%)
 - Pressure (hPa)
@@ -16,31 +18,33 @@ The Sensor platform in LUXORliving provides automatic detection and integration 
 
 ## Automatic Entity Generation
 
-Sensors are automatically detected from your LXP project file based on their configured **role** in LUXORliving.
+Sensors are automatically detected from your LXP project file based on their
+configured **role** in LUXORliving.
 
 ### Supported Roles
 
-| Role | Unit | Device Class | Example |
-|------|------|--------------|---------|
-| `Temperature` | °C | temperature | iON4 Sensor, Wetterstation |
-| `Humidity` | % | humidity | Wetterstation |
-| `Pressure` | hPa | pressure | Wetterstation |
-| `CO2` | ppm | None | CO2 Sensor |
-| `Brightness` | lux | illuminance | Light Sensor |
-| `WindSpeed` | m/s | None | Wetterstation |
-| `RainVolume` | mm | precipitation | Wetterstation |
-| `AirQuality` | ppm | None | Air Quality Sensor |
+| Role          | Unit | Device Class  | Example                    |
+| ------------- | ---- | ------------- | -------------------------- |
+| `Temperature` | °C   | temperature   | iON4 Sensor, Wetterstation |
+| `Humidity`    | %    | humidity      | Wetterstation              |
+| `Pressure`    | hPa  | pressure      | Wetterstation              |
+| `CO2`         | ppm  | None          | CO2 Sensor                 |
+| `Brightness`  | lux  | illuminance   | Light Sensor               |
+| `WindSpeed`   | m/s  | None          | Wetterstation              |
+| `RainVolume`  | mm   | precipitation | Wetterstation              |
+| `AirQuality`  | ppm  | None          | Air Quality Sensor         |
 
 ### Detection Logic
 
 The EntityMapper uses the following priority:
 
-1. **Sensor Types First**: Check if any datapoint has a sensor role (Temperature, Humidity, etc.)
+1. **Sensor Types First**: Check if any datapoint has a sensor role
+   (Temperature, Humidity, etc.)
    - If found → Create Sensor platform entity with proper unit and device class
-   
+
 2. **Binary Control**: Check for binary control signals (OnOff, MasterSlave)
    - If found → Create Binary Sensor or Switch entity
-   
+
 3. **Skip**: No mappable roles found
 
 ```python
@@ -56,7 +60,8 @@ datapoints = {
 Each sensor entity includes:
 
 - **native_unit_of_measurement**: Automatically set based on role (°C, %, etc.)
-- **device_class**: Set according to Home Assistant standards (temperature, humidity, etc.)
+- **device_class**: Set according to Home Assistant standards (temperature,
+  humidity, etc.)
 - **unique_id**: Based on KNX address (guaranteed unique)
 - **device_info**: Organized under source device (Wetterstation, iON4-1, etc.)
 
@@ -84,6 +89,7 @@ self._knx_gateway.register_telegram_listener(
 ```
 
 **Performance:**
+
 - Initial state read: ~30ms per sensor (BAOS cache)
 - Live updates: <1 second (KNX telegram → Home Assistant)
 
@@ -136,6 +142,7 @@ iON4 and iON8 modules often include temperature sensors:
 ```
 
 Creates:
+
 - **Sensor: Temperatur Wohnzimmer**
   - Under device: iON4-1 or iON8-3
   - Unit: °C
@@ -188,11 +195,13 @@ climate.wohnzimmer  # Thermostat with setpoint control
 
 **Possible causes:**
 
-1. **Role not recognized**: Check LXP file for correct role name (case-sensitive)
+1. **Role not recognized**: Check LXP file for correct role name
+   (case-sensitive)
    - ✅ Correct: `Role="Temperature"`
    - ❌ Wrong: `Role="temperature"` or `Role="Temp"`
 
 2. **Datapoint missing**: Ensure sensor has at least one datapoint
+
    ```xml
    <Sensor Name="...">
      <Datapoint Role="Temperature" Address="..." />  <!-- Required -->
@@ -205,14 +214,21 @@ climate.wohnzimmer  # Thermostat with setpoint control
 
 ### Overrides (Fallback, wenn LuxorPlug keine Rollen/Wirksamkeit setzt)
 
-Wenn LuxorPlug die Sensor-Rollen nicht exportiert (oder `affected="0"` bleibt), kannst du die Sensor-Erzeugung über eine Override-Datei erzwingen:
+Wenn LuxorPlug die Sensor-Rollen nicht exportiert (oder `affected="0"` bleibt),
+kannst du die Sensor-Erzeugung über eine Override-Datei erzwingen:
 
 Hinweis zu `include_unaffected`:
-- Bedeutung: Der Parser nimmt auch Elemente mit `affected="0"` auf (normalerweise werden diese ausgelassen).
-- Wetterstation: Geräte mit Namen wie „Wetterstation“ werden jetzt automatisch berücksichtigt – auch wenn `affected="0"` ist. Du brauchst `include_unaffected` hierfür nicht.
-- Nutzung: Für andere Spezialfälle weiterhin hilfreich (z. B. wenn ein Sensor bewusst auf „nicht wirksam“ steht, aber dennoch aus KNX gelesen werden soll).
 
-- Datei im Home Assistant Config-Verzeichnis anlegen: `luxor_living_overrides.yaml` (oder `.json`)
+- Bedeutung: Der Parser nimmt auch Elemente mit `affected="0"` auf
+  (normalerweise werden diese ausgelassen).
+- Wetterstation: Geräte mit Namen wie „Wetterstation“ werden jetzt automatisch
+  berücksichtigt – auch wenn `affected="0"` ist. Du brauchst
+  `include_unaffected` hierfür nicht.
+- Nutzung: Für andere Spezialfälle weiterhin hilfreich (z. B. wenn ein Sensor
+  bewusst auf „nicht wirksam“ steht, aber dennoch aus KNX gelesen werden soll).
+
+- Datei im Home Assistant Config-Verzeichnis anlegen:
+  `luxor_living_overrides.yaml` (oder `.json`)
 - Beispiel YAML:
 
 ```yaml
@@ -232,17 +248,21 @@ sensors:
       address: "5/1/1"
 ```
 
-Die Integration lädt die Datei automatisch und legt entsprechende Sensor-Entities an – auch wenn die LXP-Datei diese nicht als „wirksam“ exportiert.
+Die Integration lädt die Datei automatisch und legt entsprechende
+Sensor-Entities an – auch wenn die LXP-Datei diese nicht als „wirksam“
+exportiert.
 
 ### State Not Updating
 
 1. **KNX connection**: Verify tunneling/routing is active
+
    ```bash
    # Check Home Assistant logs
    tail -f ~/.homeassistant/home-assistant.log | grep luxor_living
    ```
 
 2. **Telegram listener**: Confirm address matches in logs
+
    ```
    Registered telegram listener for address: 1/2/3
    Received telegram for sensor: 22.5
@@ -258,6 +278,7 @@ Die Integration lädt die Datei automatisch und legt entsprechende Sensor-Entiti
 - **Memory per sensor**: ~5KB per entity
 
 **Scale test results:**
+
 - 10 sensors: <500ms startup
 - 30 sensors: <1.5s startup
 - 100 sensors: <5s startup
@@ -265,6 +286,7 @@ Die Integration lädt die Datei automatisch und legt entsprechende Sensor-Entiti
 ## Future Enhancements
 
 **Planned for v0.4.0+:**
+
 - Climate platform for temperature setpoint control
 - Historical sensor data (if enabled in Home Assistant)
 - Custom unit overrides in integration UI
@@ -293,7 +315,7 @@ from homeassistant.components.sensor import SensorEntity
 
 class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
     """Sensor entity with KNX integration."""
-    
+
     async def async_added_to_hass(self) -> None:
         # Read initial value from KNX
         value = await self._knx_gateway.async_read_group_value("1/2/3")
@@ -320,4 +342,5 @@ self._knx_gateway.register_telegram_listener(
 
 - [KNX Implementation](KNX_IMPLEMENTATION.md) - Protocol details
 - [Installation](INSTALLATION.md) - Setup guide
-- [Entity Mapper](../custom_components/luxor_living/entity_mapper.py) - Entity detection logic
+- [Entity Mapper](../custom_components/luxor_living/entity_mapper.py) - Entity
+  detection logic

@@ -1,70 +1,69 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "LUXORliving - Fichier de projet LXP",
-                "description": "Parcourez et sélectionnez votre fichier de projet LXP depuis Theben LUXORPlug",
-                "data": {
-                    "lxp_file": "Fichier de projet LXP"
-                },
-                "data_description": {
-                    "lxp_file": "Sélectionnez votre fichier de projet .lxp en utilisant le navigateur de fichiers"
-                }
-            },
-            "gateway": {
-                "title": "LUXORliving - Passerelle KNX/IP",
-                "description": "Configurez votre connexion passerelle KNX/IP et vos identifiants pour le projet : {project_name}",
-                "data": {
-                    "host": "Adresse IP de la passerelle",
-                    "username": "Nom d'utilisateur",
-                    "password": "Mot de passe",
-                    "connection_type": "Type de connexion",
-                    "simulation_mode": "Mode simulation"
-                },
-                "data_description": {
-                    "host": "Adresse IP de votre passerelle Theben LUXORliving KNX/IP",
-                    "username": "Nom d'utilisateur de l'API REST (par défaut : admin)",
-                    "password": "Mot de passe de l'API REST",
-                    "connection_type": "Type de connexion KNX (tunneling recommandé)",
-                    "simulation_mode": "Mode test sans connexion matérielle réelle"
-                }
-            }
+  "config": {
+    "step": {
+      "user": {
+        "title": "LUXORliving - Fichier de projet LXP",
+        "description": "Parcourez et sélectionnez votre fichier de projet LXP depuis Theben LUXORPlug",
+        "data": {
+          "lxp_file": "Fichier de projet LXP"
         },
-        "error": {
-            "cannot_connect": "Échec de la connexion à la passerelle",
-            "invalid_auth": "Nom d'utilisateur ou mot de passe invalide. Veuillez vérifier vos identifiants.",
-            "file_not_found": "Fichier LXP introuvable. Veuillez sélectionner un fichier .lxp valide.",
-            "invalid_lxp": "Fichier LXP invalide ou corrompu. Veuillez vérifier le format du fichier.",
-            "unknown": "Une erreur inattendue s'est produite"
+        "data_description": {
+          "lxp_file": "Sélectionnez votre fichier de projet .lxp en utilisant le navigateur de fichiers"
+        }
+      },
+      "gateway": {
+        "title": "LUXORliving - Passerelle KNX/IP",
+        "description": "Configurez votre connexion passerelle KNX/IP et vos identifiants pour le projet : {project_name}",
+        "data": {
+          "host": "Adresse IP de la passerelle",
+          "username": "Nom d'utilisateur",
+          "password": "Mot de passe",
+          "connection_type": "Type de connexion",
+          "simulation_mode": "Mode simulation"
         },
-        "abort": {
-            "already_configured": "Cet appareil est déjà configuré",
-            "not_implemented": "Cette fonctionnalité n'est pas encore implémentée"
+        "data_description": {
+          "host": "Adresse IP de votre passerelle Theben LUXORliving KNX/IP",
+          "username": "Nom d'utilisateur de l'API REST (par défaut : admin)",
+          "password": "Mot de passe de l'API REST",
+          "connection_type": "Type de connexion KNX (tunneling recommandé)",
+          "simulation_mode": "Mode test sans connexion matérielle réelle"
         }
+      }
     },
-    "options": {
-        "step": {
-            "init": {
-                "title": "Options LUXORliving",
-                "description": "Configurez le comportement de l'intégration LUXORliving",
-                "data": {
-                    "simulation_mode": "Mode simulation (Test)",
-                    "scan_interval": "Intervalle d'interrogation (secondes)",
-                    "log_level": "Niveau de débogage"
-                },
-                "data_description": {
-                    "simulation_mode": "Activer le mode simulation pour les tests sans matériel",
-                    "scan_interval": "Fréquence d'interrogation de la passerelle pour les mises à jour (5-300 secondes)",
-                    "log_level": "Verbosité des journaux pour le dépannage"
-                }
-            }
-        }
+    "error": {
+      "cannot_connect": "Échec de la connexion à la passerelle",
+      "invalid_auth": "Nom d'utilisateur ou mot de passe invalide. Veuillez vérifier vos identifiants.",
+      "file_not_found": "Fichier LXP introuvable. Veuillez sélectionner un fichier .lxp valide.",
+      "invalid_lxp": "Fichier LXP invalide ou corrompu. Veuillez vérifier le format du fichier.",
+      "unknown": "Une erreur inattendue s'est produite"
     },
-    "issues": {
-        "authentication_failed": {
-            "title": "Échec de l'authentification pour {host}",
-            "description": "L'authentification auprès de votre passerelle LUXORliving à {host} a échoué.\n\nErreur : {error}\n\nVeuillez vérifier vos identifiants (nom d'utilisateur : {username}) et les mettre à jour si nécessaire."
-        }
-
+    "abort": {
+      "already_configured": "Cet appareil est déjà configuré",
+      "not_implemented": "Cette fonctionnalité n'est pas encore implémentée"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options LUXORliving",
+        "description": "Configurez le comportement de l'intégration LUXORliving",
+        "data": {
+          "simulation_mode": "Mode simulation (Test)",
+          "scan_interval": "Intervalle d'interrogation (secondes)",
+          "log_level": "Niveau de débogage"
+        },
+        "data_description": {
+          "simulation_mode": "Activer le mode simulation pour les tests sans matériel",
+          "scan_interval": "Fréquence d'interrogation de la passerelle pour les mises à jour (5-300 secondes)",
+          "log_level": "Verbosité des journaux pour le dépannage"
+        }
+      }
+    }
+  },
+  "issues": {
+    "authentication_failed": {
+      "title": "Échec de l'authentification pour {host}",
+      "description": "L'authentification auprès de votre passerelle LUXORliving à {host} a échoué.\n\nErreur : {error}\n\nVeuillez vérifier vos identifiants (nom d'utilisateur : {username}) et les mettre à jour si nécessaire."
+    }
+  }
 }

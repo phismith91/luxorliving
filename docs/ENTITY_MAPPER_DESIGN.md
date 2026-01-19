@@ -1,14 +1,14 @@
 # EntityMapper - Design Documentation
 
-**Status:** Current Implementation (523 lines)  
-**Refactoring Goal:** 3 modules (~250 lines each)  
-**Date:** 11. Januar 2026
+**Status:** Current Implementation (523 lines) **Refactoring Goal:** 3 modules
+(~250 lines each) **Date:** 11. Januar 2026
 
 ---
 
 ## 📋 Current Architecture
 
 ### File Structure
+
 ```
 entity_mapper.py (523 lines total)
 ├── MappedEntity dataclass (lines 17-29)
@@ -34,12 +34,12 @@ entity_mapper.py (523 lines total)
    - ROLE_TO_PLATFORM mapping
    - ROLE_TO_UNIT mapping
    - ROLE_TO_DEVICE_CLASS mapping
-   
+
 2. **Entity Mapping** (lines 125-303)
    - Device mapping orchestration
    - Actuator mapping logic
    - Sensor mapping logic
-   
+
 3. **Override Handling** (lines 305-384)
    - User customization from YAML
    - Discovered sensor mapping
@@ -61,7 +61,8 @@ entity_mapper.py (523 lines total)
 
 ### Design Principles
 
-1. **Single Responsibility Principle (SRP):** Each module has ONE reason to change
+1. **Single Responsibility Principle (SRP):** Each module has ONE reason to
+   change
 2. **Dependency Injection:** Inject detector and handler into mapper
 3. **Test-Driven Development (TDD):** Write tests BEFORE refactoring
 4. **Backwards Compatibility:** No breaking changes to integration API
@@ -81,8 +82,8 @@ custom_components/luxor_living/
 
 ### Module 1: PlatformDetector
 
-**File:** `platform_detector.py` (~150 lines)  
-**Responsibility:** Detect Home Assistant platform from KNX datapoint role
+**File:** `platform_detector.py` (~150 lines) **Responsibility:** Detect Home
+Assistant platform from KNX datapoint role
 
 ```python
 from homeassistant.const import Platform
@@ -90,33 +91,34 @@ from typing import Optional
 
 class PlatformDetector:
     """Detects Home Assistant platform from KNX datapoint role."""
-    
+
     # Move from EntityMapper:
     ROLE_TO_PLATFORM = {...}
     ROLE_TO_UNIT = {...}
     ROLE_TO_DEVICE_CLASS = {...}
-    
+
     def detect_platform(self, role: str) -> Optional[Platform]:
         """Detect platform from role.
-        
+
         Args:
             role: KNX datapoint role (e.g., "OnOff", "Temperature")
-            
+
         Returns:
             Platform enum or None if role is status-only
         """
         return self.ROLE_TO_PLATFORM.get(role)
-    
+
     def get_unit(self, role: str) -> Optional[str]:
         """Get unit of measurement for sensor role."""
         return self.ROLE_TO_UNIT.get(role)
-    
+
     def get_device_class(self, role: str) -> Optional[str]:
         """Get device class for sensor role."""
         return self.ROLE_TO_DEVICE_CLASS.get(role)
 ```
 
 **Test Coverage Goals:**
+
 - `test_onoff_maps_to_light()` ✅
 - `test_temperature_maps_to_sensor()` ✅
 - `test_status_role_returns_none()` ✅
@@ -130,8 +132,8 @@ class PlatformDetector:
 
 ### Module 2: OverrideHandler
 
-**File:** `override_handler.py` (~120 lines)  
-**Responsibility:** Handle user customizations from YAML overrides
+**File:** `override_handler.py` (~120 lines) **Responsibility:** Handle user
+customizations from YAML overrides
 
 ```python
 from typing import Any
@@ -140,45 +142,45 @@ from .lxp_parser import LXPSensor
 
 class OverrideHandler:
     """Handles user customizations from YAML overrides."""
-    
+
     def __init__(self, overrides: dict[str, Any]):
         """Initialize override handler.
-        
+
         Args:
             overrides: User customizations from YAML config
         """
         self._overrides = overrides
         self._discovered_sensors = overrides.get("discovered_sensors", {})
-    
+
     def apply_sensor_overrides(
-        self, 
+        self,
         entities: list[MappedEntity]
     ) -> list[MappedEntity]:
         """Apply sensor overrides to entities.
-        
+
         Allows users to customize:
         - Sensor names
         - Sensor roles (change platform)
         - Units of measurement
-        
+
         Args:
             entities: List of mapped entities
-            
+
         Returns:
             Updated list of entities with overrides applied
         """
         # Implementation moved from EntityMapper._apply_overrides
         pass
-    
+
     def discover_sensors(
-        self, 
+        self,
         discovered: dict[str, LXPSensor]
     ) -> list[MappedEntity]:
         """Create entities from discovered sensors.
-        
+
         Args:
             discovered: Dictionary of group_address -> LXPSensor
-            
+
         Returns:
             List of mapped entities for discovered sensors
         """
@@ -187,6 +189,7 @@ class OverrideHandler:
 ```
 
 **Test Coverage Goals:**
+
 - `test_override_changes_sensor_name()` ✅
 - `test_override_changes_sensor_role()` ✅
 - `test_override_changes_sensor_unit()` ✅
@@ -199,8 +202,8 @@ class OverrideHandler:
 
 ### Module 3: EntityMapper (Refactored)
 
-**File:** `entity_mapper.py` (~250 lines)  
-**Responsibility:** Core mapping logic (orchestration ONLY)
+**File:** `entity_mapper.py` (~250 lines) **Responsibility:** Core mapping logic
+(orchestration ONLY)
 
 ```python
 from .platform_detector import PlatformDetector
@@ -209,22 +212,22 @@ from .lxp_parser import LXPProject, LXPDevice, LXPActuator
 
 class EntityMapper:
     """Maps LXP devices to Home Assistant entities.
-    
+
     Now focused ONLY on core mapping logic.
     Delegates to:
     - PlatformDetector for role → platform detection
     - OverrideHandler for user customizations
     """
-    
+
     def __init__(
-        self, 
-        project: LXPProject, 
+        self,
+        project: LXPProject,
         overrides: dict | None = None,
         platform_detector: PlatformDetector | None = None,
         override_handler: OverrideHandler | None = None,
     ) -> None:
         """Initialize entity mapper.
-        
+
         Args:
             project: Parsed LXP project
             overrides: Optional user customizations
@@ -233,58 +236,58 @@ class EntityMapper:
         """
         self.project = project
         self.entities: list[MappedEntity] = []
-        
+
         # Inject dependencies (allows mocking in tests!)
         self._platform_detector = platform_detector or PlatformDetector()
         self._override_handler = override_handler or OverrideHandler(overrides or {})
-        
+
         # Perform mapping
         self.map_all()
-    
+
     def map_all(self) -> list[MappedEntity]:
         """Map all devices to entities.
-        
+
         Returns:
             List of mapped entities
         """
         # Map devices and actuators
         for device in self.project.devices:
             self._map_device(device)
-        
+
         # Apply user overrides
         self.entities = self._override_handler.apply_sensor_overrides(
             self.entities
         )
-        
+
         return self.entities
-    
+
     def _map_device(self, device: LXPDevice) -> None:
         """Map a single device (core logic only).
-        
+
         Args:
             device: LXP device to map
         """
         for actuator in device.actuators:
             # Delegate platform detection
             platform = self._platform_detector.detect_platform(actuator.role)
-            
+
             if platform:
                 entity = self._create_entity(device, actuator, platform)
                 self.entities.append(entity)
-    
+
     def _create_entity(
-        self, 
-        device: LXPDevice, 
-        actuator: LXPActuator, 
+        self,
+        device: LXPDevice,
+        actuator: LXPActuator,
         platform: Platform
     ) -> MappedEntity:
         """Create a mapped entity (extracted helper method).
-        
+
         Args:
             device: LXP device
             actuator: LXP actuator
             platform: Detected platform
-            
+
         Returns:
             Mapped entity
         """
@@ -293,6 +296,7 @@ class EntityMapper:
 ```
 
 **Test Coverage Goals:**
+
 - `test_mapper_uses_platform_detector()` ✅
 - `test_mapper_uses_override_handler()` ✅
 - `test_map_all_orchestrates_correctly()` ✅
@@ -309,26 +313,28 @@ class EntityMapper:
 graph TD
     EntityMapper -->|uses| PlatformDetector
     EntityMapper -->|uses| OverrideHandler
-    
+
     PlatformDetector -->|provides| RoleToPlatformMapping
     OverrideHandler -->|provides| UserCustomizations
-    
+
     LXPParser -->|provides| LXPProject
     EntityMapper -->|consumes| LXPProject
-    
+
     HomeAssistant -->|uses| EntityMapper
-    
+
     style EntityMapper fill:#ff6600
     style PlatformDetector fill:#ffcc00
     style OverrideHandler fill:#ffcc00
 ```
 
 **Critical Dependencies:**
+
 - `PlatformDetector` has NO external dependencies (pure function)
 - `OverrideHandler` depends only on `MappedEntity` dataclass
 - `EntityMapper` depends on both (injected via constructor)
 
 **Benefits:**
+
 - ✅ Easy to test in isolation
 - ✅ Easy to mock in tests
 - ✅ No circular dependencies
@@ -376,6 +382,7 @@ graph TD
 ### Backwards Compatibility Strategy
 
 **Old API (unchanged):**
+
 ```python
 # This MUST continue to work
 mapper = EntityMapper(lxp_project, overrides)
@@ -383,12 +390,13 @@ entities = mapper.entities  # Same behavior
 ```
 
 **New API (optional, for testing):**
+
 ```python
 # New: Dependency injection for testing
 detector = PlatformDetector()
 handler = OverrideHandler(overrides)
 mapper = EntityMapper(
-    lxp_project, 
+    lxp_project,
     overrides,
     platform_detector=detector,  # Optional!
     override_handler=handler      # Optional!
@@ -404,6 +412,7 @@ mapper = EntityMapper(
 5. ✅ New tests use dependency injection
 
 **No Breaking Changes:**
+
 - Integration code unchanged
 - Config flow unchanged
 - Platform files unchanged
@@ -415,8 +424,8 @@ mapper = EntityMapper(
 
 ### Code Metrics
 
-| Metric               | Before | After | Status             |
-| -------------------- | ------ | ----- | ------------------ |
+| Metric               | Before | After | Status              |
+| -------------------- | ------ | ----- | ------------------- |
 | **EntityMapper LOC** | 523    | 250   | 🎯 -52%             |
 | **Modules**          | 1      | 3     | 🎯 Better organized |
 | **Test Coverage**    | 62.75% | 85%+  | 🎯 +35%             |
@@ -443,18 +452,21 @@ mapper = EntityMapper(
 ## 🚀 Implementation Timeline
 
 ### Day 1: PlatformDetector (4 hours)
+
 - [ ] Write `test_platform_detector.py` (1h)
 - [ ] Implement `platform_detector.py` (2h)
 - [ ] Verify 100% coverage (30min)
 - [ ] Commit + push (30min)
 
 ### Day 2: OverrideHandler (4 hours)
+
 - [ ] Write `test_override_handler.py` (1h)
 - [ ] Implement `override_handler.py` (2h)
 - [ ] Verify 90%+ coverage (30min)
 - [ ] Commit + push (30min)
 
 ### Day 3: EntityMapper Refactoring (6 hours)
+
 - [ ] Update `test_entity_mapper.py` (2h)
 - [ ] Refactor `entity_mapper.py` (3h)
 - [ ] Integration testing (1h)
@@ -466,13 +478,16 @@ mapper = EntityMapper(
 
 ## 🔗 Related Documents
 
-- [Week 3 Gap Analysis](.github/copilot/audit-progress/WEEK_3_GAP_ANALYSIS.md) - Issue 5 details
+- [Week 3 Gap Analysis](.github/copilot/audit-progress/WEEK_3_GAP_ANALYSIS.md) -
+  Issue 5 details
 - [Entity Mapper Tests](tests/test_entity_mapper.py) - Current test coverage
-- [Architecture Decision](docs/ARCHITECTURE_DECISION.md) - Original design rationale
+- [Architecture Decision](docs/ARCHITECTURE_DECISION.md) - Original design
+  rationale
 
 ---
 
 **Next Steps:**
+
 1. Create `tests/test_platform_detector.py`
 2. Implement `platform_detector.py`
 3. Verify tests pass

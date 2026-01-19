@@ -1,5 +1,6 @@
 ---
-description: System architecture overview for LUXORliving Home Assistant integration
+description:
+  System architecture overview for LUXORliving Home Assistant integration
 ---
 
 # LUXORliving Architecture Overview
@@ -78,6 +79,7 @@ Push/WebSocket Client: The integration can optionally start a WebSocket client t
 ## Component Responsibilities
 
 ### Configuration & Setup
+
 - **config_flow.py** - User interface for integration setup
   - Step 1: File upload or path entry
   - Step 2: Gateway configuration (IP, port, credentials)
@@ -85,30 +87,32 @@ Push/WebSocket Client: The integration can optionally start a WebSocket client t
   - Output: ConfigEntry stored in HA
 
 ### Entity Creation
+
 - **entity_mapper.py** - Converts LXP to HA entities
   - Parses LXP project file structure
   - Detects KNX datapoint roles
   - Creates MappedEntity objects
   - Applies user overrides
-  
+
 - **platform_detector.py** - Role→Platform mapping (extracted)
   - Maps KNX roles to HA platforms
   - Determines units & device classes
   - Supports 15+ KNX roles
-  
+
 - **override_handler.py** - User customizations (extracted)
   - Parses override YAML
   - Applies custom sensor names/units
   - Handles address normalization
 
 ### Runtime Operations
+
 - **coordinator.py** (DataUpdateCoordinator)
   - Periodic polling of gateway state
   - Distributes state updates to entities
   - Tracks authentication failures
   - Triggers repair flow after 3 failures
   - State cache management
-  
+
 - **rest_client.py** - BAOS REST API client
   - HTTPS/HTTP communication
   - Authentication (token-based)
@@ -122,12 +126,13 @@ Push/WebSocket Client: The integration can optionally start a WebSocket client t
   - Connection management
 
 ### Resilience & Health
+
 - **circuit_breaker.py** - Failure resilience pattern
   - Closed → Open → Half-Open state machine
   - Prevents cascading failures
   - Auto-recovery after timeout
   - Statistics tracking
-  
+
 - **health.py** - System health endpoint
   - Integration status
   - Connection state
@@ -135,6 +140,7 @@ Push/WebSocket Client: The integration can optionally start a WebSocket client t
   - Performance metrics
 
 ### Platform Implementations
+
 - **light.py** - Light entities (dimmable & non-dimmable)
 - **switch.py** - Switch entities
 - **cover.py** - Cover/blind entities (position & tilt)
@@ -205,9 +211,11 @@ HA entity state synchronized
 ## Key Design Decisions
 
 ### 1. REST API Over Direct Tunneling
+
 **Decision:** Use BAOS REST API instead of direct KNX/IP tunneling
 
 **Rationale:**
+
 - No KNX/IP tunnel license required
 - Simpler protocol (HTTP instead of binary)
 - Better error handling
@@ -215,52 +223,64 @@ HA entity state synchronized
 - Easier debugging (HTTP logs)
 
 **Trade-off:**
+
 - Slightly higher latency (REST overhead)
 - Dependency on BAOS firmware version
 
 ### 2. Coordinator Pattern
+
 **Decision:** Use Home Assistant's DataUpdateCoordinator
 
 **Rationale:**
+
 - Built-in HA pattern (best practice)
 - Automatic error handling
 - Coordinator shares data across entities
 - Retry logic included
 - Memory efficient
 
-**Alternative considered:** Direct REST calls per entity (rejected - inefficient)
+**Alternative considered:** Direct REST calls per entity (rejected -
+inefficient)
 
 ### 3. LXP over ETS
+
 **Decision:** Parse LXP project files instead of using ETS software
 
 **Rationale:**
+
 - User-friendly (no ETS license needed)
 - Portable (LXP is XML-based)
 - Programmatic parsing possible
 - Works with Theben LUXORPlug software
 
 **Trade-off:**
+
 - ETS-specific features not available
 - Manual address configuration not supported
 
 ### 4. Circuit Breaker Protection
+
 **Decision:** Implement circuit breaker pattern for error resilience
 
 **Rationale:**
+
 - Prevents cascading failures
 - Automatic recovery
 - Graceful degradation
 - Monitoring-friendly
 
 **States:**
+
 - **Closed:** Normal operation
 - **Open:** Too many errors, reject calls
 - **Half-Open:** Testing recovery
 
 ### 5. Dependency Injection for EntityMapper
+
 **Decision:** Inject PlatformDetector + OverrideHandler into EntityMapper
 
 **Rationale:**
+
 - Single Responsibility Principle
 - Easier testing (can mock dependencies)
 - Reduced coupling
@@ -269,6 +289,7 @@ HA entity state synchronized
 ## State Management
 
 ### Coordinator State Cache
+
 ```python
 coordinator.data = {
     "1/2/3": {  # Group address
@@ -281,12 +302,14 @@ coordinator.data = {
 ```
 
 **Lifetime:**
+
 - Created on first read
 - Updated on every poll
 - Cleared on coordinator reload
 - Persisted during HA session
 
 ### Entity-Level State
+
 ```python
 @property
 def brightness(self):
@@ -297,17 +320,20 @@ def brightness(self):
 ## Performance Characteristics
 
 ### Initialization
+
 - LXP parsing: ~100ms for typical project (100+ devices)
 - Entity creation: ~50ms per 100 entities
 - Total startup: ~200-300ms for full project
 
 ### Runtime
+
 - Polling interval: Configurable (default: 30s)
 - Per-entity update: <5ms (state sync only)
 - State reads per cycle: 1 API call to BAOS
 - Memory footprint: ~2-5MB per 100 entities
 
 ### Bottlenecks
+
 - REST API latency (100-500ms per call)
 - Network connectivity (timeouts)
 - BAOS firmware performance (response time)
@@ -315,18 +341,21 @@ def brightness(self):
 ## Extension Points
 
 ### Adding New Platforms
+
 1. Create `new_platform.py` (light.py as template)
 2. Implement async_setup_entry()
 3. Create entity class (inherit from HA entity)
 4. Register in `__init__.py`
 
 ### Custom Role Mappings
+
 ```python
 # PlatformDetector.ROLE_TO_PLATFORM
 "CustomRole": Platform.LIGHT
 ```
 
 ### Override System
+
 ```yaml
 # luxor_living_overrides.yaml
 sensors:
@@ -339,18 +368,21 @@ sensors:
 ## Testing Strategy
 
 ### Unit Tests
+
 - Entity mapper role detection
 - Platform detection logic
 - Override parsing
 - Circuit breaker state transitions
 
 ### Integration Tests
+
 - Full LXP → entities flow
 - Coordinator polling
 - Entity state synchronization
 - Config flow validation
 
 ### E2E Tests
+
 - Real gateway communication
 - Remote HA instance testing
 - Full user workflow

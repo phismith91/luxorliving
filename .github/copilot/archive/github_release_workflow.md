@@ -1,12 +1,13 @@
 ---
 description: GitHub Release Workflow - Token ist bereits vorhanden!
-applyTo: '**'
+applyTo: "**"
 priority: 1000
 ---
 
 # ⚠️ KRITISCH: GitHub Token Setup
 
 ## 🔑 TOKEN IST BEREITS VORHANDEN
+
 ```bash
 ~/.github-token
 ```
@@ -14,6 +15,7 @@ priority: 1000
 ## ✅ STANDARD-WORKFLOW FÜR RELEASES
 
 ### 1. Release Notes erstellen
+
 ```bash
 cat > /tmp/release_notes.md << 'EOF'
 ## Release Title
@@ -22,6 +24,7 @@ EOF
 ```
 
 ### 2. Python Release Script erstellen
+
 ```bash
 cat > /tmp/create_github_release.py << 'PYTHON_EOF'
 #!/usr/bin/env python3
@@ -67,21 +70,25 @@ chmod +x /tmp/create_github_release.py
 ```
 
 ### 3. Release erstellen (ONE-LINER)
+
 ```bash
 GITHUB_TOKEN=$(cat ~/.github-token) python3 /tmp/create_github_release.py
 ```
 
 ## ❌ NICHT TUN
+
 - ❌ NICHT nach Token fragen
 - ❌ NICHT User auffordern, Token einzugeben
 - ❌ NICHT manuelle Browser-Schritte vorschlagen wenn Token existiert
 
 ## ✅ TUN
+
 - ✅ Token automatisch aus `~/.github-token` laden
 - ✅ Release direkt erstellen
 - ✅ Nur bei Fehler eskalieren
 
 ## 📋 Vollständiges Beispiel (Beta 7.6)
+
 ```bash
 # 1. Notes
 cat > /tmp/release_notes.md << 'EOF'
@@ -98,5 +105,6 @@ GITHUB_TOKEN=$(cat ~/.github-token) python3 /tmp/create_github_release.py
 ```
 
 ## 🎯 Erfolgreiche Verwendung
+
 - ✅ 23. Dezember 2025: Beta 7.6 Release erfolgreich erstellt
 - ✅ Token-Location dokumentiert: `~/.github-token`

@@ -4,7 +4,8 @@
 
 ### 🥈 Home Assistant Silver Compliance Features
 
-This release implements features required for **Home Assistant Silver** quality scale compliance.
+This release implements features required for **Home Assistant Silver** quality
+scale compliance.
 
 ### ✨ Added
 
@@ -18,12 +19,14 @@ This release implements features required for **Home Assistant Silver** quality 
   - Localized config flow, repair messages and UI strings
 
 - **📚 End-user Documentation**
-  - Added examples: Automations, Dashboard configurations, Compatible devices list
+  - Added examples: Automations, Dashboard configurations, Compatible devices
+    list
 
 ### 🐛 Bug fixes
 
 - Fixed test fixture issue in performance benchmark tests
-- Fixed coordinator initialization for HA 2026.8+ (pass `config_entry` to DataUpdateCoordinator)
+- Fixed coordinator initialization for HA 2026.8+ (pass `config_entry` to
+  DataUpdateCoordinator)
 
 ### 🔧 Technical Improvements
 
@@ -35,11 +38,13 @@ This release implements features required for **Home Assistant Silver** quality 
 ### 🧪 Testing & Quality
 
 - **Tests:** 212/212 passing
-- **Quality gates:** README/CHANGELOG validation, HACS install test, zip structure validation
+- **Quality gates:** README/CHANGELOG validation, HACS install test, zip
+  structure validation
 
 ### ⚡ Upgrade Notes
 
-- Remove any previously installed beta copies and nested directories before installing
+- Remove any previously installed beta copies and nested directories before
+  installing
 - Install v0.6.0 via HACS and restart Home Assistant
 
 ---

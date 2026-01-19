@@ -126,70 +126,76 @@ Quick visual reference for the entire development and release workflow.
 ## CI Check Details
 
 ### Push Preflight (feature branch → push)
-| Check | Duration | Fails if | Action |
-|-------|----------|----------|--------|
-| black --check | <1s | Code not formatted | Run `black .` locally |
-| isort --check-only | <1s | Imports not sorted | Run `isort .` locally |
-| pytest (smoke) | ~30s | Quick tests fail | Fix tests, run locally first |
+
+| Check              | Duration | Fails if           | Action                       |
+| ------------------ | -------- | ------------------ | ---------------------------- |
+| black --check      | <1s      | Code not formatted | Run `black .` locally        |
+| isort --check-only | <1s      | Imports not sorted | Run `isort .` locally        |
+| pytest (smoke)     | ~30s     | Quick tests fail   | Fix tests, run locally first |
 
 ### Pull Request Fast Checks (PR sync)
-| Check | Duration | Fails if | Action |
-|-------|----------|----------|--------|
-| black --check | <1s | Code not formatted | Run `black .` locally |
-| isort --check-only | <1s | Imports not sorted | Run `isort .` locally |
-| pytest (smoke) | ~30s | Quick tests fail | Fix tests |
+
+| Check              | Duration | Fails if           | Action                |
+| ------------------ | -------- | ------------------ | --------------------- |
+| black --check      | <1s      | Code not formatted | Run `black .` locally |
+| isort --check-only | <1s      | Imports not sorted | Run `isort .` locally |
+| pytest (smoke)     | ~30s     | Quick tests fail   | Fix tests             |
 
 ### QA Matrix (on label `run-qa-matrix`)
-| Axis | Variants | Duration | Notes |
-|------|----------|----------|-------|
-| Python | 3.11, 3.13 | Each ~5–10 min | Tests all Python versions |
-| HA | 2025.12, 2026.1, latest | Per Python | Tests all HA versions |
-| Tests | smoke → integration → full | Parallel per matrix cell | Only fails if truly broken |
-| Coverage | Codecov upload | After tests | Tracks coverage history |
+
+| Axis     | Variants                   | Duration                 | Notes                      |
+| -------- | -------------------------- | ------------------------ | -------------------------- |
+| Python   | 3.11, 3.13                 | Each ~5–10 min           | Tests all Python versions  |
+| HA       | 2025.12, 2026.1, latest    | Per Python               | Tests all HA versions      |
+| Tests    | smoke → integration → full | Parallel per matrix cell | Only fails if truly broken |
+| Coverage | Codecov upload             | After tests              | Tracks coverage history    |
 
 ### Release Checks (main push at release)
-| Check | Purpose | Fails if |
-|-------|---------|----------|
-| black + isort | Format/lint gate | Code not formatted |
-| pytest (smoke + integration subset) | Quick sanity | Tests break |
-| validate_readme.sh | README version matches | Version mismatch |
-| validate_hacs.sh | HACS compliance | hacs.json or manifest invalid |
-| release_automation.sh --dry-run | Release would succeed | Dry-run fails (prevents bad release) |
+
+| Check                               | Purpose                | Fails if                             |
+| ----------------------------------- | ---------------------- | ------------------------------------ |
+| black + isort                       | Format/lint gate       | Code not formatted                   |
+| pytest (smoke + integration subset) | Quick sanity           | Tests break                          |
+| validate_readme.sh                  | README version matches | Version mismatch                     |
+| validate_hacs.sh                    | HACS compliance        | hacs.json or manifest invalid        |
+| release_automation.sh --dry-run     | Release would succeed  | Dry-run fails (prevents bad release) |
 
 ---
 
 ## Labels & When to Use Them
 
-| Label | Used by | Triggers | When |
-|-------|---------|----------|------|
+| Label           | Used by                 | Triggers           | When                  |
+| --------------- | ----------------------- | ------------------ | --------------------- |
 | `run-qa-matrix` | Reviewers, Contributors | QA Matrix workflow | PR needs full testing |
-| `bug` | Anyone | Routing to backlog | Bug report |
-| `enhancement` | Anyone | Routing | Feature request |
-| `testing` | Reviewer | Attention signal | Needs test focus |
-| `documentation` | Anyone | GitHub automation | Docs-only PR |
+| `bug`           | Anyone                  | Routing to backlog | Bug report            |
+| `enhancement`   | Anyone                  | Routing            | Feature request       |
+| `testing`       | Reviewer                | Attention signal   | Needs test focus      |
+| `documentation` | Anyone                  | GitHub automation  | Docs-only PR          |
 
 ---
 
 ## Common Questions
 
-**Q: My push preflight failed on format. What do I do?**  
-A: Run `black .` and `isort .` locally, commit, and push again. Preflight runs again automatically.
+**Q: My push preflight failed on format. What do I do?** A: Run `black .` and
+`isort .` locally, commit, and push again. Preflight runs again automatically.
 
-**Q: How long does QA matrix take?**  
-A: ~10–15 minutes for the full 6 combinations (2 Python × 3 HA versions).
+**Q: How long does QA matrix take?** A: ~10–15 minutes for the full 6
+combinations (2 Python × 3 HA versions).
 
-**Q: Do I need to run tests locally before pushing?**  
-A: Yes, strongly recommended. CI should verify, not discover issues. Use: `pytest tests/ -v`
+**Q: Do I need to run tests locally before pushing?** A: Yes, strongly
+recommended. CI should verify, not discover issues. Use: `pytest tests/ -v`
 
-**Q: What's the difference between smoke and integration tests?**  
-A: Smoke = quick sanity checks (<30s). Integration = deeper, slower tests. See [docs/TESTS.md](TESTS.md).
+**Q: What's the difference between smoke and integration tests?** A: Smoke =
+quick sanity checks (<30s). Integration = deeper, slower tests. See
+[docs/TESTS.md](TESTS.md).
 
-**Q: Can I force-push to my feature branch?**  
-A: Yes (e.g., after rebasing). Just be careful not to force-push to `main` — it's protected.
+**Q: Can I force-push to my feature branch?** A: Yes (e.g., after rebasing).
+Just be careful not to force-push to `main` — it's protected.
 
-**Q: Release workflow seems complex. Can I skip anything?**  
-A: No. The Release Checks gate prevents bad releases. Follow the process.
+**Q: Release workflow seems complex. Can I skip anything?** A: No. The Release
+Checks gate prevents bad releases. Follow the process.
 
 ---
 
-For detailed step-by-step, see [CONTRIBUTOR_WORKFLOW.md](CONTRIBUTOR_WORKFLOW.md).
+For detailed step-by-step, see
+[CONTRIBUTOR_WORKFLOW.md](CONTRIBUTOR_WORKFLOW.md).

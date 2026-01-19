@@ -2,7 +2,9 @@
 
 List of KNX devices tested with and supported by the LUXORliving integration.
 
-Note: This list is based on real, tested LXP projects. Other Theben models may also work. If your device is missing, please open an issue with details (see links below).
+Note: This list is based on real, tested LXP projects. Other Theben models may
+also work. If your device is missing, please open an issue with details (see
+links below).
 
 ## Contents
 
@@ -26,6 +28,7 @@ Note: This list is based on real, tested LXP projects. Other Theben models may a
 | S16   | Switch actuator | 16       | switch / light | Tested |
 
 Features:
+
 - On/off switching
 - State feedback
 - Panic function
@@ -39,6 +42,7 @@ Features:
 | D4    | Dim actuator | 4        | light       | Tested |
 
 Features:
+
 - On/off switching
 - Brightness control (0–100%)
 - Relative dimming (brighter/darker)
@@ -53,6 +57,7 @@ Features:
 | J8    | Blind actuator | 8        | cover       | Tested |
 
 Features:
+
 - Open/close/stop
 - Position control (0–100%)
 - Tilt control (0–100%)
@@ -62,6 +67,7 @@ Features:
 - Panic mode
 
 Device classes:
+
 - Auto-detection: shutter vs blind (based on tilt support)
 
 ### Heating actuators (climate)
@@ -71,6 +77,7 @@ Device classes:
 | H6    | Heating actuator | 6        | climate     | Tested |
 
 Features:
+
 - Current temperature
 - Setpoint control (5–35 °C, 0.5 °C steps)
 - Valve position (0–100%)
@@ -79,6 +86,7 @@ Features:
 - Heat/cool switching (when configured in ETS)
 
 Zones:
+
 - Floor heating
 - Infrared heating
 - Wall heating
@@ -91,6 +99,7 @@ Zones:
 | E1    | 2-button | 2        | switch / binary_sensor | Tested |
 
 Features:
+
 - Binary switch states
 - Temperature sensor (iON8)
 - Multi-channel per device
@@ -103,6 +112,7 @@ Features:
 | BI360 | Presence detector | 360°, temp | binary_sensor | Tested |
 
 Features:
+
 - Motion/presence detection
 - Brightness (lux)
 - Temperature (separate sensor)
@@ -116,11 +126,13 @@ Device class: `motion`
 | Weather Station 1 | Outdoor sensor | temp, wind, lux | sensor      | Tested |
 
 Sensors:
+
 - Outdoor temperature (°C)
 - Wind speed (km/h)
 - Brightness middle/left/right (lux)
 
 Device classes:
+
 - Temperature: `temperature`
 - Wind: `wind_speed`
 - Brightness: `illuminance`
@@ -132,6 +144,7 @@ Device classes:
 | Binary Input 32 | Input module | 32     | binary_sensor | Tested |
 
 Use cases:
+
 - Window contacts
 - Door contacts
 - Alarms/faults
@@ -142,6 +155,7 @@ Use cases:
 ## Supported features per platform
 
 ### Light
+
 - On/off
 - Brightness control (dimmers)
 - Relative dimming (+/–)
@@ -150,6 +164,7 @@ Use cases:
 - No color control (not supported by KNX devices)
 
 ### Cover
+
 - Open/close/stop
 - Position control (0–100%)
 - Tilt control (0–100%)
@@ -159,6 +174,7 @@ Use cases:
 - Panic function
 
 ### Climate
+
 - Current temperature
 - Setpoint control
 - Valve position
@@ -168,10 +184,12 @@ Use cases:
 - No "auto" mode (KNX limitation)
 
 ### Binary sensor
+
 - Motion/presence
 - Window/door contacts
 
 ### Sensor
+
 - Temperature
 - Brightness (lux)
 - Wind speed
@@ -182,33 +200,34 @@ Use cases:
 ## Tested project: Hauptwohnung.lxp (reference)
 
 Statistics:
+
 - 63 devices
 - 851 datapoints
 - 137 Home Assistant entities
 
-Device distribution:
-| Type                          | Count | HA Entities      |
-| ----------------------------- | ----- | ---------------- |
-| Switch actuators (S4/S8/S16)  | 3     | 24 lights        |
-| Dim actuators (D2/D4)         | 10    | 19 lights        |
-| Blind actuators (J4/J8)       | 2     | 15 covers        |
-| Heating actuators (H6)        | 2     | 9 climate        |
-| Push buttons (iON8, E1, etc.) | 30+   | 60+ switches     |
-| Motion/presence detectors     | 4     | 4 binary sensors |
-| Weather station               | 1     | 5 sensors        |
+Device distribution: | Type | Count | HA Entities | |
+----------------------------- | ----- | ---------------- | | Switch actuators
+(S4/S8/S16) | 3 | 24 lights | | Dim actuators (D2/D4) | 10 | 19 lights | | Blind
+actuators (J4/J8) | 2 | 15 covers | | Heating actuators (H6) | 2 | 9 climate | |
+Push buttons (iON8, E1, etc.) | 30+ | 60+ switches | | Motion/presence detectors
+| 4 | 4 binary sensors | | Weather station | 1 | 5 sensors |
 
 ---
 
 ## Known limitations
 
 ### KNX-specific
+
 1. No color control for lights
 2. Heating "auto" mode not supported (use ETS configuration)
-3. Group address limits depend on model; complex scenarios require ETS configuration
+3. Group address limits depend on model; complex scenarios require ETS
+   configuration
 
 ### Integration-specific
+
 1. LXP project file required (primary configuration)
-2. State updates use KNX telegrams; coordinator polling as fallback (configurable)
+2. State updates use KNX telegrams; coordinator polling as fallback
+   (configurable)
 3. REST API: use HTTPS; TLS 1.2+ required (self-signed certificates accepted)
 
 ---
@@ -235,7 +254,9 @@ Device distribution:
 - KNX Association: https://www.knx.org/
 - ETS software: https://www.knx.org/knx-en/for-professionals/software/ets/
 
-Missing device or issues? Create an issue: https://github.com/phismith91/luxorliving/issues/new
+Missing device or issues? Create an issue:
+https://github.com/phismith91/luxorliving/issues/new
+
 # Compatible Devices - LUXORliving
 
 Liste der getesteten und kompatiblen KNX-Geräte mit der LUXORliving Integration.
@@ -252,17 +273,19 @@ Liste der getesteten und kompatiblen KNX-Geräte mit der LUXORliving Integration
 
 ### ✅ Vollständig getestet & kompatibel
 
-Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollständig:
+Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren
+vollständig:
 
 #### Schaltaktoren (Switches/Lights)
 
-| Modell  | Typ         | Kanäle | HA Platform        | Status     |
-| ------- | ----------- | ------ | ------------------ | ---------- |
+| Modell  | Typ         | Kanäle | HA Platform        | Status      |
+| ------- | ----------- | ------ | ------------------ | ----------- |
 | **S4**  | Schaltaktor | 4      | `switch` / `light` | ✅ Getestet |
 | **S8**  | Schaltaktor | 8      | `switch` / `light` | ✅ Getestet |
 | **S16** | Schaltaktor | 16     | `switch` / `light` | ✅ Getestet |
 
 **Funktionen:**
+
 - Ein/Aus-Schaltung
 - Status-Rückmeldung
 - Panik-Funktion
@@ -270,12 +293,13 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Dimmaktoren (Dimmable Lights)
 
-| Modell | Typ       | Kanäle | HA Platform | Status     |
-| ------ | --------- | ------ | ----------- | ---------- |
+| Modell | Typ       | Kanäle | HA Platform | Status      |
+| ------ | --------- | ------ | ----------- | ----------- |
 | **D2** | Dimmaktor | 2      | `light`     | ✅ Getestet |
 | **D4** | Dimmaktor | 4      | `light`     | ✅ Getestet |
 
 **Funktionen:**
+
 - Ein/Aus-Schaltung
 - Helligkeitssteuerung (0-100%)
 - Relative Dimmung (heller/dunkler)
@@ -284,12 +308,13 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Jalousieaktoren (Covers)
 
-| Modell | Typ           | Kanäle | HA Platform | Status     |
-| ------ | ------------- | ------ | ----------- | ---------- |
+| Modell | Typ           | Kanäle | HA Platform | Status      |
+| ------ | ------------- | ------ | ----------- | ----------- |
 | **J4** | Jalousieaktor | 4      | `cover`     | ✅ Getestet |
 | **J8** | Jalousieaktor | 8      | `cover`     | ✅ Getestet |
 
 **Funktionen:**
+
 - Auf/Ab/Stopp
 - Positionssteuerung (Höhe 0-100%)
 - Lamellensteuerung (Tilt 0-100%)
@@ -299,15 +324,17 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 - Panik-Modus
 
 **Device Classes:**
+
 - Automatische Erkennung: Shutter vs. Blind (basierend auf Tilt-Unterstützung)
 
 #### Heizungsaktoren (Climate)
 
-| Modell | Typ           | Kanäle | HA Platform | Status     |
-| ------ | ------------- | ------ | ----------- | ---------- |
+| Modell | Typ           | Kanäle | HA Platform | Status      |
+| ------ | ------------- | ------ | ----------- | ----------- |
 | **H6** | Heizungsaktor | 6      | `climate`   | ✅ Getestet |
 
 **Funktionen:**
+
 - Temperatur-Anzeige (Istwert)
 - Sollwert-Steuerung (5-35°C, Schritte 0.5°C)
 - Ventilposition (Stellgröße 0-100%)
@@ -316,30 +343,33 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 - Umschaltung Heizen/Kühlen (sofern konfiguriert)
 
 **Unterstützte Zonen:**
+
 - Fußbodenheizung (FBH)
 - Infrarot-Heizung
 - Wandheizung
 
 #### Taster (Binary Sensors / Switches)
 
-| Modell   | Typ           | Kanäle | HA Platform                | Status     |
-| -------- | ------------- | ------ | -------------------------- | ---------- |
+| Modell   | Typ           | Kanäle | HA Platform                | Status      |
+| -------- | ------------- | ------ | -------------------------- | ----------- |
 | **iON8** | Taster 8-fach | 8 + 2  | `switch` / `binary_sensor` | ✅ Getestet |
 | **E1**   | Taster        | 2      | `switch` / `binary_sensor` | ✅ Getestet |
 
 **Funktionen:**
+
 - Binäre Schaltzustände
 - Temperatursensor (bei iON8)
 - Mehrere Kanäle pro Gerät
 
 #### Bewegungsmelder (Binary Sensors)
 
-| Modell    | Typ           | Features   | HA Platform     | Status     |
-| --------- | ------------- | ---------- | --------------- | ---------- |
+| Modell    | Typ           | Features   | HA Platform     | Status      |
+| --------- | ------------- | ---------- | --------------- | ----------- |
 | **BI180** | Präsenzmelder | 180°, Temp | `binary_sensor` | ✅ Getestet |
 | **BI360** | Präsenzmelder | 360°, Temp | `binary_sensor` | ✅ Getestet |
 
 **Funktionen:**
+
 - Bewegungserkennung
 - Helligkeitsmessung
 - Temperaturmessung (separater Sensor)
@@ -348,11 +378,12 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 
 #### Wetterstation (Sensors)
 
-| Modell              | Typ         | Messwerte       | HA Platform | Status     |
-| ------------------- | ----------- | --------------- | ----------- | ---------- |
+| Modell              | Typ         | Messwerte       | HA Platform | Status      |
+| ------------------- | ----------- | --------------- | ----------- | ----------- |
 | **Wetterstation 1** | Außensensor | Temp, Wind, Lux | `sensor`    | ✅ Getestet |
 
 **Sensoren:**
+
 - Außentemperatur (°C)
 - Windgeschwindigkeit (km/h)
 - Helligkeit Mitte (Lux)
@@ -360,17 +391,19 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 - Helligkeit Rechts (Lux)
 
 **Device Classes:**
+
 - Temperature: `temperature`
 - Wind: `wind_speed`
 - Brightness: `illuminance`
 
 #### Binäreingänge
 
-| Modell              | Typ           | Eingänge | HA Platform     | Status     |
-| ------------------- | ------------- | -------- | --------------- | ---------- |
+| Modell              | Typ           | Eingänge | HA Platform     | Status      |
+| ------------------- | ------------- | -------- | --------------- | ----------- |
 | **Binäreingang 32** | Eingangsmodul | 32       | `binary_sensor` | ✅ Getestet |
 
 **Funktionen:**
+
 - Fensterkontakte
 - Türkontakte
 - Störmeldungen
@@ -383,6 +416,7 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 ### Nach Platform
 
 #### Light Platform
+
 - ✅ Ein/Aus-Schaltung
 - ✅ Helligkeitssteuerung (Dimmaktoren)
 - ✅ Relative Dimmung (+/-)
@@ -391,6 +425,7 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 - ❌ Farbsteuerung (nicht von KNX-Geräten unterstützt)
 
 #### Cover Platform
+
 - ✅ Auf/Ab/Stopp
 - ✅ Positionssteuerung (0-100%)
 - ✅ Lamellensteuerung (Tilt 0-100%)
@@ -400,6 +435,7 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 - ✅ Panik-Funktion
 
 #### Climate Platform
+
 - ✅ Temperatur-Anzeige
 - ✅ Sollwert-Steuerung
 - ✅ Ventilposition
@@ -409,12 +445,14 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 - ❌ Auto-Modus (KNX-Limitierung)
 
 #### Binary Sensor Platform
+
 - ✅ Bewegungsmelder
 - ✅ Präsenzmelder
 - ✅ Fensterkontakte
 - ✅ Türkontakte
 
 #### Sensor Platform
+
 - ✅ Temperatur
 - ✅ Helligkeit (Lux)
 - ✅ Windgeschwindigkeit
@@ -427,20 +465,17 @@ Diese Geräte wurden mit echten LXP-Projekten getestet und funktionieren vollst�
 ### Hauptwohnung.lxp (Referenz-Projekt)
 
 **Statistik:**
+
 - 63 Geräte
 - 851 Datapoints
 - 137 Home Assistant Entities
 
-**Geräteverteilung:**
-| Typ                         | Anzahl | HA Entities      |
-| --------------------------- | ------ | ---------------- |
-| Schaltaktoren (S4/S8/S16)   | 3      | 24 Lights        |
-| Dimmaktoren (D2/D4)         | 10     | 19 Lights        |
-| Jalousieaktoren (J4/J8)     | 2      | 15 Covers        |
-| Heizungsaktoren (H6)        | 2      | 9 Climate        |
-| Taster (iON8, E1, etc.)     | 30+    | 60+ Switches     |
-| Bewegungsmelder (BI180/360) | 4      | 4 Binary Sensors |
-| Wetterstation               | 1      | 5 Sensors        |
+**Geräteverteilung:** | Typ | Anzahl | HA Entities | |
+--------------------------- | ------ | ---------------- | | Schaltaktoren
+(S4/S8/S16) | 3 | 24 Lights | | Dimmaktoren (D2/D4) | 10 | 19 Lights | |
+Jalousieaktoren (J4/J8) | 2 | 15 Covers | | Heizungsaktoren (H6) | 2 | 9 Climate
+| | Taster (iON8, E1, etc.) | 30+ | 60+ Switches | | Bewegungsmelder (BI180/360)
+| 4 | 4 Binary Sensors | | Wetterstation | 1 | 5 Sensors |
 
 ---
 
@@ -497,16 +532,16 @@ Wenn Sie ein Gerät haben, das nicht in dieser Liste steht:
 
 ### Nach Device Type
 
-| Device Type       | Light | Switch | Cover | Climate | Binary Sensor | Sensor   |
-| ----------------- | ----- | ------ | ----- | ------- | ------------- | -------- |
-| **S4/S8/S16**     | ✅     | ✅      | ❌     | ❌       | ❌             | ❌        |
-| **D2/D4**         | ✅     | ❌      | ❌     | ❌       | ❌             | ❌        |
-| **J4/J8**         | ❌     | ❌      | ✅     | ❌       | ❌             | ❌        |
-| **H6**            | ❌     | ❌      | ❌     | ✅       | ❌             | ❌        |
-| **iON8**          | ❌     | ✅      | ❌     | ❌       | ❌             | ✅ (Temp) |
-| **BI180/360**     | ❌     | ❌      | ❌     | ❌       | ✅             | ✅ (Temp) |
-| **Wetterstation** | ❌     | ❌      | ❌     | ❌       | ❌             | ✅        |
-| **Binäreingang**  | ❌     | ❌      | ❌     | ❌       | ✅             | ❌        |
+| Device Type       | Light | Switch | Cover | Climate | Binary Sensor | Sensor    |
+| ----------------- | ----- | ------ | ----- | ------- | ------------- | --------- |
+| **S4/S8/S16**     | ✅    | ✅     | ❌    | ❌      | ❌            | ❌        |
+| **D2/D4**         | ✅    | ❌     | ❌    | ❌      | ❌            | ❌        |
+| **J4/J8**         | ❌    | ❌     | ✅    | ❌      | ❌            | ❌        |
+| **H6**            | ❌    | ❌     | ❌    | ✅      | ❌            | ❌        |
+| **iON8**          | ❌    | ✅     | ❌    | ❌      | ❌            | ✅ (Temp) |
+| **BI180/360**     | ❌    | ❌     | ❌    | ❌      | ✅            | ✅ (Temp) |
+| **Wetterstation** | ❌    | ❌     | ❌    | ❌      | ❌            | ✅        |
+| **Binäreingang**  | ❌    | ❌     | ❌    | ❌      | ✅            | ❌        |
 
 ---
 
@@ -519,4 +554,5 @@ Wenn Sie ein Gerät haben, das nicht in dieser Liste steht:
 
 ---
 
-**Gerät fehlt oder funktioniert nicht?** → [Issue erstellen](https://github.com/phismith91/luxorliving/issues/new)
+**Gerät fehlt oder funktioniert nicht?** →
+[Issue erstellen](https://github.com/phismith91/luxorliving/issues/new)

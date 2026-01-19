@@ -1,17 +1,18 @@
 # LUXORliving Integration - Project Context
 
-**Last Updated:** 2026-01-16  
-**Version:** v0.6.1 (Production)  
-**Status:** Active Development (Public Repository, HACS-ready)  
-**Subscription:** GitHub Copilot Individual ($10/month)
+**Last Updated:** 2026-01-16 **Version:** v0.6.1 (Production) **Status:** Active
+Development (Public Repository, HACS-ready) **Subscription:** GitHub Copilot
+Individual ($10/month)
 
 ---
 
 ## 🎯 Project Overview
 
-**LUXORliving** ist eine Home Assistant Custom Integration für Theben LUXORliving KNX-Systeme über das IP1 Interface.
+**LUXORliving** ist eine Home Assistant Custom Integration für Theben
+LUXORliving KNX-Systeme über das IP1 Interface.
 
 ### Key Features
+
 - KNX-Kommunikation via REST API (BAOS Web Services)
 - LXP-Import für automatisches Entity-Mapping
 - Unterstützte Plattformen: Light, Switch, Climate, Cover, Binary Sensor, Sensor
@@ -20,12 +21,14 @@
 - Diagnostics mit sensiblen Daten-Redaktion
 
 ### Integration Design Principles
+
 - **No ETS dependency** - verwendet LXP-Dateien statt ETS/knxproj
 - **HACS-ready** - Community-friendly, maintainable long-term
 - **Simulation Mode** - First-class support für Testing ohne Hardware
 - **Deterministic Mapping** - Role-based auto-mapping aus LXP-Daten
 
 ### Current Version Status
+
 - **Stable:** v0.6.1 (2026-01-16)
 - **Quality:** Silver (Home Assistant Compliance)
 - **Next Milestone:** Gold Compliance (Enhanced diagnostics, QA automation)
@@ -50,6 +53,7 @@
 **Problem:** Lokale `~/.ssh/config` hat ungültige Einträge
 
 **Solution:** Immer `-F /dev/null` verwenden:
+
 ```bash
 ssh -F /dev/null phil@100.97.159.88 "command"
 GIT_SSH_COMMAND='ssh -F /dev/null' git push
@@ -58,6 +62,7 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push
 ### Pre-Release Deployment Workflow
 
 1. **Sync zu Temp:**
+
    ```bash
    ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
    rsync -avz --exclude="__pycache__" \
@@ -67,6 +72,7 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push
    ```
 
 2. **Copy mit sudo:**
+
    ```bash
    ssh -F /dev/null phil@100.97.159.88 \
      "sudo cp -r /tmp/luxor_deploy/* /config/custom_components/luxor_living/ && \
@@ -78,11 +84,13 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push
    - **Note:** SSH restart funktioniert nicht!
 
 ### Official Release Deployment
+
 - Users installieren via HACS (planned for v1.0.0)
 - Manual download via GitHub Releases
 - File upload to `/config/custom_components/`
 
 ### Hardware Setup (Production)
+
 ```
 Developer PC (Local) ──SSH──> Home Assistant (100.97.159.88)
          ↓                           ↓
@@ -95,6 +103,7 @@ Developer PC (Local) ──SSH──> Home Assistant (100.97.159.88)
 ```
 
 **Network:**
+
 - Remote access via Tailscale VPN
 - HA und IP1 im selben LAN (192.168.1.x)
 - KNX Tunneling + Routing supported
@@ -134,6 +143,7 @@ luxorliving/
 ## 🔧 Development Stack
 
 ### Python Environment
+
 - **Python:** 3.13.11 (local), 3.11/3.13 (CI)
 - **Home Assistant:** 2026.1.x (OS)
 - **Test Framework:** pytest 9.0.0
@@ -142,6 +152,7 @@ luxorliving/
 - **Formatters:** black, isort (enforced in CI)
 
 ### Key Dependencies
+
 - `homeassistant` - Core HA
 - `aiohttp` - Async HTTP client
 - `voluptuous` - Schema validation
@@ -149,8 +160,13 @@ luxorliving/
 - `black`, `isort`, `mypy` - Code quality
 
 ### Quality Gates
-- ✅ All tests passing (`pytest tests/ -v -m "not enable_socket"` → 294/294)- ✅ **Gold Gates** enforced in CI: Smoke → Integration subset → HACS validation → Release dry-run (all must pass before merge)- ✅ Code formatted (black/isort) - MANDATORY before commits
-- ✅ Local validation scripts pass (`./scripts/validate_readme.sh`, `./scripts/check_release_notes.sh`)
+
+- ✅ All tests passing (`pytest tests/ -v -m "not enable_socket"` → 294/294)- ✅
+  **Gold Gates** enforced in CI: Smoke → Integration subset → HACS validation →
+  Release dry-run (all must pass before merge)- ✅ Code formatted
+  (black/isort) - MANDATORY before commits
+- ✅ Local validation scripts pass (`./scripts/validate_readme.sh`,
+  `./scripts/check_release_notes.sh`)
 - ✅ Type checking (mypy) - Optional but recommended
 - ✅ CI checks green (Release Checks, Code Quality, Tests)
 - ✅ Optional: Pre-Release Testing auf Remote HA
@@ -160,6 +176,7 @@ luxorliving/
 ## 🏛️ Architecture
 
 ### High-Level Architecture
+
 ```
 ┌─────────────────────────────────────────┐
 │         Config Flow (UI)                │
@@ -191,6 +208,7 @@ luxorliving/
 ### v0.6.1 (Released 2026-01-16)
 
 **Major Features:**
+
 - ✅ Push webhook & WebSocket client for external KNX state updates
 - ✅ Configurable authentication modes (none, token, bearer, HMAC-SHA256)
 - ✅ Health endpoint with dynamic manifest version loading
@@ -198,6 +216,7 @@ luxorliving/
 - ✅ Black/isort formatting enforcement in CI
 
 **Quality Improvements:**
+
 - ✅ Hardcoded versions eliminated (health endpoint loads from manifest.json)
 - ✅ README.md test count sync (294 tests)
 - ✅ Release checks include formatting validation
@@ -205,18 +224,21 @@ luxorliving/
 - ✅ Release notes file structure standardized
 
 **Agent System Updates:**
+
 - ✅ Release Manager owns all merge operations
 - ✅ Formatting-first workflow enforced
 - ✅ Testing agent tracks test count in README
 - ✅ Architect defers merges to Release Manager
 
 **Status:**
+
 - ✅ 294/294 tests passing (unit + integration-style)
 - ✅ All CI checks green
 - ✅ HACS-ready structure validated
 - ✅ Silver compliance achieved
 
 ### v0.7.0 (Planned - Gold Compliance)
+
 - ⏳ Enhanced diagnostics with consent UI
 - ⏳ Automated QA matrix (HA versions, Python versions)
 - ⏳ Blueprint automation examples
@@ -243,9 +265,11 @@ luxorliving/
 
 ### Release Checklist
 
-1. **Format Code:** `black custom_components tests scripts && isort custom_components tests scripts`
+1. **Format Code:**
+   `black custom_components tests scripts && isort custom_components tests scripts`
 2. **Run Tests:** `pytest tests/ -v -m "not enable_socket"` (all 294 passing)
-3. **Validate Locally:** `./scripts/validate_readme.sh && ./scripts/check_release_notes.sh`
+3. **Validate Locally:**
+   `./scripts/validate_readme.sh && ./scripts/check_release_notes.sh`
 4. **Update Metadata:**
    - Bump `manifest.json` "version"
    - Update `CHANGELOG.md` (move [Unreleased] to [X.Y.Z])
@@ -263,6 +287,7 @@ luxorliving/
 ## 🔒 Security
 
 ### SSH Key Authentication
+
 - Local: `~/.ssh/id_rsa`
 - Remote: `/etc/ssh/authorized_keys`
 - No Passwords in code!
@@ -274,6 +299,7 @@ luxorliving/
 **Bei versehentlichem Commit:** Siehe copilot-instructions.md für Recovery
 
 ### Diagnostics Redaction
+
 - `CONF_PASSWORD` → `**REDACTED**`
 - `CONF_LXP_FILE` → `**REDACTED**`
 
@@ -316,7 +342,8 @@ luxorliving/
 
 ### AI Model Selection (Individual Plan)
 
-**Subscription:** GitHub Copilot Individual ($10/month) - Limited Premium requests
+**Subscription:** GitHub Copilot Individual ($10/month) - Limited Premium
+requests
 
 **Model-Use Guidelines:**
 
@@ -332,6 +359,7 @@ luxorliving/
 | **Debugging/reasoning**    | o1-preview/mini   | Deep analysis (use sparingly!)     |
 
 **Premium Quota Management:**
+
 - ✅ Use GPT-4o as default for most tasks
 - ✅ Switch to Claude 3.5 Sonnet for complex code/architecture work
 - ✅ Reserve o1-models for truly complex debugging
@@ -339,13 +367,14 @@ luxorliving/
 - ❌ Don't use Claude for basic git operations
 
 **Cost Efficiency Tips:**
+
 1. Use targeted searches (grep, semantic_search) before loading full files
 2. Read only needed line ranges, not entire files
 3. Batch independent operations in parallel
 4. Clear conversation when switching contexts (new task)
-5. Monitor token usage (stays visible in responses)
-| **HACS Compliance** | L2    | 25k tokens | hacs.json, manifest.json              | <80%    |
-| **Code Quality**    | L3    | 20k tokens | requirements_style.txt                | <80%    |
+5. Monitor token usage (stays visible in responses) | **HACS Compliance** | L2 |
+   25k tokens | hacs.json, manifest.json | <80% | | **Code Quality** | L3 | 20k
+   tokens | requirements_style.txt | <80% |
 
 **Skills Reference**: [skills/](skills/) - Context Engineering Patterns
 
@@ -360,7 +389,8 @@ luxorliving/
 7. ✅ **Format before commit:** black/isort ALWAYS run first
 8. ✅ **Never skip tests:** Fix root cause, never bypass
 9. ✅ **Defer merges to Release Manager:** Only Release Manager merges to main
-10. ✅ **Validate locally:** Run scripts before push (validate_readme.sh, check_release_notes.sh)
+10. ✅ **Validate locally:** Run scripts before push (validate_readme.sh,
+    check_release_notes.sh)
 
 ---
 
@@ -391,7 +421,6 @@ luxorliving/
 
 ---
 
-**This file is the Single Source of Truth for all Copilot Agents.**  
-**Bei Widersprüchen hat CONTEXT.md Priorität.**  
-**For agent invocation syntax, see [README.md](README.md).**
-
+**This file is the Single Source of Truth for all Copilot Agents.** **Bei
+Widersprüchen hat CONTEXT.md Priorität.** **For agent invocation syntax, see
+[README.md](README.md).**

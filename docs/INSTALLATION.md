@@ -41,19 +41,23 @@ Before installation, ensure you have:
 
 ### Step 1: Add Integration
 
-**Settings** → **Devices & Services** → **Add Integration** → Search **"LUXORliving"**
+**Settings** → **Devices & Services** → **Add Integration** → Search
+**"LUXORliving"**
 
 ### Step 2: Upload LXP File
 
 **Option A: File Upload (recommended)**
+
 - Click **Choose File** → Select your `.lxp` project file
 - File is automatically copied to Home Assistant config
 
 **Option B: Manual Path**
+
 - Copy LXP file to `/config/luxor/` directory
 - Enter path: `/config/luxor/project.lxp`
 
 **Exporting LXP from LUXORPlug:**
+
 1. Open Theben LUXORPlug software
 2. **File** → **Export** → Save as `.lxp`
 3. Transfer file to Home Assistant (e.g., via Samba share)
@@ -68,19 +72,23 @@ Before installation, ensure you have:
 | Password        | `admin`       | Default: admin/admin                   |
 
 **Connection Types:**
-- **Tunneling**: Point-to-point connection, requires authentication (recommended)
+
+- **Tunneling**: Point-to-point connection, requires authentication
+  (recommended)
 - **Routing**: Multicast, no authentication, may have firewall issues
 
 ### Step 4: Verify Setup
-   
-   Die Integration testet automatisch:
-   - ✅ REST API Login
-   - ✅ Credentials korrekt
-   - ✅ Tunneling Aktivierung möglich
-   
-   Bei Fehler:
-   - ❌ **Invalid username or password**: Credentials prüfen
-   - ❌ **Cannot connect**: IP-Adresse/Netzwerk prüfen
+
+Die Integration testet automatisch:
+
+- ✅ REST API Login
+- ✅ Credentials korrekt
+- ✅ Tunneling Aktivierung möglich
+
+Bei Fehler:
+
+- ❌ **Invalid username or password**: Credentials prüfen
+- ❌ **Cannot connect**: IP-Adresse/Netzwerk prüfen
 
 ---
 
@@ -96,11 +104,10 @@ Wenn die Standard-Credentials nicht funktionieren:
 
 1. **Via ETS konfiguriert**
    - In ETS nachschauen (Application → Settings)
-   - Oder: ETS-Projekt-Datei durchsuchen
-**Check integration:**
+   - Oder: ETS-Projekt-Datei durchsuchen **Check integration:**
 1. **Settings** → **Devices & Services** → **LUXORliving**
-2. Verify entities created (lights, switches, sensors)
-3. Test first entity:
+1. Verify entities created (lights, switches, sensors)
+1. Test first entity:
    - **Developer Tools** → **Services**
    - Service: `light.turn_on`
    - Target: Select any light entity
@@ -113,24 +120,29 @@ Wenn die Standard-Credentials nicht funktionieren:
 ### Integration Not Loading
 
 **Check logs:**
+
 ```bash
 tail -f /config/home-assistant.log | grep luxor_living
 ```
 
 **Common causes:**
+
 - Invalid LXP file path → Use absolute path `/config/luxor/project.lxp`
 - File permissions → `chmod 644 /config/luxor/project.lxp`
-- Integration not installed → Verify `/config/custom_components/luxor_living/` exists
+- Integration not installed → Verify `/config/custom_components/luxor_living/`
+  exists
 
 ### Gateway Unreachable
 
 **Verify connectivity:**
+
 ```bash
 ping <gateway-ip>
 nmap -p 3671 <gateway-ip>
 ```
 
 **Common causes:**
+
 - Wrong IP address → Check router DHCP table
 - Firewall blocking port 3671 → Allow UDP 3671
 - Gateway offline → Check physical connection
@@ -140,6 +152,7 @@ nmap -p 3671 <gateway-ip>
 **Error:** "Invalid username or password"
 
 **Solutions:**
+
 1. Try default credentials: `admin` / `admin`
 2. Check BAOS web interface: `http://<gateway-ip>`
 3. Reset gateway to factory defaults (see BAOS manual)
@@ -147,11 +160,13 @@ nmap -p 3671 <gateway-ip>
 ### No Entities Created
 
 **Causes:**
+
 - LXP file contains no group addresses
 - Wrong file format (must be `.lxp`)
 - Parsing error
 
 **Solutions:**
+
 1. Verify LXP file in LUXORPlug software
 2. Check debug logs: Set logger to debug level
 3. Re-export LXP file
@@ -180,7 +195,8 @@ Test without physical gateway:
 2. Enable **Simulation Mode**
 3. Submit
 
-All KNX operations are logged but not sent to gateway. Useful for development and testing.
+All KNX operations are logged but not sent to gateway. Useful for development
+and testing.
 
 ### Multiple Gateways
 
@@ -212,6 +228,7 @@ Restart Home Assistant.
 **Cause:** Network connectivity to gateway
 
 **Solution:**
+
 ```bash
 # Test ping
 ping 192.168.1.3
@@ -230,6 +247,7 @@ nc -zv 192.168.1.3 3671  # KNX Tunneling
 **Cause:** KNX connection not active
 
 **Solution:**
+
 ```
 1. Logs prüfen:
    - "✅ Successfully connected" → OK
@@ -248,6 +266,7 @@ nc -zv 192.168.1.3 3671  # KNX Tunneling
 **Cause:** Corrupted or invalid file
 
 **Solution:**
+
 1. Open file with text editor
 2. Check: Starts with `<?xml version="1.0"?>`
 3. Contains: `<Project>` tags
@@ -258,16 +277,18 @@ nc -zv 192.168.1.3 3671  # KNX Tunneling
 **Debug-Schritte:**
 
 1. **REST API manuell testen**
+
    ```bash
    # Login
    curl -X POST http://192.168.1.3/rest/auth/login \
      -H "Content-Type: application/json" \
      -d '{"username":"admin","password":"admin"}'
-   
+
    # Response sollte Session Token enthalten
    ```
 
 2. **Tunneling manuell aktivieren**
+
    ```bash
    # Mit Token aus Login
    curl -X PUT http://192.168.1.3/rest/device/authtunneling \
@@ -296,6 +317,7 @@ Einstellungen → Geräte & Dienste → LUXORliving
 ```
 
 Enthält:
+
 - Gateway-Status
 - REST API Session
 - Tunneling Status
@@ -325,8 +347,10 @@ ha core restart
 
 ## 🎓 Weiterführende Dokumentation
 
-- [Architecture Decision](docs/ARCHITECTURE_DECISION.md) - Warum REST API + Tunneling?
-- [Tunneling Authentication](docs/TUNNELING_AUTHENTICATION.md) - Technische Details
+- [Architecture Decision](docs/ARCHITECTURE_DECISION.md) - Warum REST API +
+  Tunneling?
+- [Tunneling Authentication](docs/TUNNELING_AUTHENTICATION.md) - Technische
+  Details
 - [BAOS REST API](docs/BAOS_REST_API.md) - API-Referenz
 - [Testing Guide](docs/TESTS.md) - Für Entwickler
 
@@ -354,6 +378,7 @@ Option 2: Manuelle Kontrolle
 ### Credentials sicher speichern
 
 Home Assistant verschlüsselt Config Entries automatisch:
+
 ```
 .storage/core.config_entries
 # Password ist verschlüsselt
@@ -363,6 +388,7 @@ Home Assistant verschlüsselt Config Entries automatisch:
 ### Backup
 
 Wichtige Dateien regelmäßig sichern:
+
 ```
 /config/custom_components/luxor_living/  # Integration
 .storage/luxor_living.*.lxp               # LXP-Datei
@@ -373,8 +399,10 @@ Wichtige Dateien regelmäßig sichern:
 
 ## 🤝 Support
 
-- **GitHub Issues**: [https://github.com/phismith91/luxorliving/issues](https://github.com/phismith91/luxorliving/issues)
-- **Discussions**: [https://github.com/phismith91/luxorliving/discussions](https://github.com/phismith91/luxorliving/discussions)
+- **GitHub Issues**:
+  [https://github.com/phismith91/luxorliving/issues](https://github.com/phismith91/luxorliving/issues)
+- **Discussions**:
+  [https://github.com/phismith91/luxorliving/discussions](https://github.com/phismith91/luxorliving/discussions)
 - **Email**: [Issues bevorzugt für Tracking]
 
 ---
@@ -385,6 +413,4 @@ MIT License - siehe [LICENSE](LICENSE) Datei
 
 ---
 
-**Version:** 0.2.0  
-**Datum:** 21. Dezember 2025  
-**Author:** @phismith91
+**Version:** 0.2.0 **Datum:** 21. Dezember 2025 **Author:** @phismith91

@@ -2,7 +2,8 @@
 
 ## Supported Versions
 
-The following versions of the LUXORliving integration are currently supported with security updates:
+The following versions of the LUXORliving integration are currently supported
+with security updates:
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -16,7 +17,8 @@ The following versions of the LUXORliving integration are currently supported wi
 
 ### How to Report a Security Vulnerability?
 
-1. **Email:** Send a detailed description to: [philismith91@gmail.com](mailto:philismith91@gmail.com)
+1. **Email:** Send a detailed description to:
+   [philismith91@gmail.com](mailto:philismith91@gmail.com)
 2. **Subject:** Use "SECURITY: [Brief Description]" as subject
 3. **Content:** Please include:
    - Detailed description of the security vulnerability
@@ -30,7 +32,8 @@ The following versions of the LUXORliving integration are currently supported wi
 - **Response Time:** I will contact you within 48 hours
 - **Investigation:** Security vulnerabilities are prioritized
 - **Updates:** You will receive regular updates on progress
-- **Publication:** For confirmed vulnerabilities, a fix will be developed and a security advisory created
+- **Publication:** For confirmed vulnerabilities, a fix will be developed and a
+  security advisory created
 
 ### If the Vulnerability is Accepted:
 
@@ -50,12 +53,15 @@ This project uses automated security scanning to detect vulnerabilities:
 
 - **Python Code Security:** `bandit` runs on every pull request and push to main
 - **Dependency Vulnerabilities:** `pip-audit` scans dependencies weekly
-- **Dependency Updates:** Dependabot creates PRs for outdated dependencies weekly
-- **Workflow:** Security scans run automatically via GitHub Actions (see `.github/workflows/security.yml`)
+- **Dependency Updates:** Dependabot creates PRs for outdated dependencies
+  weekly
+- **Workflow:** Security scans run automatically via GitHub Actions (see
+  `.github/workflows/security.yml`)
 
 ### Security Scan Reports
 
 Security scan results are available as workflow artifacts:
+
 1. Go to [Actions](../../actions/workflows/security.yml)
 2. Select latest workflow run
 3. Download `bandit-security-report` or `pip-audit-report` artifacts
@@ -64,7 +70,8 @@ Security scan results are available as workflow artifacts:
 
 This integration follows security best practices:
 
-1. **No Hardcoded Secrets:** All credentials stored in Home Assistant's secure storage
+1. **No Hardcoded Secrets:** All credentials stored in Home Assistant's secure
+   storage
 2. **HTTPS Only:** API communication uses HTTPS when available
 3. **Input Validation:** User inputs are validated before processing
 4. **Pinned Dependencies:** All dependencies pinned in `manifest.json`
@@ -74,11 +81,13 @@ This integration follows security best practices:
 
 Since LUXORliving is a Home Assistant integration, please note:
 
-- **Network Communication:** Uses KNX/IP protocol for local network communication
+- **Network Communication:** Uses KNX/IP protocol for local network
+  communication
 - **Authentication:** REST API for tunneling authentication (local IPs only)
 - **Data:** No personal data is stored or transmitted
 - **Permissions:** Only access to local KNX devices and Home Assistant
 
 ## Responsible Disclosure
 
-Please keep security vulnerabilities confidential until a fix is available. Thank you for helping make the LUXORliving integration more secure! 🛡️
+Please keep security vulnerabilities confidential until a fix is available.
+Thank you for helping make the LUXORliving integration more secure! 🛡️

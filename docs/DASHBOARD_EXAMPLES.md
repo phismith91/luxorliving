@@ -1,8 +1,12 @@
 # Dashboard Examples – LUXORliving
 
-Examples for building useful Lovelace dashboards with the LUXORliving integration.
+Examples for building useful Lovelace dashboards with the LUXORliving
+integration.
 
-Note: Replace entity names with your setup. Examples use typical IDs (e.g., `light.living_room_ceiling`, `cover.living_room_balcony`). For climate attributes displayed as standalone rows, create template sensors first and reference those sensors.
+Note: Replace entity names with your setup. Examples use typical IDs (e.g.,
+`light.living_room_ceiling`, `cover.living_room_balcony`). For climate
+attributes displayed as standalone rows, create template sensors first and
+reference those sensors.
 
 ## Contents
 
@@ -186,7 +190,9 @@ cards:
 
 ## Energy management
 
-Tip: To display climate attributes (e.g., `current_temperature`, `valve_position`) in entities cards, create template sensors and reference those sensors.
+Tip: To display climate attributes (e.g., `current_temperature`,
+`valve_position`) in entities cards, create template sensors and reference those
+sensors.
 
 ### Heating overview
 
@@ -234,32 +240,40 @@ cards:
 ## Push Webhook Example Automation (Practical Example)
 
 ```yaml
-alias: 'Forward LUXOR push to notification'
-description: 'Example automation that reacts to push webhook and sends a notification.'
+alias: "Forward LUXOR push to notification"
+description:
+  "Example automation that reacts to push webhook and sends a notification."
 trigger:
   - platform: event
     event_type: luxor_living_push
     event_data:
-      entry_id: 'entry_1'
+      entry_id: "entry_1"
 
 condition: []
 
 action:
   - service: notify.mobile_app_phil
     data:
-      title: 'LUXOR Push'
-      message: "Address {{ trigger.event.data.address }} changed to {{ trigger.event.data.value }}"
+      title: "LUXOR Push"
+      message:
+        "Address {{ trigger.event.data.address }} changed to {{
+        trigger.event.data.value }}"
 mode: single
 ```
 
-This automation demonstrates how external pushes can be used to trigger user-facing actions; adapt the service and message to your environment.
+This automation demonstrates how external pushes can be used to trigger
+user-facing actions; adapt the service and message to your environment.
 
 ---
 
 ## Blueprints
 
 ### Notification on LUXOR push
-A simple automation blueprint is available at `blueprints/automation/luxor_send_push_notification.yaml` — use it to create instance automations that notify mobile apps or other services when a push arrives from a specific `entry_id`.
+
+A simple automation blueprint is available at
+`blueprints/automation/luxor_send_push_notification.yaml` — use it to create
+instance automations that notify mobile apps or other services when a push
+arrives from a specific `entry_id`.
 
 ---
 

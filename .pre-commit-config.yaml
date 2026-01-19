@@ -32,7 +32,12 @@ repos:
     rev: v1.14.1
     hooks:
       - id: mypy
-        args: [--no-implicit-optional, --warn-redundant-casts, --warn-unused-ignores]
+        args:
+          [
+            --no-implicit-optional,
+            --warn-redundant-casts,
+            --warn-unused-ignores,
+          ]
         additional_dependencies:
           - types-requests
 
@@ -68,11 +73,11 @@ repos:
 ci:
   autofix_commit_msg: |
     ci(pre-commit): auto fixes from pre-commit.com hooks
-    
+
     for more information, see https://pre-commit.ci
   autofix_prs: true
-  autoupdate_branch: ''
-  autoupdate_commit_msg: 'ci(pre-commit): autoupdate pre-commit hooks'
+  autoupdate_branch: ""
+  autoupdate_commit_msg: "ci(pre-commit): autoupdate pre-commit hooks"
   autoupdate_schedule: weekly
   skip: [prettier]
   submodules: false

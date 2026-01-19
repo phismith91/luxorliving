@@ -4,10 +4,10 @@
     {
       "operation": "LXP Parsing (tmpxf275j4z.lxp)",
       "iterations": 2,
-      "total_time": 3.525495412759483e-05,
-      "avg_time": 1.7627477063797414e-05,
-      "min_time": 1.61469797603786e-05,
-      "max_time": 1.910797436721623e-05,
+      "total_time": 3.525495412759483e-5,
+      "avg_time": 1.7627477063797414e-5,
+      "min_time": 1.61469797603786e-5,
+      "max_time": 1.910797436721623e-5,
       "throughput": 56729.61572327096
     },
     {

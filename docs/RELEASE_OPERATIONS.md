@@ -1,10 +1,10 @@
 # 📋 Release & Tagging Operational Guide
 
-**Author:** Release Manager Agent  
-**Date:** 9. Januar 2026  
-**Purpose:** Step-by-step release procedures and quality gates (current: v0.6.0)
+**Author:** Release Manager Agent **Date:** 9. Januar 2026 **Purpose:**
+Step-by-step release procedures and quality gates (current: v0.6.0)
 
-**Note:** Examples use v0.3.0 for illustration. Replace with actual target version.
+**Note:** Examples use v0.3.0 for illustration. Replace with actual target
+version.
 
 ---
 
@@ -17,18 +17,22 @@
 Before **anything** is merged or released:
 
 ✅ **Validate Workflow** - Home Assistant integration validation
+
 - hassfest (manifest validation, dependency checks, key ordering)
 - HACS validation (repository structure, requirements)
 - **Status:** MUST be green
 
 ✅ **Release Checks Workflow** - Release readiness validation
-- README.md quality gate (version consistency, documentation links, changelog sync)
+
+- README.md quality gate (version consistency, documentation links, changelog
+  sync)
 - Release notes presence check
 - Release automation dry-run (zip structure, tag creation)
 - **ShellCheck (blocking)** - All shell scripts must be clean
 - **Status:** MUST be green
 
 ✅ **CI/CD Pipeline** - Code quality & tests
+
 - Black (code formatting)
 - isort (import sorting)
 - pytest (212 tests)
@@ -40,17 +44,20 @@ Before **anything** is merged or released:
 - **No merge** on failing checks
 - **No release** on failing checks
 - **Immediate fix** required when a check turns red
-- **No exceptions** - `fail_ci_if_error: false` only for non-blocking features (e.g., Codecov token)
+- **No exceptions** - `fail_ci_if_error: false` only for non-blocking features
+  (e.g., Codecov token)
 
 ### Rationale
 
 A failing check is an indicator of:
+
 - Potential bugs
 - Version inconsistencies
 - Breaking changes for users
 - Accumulating technical debt
 
-**Consequence:** Spend 10 minutes fixing now rather than hours fixing regressions later.
+**Consequence:** Spend 10 minutes fixing now rather than hours fixing
+regressions later.
 
 ---
 
@@ -61,12 +68,14 @@ A failing check is an indicator of:
 **Für Pre-Releases (Beta, RC, Feature Testing):**
 
 1. **Entwicklung auf Feature Branch**
+
    ```bash
    git checkout -b pre-release/v0.5.2-climate-cover
    # Entwicklung, Tests, Commits...
    ```
 
 2. **Pre-Release Tag auf Feature Branch**
+
    ```bash
    git tag -a v0.5.2-beta.1 -m "Pre-release beta testing"
    GIT_SSH_COMMAND='ssh -F /dev/null' git push origin pre-release/v0.5.2-climate-cover
@@ -83,6 +92,7 @@ A failing check is an indicator of:
 **Für finale Releases (Production):**
 
 1. **Feature Branch in Main mergen**
+
    ```bash
    git checkout main
    git merge pre-release/v0.5.2-climate-cover --no-ff -m "Merge v0.5.2 release"
@@ -97,7 +107,11 @@ A failing check is an indicator of:
 
 2.5 **README: Nur aktuelles Release anzeigen**
 
-Bevor der GitHub-Release erstellt wird, aktualisiere die `README.md` so, dass **nur** das aktuelle Release als "Current Release" angezeigt wird (die vollständige Historie bleibt in `CHANGELOG.md`). Das Script `./scripts/update_readme_release.sh` übernimmt das Einfügen der passenden `RELEASE_NOTES_v<version>.md` Sektion und committed die Änderung.
+Bevor der GitHub-Release erstellt wird, aktualisiere die `README.md` so, dass
+**nur** das aktuelle Release als "Current Release" angezeigt wird (die
+vollständige Historie bleibt in `CHANGELOG.md`). Das Script
+`./scripts/update_readme_release.sh` übernimmt das Einfügen der passenden
+`RELEASE_NOTES_v<version>.md` Sektion und committed die Änderung.
 
 ```bash
 ./scripts/update_readme_release.sh
@@ -110,7 +124,8 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main
    gh release create v0.5.2 --title "v0.5.2" --notes-file RELEASE_NOTES_v0.5.2.md --latest
    ```
 
-**WICHTIG:** 
+**WICHTIG:**
+
 - Pre-Releases → Feature Branch
 - Finale Releases → Main Branch (nach Merge)
 - HACS installiert vom Main Branch (default)
@@ -122,25 +137,35 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main
 
 **⚠️ CRITICAL LESSONS FROM INCIDENTS (v0.6.0-beta.1-5):**
 
-1. **Zip Structure:** ALWAYS build from integration dir, NOT repo root → prevents nested directories
-2. **Version Consistency:** Verify `manifest.json`, README release block and coordinator versions BEFORE tagging
-3. **README Release Block:** Ensure `README.md` release block (between `<!-- RELEASE_NOTES_START -->` and `<!-- RELEASE_NOTES_END -->`) matches the `manifest.json` version
-4. **Immutable Release Handling:** If GitHub prevents asset replacement, create a new tag (suffix `-rebuild-<ts>`) or ask admin to unprotect the release
+1. **Zip Structure:** ALWAYS build from integration dir, NOT repo root →
+   prevents nested directories
+2. **Version Consistency:** Verify `manifest.json`, README release block and
+   coordinator versions BEFORE tagging
+3. **README Release Block:** Ensure `README.md` release block (between
+   `<!-- RELEASE_NOTES_START -->` and `<!-- RELEASE_NOTES_END -->`) matches the
+   `manifest.json` version
+4. **Immutable Release Handling:** If GitHub prevents asset replacement, create
+   a new tag (suffix `-rebuild-<ts>`) or ask admin to unprotect the release
 
 ---
 
 ### Automated release script (recommended) 🔧
 
-Use the included automation script to perform pre-release validation, build a HACS-friendly zip with the correct structure, create tags and GitHub releases, and optionally verify the installation on a remote Home Assistant instance.
+Use the included automation script to perform pre-release validation, build a
+HACS-friendly zip with the correct structure, create tags and GitHub releases,
+and optionally verify the installation on a remote Home Assistant instance.
 
 Usage:
 
 - Dry run (validate everything without creating tags/releases):
+
   ```bash
   ./scripts/release_automation.sh --dry-run
   ```
 
-- Normal release flow (will fail if README release block does not match manifest version):
+- Normal release flow (will fail if README release block does not match manifest
+  version):
+
   ```bash
   ./scripts/release_automation.sh --update-readme
   ```
@@ -153,16 +178,21 @@ Usage:
 What the script enforces:
 
 - Working tree clean and branch is `main`
-- `custom_components/luxor_living/manifest.json` exists and version is read from the file
-- README release block contains same version (or `--update-readme` will update it)
-- Zip is built from inside `custom_components/luxor_living/` (prevents nested `custom_components/` issue)
+- `custom_components/luxor_living/manifest.json` exists and version is read from
+  the file
+- README release block contains same version (or `--update-readme` will update
+  it)
+- Zip is built from inside `custom_components/luxor_living/` (prevents nested
+  `custom_components/` issue)
 - Zip contains `manifest.json` at root
-- Attempts to create GitHub release and will fallback to a `-rebuild-<ts>` tag if the release is immutable
+- Attempts to create GitHub release and will fallback to a `-rebuild-<ts>` tag
+  if the release is immutable
 
-This is the recommended method to avoid the incidents documented in `docs/RELEASE_INCIDENTS.md`.
-3. **Coordinator Refactors:** Pass `config_entry` to `super().__init__()` in DataUpdateCoordinator subclasses
-4. **Immutable Releases:** GitHub rules prevent asset replacement → bump version if failed
-5. **Post-Deploy Checks:** Test extraction structure on Remote HA after zip upload
+This is the recommended method to avoid the incidents documented in
+`docs/RELEASE_INCIDENTS.md`. 3. **Coordinator Refactors:** Pass `config_entry`
+to `super().__init__()` in DataUpdateCoordinator subclasses 4. **Immutable
+Releases:** GitHub rules prevent asset replacement → bump version if failed 5.
+**Post-Deploy Checks:** Test extraction structure on Remote HA after zip upload
 
 See [docs/RELEASE_INCIDENTS.md](RELEASE_INCIDENTS.md) für Details.
 
@@ -187,7 +217,7 @@ rsync -avz --exclude="__pycache__" \
   -e "ssh -F /dev/null -o StrictHostKeyChecking=no" \
   custom_components/luxor_living/ \
   YOUR_USER@YOUR_HA_IP:/tmp/luxor_test/
-  
+
 ssh -F /dev/null -o StrictHostKeyChecking=no YOUR_USER@YOUR_HA_IP \
   "sudo cp -r /tmp/luxor_test/* /config/custom_components/luxor_living/ && \
    rm -rf /tmp/luxor_test"
@@ -197,6 +227,7 @@ ssh -F /dev/null -o StrictHostKeyChecking=no YOUR_USER@YOUR_HA_IP \
 ```
 
 **Was testen:**
+
 - [ ] Integration lädt ohne Fehler
 - [ ] Config Flow funktioniert
 - [ ] Options Flow funktioniert
@@ -205,8 +236,10 @@ ssh -F /dev/null -o StrictHostKeyChecking=no YOUR_USER@YOUR_HA_IP \
 - [ ] HA Logs prüfen (keine Errors)
 
 **Wichtig:**
+
 - `~/.ssh/config` ist fehlerhaft → immer `-F /dev/null` verwenden
-- SSH-Key Authentifizierung funktioniert (Public Key in `/etc/ssh/authorized_keys`)
+- SSH-Key Authentifizierung funktioniert (Public Key in
+  `/etc/ssh/authorized_keys`)
 - HA-Dateien gehören root → `sudo` für File-Operationen
 - Git push: `GIT_SSH_COMMAND='ssh -F /dev/null' git push`
 
@@ -267,7 +300,8 @@ grep "## \\[${TARGET_VERSION#v}\\]" CHANGELOG.md
 # EXPECTED: Findet Entry für aktuelle Version
 ```
 
-**Bei Mismatch:** 
+**Bei Mismatch:**
+
 - Update manifest.json → version field
 - Update coordinator.py → health check return dict
 - Update README.md → version badge
@@ -306,15 +340,24 @@ bandit -r custom_components/luxor_living -q
 
 ### Linting & Future Improvements 🔧
 
-- Current: We run ShellCheck in `release_checks` (installed in workflow) to validate `scripts/*.sh`. Initial findings were fixed (quoting, `cd` safeguards, safe `source` usage). Contributors should run `shellcheck scripts/*.sh` locally before opening PRs.
+- Current: We run ShellCheck in `release_checks` (installed in workflow) to
+  validate `scripts/*.sh`. Initial findings were fixed (quoting, `cd`
+  safeguards, safe `source` usage). Contributors should run
+  `shellcheck scripts/*.sh` locally before opening PRs.
 - Next steps (recommended):
-  - Pin a stable ShellCheck Action (e.g., `ludeeus/action-shellcheck@v2.0.0`) and make ShellCheck failures block the Release Checks once scripts are cleaned up.
-  - Add `shfmt` to automatically format shell scripts and include it in CI or pre-commit.
-  - Add `yamllint` for workflow and docs YAML files and `markdownlint` for `README.md` and `RELEASE_NOTES` checks.
-  - Consider adding `shellcheck -x` or a Docker-based runner to ensure consistent behavior across environments.
+  - Pin a stable ShellCheck Action (e.g., `ludeeus/action-shellcheck@v2.0.0`)
+    and make ShellCheck failures block the Release Checks once scripts are
+    cleaned up.
+  - Add `shfmt` to automatically format shell scripts and include it in CI or
+    pre-commit.
+  - Add `yamllint` for workflow and docs YAML files and `markdownlint` for
+    `README.md` and `RELEASE_NOTES` checks.
+  - Consider adding `shellcheck -x` or a Docker-based runner to ensure
+    consistent behavior across environments.
 
-> Note: HACS brand validation may remain an informational annotation (requires repo registration and logo assets); see `docs/RELEASE_INCIDENTS.md` for background.
-
+> Note: HACS brand validation may remain an informational annotation (requires
+> repo registration and logo assets); see `docs/RELEASE_INCIDENTS.md` for
+> background.
 
 ### Step 0.3: Coverage Verification
 
@@ -402,7 +445,8 @@ git log --oneline -5
 
 ## Phase 1: Release Preparation
 
-**Note:** All v0.3.0 references below are examples. Use your actual target version.
+**Note:** All v0.3.0 references below are examples. Use your actual target
+version.
 
 ### Step 1.1: Merge to main branch (if not already)
 
@@ -434,6 +478,7 @@ grep '"version"' custom_components/luxor_living/manifest.json
 ```
 
 **Action:** Use editor or sed command:
+
 ```bash
 sed -i 's/"version": "0.3.0-beta.1"/"version": "0.3.0"/' \
   custom_components/luxor_living/manifest.json
@@ -448,28 +493,34 @@ grep '"version"' custom_components/luxor_living/manifest.json
 **File:** `/CHANGELOG.md`
 
 **Current State:**
+
 ```markdown
 ## [Unreleased]
 
 ### Added
+
 - DataUpdateCoordinator pattern
 - ...
 
 ### Changed
+
 - ...
 
 ## [0.2.12] - 2025-12-23
 ```
 
 **Target State:**
+
 ```markdown
 ## [0.3.0] - 2025-12-23
 
 ### Added
+
 - DataUpdateCoordinator pattern
 - ...
 
 ### Changed
+
 - ...
 
 ## [0.2.12] - 2025-12-22
@@ -478,6 +529,7 @@ grep '"version"' custom_components/luxor_living/manifest.json
 **Action:** Replace `[Unreleased]` with `[0.3.0] - 2025-12-23`
 
 **Bash Command:**
+
 ```bash
 # Create backup
 cp CHANGELOG.md CHANGELOG.md.bak
@@ -648,9 +700,11 @@ git ls-remote --tags origin | grep -v "^"
 
 **⚠️ CRITICAL: Zip Structure Must Be Correct!**
 
-HACS extracts the zip to `/config/custom_components/luxor_living/`. Files MUST be at zip root, NOT in nested subdirectory.
+HACS extracts the zip to `/config/custom_components/luxor_living/`. Files MUST
+be at zip root, NOT in nested subdirectory.
 
 **❌ WRONG (causes beta.1-4 failure):**
+
 ```bash
 # From repo root - creates nested structure!
 cd /home/phil/gitlab_github/luxorliving
@@ -659,6 +713,7 @@ zip -r /tmp/luxor_living.zip custom_components/luxor_living
 ```
 
 **✅ CORRECT:**
+
 ```bash
 # ALWAYS build from integration directory!
 cd /home/phil/gitlab_github/luxorliving/custom_components/luxor_living
@@ -678,6 +733,7 @@ unzip -l /tmp/luxor_living-v0.6.0.zip | head -20
 ```
 
 **Automated Verification:**
+
 ```bash
 # Test extraction to temp dir
 mkdir -p /tmp/luxor_test_extract
@@ -698,6 +754,7 @@ rm -rf /tmp/luxor_test_extract
 ```
 
 **Post-Upload Verification (on Remote HA):**
+
 ```bash
 # After HACS installation - verify no nested directories
 ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
@@ -716,6 +773,7 @@ ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
 **URL:** https://github.com/phismith91/luxorliving/releases
 
 **Steps:**
+
 1. Click "Releases" → "Create a new release"
 2. Choose tag: `vX.Y.Z` (example: `v0.5.2`)
 3. Release title: `LUXORliving vX.Y.Z - Release Title`
@@ -741,6 +799,7 @@ ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
 ## 📋 What's New
 
 ### Added
+
 - DataUpdateCoordinator pattern (centralized polling)
 - LuxorLivingEntity base class with common functionality
 - Device registry integration (`device_info` property)
@@ -750,6 +809,7 @@ ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
 - Comprehensive test coverage reporting
 
 ### Changed
+
 - Light platform refactored to use DataUpdateCoordinator
 - Switch platform refactored to use DataUpdateCoordinator
 - Binary Sensor platform refactored with auto-detection
@@ -758,6 +818,7 @@ ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
 - Import organization with isort
 
 ### Fixed
+
 - Device registry integration missing in entities
 - Inconsistent entity implementations across platforms
 - Type hint coverage gaps
@@ -765,6 +826,7 @@ ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
 ## 🔧 Installation
 
 ### Via HACS
+
 1. Open HACS → Integrations
 2. Click "+ EXPLORE & DOWNLOAD REPOSITORIES"
 3. Search for "LUXORliving"
@@ -774,6 +836,7 @@ ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
 7. Search for "LUXORliving" and complete setup
 
 ### Manual Installation
+
 1. Download the latest release
 2. Extract to `~/.homeassistant/custom_components/luxor_living/`
 3. Restart Home Assistant
@@ -790,7 +853,8 @@ ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
 
 ## ⚠️ Known Issues
 
-- See [Issues](https://github.com/phismith91/luxorliving/issues) for current tracking
+- See [Issues](https://github.com/phismith91/luxorliving/issues) for current
+  tracking
 - Report bugs via GitHub issue tracker
 
 ## 🙏 Credits
@@ -829,6 +893,7 @@ gh release view vX.Y.Z
 ### Step 5.1: Check HACS Auto-Discovery
 
 HACS may automatically discover the new release. Check:
+
 - [HACS Discord Community](https://discord.gg/hacs)
 - [HACS GitHub Discussions](https://github.com/hacs/integration/discussions)
 
@@ -884,6 +949,7 @@ ls docs/*.md
 ### Step 6.2: Announce Release
 
 **Channels:**
+
 - [ ] GitHub Releases page (done in Phase 4)
 - [ ] Repository README badge (if applicable)
 - [ ] [Home Assistant Community Forum](https://community.home-assistant.io)
@@ -891,6 +957,7 @@ ls docs/*.md
 - [ ] [HACS Discord](https://discord.gg/hacs)
 
 **Template Message:**
+
 ```
 📢 LUXORliving vX.Y.Z Released!
 
@@ -939,10 +1006,13 @@ sed -i 's/"version": "0.X.Y"/"version": "0.X.Y+1-beta.1"/' \
 ## [Unreleased]
 
 ### Planned
+
 - TBD for next release
 
 ## [X.Y.Z] - YYYY-MM-DD
+
 ### Added
+
 - Released features from this version
 ```
 
@@ -1069,14 +1139,17 @@ git push origin v0.X.Y-rc.1
 
 ### Emergency 3: Immutable Release Constraints (GitHub)
 
-**Scenario:** GitHub repository rules prevent replacing release assets or recreating tags.
+**Scenario:** GitHub repository rules prevent replacing release assets or
+recreating tags.
 
 **Symptoms (see beta.2-4):**
+
 - Cannot delete release or tag
 - Cannot replace uploaded zip asset
 - Asset size/hash differs from rebuilt package
 
 **Root Cause:**
+
 - Repository protection rules (branch/tag protection)
 - Release marked as "latest" locks metadata
 - Asset already downloaded by users
@@ -1125,6 +1198,7 @@ gh release create v0.6.0-beta.3 \
 ```
 
 **Prevention:**
+
 - Run Step 0.1.5 (Version Consistency Check) BEFORE tagging
 - Verify zip structure (Step 4.0) BEFORE uploading
 - Test on Remote HA before marking release as latest
@@ -1204,11 +1278,13 @@ python -m pytest tests/ --cov=custom_components/luxor_living
 
 ## 🤖 Automation: Recommended Release Script
 
-Basierend auf den Incidents (beta.1-5) ist ein Automation Script empfohlen, das folgende Checks durchführt:
+Basierend auf den Incidents (beta.1-5) ist ein Automation Script empfohlen, das
+folgende Checks durchführt:
 
 **Datei:** `scripts/release_automation.sh` (siehe Implementierung unten)
 
 **Features:**
+
 - ✅ Version consistency check (manifest.json ↔ coordinator.py ↔ tag)
 - ✅ Test suite verification (all passing)
 - ✅ Zip build from correct directory
@@ -1217,6 +1293,7 @@ Basierend auf den Incidents (beta.1-5) ist ein Automation Script empfohlen, das 
 - ✅ Post-release verification (optional Remote HA test)
 
 **Beispiel-Workflow:**
+
 ```bash
 # Statt manueller Steps 0-4:
 ./scripts/release_automation.sh v0.6.0 \
@@ -1322,12 +1399,14 @@ echo "3. Check HA logs for 'Setting up luxor_living'"
 ```
 
 **Installation:**
+
 ```bash
 chmod +x scripts/release_automation.sh
 ./scripts/release_automation.sh v0.6.0
 ```
 
 **Vorteile:**
+
 - Verhindert alle dokumentierten Incidents
 - Atomic workflow (stoppt bei erstem Fehler)
 - Reproduzierbar und versioniert
@@ -1335,6 +1414,5 @@ chmod +x scripts/release_automation.sh
 
 ---
 
-**Version:** 2.0  
-**Last Updated:** 8. Januar 2026 (post beta.1-5 incidents)  
+**Version:** 2.0 **Last Updated:** 8. Januar 2026 (post beta.1-5 incidents)
 **Next Review:** Nach erfolgreichem v0.6.0 stable release

@@ -1,6 +1,7 @@
 # GitHub Copilot Skills für LUXORliving
 
-Angepasste Context Engineering Skills basierend auf [Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering).
+Angepasste Context Engineering Skills basierend auf
+[Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering).
 
 ## Verfügbare Skills
 
@@ -14,21 +15,22 @@ Angepasste Context Engineering Skills basierend auf [Agent Skills for Context En
 
 ## Nutzung in VS Code
 
-Diese Skills sind automatisch für GitHub Copilot verfügbar durch die `.github/copilot/` Struktur.
+Diese Skills sind automatisch für GitHub Copilot verfügbar durch die
+`.github/copilot/` Struktur.
 
 ### Skill Aktivierung
 
 GitHub Copilot lädt Skills automatisch wenn Keywords erwähnt werden:
 
 ```markdown
-"optimize context for agents" → context-fundamentals.md
-"agent handoff to testing" → multi-agent-patterns.md  
-"pre-release quality check" → evaluation.md
+"optimize context for agents" → context-fundamentals.md "agent handoff to
+testing" → multi-agent-patterns.md "pre-release quality check" → evaluation.md
 ```
 
 ### Progressive Disclosure Pattern
 
-**Level 1 - Discovery**: Copilot kennt Skill Namen + Beschreibungen (~150 tokens)
+**Level 1 - Discovery**: Copilot kennt Skill Namen + Beschreibungen (~150
+tokens)
 
 **Level 2 - Activation**: Vollständige Skill Instructions geladen (~500 tokens)
 
@@ -117,16 +119,19 @@ AGENTS.md (Universal Setup/Testing)
 ## Best Practices
 
 1. **Explizite Skill Referenz**: Erwähne Skill Name in Prompt
+
    ```
    "Use multi-agent-patterns for handoff to Testing Agent"
    ```
 
 2. **Context Budget Monitoring**: Prüfe regelmäßig Token Usage
+
    ```
    python scripts/evaluate_agents.py
    ```
 
 3. **Quality Gates**: Alle L1 Checks vor jedem Release
+
    ```
    python -m pytest tests/ -v && coverage report
    ```
@@ -135,12 +140,13 @@ AGENTS.md (Universal Setup/Testing)
 
 ## Quellen
 
-- **Original Repository**: [Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
-- **VS Code Copilot Docs**: [GitHub Copilot in VS Code](https://code.visualstudio.com/docs/copilot/overview)
+- **Original Repository**:
+  [Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
+- **VS Code Copilot Docs**:
+  [GitHub Copilot in VS Code](https://code.visualstudio.com/docs/copilot/overview)
 - **Project Context**: [.github/copilot/CONTEXT.md](../CONTEXT.md)
 
 ---
 
-**Erstellt**: 2026-01-01  
-**Last Updated**: 2026-01-01  
-**Maintainer**: LUXORliving Development Team
+**Erstellt**: 2026-01-01 **Last Updated**: 2026-01-01 **Maintainer**:
+LUXORliving Development Team

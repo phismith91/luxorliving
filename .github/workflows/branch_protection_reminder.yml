@@ -33,7 +33,7 @@ jobs:
               issue_number: issue.number,
               body: `:information_source: Reminder: please ensure branch protection for **main** is configured before merging.
 
-See the recommended settings in 
+See the recommended settings in
 - docs/BRANCH_PROTECTION.md
 
 An admin can apply them using \\

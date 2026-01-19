@@ -1,69 +1,69 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "LUXORliving - LXP-Projektdatei",
-                "description": "Wählen Sie Ihre LXP-Projektdatei von Theben LUXORPlug aus",
-                "data": {
-                    "lxp_file": "LXP-Projektdatei"
-                },
-                "data_description": {
-                    "lxp_file": "Wählen Sie Ihre .lxp-Projektdatei über den Dateibrowser aus"
-                }
-            },
-            "gateway": {
-                "title": "LUXORliving - KNX/IP Gateway",
-                "description": "Konfigurieren Sie Ihre KNX/IP Gateway-Verbindung und Zugangsdaten für Projekt: {project_name}",
-                "data": {
-                    "host": "Gateway IP-Adresse",
-                    "username": "Benutzername",
-                    "password": "Passwort",
-                    "connection_type": "Verbindungstyp",
-                    "simulation_mode": "Simulationsmodus"
-                },
-                "data_description": {
-                    "host": "IP-Adresse Ihres Theben LUXORliving KNX/IP Gateways",
-                    "username": "REST-API Benutzername (Standard: admin)",
-                    "password": "REST-API Passwort",
-                    "connection_type": "KNX-Verbindungstyp (Tunneling empfohlen)",
-                    "simulation_mode": "Testmodus ohne echte Hardwareverbindung"
-                }
-            }
+  "config": {
+    "step": {
+      "user": {
+        "title": "LUXORliving - LXP-Projektdatei",
+        "description": "Wählen Sie Ihre LXP-Projektdatei von Theben LUXORPlug aus",
+        "data": {
+          "lxp_file": "LXP-Projektdatei"
         },
-        "error": {
-            "cannot_connect": "Verbindung zum Gateway fehlgeschlagen",
-            "invalid_auth": "Ungültiger Benutzername oder Passwort. Bitte überprüfen Sie Ihre Zugangsdaten.",
-            "file_not_found": "LXP-Datei nicht gefunden. Bitte wählen Sie eine gültige .lxp-Datei aus.",
-            "invalid_lxp": "Ungültige oder beschädigte LXP-Datei. Bitte überprüfen Sie das Dateiformat.",
-            "unknown": "Ein unerwarteter Fehler ist aufgetreten"
+        "data_description": {
+          "lxp_file": "Wählen Sie Ihre .lxp-Projektdatei über den Dateibrowser aus"
+        }
+      },
+      "gateway": {
+        "title": "LUXORliving - KNX/IP Gateway",
+        "description": "Konfigurieren Sie Ihre KNX/IP Gateway-Verbindung und Zugangsdaten für Projekt: {project_name}",
+        "data": {
+          "host": "Gateway IP-Adresse",
+          "username": "Benutzername",
+          "password": "Passwort",
+          "connection_type": "Verbindungstyp",
+          "simulation_mode": "Simulationsmodus"
         },
-        "abort": {
-            "already_configured": "Dieses Gerät ist bereits konfiguriert",
-            "not_implemented": "Diese Funktion ist noch nicht implementiert"
+        "data_description": {
+          "host": "IP-Adresse Ihres Theben LUXORliving KNX/IP Gateways",
+          "username": "REST-API Benutzername (Standard: admin)",
+          "password": "REST-API Passwort",
+          "connection_type": "KNX-Verbindungstyp (Tunneling empfohlen)",
+          "simulation_mode": "Testmodus ohne echte Hardwareverbindung"
         }
+      }
     },
-    "options": {
-        "step": {
-            "init": {
-                "title": "LUXORliving Optionen",
-                "description": "Konfigurieren Sie das Verhalten der LUXORliving-Integration",
-                "data": {
-                    "simulation_mode": "Simulationsmodus (Testlauf)",
-                    "scan_interval": "Abfrageintervall (Sekunden)",
-                    "log_level": "Debug-Level"
-                },
-                "data_description": {
-                    "simulation_mode": "Simulationsmodus für Tests ohne Hardware aktivieren",
-                    "scan_interval": "Wie oft das Gateway für Updates abgefragt wird (5-300 Sekunden)",
-                    "log_level": "Logging-Ausführlichkeit zur Fehlersuche"
-                }
-            }
-        }
+    "error": {
+      "cannot_connect": "Verbindung zum Gateway fehlgeschlagen",
+      "invalid_auth": "Ungültiger Benutzername oder Passwort. Bitte überprüfen Sie Ihre Zugangsdaten.",
+      "file_not_found": "LXP-Datei nicht gefunden. Bitte wählen Sie eine gültige .lxp-Datei aus.",
+      "invalid_lxp": "Ungültige oder beschädigte LXP-Datei. Bitte überprüfen Sie das Dateiformat.",
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten"
     },
-    "issues": {
-        "authentication_failed": {
-            "title": "Authentifizierung fehlgeschlagen für {host}",
-            "description": "Die Authentifizierung bei Ihrem LUXORliving Gateway unter {host} ist fehlgeschlagen.\n\nFehler: {error}\n\nBitte überprüfen Sie Ihre Zugangsdaten (Benutzername: {username}) und aktualisieren Sie diese bei Bedarf."
-        }
+    "abort": {
+      "already_configured": "Dieses Gerät ist bereits konfiguriert",
+      "not_implemented": "Diese Funktion ist noch nicht implementiert"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "LUXORliving Optionen",
+        "description": "Konfigurieren Sie das Verhalten der LUXORliving-Integration",
+        "data": {
+          "simulation_mode": "Simulationsmodus (Testlauf)",
+          "scan_interval": "Abfrageintervall (Sekunden)",
+          "log_level": "Debug-Level"
+        },
+        "data_description": {
+          "simulation_mode": "Simulationsmodus für Tests ohne Hardware aktivieren",
+          "scan_interval": "Wie oft das Gateway für Updates abgefragt wird (5-300 Sekunden)",
+          "log_level": "Logging-Ausführlichkeit zur Fehlersuche"
+        }
+      }
+    }
+  },
+  "issues": {
+    "authentication_failed": {
+      "title": "Authentifizierung fehlgeschlagen für {host}",
+      "description": "Die Authentifizierung bei Ihrem LUXORliving Gateway unter {host} ist fehlgeschlagen.\n\nFehler: {error}\n\nBitte überprüfen Sie Ihre Zugangsdaten (Benutzername: {username}) und aktualisieren Sie diese bei Bedarf."
+    }
+  }
 }
