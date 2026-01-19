@@ -29,11 +29,11 @@ jobs:
 
       - name: Quick smoke tests
         run: |
-          ./venv/bin/python -m pytest tests/ -q -m "smoke and not enable_socket"
+          python -m pytest tests/ -q -m "smoke and not enable_socket"
 
       - name: Integration subset tests
         run: |
-          ./venv/bin/python -m pytest tests/ -q -m "integration and not enable_socket"
+          python -m pytest tests/ -q -m "integration and not enable_socket"
 
       - name: Run README validation
         run: ./scripts/validate_readme.sh
