@@ -47,7 +47,7 @@ async def test_hauptwohnung_lxp_parsing():
     assert total_sensors > 0 or total_actuators > 0, "Should have sensors or actuators"
 
     # Log summary
-    print(f"\n=== Hauptwohnung.lxp ===")
+    print("\n=== Hauptwohnung.lxp ===")
     print(f"Project: {project.name}")
     print(f"Devices: {len(project.devices)}")
     print(f"Sensors: {total_sensors}")
@@ -86,7 +86,7 @@ async def test_hauptwohnung_entity_mapping():
     binary_sensors = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)
 
     # Log results
-    print(f"\n=== Entity Mapping ===")
+    print("\n=== Entity Mapping ===")
     print(f"Total entities: {len(entities)}")
     for platform, count in sorted(platform_counts.items(), key=lambda x: str(x[0])):
         print(f"  {platform.value}: {count}")
@@ -126,7 +126,7 @@ async def test_hauptwohnung_io_devices():
         elif len(device.sensors) > 5:
             io_devices.append(device)
 
-    print(f"\n=== IO Devices ===")
+    print("\n=== IO Devices ===")
     print(f"Total IO devices: {len(io_devices)}")
     print(f"Weather stations: {len(weather_stations)}")
     print(f"ION devices: {len(ion_devices)}")
@@ -180,7 +180,7 @@ async def test_familie_schmidt_lxp_parsing():
         total_actuators += len(device.actuators)
 
     # Log summary
-    print(f"\n=== Familie Schmidt_0.9.lxp ===")
+    print("\n=== Familie Schmidt_0.9.lxp ===")
     print(f"Project: {project.name}")
     print(f"Devices: {len(project.devices)}")
     print(f"Sensors: {total_sensors}")
@@ -210,7 +210,7 @@ async def test_familie_schmidt_entity_mapping():
         platform = entity.platform
         platform_counts[platform] = platform_counts.get(platform, 0) + 1
 
-    print(f"\n=== Familie Schmidt Entity Mapping ===")
+    print("\n=== Familie Schmidt Entity Mapping ===")
     print(f"Total entities: {len(entities)}")
     for platform, count in sorted(platform_counts.items(), key=lambda x: str(x[0])):
         print(f"  {platform.value}: {count}")
