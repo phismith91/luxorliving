@@ -65,7 +65,6 @@ class BAOSRestClient:
 
     async def __aenter__(self):
         """Context manager entry."""
-
         # Create SSL context in executor to avoid blocking event loop
         def create_ssl_context():
             ssl_context = ssl.create_default_context()
@@ -243,7 +242,7 @@ class BAOSRestClient:
                         f"403 Forbidden when enabling tunneling. Response: {response_text}"
                     )
                     raise TunnelingError(
-                        f"Failed to enable tunneling: Forbidden (403). Check API permissions."
+                        "Failed to enable tunneling: Forbidden (403). Check API permissions."
                     )
 
                 # API Documentation Page 12: PUT /rest/device/authtunneling returns 204, not 200!
@@ -588,8 +587,7 @@ class BAOSRestClient:
 
 # Example usage
 async def main():
-    """
-    Example usage of BAOSRestClient.
+    """Show example usage of BAOSRestClient."""
 
     NOTE: This example uses default credentials for demonstration only.
     In production (Home Assistant integration), credentials are:

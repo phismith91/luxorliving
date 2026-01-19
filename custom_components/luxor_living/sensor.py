@@ -12,7 +12,6 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from xknx.dpt import DPT2ByteFloat, DPTArray
-from xknx.telegram.address import GroupAddress
 
 from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator

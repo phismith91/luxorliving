@@ -18,9 +18,8 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DATA_KNX_GATEWAY, DOMAIN
+from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
-from .entity_mapper import EntityMapper
 from .integration_state import get_integration_state
 from .knx_gateway import LuxorKNXGateway
 

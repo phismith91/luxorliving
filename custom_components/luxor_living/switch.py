@@ -17,7 +17,6 @@ from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
 from .entity_mapper import EntityMapper
-from .integration_state import get_integration_state
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
