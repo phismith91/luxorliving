@@ -9,7 +9,7 @@ from pathlib import Path
 # Add the custom_components directory to Python path
 sys.path.insert(0, str(Path(__file__).parent / "custom_components" / "luxor_living"))
 
-from lxp_parser import LXPCache
+from lxp_parser import LXPCache  # noqa: E402
 
 
 async def audit_lxp_file():

@@ -285,7 +285,6 @@ class LuxorLivingDiscoveredSensor(SensorEntity):
             LIGHT_LUX,
             PERCENTAGE,
             UnitOfPressure,
-            UnitOfSpeed,
             UnitOfTemperature,
         )
 
