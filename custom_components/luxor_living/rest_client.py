@@ -161,6 +161,8 @@ class BAOSRestClient:
 
                 _LOGGER.info(f"Login successful. Session expires at {self.session_expires}")
 
+                # mypy: ensure return value is str (we validated cookie above)
+                assert self.session_token is not None
                 return self.session_token
 
         except aiohttp.ClientError as e:

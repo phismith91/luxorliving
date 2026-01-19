@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
     from .coordinator import LuxorLivingCoordinator
     from .entity_mapper import EntityMapper
-    from .knx_gateway import KNXGateway
+    from .knx_gateway import LuxorKNXGateway as KNXGateway
 
 
 @dataclass
