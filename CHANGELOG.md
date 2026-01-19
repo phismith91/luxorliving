@@ -19,13 +19,18 @@ documented in this file.
 
 ### Fixes
 
-- **CI / Workflows**: Use `github.rest.issues.*` for actions/github-script v7 and run comment steps on `pull_request_target` to ensure workflows can post comments/labels.
-- **ShellCheck**: Quote `gh api` paths in branch-protection scripts to satisfy SC2086.
-- **Docs/Release**: Added pre-release notes and minor documentation updates related to postmortem and cleanup candidates.
+- **CI / Workflows**: Use `github.rest.issues.*` for actions/github-script v7
+  and run comment steps on `pull_request_target` to ensure workflows can post
+  comments/labels.
+- **ShellCheck**: Quote `gh api` paths in branch-protection scripts to satisfy
+  SC2086.
+- **Docs/Release**: Added pre-release notes and minor documentation updates
+  related to postmortem and cleanup candidates.
 
 ### Notes
 
-- This is a pre-release intended to validate workflow fixes and operational changes. CI validation is recommended before promoting to a stable release.
+- This is a pre-release intended to validate workflow fixes and operational
+  changes. CI validation is recommended before promoting to a stable release.
 
 ---
 
