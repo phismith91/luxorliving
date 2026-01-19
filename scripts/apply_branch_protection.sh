@@ -36,6 +36,6 @@ JSON
 
 echo "Applying branch protection to ${OWNER}/${REPO} (branch: main)"
 gh api --method PUT -H "Accept: application/vnd.github+json" \
-  /repos/${OWNER}/${REPO}/branches/main/protection --input /tmp/branch_protection_payload.json
+  "/repos/${OWNER}/${REPO}/branches/main/protection" --input /tmp/branch_protection_payload.json
 
 echo "Done. Verify settings in https://github.com/${OWNER}/${REPO}/settings/branches"

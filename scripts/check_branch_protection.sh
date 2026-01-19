@@ -14,8 +14,8 @@ OWNER=$(gh repo view --json owner -q .owner.login)
 REPO=$(gh repo view --json name -q .name)
 
 echo "Fetching branch protection for ${OWNER}/${REPO}:main"
-if gh api /repos/${OWNER}/${REPO}/branches/main/protection -H "Accept: application/vnd.github+json" >/dev/null 2>&1; then
-  gh api /repos/${OWNER}/${REPO}/branches/main/protection -H "Accept: application/vnd.github+json" --jq '.'
+if gh api "/repos/${OWNER}/${REPO}/branches/main/protection" -H "Accept: application/vnd.github+json" >/dev/null 2>&1; then
+  gh api "/repos/${OWNER}/${REPO}/branches/main/protection" -H "Accept: application/vnd.github+json" --jq '.'
 else
   echo "No branch protection configured or insufficient permissions to view it."
 fi
