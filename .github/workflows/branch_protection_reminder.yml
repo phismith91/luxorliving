@@ -30,4 +30,4 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: ":information_source: Reminder: please ensure branch protection for **main** is configured before merging. See docs/BRANCH_PROTECTION.md. To request the QA Matrix, comment '/run-qa-matrix'.",
+              body: ":information_source: Reminder: please ensure branch protection for **main** is configured before merging. See docs/BRANCH_PROTECTION.md. To request the QA Matrix, comment '/run-qa-matrix'.",            });
