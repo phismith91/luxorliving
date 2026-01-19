@@ -37,11 +37,13 @@ repos:
             --no-implicit-optional,
             --warn-redundant-casts,
             --warn-unused-ignores,
+            --ignore-missing-imports,
           ]
-        env:
-          MYPYPATH: "."
         additional_dependencies:
           - types-requests
+          # Limit mypy check to the integration package to avoid duplicate package resolution
+          - .
+        files: ^custom_components/luxor_living/
 
   # Security checks
   - repo: https://github.com/PyCQA/bandit
