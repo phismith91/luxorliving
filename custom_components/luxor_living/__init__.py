@@ -177,6 +177,7 @@ class LuxorLivingPushView(HomeAssistantView):
     requires_auth = False  # Token-based auth handled optionally per config entry
 
     def __init__(self, hass: HomeAssistant) -> None:
+        """Initialize the push view."""
         self.hass = hass
 
     async def post(self, request):
@@ -359,10 +360,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
             # Register state in global registry
             register_integration_state(entry.entry_id, state)
-        except FileNotFoundError as err:
+        except FileNotFoundError:
             _LOGGER.error("LXP file not found: %s", lxp_path)
             return False
-        except Exception as err:
+        except Exception:
             _LOGGER.exception("Failed to parse LXP file %s", lxp_path)
             return False
     else:
@@ -557,7 +558,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 )
 
         # Send as persistent notification
-        message = f"**LUXORliving Entities**\n\n"
+        message = "**LUXORliving Entities**\n\n"
         if platform_filter:
             message += f"Filtered by platform: {platform_filter}\n\n"
 
