@@ -7,7 +7,7 @@ import hashlib
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Union
 
 try:
     from defusedxml import ElementTree as ET
