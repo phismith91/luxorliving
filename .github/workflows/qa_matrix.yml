@@ -1,120 +1,120 @@
 name: QA Matrix (Gold compliance)
 
 on:
-  workflow_dispatch: {}
-  pull_request:
-    types: [labeled]
+    workflow_dispatch: {}
+    pull_request:
+        types: [labeled]
 # To run the full QA matrix on a PR add the `run-qa-matrix` label to the PR.
 # This prevents the expensive matrix from running on every push/sync.
 
 jobs:
-  matrix-tests:
-    name: QA matrix — Python ${{ matrix.python }} / HA ${{ matrix.ha }}
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.label.name == 'run-qa-matrix') }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python: ["3.11", "3.13"]
-        ha: ["2025.12", "2026.1", "latest"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    matrix-tests:
+        name: QA matrix — Python ${{ matrix.python }} / HA ${{ matrix.ha }}
+        if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.label.name == 'run-qa-matrix') }}
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                python: ["3.11", "3.13"]
+                ha: ["2025.12", "2026.1", "latest"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python }}
+            - name: Setup Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: ${{ matrix.python }}
 
-      - name: Install dev dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements_dev.txt
+            - name: Install dev dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  python -m pip install -r requirements_dev.txt
 
-      - name: Formatting check (black)
-        run: |
-          black --check custom_components tests scripts || (echo "Run 'black .' locally" && exit 1)
+            - name: Formatting check (black)
+              run: |
+                  black --check custom_components tests scripts || (echo "Run 'black .' locally" && exit 1)
 
-      - name: Import sorting check (isort)
-        run: |
-          isort --check-only custom_components tests scripts || (echo "Run 'isort .' locally" && exit 1)
+            - name: Import sorting check (isort)
+              run: |
+                  isort --check-only custom_components tests scripts || (echo "Run 'isort .' locally" && exit 1)
 
-      - name: Quick smoke tests
-        run: |
-          python -m pytest tests/ -q -m "smoke and not enable_socket"
+            - name: Quick smoke tests
+              run: |
+                  python -m pytest tests/ -q -m "smoke and not enable_socket"
 
-      - name: Integration subset tests
-        run: |
-          python -m pytest tests/ -q -m "integration and not enable_socket"
+            - name: Integration subset tests
+              run: |
+                  python -m pytest tests/ -q -m "integration and not enable_socket"
 
-      - name: Run tests (with coverage XML)
-        run: |
-          python -m pytest tests/ -q -m "not enable_socket" --cov=custom_components.luxor_living --cov-report=xml
+            - name: Run tests (with coverage XML)
+              run: |
+                  python -m pytest tests/ -q -m "not enable_socket" --cov=custom_components.luxor_living --cov-report=xml
 
-      - name: Upload test summary
-        uses: actions/upload-artifact@v6
-        with:
-          name: qa-matrix-${{ matrix.python }}-${{ matrix.ha }}-results
-          path: ./
+            - name: Upload test summary
+              uses: actions/upload-artifact@v6
+              with:
+                  name: qa-matrix-${{ matrix.python }}-${{ matrix.ha }}-results
+                  path: ./
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: coverage.xml
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v4
+              with:
+                  files: coverage.xml
+              env:
+                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  render-plantuml:
-    name: Render PlantUML diagrams
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    render-plantuml:
+        name: Render PlantUML diagrams
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Render PlantUML diagrams (Docker)
-        run: |
-          mkdir -p docs/img
-          docker run --rm -v "${{ github.workspace }}":/workspace plantuml/plantuml:latest -tsvg -o docs/img docs/*.puml || \
-            docker run --rm -v "${{ github.workspace }}":/workspace plantuml/plantuml:latest -tpng -o docs/img docs/*.puml
+            - name: Render PlantUML diagrams (Docker)
+              run: |
+                  mkdir -p docs/img
+                  docker run --rm -v "${{ github.workspace }}":/workspace plantuml/plantuml:latest -tsvg -o docs/img docs/*.puml || \
+                    docker run --rm -v "${{ github.workspace }}":/workspace plantuml/plantuml:latest -tpng -o docs/img docs/*.puml
 
-      - name: Upload PlantUML images
-        uses: actions/upload-artifact@v6
-        with:
-          name: plantuml-diagrams
-          path: docs/img
+            - name: Upload PlantUML images
+              uses: actions/upload-artifact@v6
+              with:
+                  name: plantuml-diagrams
+                  path: docs/img
 
-  hacs-validation:
-    name: HACS Validation & Zip Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    hacs-validation:
+        name: HACS Validation & Zip Check
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
+            - name: Setup Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: "3.13"
 
-      - name: Install dev dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements_dev.txt
+            - name: Install dev dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  python -m pip install -r requirements_dev.txt
 
-      - name: Run HACS validation script
-        run: |
-          chmod +x ./scripts/validate_hacs.sh
-          ./scripts/validate_hacs.sh
+            - name: Run HACS validation script
+              run: |
+                  chmod +x ./scripts/validate_hacs.sh
+                  ./scripts/validate_hacs.sh
 
-      - name: Build release zip (dry-run)
-        run: |
-          ./scripts/release_automation.sh --dry-run
+            - name: Build release zip (dry-run)
+              run: |
+                  ./scripts/release_automation.sh --dry-run
 
-      - name: Run HACS related unit tests
-        run: |
-          python -m pytest tests/test_hacs.py -q
+            - name: Run HACS related unit tests
+              run: |
+                  python -m pytest tests/test_hacs.py -q
 
-      - name: Upload HACs validation logs
-        uses: actions/upload-artifact@v6
-        with:
-          name: hacs-validation-logs
-          path: ./
+            - name: Upload HACs validation logs
+              uses: actions/upload-artifact@v6
+              with:
+                  name: hacs-validation-logs
+                  path: ./

@@ -302,15 +302,15 @@ luxorliving/
 
 ### Context Budgets (Context Engineering)
 
-| Agent                | Level | Budget     | Primary Sources                          | Monitor | Authority               |
-| -------------------- | ----- | ---------- | ---------------------------------------- | ------- | ----------------------- |
-| **Architect**        | L1    | 50k tokens | CONTEXT.md, ARCHITECTURE_DECISION.md     | <80%    | Architecture, Standards |
-| **Release Manager**  | L2    | 40k tokens | agent_release_manager.md, CI workflows   | <80%    | Merges, Releases        |
-| **KNX Protocol**     | L2    | 80k tokens | KNX_IMPLEMENTATION.md, lxp_parser.py     | <80%    | KNX Specs               |
-| **Testing**          | L2    | 35k tokens | tests/, TESTS.md, pytest.ini             | <80%    | Test Strategy           |
-| **Defect Tracker**   | L2    | 30k tokens | GitHub Issues, test failures             | <80%    | Bug Triage              |
-| **HACS Compliance**  | L2    | 25k tokens | hacs.json, manifest.json                 | <80%    | HACS Standards          |
-| **Luxor Expert**     | L2    | 30k tokens | LXP files, hardware docs                 | <80%    | Hardware Specs          |
+| Agent               | Level | Budget     | Primary Sources                        | Monitor | Authority               |
+| ------------------- | ----- | ---------- | -------------------------------------- | ------- | ----------------------- |
+| **Architect**       | L1    | 50k tokens | CONTEXT.md, ARCHITECTURE_DECISION.md   | <80%    | Architecture, Standards |
+| **Release Manager** | L2    | 40k tokens | agent_release_manager.md, CI workflows | <80%    | Merges, Releases        |
+| **KNX Protocol**    | L2    | 80k tokens | KNX_IMPLEMENTATION.md, lxp_parser.py   | <80%    | KNX Specs               |
+| **Testing**         | L2    | 35k tokens | tests/, TESTS.md, pytest.ini           | <80%    | Test Strategy           |
+| **Defect Tracker**  | L2    | 30k tokens | GitHub Issues, test failures           | <80%    | Bug Triage              |
+| **HACS Compliance** | L2    | 25k tokens | hacs.json, manifest.json               | <80%    | HACS Standards          |
+| **Luxor Expert**    | L2    | 30k tokens | LXP files, hardware docs               | <80%    | Hardware Specs          |
 
 **Skills Reference**: [skills/](skills/) - Context Engineering Patterns
 
