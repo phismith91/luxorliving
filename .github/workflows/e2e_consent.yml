@@ -1,4 +1,4 @@
-name: E2E: Consent tests (on-demand)
+name: "E2E: Consent tests (on-demand)"
 
 on:
   workflow_dispatch: {}

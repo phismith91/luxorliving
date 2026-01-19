@@ -31,12 +31,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issue.number,
-              body: `:information_source: Reminder: please ensure branch protection for **main** is configured before merging.
-
-See the recommended settings in
-- docs/BRANCH_PROTECTION.md
-
-An admin can apply them using \\
-- \\`scripts/apply_branch_protection.sh\\` (requires repo admin rights and the GitHub CLI).\\n
-If you want me to run the full QA Matrix for this PR, comment with \"/run-qa-matrix\" or add the \\`run-qa-matrix\\` label.`
+          body: ":information_source: Reminder: please ensure branch protection for **main** is configured before merging. See docs/BRANCH_PROTECTION.md. To request the QA Matrix, comment with \"/run-qa-matrix\" or add the `run-qa-matrix` label."
             });
