@@ -164,7 +164,8 @@ ssh -F /dev/null phil@100.97.159.88 \
 3. **Update version and release notes:**
    - `custom_components/luxor_living/manifest.json` → "version" field
    - `CHANGELOG.md` with release summary
-   - **IMPORTANT:** Create `docs/releases/RELEASE_NOTES_v<VERSION>.md` with detailed release notes (Release Checks verifies this)
+   - **IMPORTANT:** Create `docs/releases/RELEASE_NOTES_v<VERSION>.md` with
+     detailed release notes (Release Checks verifies this)
 4. **Commit and tag:**
    ```bash
    git add -A
@@ -183,7 +184,8 @@ ssh -F /dev/null phil@100.97.159.88 \
 
 - **Location:** `docs/releases/RELEASE_NOTES_v<VERSION>.md` (mandatory)
 - **Content:** Must include version tag (e.g., `v0.6.1`) and release description
-- **Validation:** Release Checks workflow validates file exists and contains version
+- **Validation:** Release Checks workflow validates file exists and contains
+  version
 
 ### Git Operations
 
