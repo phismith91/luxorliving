@@ -596,9 +596,12 @@ class LuxorKNXGateway:
                 processed_value = bool(value)
             elif value_type == "percent":
                 # Coerce to int percentage robustly; handle unexpected value types
-                try:
-                    processed_value = int(float(value))
-                except (TypeError, ValueError):
+                if isinstance(value, (int, float, str)):
+                    try:
+                        processed_value = int(float(value))
+                    except (TypeError, ValueError):
+                        processed_value = 0
+                else:
                     processed_value = 0
             elif isinstance(value, (list, tuple, bytes)) and len(value) == 2:
                 # Attempt to decode 2-byte float

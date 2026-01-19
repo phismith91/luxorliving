@@ -616,4 +616,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Unregister type-safe state
         unregister_integration_state(entry.entry_id)
 
-    return unload_ok
+    return bool(unload_ok)
