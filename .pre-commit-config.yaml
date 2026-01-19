@@ -38,6 +38,7 @@ repos:
     hooks:
       - id: bandit
         args: [-ll, -r, custom_components/luxor_living, --exit-zero]
+        pass_filenames: false
 
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks

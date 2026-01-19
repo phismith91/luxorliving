@@ -23,7 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements_dev.txt
 
-      - name: Run E2E consent tests (marker: e2e)
+      - name: "Run E2E consent tests (marker: e2e)"
         run: |
           python -m pytest tests/ -q -m "e2e and not enable_socket"
 
