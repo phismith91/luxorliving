@@ -95,3 +95,5 @@ docs/TUNNELING_AUTHENTICATION.md
 docs/KNX_TUNNELING_SETUP.md
 docs/LXP_VALIDATION.md
 docs/archive/
+
+node_modules/.cache/prettier/
