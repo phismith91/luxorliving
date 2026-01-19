@@ -65,6 +65,7 @@ class BAOSRestClient:
 
     async def __aenter__(self):
         """Context manager entry."""
+
         # Create SSL context in executor to avoid blocking event loop
         def create_ssl_context():
             ssl_context = ssl.create_default_context()
