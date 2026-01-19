@@ -34,16 +34,12 @@ if [ ! -f "$MANIFEST" ]; then
 fi
 
 VERSION=$(python3 -c "import json,sys;print(json.load(open('$MANIFEST'))['version'])")
-# Check root first, then docs/releases
-RELEASE_FILE_ROOT="RELEASE_NOTES_v${VERSION}.md"
-RELEASE_FILE_DOCS="docs/releases/RELEASE_NOTES_v${VERSION}.md"
+# Release notes MUST be in docs/releases/ (standardized location)
+RELEASE_FILE="docs/releases/RELEASE_NOTES_v${VERSION}.md"
 
-if [ -f "$RELEASE_FILE_ROOT" ]; then
-  RELEASE_FILE="$RELEASE_FILE_ROOT"
-elif [ -f "$RELEASE_FILE_DOCS" ]; then
-  RELEASE_FILE="$RELEASE_FILE_DOCS"
-else
-  echo "Missing release notes file: looked for $RELEASE_FILE_ROOT or $RELEASE_FILE_DOCS" >&2
+if [ ! -f "$RELEASE_FILE" ]; then
+  echo "Missing release notes file: $RELEASE_FILE" >&2
+  echo "Release notes must be placed in docs/releases/RELEASE_NOTES_v<version>.md" >&2
   exit 1
 fi
 

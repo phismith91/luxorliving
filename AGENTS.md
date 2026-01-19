@@ -161,9 +161,10 @@ ssh -F /dev/null phil@100.97.159.88 \
 
 1. **Run all tests:** `python -m pytest tests/ -v` (all must pass)
 2. **Optional:** Deploy to remote HA for pre-release testing
-3. **Update version:**
+3. **Update version and release notes:**
    - `custom_components/luxor_living/manifest.json` → "version" field
-   - `CHANGELOG.md` with release notes
+   - `CHANGELOG.md` with release summary
+   - **IMPORTANT:** Create `docs/releases/RELEASE_NOTES_v<VERSION>.md` with detailed release notes (Release Checks verifies this)
 4. **Commit and tag:**
    ```bash
    git add -A
@@ -175,8 +176,14 @@ ssh -F /dev/null phil@100.97.159.88 \
 5. **Create GitHub release:**
    ```bash
    gh release create vX.Y.Z --title "vX.Y.Z - Title" \
-     --notes-file RELEASE_NOTES.md --latest
+     --notes-file docs/releases/RELEASE_NOTES_v<VERSION>.md --latest
    ```
+
+### Release Notes Standard
+
+- **Location:** `docs/releases/RELEASE_NOTES_v<VERSION>.md` (mandatory)
+- **Content:** Must include version tag (e.g., `v0.6.1`) and release description
+- **Validation:** Release Checks workflow validates file exists and contains version
 
 ### Git Operations
 

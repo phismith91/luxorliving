@@ -7,6 +7,11 @@ on:
   # Do NOT run Release Checks on pull_request to avoid failing PRs due to runner Python mismatch
   workflow_dispatch: {}
 
+# Purpose: Verify code quality, tests, and release readiness before allowing merges to main.
+# This workflow runs: formatters (black, isort), smoke & integration tests, HACS validation,
+# release notes verification, and shell scripts linting.
+# All checks must pass to merge to main.
+
 jobs:
   release_checks:
     name: Release Checks
