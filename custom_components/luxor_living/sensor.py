@@ -13,10 +13,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from xknx.dpt import DPT2ByteFloat, DPTArray
 
-from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
-from .entity_mapper import EntityMapper
 from .integration_state import get_integration_state
 from .knx_gateway import LuxorKNXGateway
 

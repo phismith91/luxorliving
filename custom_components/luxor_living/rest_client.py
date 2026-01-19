@@ -587,7 +587,7 @@ class BAOSRestClient:
 
 # Example usage
 async def main():
-    """Show example usage of BAOSRestClient."""
+    """Show example usage of BAOSRestClient.
 
     NOTE: This example uses default credentials for demonstration only.
     In production (Home Assistant integration), credentials are:
