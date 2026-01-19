@@ -8,7 +8,7 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List
+from typing import Any, Awaitable, Callable, List
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ class LuxorLivingBenchmark:
     """Benchmark suite for LUXORliving operations."""
 
     def __init__(self):
+        """Initialize benchmark result storage."""
         self.results: List[BenchmarkResult] = []
 
     async def benchmark_operation(
@@ -197,7 +198,6 @@ async def benchmark_lxp_parsing(lxp_file: str, iterations: int = 10) -> Benchmar
 
 def benchmark_entity_creation(entity_count: int, iterations: int = 50) -> BenchmarkResult:
     """Benchmark entity creation (simulated)."""
-    from .entity import LuxorLivingEntity
 
     def create_operation():
         # Simulate entity creation overhead
