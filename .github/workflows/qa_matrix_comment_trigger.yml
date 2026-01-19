@@ -23,7 +23,8 @@ jobs:
             const issue = context.payload.issue;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            await github.issues.addLabels({
+            // github-script v7 exposes REST APIs under github.rest
+            await github.rest.issues.addLabels({
               owner,
               repo,
               issue_number: issue.number,
@@ -35,7 +36,8 @@ jobs:
         with:
           script: |
             const issue = context.payload.issue;
-            await github.issues.createComment({
+            // github-script v7 exposes REST APIs under github.rest
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issue.number,
