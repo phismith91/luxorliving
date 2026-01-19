@@ -38,6 +38,8 @@ repos:
             --warn-redundant-casts,
             --warn-unused-ignores,
           ]
+        env:
+          MYPYPATH: "."
         additional_dependencies:
           - types-requests
 
