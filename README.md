@@ -42,35 +42,25 @@ discovery from LXP project files.
 
 <!-- RELEASE_NOTES_START -->
 
-# 🎉 LUXORliving v0.6.1
+# ⚠️ LUXORliving v0.6.1-beta.6 (pre-release)
 
-**Release Date:** 16. Januar 2026
+**Release Type:** Beta (pre-release)
+**Release Date:** 19. Januar 2026
 
-### ✨ Added
+### 🩹 Fixes
 
-- **Push webhook & WebSocket client**
-  - Optional `POST /api/luxor_living/push` endpoint
-
-  - Configurable WebSocket client (`push_ws_url`) for external KNX state pushes
-
-  - Authentication modes: `none`, `token`, `bearer`, `hmac` (HMAC-SHA256)
-
-### 🛠️ Changed
-
-- Documented push options and added tests for push handling and WebSocket client
+- **CI / Workflows**: Fix posting comments from workflows using `actions/github-script@v7` — use `github.rest.issues.*` and run comment steps on `pull_request_target` when required.
+- **ShellCheck**: Quote `gh api` paths in branch-protection scripts to satisfy SC2086.
+- **Pre-commit / Formatting**: Apply black/isort formatting fixes discovered by pre-commit hooks.
 
 ### 🧪 Testing & Quality
 
-- **Tests:** 301/301 passing (unit + integration-style)
-
-- **Quality gates:** README/CHANGELOG validation, HACS install test, zip
-  structure validation
+- CI checks are green on the release branch (Pre-commit, Fast checks, CI/CD pipeline).
+- This is a pre-release intended for validation of workflow fixes and small operational changes.
 
 ### ⚡ Upgrade Notes
 
-- If you used earlier betas, remove nested copies before installing
-
-- Install v0.6.1 via HACS and restart Home Assistant
+- This is a beta release; install only for validation or testing.
 
 ---
 
