@@ -33,6 +33,7 @@ class PushClient:
     """Simple WebSocket push client with reconnection/backoff logic."""
 
     def __init__(self, hass, entry_id: str, ws_url: str, ws_token: str | None = None) -> None:
+        """Initialize push client."""
         self.hass = hass
         self.entry_id = entry_id
         self._ws_url = ws_url

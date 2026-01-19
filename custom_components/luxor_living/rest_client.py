@@ -554,7 +554,7 @@ class BAOSRestClient:
             "Authorization": f"Token token={self.session_token}",
         }
 
-        _LOGGER.debug(f"Auth headers: Cookie=user=%22...%22, Authorization=Token token=...")
+        _LOGGER.debug("Auth headers: Cookie=user=%22...%22, Authorization=Token token=...")
         return headers
 
     @property
