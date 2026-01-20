@@ -58,6 +58,7 @@ discovery from LXP project files.
 
 ### 🧪 Testing & Quality
 
+- All 301 tests passing ✅
 - CI checks are green on the release branch (Pre-commit, Fast checks, CI/CD
   pipeline).
 - This is a pre-release intended for validation of workflow fixes and small
