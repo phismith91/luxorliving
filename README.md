@@ -42,31 +42,30 @@ discovery from LXP project files.
 
 <!-- RELEASE_NOTES_START -->
 
-# ⚠️ LUXORliving v0.6.1-beta.6 (pre-release)
+# ⚠️ LUXORliving v0.6.1-beta.7 (pre-release)
 
-**Release Type:** Beta (pre-release) **Release Date:** 19. Januar 2026
+**Release Type:** Beta (pre-release) **Release Date:** 20. Januar 2026
 
 ### 🩹 Fixes
 
-- **CI / Workflows**: Fix posting comments from workflows using
-  `actions/github-script@v7` — use `github.rest.issues.*` and run comment steps
-  on `pull_request_target` when required.
-- **ShellCheck**: Quote `gh api` paths in branch-protection scripts to satisfy
-  SC2086.
-- **Pre-commit / Formatting**: Apply black/isort formatting fixes discovered by
-  pre-commit hooks.
+- **CI / Workflows**: Fixed ZIP structure in `ci-cd.yml` release job.
+  - Changed from `cd custom_components && zip -r ../luxor_living.zip luxor_living/` (created nested `luxor_living/manifest.json`) to `cd custom_components/luxor_living && zip -r ../../luxor_living.zip .` (creates `manifest.json` at root)
+  - This fixes HACS installation where nested directories break manifest discovery
+- **Docs**: Enhanced RELEASE_OPERATIONS.md and ARCHITECTURE.md with explicit ZIP structure requirements and NO-GO items
+- **Release Validation**: Added validation step to ensure correct ZIP structure before release
 
 ### 🧪 Testing & Quality
 
 - All 301 tests passing ✅
-- CI checks are green on the release branch (Pre-commit, Fast checks, CI/CD
-  pipeline).
-- This is a pre-release intended for validation of workflow fixes and small
-  operational changes.
+- ZIP structure validated (manifest.json at root) ✅
+- HACS compatibility verified ✅
+- CI checks are green on the release branch (Pre-commit, Fast checks, CI/CD pipeline).
+- This is a re-release of v0.6.1-beta.6 with corrected ZIP structure for HACS compatibility.
 
 ### ⚡ Upgrade Notes
 
 - This is a beta release; install only for validation or testing.
+- v0.6.1-beta.6 had incorrect ZIP structure (broken for HACS) — use v0.6.1-beta.7 instead
 
 ---
 
