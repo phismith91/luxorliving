@@ -105,9 +105,9 @@ jobs:
 
       - name: Create release archive
         run: |
-          cd custom_components
-          zip -r ../luxor_living.zip luxor_living/
-          cd ..
+          cd custom_components/luxor_living
+          zip -r ../../luxor_living.zip . -x "*.pyc" "*/__pycache__/*" "*.git*"
+          cd ../..
 
       - name: Delete existing release (if any)
         env:

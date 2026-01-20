@@ -126,7 +126,10 @@ Akzeptanzkriterium: grüne Matrix für die oben genannten Versionen.
 
 - Release-Checks: `./scripts/check_release_notes.sh`,
   `./scripts/validate_readme.sh` (format + links + test count)
-- ZIP build: `scripts/release_*.sh` erzeugt ZIP mit `manifest.json` at root
+- ZIP build: **ALWAYS** from `custom_components/luxor_living/` dir → `manifest.json` at root
+  - ❌ NEVER: `cd custom_components && zip -r ../luxor_living.zip luxor_living/` (creates nested dir!)
+  - ✅ CORRECT: `cd custom_components/luxor_living && zip -r ../../luxor_living.zip .` (HACS compatible)
+  - See [RELEASE_OPERATIONS.md - ZIP Structure](RELEASE_OPERATIONS.md#critical-zip-structure-for-hacs-) for details
 - HACS: Ensure `hacs.json`/`manifest.json` fields valid and tests present
 
 ---

@@ -15,6 +15,23 @@ documented in this file.
 
 ---
 
+## [0.6.1-beta.7] - 2026-01-20
+
+### Fixes
+
+- **CI / Workflows**: Fixed ZIP structure in `ci-cd.yml` release job.
+  - Changed from `cd custom_components && zip -r ../luxor_living.zip luxor_living/`
+    (created nested `luxor_living/manifest.json`) to `cd custom_components/luxor_living && zip -r ../../luxor_living.zip .` (creates `manifest.json` at root)
+  - This fixes HACS installation where nested directories break manifest discovery
+- **Docs**: Enhanced [RELEASE_OPERATIONS.md](docs/RELEASE_OPERATIONS.md#critical-zip-structure-for-hacs-) and [ARCHITECTURE.md](docs/ARCHITECTURE.md#deployment--release-) with explicit ZIP structure requirements and NO-GO items
+- **Release Validation**: Added `unzip -l` validation step to ensure correct ZIP structure before release
+
+### Notes
+
+- This is a re-release of v0.6.1-beta.6 with corrected ZIP structure for HACS compatibility
+
+---
+
 ## [0.6.1-beta.6] - 2026-01-19
 
 ### Fixes

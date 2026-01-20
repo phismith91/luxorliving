@@ -47,6 +47,34 @@ Before **anything** is merged or released:
 - **No exceptions** - `fail_ci_if_error: false` only for non-blocking features
   (e.g., Codecov token)
 
+### CRITICAL: ZIP Structure for HACS ⚠️
+
+**ABSOLUTE NO-GO ITEMS:**
+
+❌ **NEVER** create ZIP from repo root:
+```bash
+# WRONG - creates nested directory!
+cd custom_components
+zip -r ../luxor_living.zip luxor_living/
+# Result: luxor_living/manifest.json ← BREAKS HACS INSTALL
+```
+
+✅ **ALWAYS** build from integration directory:
+```bash
+# CORRECT - manifest.json at root
+cd custom_components/luxor_living
+zip -r ../../luxor_living.zip . -x "*.pyc" "*/__pycache__/*" "*.git*"
+# Result: manifest.json ← HACS COMPATIBLE
+```
+
+**Why:** HACS unpacks the ZIP directly into `custom_components/`. If ZIP contains a nested `luxor_living/` directory, it creates `custom_components/luxor_living/luxor_living/` which breaks manifest discovery.
+
+**Validation:** After building ZIP, verify structure with:
+```bash
+unzip -l luxor_living.zip | head -20
+# Must show: manifest.json, __init__.py, config_flow.py etc. at root
+```
+
 ### Rationale
 
 A failing check is an indicator of:
