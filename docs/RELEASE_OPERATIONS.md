@@ -196,6 +196,25 @@ Releases:** GitHub rules prevent asset replacement → bump version if failed 5.
 
 See [docs/RELEASE_INCIDENTS.md](RELEASE_INCIDENTS.md) für Details.
 
+### Automatic PR Creation (release/\* → main)
+
+To streamline releases, we automatically open a Pull Request from a pushed
+`release/*` branch to `main`.
+
+- Trigger: Push to any branch matching `release/**`.
+- Behavior: The workflow checks for an existing open PR from the branch to
+  `main` and creates one if none exists.
+- Opt-out: Add a file named `.no-auto-pr` to the branch root to prevent
+  automatic PR creation for that branch.
+- PR Title: `chore(release): merge <branch> → main`
+- PR Body: Explains the automation and asks to run/verify CI checks before
+  merging.
+
+Why: This reduces manual steps and ensures release fixes (eg. CI or ZIP fixes)
+are proposed to `main` promptly for final integration and release hardening.
+
+---
+
 ### Step 0.0: Optional Pre-Release Testing auf Remote HA
 
 **EMPFOHLEN:** Features vor Release auf dem Remote Home Assistant testen.
