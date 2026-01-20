@@ -194,4 +194,4 @@ def test_determine_platform_cover():
         mapper = EntityMapper(project)
 
         # UpDown -> Cover
-        platform = mapper._determine_platform({"UpDown": 10})
+        _ = mapper._determine_platform({"UpDown": 10})

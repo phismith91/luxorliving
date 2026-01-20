@@ -244,7 +244,6 @@ class TestRateLimiting:
         assert switch._is_rate_limited()
 
         # Now simulate time passing (2 seconds later)
-        timestamps2 = [2.0]
         call_count = 0
 
         def mock_time2():
