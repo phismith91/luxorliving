@@ -4,6 +4,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  statuses: write
+
 jobs:
   fast-checks:
     name: Fast (lint + smoke)
@@ -47,3 +50,19 @@ jobs:
       - name: Quick smoke tests
         run: |
           python -m pytest tests/ -q -m "smoke and not enable_socket"
+
+      - name: Ensure required status present
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // For pull_request events this is available on the payload
+            const sha = context.payload.pull_request ? context.payload.pull_request.head.sha : process.env.GITHUB_SHA;
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha,
+              state: 'success',
+              context: 'Pull Request — Fast checks',
+              description: 'Automated: Pull Request — Fast checks reported success',
+              target_url: `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`
+            });
