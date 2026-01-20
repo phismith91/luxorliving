@@ -8,7 +8,6 @@ from homeassistant.config_entries import ConfigEntry
 
 from custom_components.luxor_living.binary_sensor import (
     LuxorLivingBinarySensor,
-    async_setup_entry,
 )
 from custom_components.luxor_living.coordinator import LuxorLivingCoordinator
 

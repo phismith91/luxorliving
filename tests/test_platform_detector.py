@@ -1,6 +1,5 @@
 """Unit tests for PlatformDetector module."""
 
-import pytest
 from homeassistant.const import Platform
 
 from custom_components.luxor_living.platform_detector import PlatformDetector

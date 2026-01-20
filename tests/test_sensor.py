@@ -1,10 +1,9 @@
 """Tests for LUXORliving sensor platform."""
 
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from custom_components.luxor_living.const import DOMAIN

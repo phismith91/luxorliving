@@ -14,12 +14,10 @@ def pytest_configure(config):
 
 # Disable pytest-socket immediately to allow aiohttp mock servers
 # Must be done before any test modules are imported
-import sys
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
-from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 # Some CI setups install the `pytest-socket` plugin which blocks socket.socket by default.

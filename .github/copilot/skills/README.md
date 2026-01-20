@@ -12,6 +12,8 @@ Angepasste Context Engineering Skills basierend auf
 | [context-fundamentals](context-fundamentals.md) | Context Management, Progressive Disclosure, Attention Budgets | Agent-Koordination, LXP Parser Optimierung |
 | [multi-agent-patterns](multi-agent-patterns.md) | Coordination der 7 Copilot Agents, Hierarchies, Handoffs      | Feature Development, Agent Conflicts       |
 | [evaluation](evaluation.md)                     | Quality Gates, Testing Metrics, Agent Performance             | Pre-Release, CI/CD, Performance Monitoring |
+| [coding-standards](coding-standards.md)         | Black/isort, Typing, HA async Do/Don'ts                       | Code Reviews, Implementierung              |
+| [tdd-workflow](tdd-workflow.md)                 | Pytest-first Flow, Coverage ≥80%, deterministic tests          | Neue Features, Bugfixes                    |
 
 ## Nutzung in VS Code
 

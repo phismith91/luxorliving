@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for Health Check endpoint."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

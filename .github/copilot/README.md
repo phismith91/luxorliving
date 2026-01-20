@@ -19,6 +19,14 @@ aspects of the LUXORliving Home Assistant integration development.
    - SSH deployment, release process, security
    - Attached to Copilot globally (siehe attachments in instructions)
 
+### Additional Copilot Resources
+
+- `rules/` → always-follow guardrails (testing, git workflow, security, performance)
+- `commands/` → quick command cards (/plan, /tdd, /code-review, /build-fix, /update-docs, /update-codemaps)
+- `skills/` → context engineering patterns + tdd-workflow, coding-standards
+- `hooks/` → warn-only hooks for HA anti-patterns (asyncio.run, time.sleep)
+- `mcp-configs/` → minimal MCP server skeleton (GitHub, local fs; tokens placeholder)
+
 ---
 
 ## Active Agents (7)
@@ -130,6 +138,16 @@ README test count updates
 **When to use:** Hardware questions, LXP parsing, device-specific issues
 
 ---
+
+## Utility/Workflow Agents (supporting)
+
+- **agent_planner.md** → lightweight implementation planning with file list, risks, and test plan
+- **agent_tdd_guide.md** → enforces pytest-first workflow with HA async patterns
+- **agent_code_reviewer.md** → severity-ordered review checklist for HA/Python
+- **agent_security_reviewer.md** → security/privacy checks and mitigations
+- **agent_refactor_cleaner.md** → safe dead code removal with minimal diffs
+- **agent_build_error_resolver.md** → minimal fixes for failing tests/lints
+- **agent_doc_updater.md** → proposes doc/CHANGELOG updates after code changes
 
 ## Archive
 
