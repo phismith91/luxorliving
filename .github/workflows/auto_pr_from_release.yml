@@ -3,7 +3,7 @@ name: Auto PR from release/* to main
 on:
   push:
     branches:
-      - 'release/**'
+      - "release/**"
 
 permissions:
   contents: read
