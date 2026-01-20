@@ -2,7 +2,6 @@
 """Audit script for Hauptwohnung.lxp file against our LXP parser."""
 
 import asyncio
-import os
 import sys
 from pathlib import Path
 
