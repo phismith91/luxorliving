@@ -10,7 +10,6 @@ from homeassistant.components.cover import (
     CoverEntityFeature,
 )
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
 
 from custom_components.luxor_living.const import DATA_KNX_GATEWAY, DOMAIN
 from custom_components.luxor_living.cover import (

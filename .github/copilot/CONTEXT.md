@@ -131,9 +131,14 @@ luxorliving/
 ├── scripts/                 # Utility scripts
 ├── .github/
 │   ├── copilot/
-│   │   ├── CONTEXT.md      # This file (project context)
-│   │   ├── README.md       # Agent documentation
-│   │   └── agent_*.md      # Specialized agents
+│   │   ├── CONTEXT.md       # This file (project context)
+│   │   ├── README.md        # Agent documentation
+│   │   ├── agent_*.md       # Specialized + utility agents
+│   │   ├── skills/          # Context-engineering + coding/TDD skills
+│   │   ├── rules/           # Guardrails (testing, git, security, performance)
+│   │   ├── commands/        # Command cards (/plan, /tdd, /code-review, ...)
+│   │   ├── hooks/           # Warn-only HA anti-pattern hooks
+│   │   └── mcp-configs/     # Minimal MCP server configs (placeholders)
 │   └── copilot-instructions.md  # Copilot global instructions
 └── [config files]
 ```

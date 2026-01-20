@@ -1,0 +1,21 @@
+{
+  "servers": [
+    {
+      "name": "github-minimal",
+      "type": "github",
+      "config": {
+        "token": "YOUR_GITHUB_TOKEN",
+        "repos": ["phismith91/luxorliving"],
+        "mode": "read"
+      }
+    },
+    {
+      "name": "local-fs",
+      "type": "filesystem",
+      "config": {
+        "roots": ["./"],
+        "writable": false
+      }
+    }
+  ]
+}

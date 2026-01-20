@@ -1,8 +1,7 @@
 """Tests for auto-discovery functionality."""
 
 import asyncio
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -10,7 +9,6 @@ from custom_components.luxor_living.knx_gateway import (
     DISCOVERY_DEBOUNCE_DELAY,
     DISCOVERY_MAX_CANDIDATES_PER_ADDRESS,
     DISCOVERY_MIN_SAMPLES,
-    DISCOVERY_VALUE_TOLERANCE,
     LuxorKNXGateway,
 )
 

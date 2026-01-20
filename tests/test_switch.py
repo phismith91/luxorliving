@@ -4,14 +4,11 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
 
 from custom_components.luxor_living.coordinator import LuxorLivingCoordinator
 from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
 from custom_components.luxor_living.switch import (
     LuxorLivingSwitch,
-    async_setup_entry,
 )
 
 

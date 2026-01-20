@@ -1,10 +1,9 @@
 """Tests for LUXORliving light platform."""
 
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from custom_components.luxor_living.coordinator import LuxorLivingCoordinator
@@ -12,7 +11,6 @@ from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
 from custom_components.luxor_living.light import (
     LuxorLivingDimmableLight,
     LuxorLivingLight,
-    async_setup_entry,
 )
 
 

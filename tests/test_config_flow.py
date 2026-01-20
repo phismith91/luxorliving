@@ -14,7 +14,6 @@ from custom_components.luxor_living.const import (
     CONF_SIMULATION_MODE,
     CONNECTION_TYPE_ROUTING,
     CONNECTION_TYPE_TUNNELING,
-    DOMAIN,
 )
 
 
