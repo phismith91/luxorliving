@@ -1,7 +1,5 @@
 """Additional integration tests to improve code coverage."""
 
-
-
 from custom_components.luxor_living.const import DOMAIN
 
 
