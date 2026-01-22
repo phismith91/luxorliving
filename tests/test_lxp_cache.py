@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Tests for LXP Parser Cache functionality."""
 
-import asyncio
 import tempfile
 import time
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -158,14 +156,14 @@ class TestLXPCache:
         cache = LXPCache(max_size=10, ttl_seconds=0.1)  # Very short TTL
 
         # First access
-        project1 = await cache.get_or_parse(temp_lxp_file)
+        await cache.get_or_parse(temp_lxp_file)
         assert cache.get_stats()["misses"] == 1
 
         # Wait for TTL to expire
         time.sleep(0.2)
 
         # Second access should be cache miss due to expiration
-        project2 = await cache.get_or_parse(temp_lxp_file)
+        await cache.get_or_parse(temp_lxp_file)
         stats = cache.get_stats()
         assert stats["misses"] == 2
         assert stats["hits"] == 0

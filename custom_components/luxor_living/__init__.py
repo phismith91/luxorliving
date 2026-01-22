@@ -6,14 +6,12 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Any
 
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .circuit_breaker import get_knx_circuit_breaker, get_rest_api_circuit_breaker
 from .const import (
@@ -43,7 +41,6 @@ from .integration_state import (
 from .knx_gateway import LuxorKNXGateway
 from .lxp_parser import LXPParser, get_lxp_cache_stats
 from .overrides import load_overrides
-from .repairs import create_auth_repair_issue, dismiss_auth_repair_issue
 
 _LOGGER = logging.getLogger(__name__)
 

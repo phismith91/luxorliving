@@ -10,7 +10,6 @@ from aiohttp.test_utils import TestClient, TestServer
 from custom_components.luxor_living.rest_client import (
     AuthenticationError,
     BAOSRestClient,
-    TunnelingError,
 )
 
 

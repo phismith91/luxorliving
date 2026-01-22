@@ -1,0 +1,20 @@
+[
+  {
+    "matcher": "tool == 'Edit' && tool_input.filePath matches 'custom_components/luxor_living/.*\\.py$'",
+    "hooks": [
+      {
+        "type": "command",
+        "command": "#!/bin/bash\ngrep -n 'asyncio.run' \"$file_path\" && echo '[Hook] Avoid asyncio.run inside HA integration; use await in async context.' >&2"
+      }
+    ]
+  },
+  {
+    "matcher": "tool == 'Edit' && tool_input.filePath matches 'custom_components/luxor_living/.*\\.py$'",
+    "hooks": [
+      {
+        "type": "command",
+        "command": "#!/bin/bash\ngrep -n 'time.sleep' \"$file_path\" && echo '[Hook] time.sleep blocks the event loop; use async sleeps or scheduler helpers.' >&2"
+      }
+    ]
+  }
+]

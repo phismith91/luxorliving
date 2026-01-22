@@ -2,8 +2,6 @@
 """Tests for Circuit Breaker functionality."""
 
 import asyncio
-import time
-from unittest.mock import AsyncMock, patch
 
 import pytest
 

@@ -1,9 +1,5 @@
 """Additional integration tests to improve code coverage."""
 
-from unittest.mock import Mock, patch
-
-import pytest
-
 from custom_components.luxor_living.const import DOMAIN
 
 

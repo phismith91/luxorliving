@@ -1,9 +1,7 @@
 """Tests for OverrideHandler module (TDD approach)."""
 
-import pytest
 from homeassistant.const import Platform
 
-from custom_components.luxor_living.mapped_entity import MappedEntity
 from custom_components.luxor_living.override_handler import OverrideHandler
 
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 
 import pytest
@@ -80,7 +79,7 @@ async def test_hauptwohnung_entity_mapping():
     assert len(platform_counts) >= 2, "Should have multiple platforms"
 
     # Check for typical platforms
-    sensors = mapper.get_entities_by_platform(Platform.SENSOR)
+    _ = mapper.get_entities_by_platform(Platform.SENSOR)
 
     # Log results
     print("\n=== Entity Mapping ===")
