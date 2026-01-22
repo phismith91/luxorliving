@@ -21,11 +21,14 @@ aspects of the LUXORliving Home Assistant integration development.
 
 ### Additional Copilot Resources
 
-- `rules/` → always-follow guardrails (testing, git workflow, security, performance)
-- `commands/` → quick command cards (/plan, /tdd, /code-review, /build-fix, /update-docs, /update-codemaps)
+- `rules/` → always-follow guardrails (testing, git workflow, security,
+  performance)
+- `commands/` → quick command cards (/plan, /tdd, /code-review, /build-fix,
+  /update-docs, /update-codemaps)
 - `skills/` → context engineering patterns + tdd-workflow, coding-standards
 - `hooks/` → warn-only hooks for HA anti-patterns (asyncio.run, time.sleep)
-- `mcp-configs/` → minimal MCP server skeleton (GitHub, local fs; tokens placeholder)
+- `mcp-configs/` → minimal MCP server skeleton (GitHub, local fs; tokens
+  placeholder)
 
 ---
 
@@ -141,7 +144,8 @@ README test count updates
 
 ## Utility/Workflow Agents (supporting)
 
-- **agent_planner.md** → lightweight implementation planning with file list, risks, and test plan
+- **agent_planner.md** → lightweight implementation planning with file list,
+  risks, and test plan
 - **agent_tdd_guide.md** → enforces pytest-first workflow with HA async patterns
 - **agent_code_reviewer.md** → severity-ordered review checklist for HA/Python
 - **agent_security_reviewer.md** → security/privacy checks and mitigations
