@@ -9,6 +9,7 @@ voluptuous>=0.15.2
 
 # Security
 defusedxml>=0.7.1
+orjson>=3.11.5
 
 # Development - Versionen kompatibel mit pytest-homeassistant-custom-component
 pytest>=8.3.4

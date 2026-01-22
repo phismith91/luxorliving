@@ -19,6 +19,7 @@ radon==6.0.1
 
 # Security checks
 bandit==1.9.2
+orjson>=3.11.5
 
 # Pre-commit hooks
 pre-commit==4.5.1
