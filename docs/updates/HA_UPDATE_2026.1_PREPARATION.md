@@ -302,6 +302,5 @@ pytest-homeassistant-custom-component>=0.17.0
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** 2026-01-22
-**Author:** Automated preparation by Claude Code
+**Document Version:** 1.0 **Last Updated:** 2026-01-22 **Author:** Automated
+preparation by Claude Code
