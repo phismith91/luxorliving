@@ -1,5 +1,6 @@
 # Home Assistant (requires Python 3.13+)
-homeassistant>=2025.12.0
+# Bumped for experimental test to resolve orjson CVE (may cause downstream conflicts)
+homeassistant>=2026.2.0
 
 # KNX/IP
 xknx>=3.13.0
