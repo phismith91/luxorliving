@@ -1,0 +1,33 @@
+# Generated files that should not be formatted by prettier
+benchmark_results.json
+**/benchmark_*.json
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+coverage.xml
+.coverage
+.coverage.*
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Temporary debug/mission files
+*.backup
+*.backup.*
+*MISSION*
+*DEBUG_REPORT*
+
+# Node modules (if any)
+node_modules/
+
+# Home Assistant specific - don't reformat these
+custom_components/luxor_living/manifest.json
+
+# Documentation - preserve original formatting (focus on content, not formatting)
+docs/**
+
+# Config files that should maintain exact formatting
+.github/**/*.json

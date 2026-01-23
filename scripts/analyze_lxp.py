@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Analyze LXP file to show datapoint addresses."""
+
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path

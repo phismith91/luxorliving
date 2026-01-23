@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Test integration setup."""
+
 import sys
 from pathlib import Path
 

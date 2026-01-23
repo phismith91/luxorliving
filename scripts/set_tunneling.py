@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Script to switch LUXORliving integration to KNX Tunneling mode."""
+
 import json
 import sys
 from pathlib import Path

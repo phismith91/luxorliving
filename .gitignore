@@ -44,6 +44,7 @@ logs/
 htmlcov/
 .pytest_cache/
 .mypy_cache/
+benchmark_results.json
 
 # Temporary files
 *.backup
