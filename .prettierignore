@@ -26,10 +26,8 @@ node_modules/
 # Home Assistant specific - don't reformat these
 custom_components/luxor_living/manifest.json
 
-# Archive/legacy docs - preserve original formatting
-docs/archive/**
-**/RELEASE_NOTES_*.md
-docs/LOCAL_TESTING.md
+# Documentation - preserve original formatting (focus on content, not formatting)
+docs/**
 
 # Config files that should maintain exact formatting
 .github/**/*.json
