@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Test script for LXP parser."""
+
 import asyncio
 import sys
 from pathlib import Path

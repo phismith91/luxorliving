@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Test script for entity mapper."""
+
 import sys
 from pathlib import Path
 
