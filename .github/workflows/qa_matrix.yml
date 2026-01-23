@@ -27,6 +27,8 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
+          cache: "pip"
+          cache-dependency-path: requirements_dev.txt
 
       - name: Install dev dependencies
         run: |

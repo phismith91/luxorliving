@@ -4,10 +4,10 @@
     {
       "operation": "LXP Parsing (tmpryecr0xm.lxp)",
       "iterations": 2,
-      "total_time": 3.5748002119362354e-05,
-      "avg_time": 1.7874001059681177e-05,
-      "min_time": 1.7502999980933964e-05,
-      "max_time": 1.824500213842839e-05,
+      "total_time": 3.5748002119362354e-5,
+      "avg_time": 1.7874001059681177e-5,
+      "min_time": 1.7502999980933964e-5,
+      "max_time": 1.824500213842839e-5,
       "throughput": 55947.18253965669
     },
     {
