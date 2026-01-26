@@ -23,7 +23,7 @@ jobs:
 
       - name: Post reminder comment
         if: steps.fork.outputs.is_fork == 'false'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             // github-script v7 exposes REST APIs under github.rest
