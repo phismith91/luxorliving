@@ -39,7 +39,8 @@ from .const import (
     DOMAIN,
 )
 from .lxp_parser import LXPParser
-from .rest_client import AuthenticationError, BAOSRestClient
+from .rest_client import BAOSRestClient
+from .rest_exceptions import AuthenticationError
 
 _LOGGER = logging.getLogger(__name__)
 

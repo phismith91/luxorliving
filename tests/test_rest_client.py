@@ -7,10 +7,8 @@ import pytest_asyncio
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from custom_components.luxor_living.rest_client import (
-    AuthenticationError,
-    BAOSRestClient,
-)
+from custom_components.luxor_living.rest_client import BAOSRestClient
+from custom_components.luxor_living.rest_exceptions import AuthenticationError
 
 
 async def login_handler(request):

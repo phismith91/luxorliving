@@ -18,7 +18,8 @@ from xknx.telegram.address import GroupAddress
 from xknx.telegram.apci import GroupValueRead, GroupValueResponse, GroupValueWrite
 
 from .circuit_breaker import CircuitBreakerOpenException, get_knx_circuit_breaker
-from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
+from .rest_client import BAOSRestClient
+from .rest_exceptions import AuthenticationError, TunnelingError
 
 _LOGGER = logging.getLogger(__name__)
 

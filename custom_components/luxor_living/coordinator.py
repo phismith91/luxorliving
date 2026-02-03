@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .knx_gateway import LuxorKNXGateway
-from .rest_client import AuthenticationError
+from .rest_exceptions import AuthenticationError
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry

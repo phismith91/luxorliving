@@ -14,7 +14,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
 
 from .const import DOMAIN
-from .rest_client import AuthenticationError, BAOSRestClient
+from .rest_client import BAOSRestClient
+from .rest_exceptions import AuthenticationError
 
 _LOGGER = logging.getLogger(__name__)
 
