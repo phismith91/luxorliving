@@ -18,9 +18,7 @@ from .rest_tunneling import TunnelingManagementMixin
 _LOGGER = logging.getLogger(__name__)
 
 
-class BAOSRestClient(
-    SessionManagementMixin, TunnelingManagementMixin, DatapointOperationsMixin
-):
+class BAOSRestClient(SessionManagementMixin, TunnelingManagementMixin, DatapointOperationsMixin):
     """
     REST API Client for Weinzierl BAOS 777.
 
