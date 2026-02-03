@@ -15,12 +15,27 @@ from xknx.telegram.address import GroupAddress
 from xknx.telegram.apci import GroupValueRead, GroupValueWrite
 
 from .circuit_breaker import CircuitBreakerOpenException, get_knx_circuit_breaker
-from .knx.discovery_engine import DISCOVERY_DEBOUNCE_DELAY, DiscoveryEngine
+from .knx.discovery_engine import (
+    DISCOVERY_DEBOUNCE_DELAY,
+    DISCOVERY_MAX_CANDIDATES_PER_ADDRESS,
+    DISCOVERY_MIN_SAMPLES,
+    DISCOVERY_VALUE_TOLERANCE,
+    DiscoveryEngine,
+)
 from .knx.listener_manager import ListenerManager
 from .knx.telegram_processor import TelegramProcessor
 from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
 
 _LOGGER = logging.getLogger(__name__)
+
+# Re-export constants for backward compatibility
+__all__ = [
+    "LuxorKNXGateway",
+    "DISCOVERY_DEBOUNCE_DELAY",
+    "DISCOVERY_MAX_CANDIDATES_PER_ADDRESS",
+    "DISCOVERY_MIN_SAMPLES",
+    "DISCOVERY_VALUE_TOLERANCE",
+]
 
 
 class LuxorKNXGateway:
