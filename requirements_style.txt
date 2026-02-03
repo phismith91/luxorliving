@@ -2,23 +2,23 @@
 # Install with: pip install -r requirements_style.txt
 
 # Code formatting
-black==26.1.0
-isort==7.0.0
+black>=26.1.0,<27.0.0
+isort>=7.0.0,<8.0.0
 
 # Linting
-flake8==7.3.0
-flake8-docstrings==1.7.0
-pylint==4.0.4
-mypy==1.19.1
+flake8>=7.3.0,<8.0.0
+flake8-docstrings>=1.7.0,<2.0.0
+pylint>=4.0.4,<5.0.0
+mypy>=1.19.1,<2.0.0
 
 # Type stubs
-types-requests==2.32.4.20260107
+types-requests>=2.32.4.20260107
 
 # Code complexity analysis
-radon==6.0.1
+radon>=6.0.1,<7.0.0
 
 # Security checks
-bandit==1.9.3
+bandit>=1.9.3,<2.0.0
 
 # Pre-commit hooks
-pre-commit==4.5.1
+pre-commit>=4.5.1,<5.0.0
