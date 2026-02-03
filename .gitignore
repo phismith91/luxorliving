@@ -96,6 +96,6 @@ docs/ARCHITECTURE_REVIEW_*.md
 docs/TUNNELING_AUTHENTICATION.md
 docs/KNX_TUNNELING_SETUP.md
 docs/LXP_VALIDATION.md
-docs/archive/
+# Note: docs/archive/ is now tracked - it contains archived release notes and historical docs
 
 node_modules/.cache/prettier/

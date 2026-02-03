@@ -1433,5 +1433,97 @@ chmod +x scripts/release_automation.sh
 
 ---
 
-**Version:** 2.0 **Last Updated:** 8. Januar 2026 (post beta.1-5 incidents)
-**Next Review:** Nach erfolgreichem v0.6.0 stable release
+## 📚 Release Notes Archival Policy
+
+After each stable release, maintain a clean release notes structure to prevent clutter and confusion.
+
+### When to Archive Release Notes
+
+Archive release notes to `docs/archive/releases/` when:
+
+1. **Superseded Stable Releases**
+   - A newer stable version has been released
+   - Generally, keep only the latest stable release in `docs/releases/`
+   - Example: When v0.6.2 is released, archive v0.6.1 and v0.6.0
+
+2. **Beta/Pre-Release Versions**
+   - Beta version is superseded by a stable release
+   - Example: Archive v0.6.0-beta.1 when v0.6.0 stable is released
+
+3. **Old Patch Versions**
+   - Patch versions that are 2+ minor versions behind
+   - Example: Archive v0.5.4.3 when v0.6.1 is the current release
+
+### Archive Process
+
+```bash
+# After releasing v0.6.2 (example), archive old release notes
+cd /path/to/luxorliving
+
+# Ensure archive directory exists
+mkdir -p docs/archive/releases
+
+# Move old release notes
+git mv docs/releases/RELEASE_NOTES_v0.6.1.md docs/archive/releases/
+git mv docs/releases/RELEASE_NOTES_v0.6.0.md docs/archive/releases/
+git mv docs/releases/RELEASE_NOTES_v0.6.0-beta.1.md docs/archive/releases/
+
+# If there's a root-level release notes file, archive it too
+git mv RELEASE_NOTES_v0.6.0.md docs/archive/releases/
+
+# Commit the archival
+git add -A
+git commit -m "chore: archive old release notes (v0.6.0, v0.6.1)"
+GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main
+```
+
+### What NOT to Archive
+
+- **DO NOT archive:**
+  - The latest stable release notes
+  - Active beta/pre-release notes (until superseded by stable)
+  - Release notes from the current minor version series
+
+### Deletion vs Archival
+
+- **Archive (DON'T delete):**
+  - Release notes (all versions have historical value)
+  - Architectural decisions
+  - Audit reports
+  - Incident postmortems
+
+- **Can delete after review period:**
+  - Temporary notes or drafts
+  - Duplicate files
+  - Clearly obsolete content with no historical value
+
+### Archive Structure
+
+```
+docs/archive/
+├── README.md           # Archive directory documentation
+└── releases/          # Archived release notes
+    ├── RELEASE_NOTES_v0.5.4.3.md
+    ├── RELEASE_NOTES_v0.6.0.md
+    └── RELEASE_NOTES_v0.6.0-beta.1.md
+```
+
+### Checklist: Post-Release Archival
+
+After each stable release, complete the following:
+
+- [ ] New stable release notes created in `docs/releases/`
+- [ ] Previous stable release notes moved to `docs/archive/releases/`
+- [ ] Beta/pre-release versions for this release moved to `docs/archive/releases/`
+- [ ] Root-level release notes file (if any) moved to `docs/archive/releases/`
+- [ ] Archive directory `README.md` updated with new archived files
+- [ ] Changes committed with clear message (e.g., "chore: archive old release notes")
+
+### Reference
+
+See `docs/archive/README.md` for detailed archival guidelines and current archive contents.
+
+---
+
+**Version:** 2.1 **Last Updated:** 3. Februar 2026 (added archival policy)
+**Next Review:** Nach erfolgreichem v0.6.2 stable release
