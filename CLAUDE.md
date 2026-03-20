@@ -8,7 +8,7 @@ instructions, and quality gates are in `AGENTS.md`.
 
 Home Assistant custom integration for Theben LUXORliving KNX systems via the
 IP1 interface (BAOS REST API). HACS-ready, Python 3.13, pytest, HA 2026.1.x.
-Current stable version: v0.6.1.
+Current stable version: v0.6.3.
 
 ## Dual-AI Setup
 
@@ -34,28 +34,28 @@ python -m pytest tests/ -v -m "not enable_socket"
 
 ## Key Files
 
-| File | Purpose |
-|---|---|
-| `AGENTS.md` | Setup, testing, release process, quality gates |
-| `.github/copilot/CONTEXT.md` | Architecture, current status, agent coordination (SSoT) |
-| `.github/copilot-instructions.md` | SSH deployment & release workflow |
-| `custom_components/luxor_living/` | Integration source |
-| `tests/` | pytest test suite (294 tests) |
-| `docs/` | Architecture, KNX implementation, installation |
+| File                               | Purpose                                                  |
+| ---------------------------------- | -------------------------------------------------------- |
+| `AGENTS.md`                        | Setup, testing, release process, quality gates           |
+| `.github/copilot/CONTEXT.md`       | Architecture, current status, agent coordination (SSoT)  |
+| `.github/copilot-instructions.md`  | SSH deployment & release workflow                        |
+| `custom_components/luxor_living/`  | Integration source                                       |
+| `tests/`                           | pytest test suite (294 tests)                            |
+| `docs/`                            | Architecture, KNX implementation, installation           |
 
 ## Domain Reference (Copilot Agents)
 
 Defined in `.github/copilot/agent_*.md` — read these when working in their area:
 
-| Agent | Domain |
-|---|---|
-| `agent_architect.md` | Architecture & code quality (primary authority) |
-| `agent_knx_protocol.md` | KNX specs, DPT, group addresses |
-| `agent_luxor_expert.md` | Theben IP1 hardware & LXP file format |
-| `agent_testing.md` | Test strategy, CI/CD, coverage |
+| Agent                      | Domain                                                |
+| -------------------------- | ----------------------------------------------------- |
+| `agent_architect.md`       | Architecture & code quality (primary authority)       |
+| `agent_knx_protocol.md`    | KNX specs, DPT, group addresses                       |
+| `agent_luxor_expert.md`    | Theben IP1 hardware & LXP file format                 |
+| `agent_testing.md`         | Test strategy, CI/CD, coverage                        |
 | `agent_release_manager.md` | Releases & merges (exclusive merge authority to main) |
-| `agent_hacs_compliance.md` | HACS & HA core standards |
-| `agent_defect_tracker.md` | Bug triage & regression tracking |
+| `agent_hacs_compliance.md` | HACS & HA core standards                              |
+| `agent_defect_tracker.md`  | Bug triage & regression tracking                      |
 
 ## Key Conventions
 
