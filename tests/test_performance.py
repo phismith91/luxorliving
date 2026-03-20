@@ -5,13 +5,16 @@
 pytest_plugins = "pytest_homeassistant_custom_component"
 
 import asyncio
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from custom_components.luxor_living.benchmark import (
+# benchmark.py was moved to scripts/ (it is a dev tool, not part of the integration)
+sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+from benchmark import (  # noqa: E402
     LuxorLivingBenchmark,
     benchmark_circuit_breaker,
     benchmark_entity_creation,
