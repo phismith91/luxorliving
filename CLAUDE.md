@@ -34,14 +34,14 @@ python -m pytest tests/ -v -m "not enable_socket"
 
 ## Key Files
 
-| File                               | Purpose                                                  |
-| ---------------------------------- | -------------------------------------------------------- |
-| `AGENTS.md`                        | Setup, testing, release process, quality gates           |
-| `.github/copilot/CONTEXT.md`       | Architecture, current status, agent coordination (SSoT)  |
-| `.github/copilot-instructions.md`  | SSH deployment & release workflow                        |
-| `custom_components/luxor_living/`  | Integration source                                       |
-| `tests/`                           | pytest test suite (294 tests)                            |
-| `docs/`                            | Architecture, KNX implementation, installation           |
+| File                              | Purpose                                                 |
+| --------------------------------- | ------------------------------------------------------- |
+| `AGENTS.md`                       | Setup, testing, release process, quality gates          |
+| `.github/copilot/CONTEXT.md`      | Architecture, current status, agent coordination (SSoT) |
+| `.github/copilot-instructions.md` | SSH deployment & release workflow                       |
+| `custom_components/luxor_living/` | Integration source                                      |
+| `tests/`                          | pytest test suite (294 tests)                           |
+| `docs/`                           | Architecture, KNX implementation, installation          |
 
 ## Domain Reference (Copilot Agents)
 
