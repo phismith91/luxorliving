@@ -33,5 +33,9 @@ docs/**
 CLAUDE.md
 AGENTS.md
 
+# Changelog — preserve manual line wrapping
+CHANGELOG.md
+README.md
+
 # Config files that should maintain exact formatting
 .github/**/*.json

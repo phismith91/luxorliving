@@ -136,9 +136,7 @@ class TestBenchmarkSuite:
         """Test running the full benchmark suite."""
         with (
             patch("benchmark.benchmark_lxp_parsing") as mock_lxp,
-            patch(
-                "benchmark.benchmark_entity_creation"
-            ) as mock_entity,
+            patch("benchmark.benchmark_entity_creation") as mock_entity,
             patch("benchmark.benchmark_circuit_breaker") as mock_cb,
         ):
 
