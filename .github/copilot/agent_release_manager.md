@@ -6,60 +6,31 @@ validation, formatting, testing, merging to deployment.
 
 Responsibilities:
 
-- **Pre-Release Validation (ALWAYS run locally BEFORE any push):**
-  - **Code Formatting (CRITICAL - runs FIRST):**
-    - `black custom_components tests scripts` (apply formatting)
-    - `isort custom_components tests scripts` (apply import sorting)
-    - `black --check custom_components tests scripts` (verify clean)
-    - `isort --check-only custom_components tests scripts` (verify clean)
-    - Commit formatting changes BEFORE any other commits
+- **Pre-Release Validation (run locally BEFORE any push):**
+  - **All-in-one check (replaces manual black/isort/flake8):**
+    - `pre-commit run --all-files` — runs black, isort, flake8, bandit, prettier
+    - One-time setup on new machine:
+      `pip install pre-commit && pre-commit install`
   - **Full Test Suite:**
-    - `pytest tests/ -v --cov-report=xml -m "not enable_socket"`
-    - Verify all tests passing (currently: 294/294)
-    - Check for blocking issues or warnings
-    - Update test count in README.md if changed
+    - `pytest tests/ -v -m "not enable_socket"`
+    - Verify all tests passing
   - **Manifest & Version Consistency:**
-    - Validate manifest.json syntax and version
-    - Verify health endpoint loads version from manifest (NO hardcoded versions)
-    - Check `_get_manifest_version()` in **init**.py loads correctly
-  - **Local Script Validation (MUST pass before push):**
-    - `./scripts/validate_readme.sh` → all checks green
-    - `./scripts/check_release_notes.sh` → release notes exist for version
-    - Both scripts use local venv (venv/bin or .venv/bin prepended to PATH)
-  - **README.md Quality Gate:**
-    - Verify version matches manifest.json (e.g., v0.6.1)
-    - Test count matches actual: `pytest --collect-only | grep "selected"`
-    - Validate all documentation links (no 404s)
-    - Ensure no outdated feature descriptions
-    - Confirm installation instructions are current
-  - **CHANGELOG.md Quality Gate:**
-    - Verify current version has release entry: `## [X.Y.Z] - YYYY-MM-DD`
-    - No versioned [Unreleased] sections (common mistake:
-      `## [Unreleased] - v0.5.0`)
-    - [Unreleased] section exists with placeholder entries
-    - Release notes are complete and accurate
-  - **Release Notes File:**
-    - `RELEASE_NOTES_vX.Y.Z.md` exists in repo root
-    - Contains version heading and release date
-    - Matches CHANGELOG.md section content
+    - Validate `manifest.json` "version" field matches intended release
+    - Verify `CHANGELOG.md` has `## [X.Y.Z] - YYYY-MM-DD` entry
   - **CONTEXT.md Update (MANDATORY for releases):**
-    - Update "Version" field to match manifest.json (e.g., v0.6.1)
+    - Update "Version" field to match manifest.json
     - Update "Last Updated" timestamp (YYYY-MM-DD)
-    - Update "Current Version Status" section with new release info
-    - Update "Development Status" section if new features added
-    - Update test count in "Quality Gates" section
-    - Verify agent budget table is current
     - Coordinate with architect for major architecture changes
 
-- **Version Management:**
-  - Update version in `manifest.json`
-    (`custom_components/luxor_living/manifest.json`)
-  - Update `CHANGELOG.md`: Move [Unreleased] content to new
-    `## [X.Y.Z] - YYYY-MM-DD` section
-  - Reset [Unreleased] with placeholder entries (Added/Changed/Fixed)
-  - Update README.md release notes section (between
-    `<!-- RELEASE_NOTES_START/END -->`)
-  - Create `RELEASE_NOTES_vX.Y.Z.md` in repo root (NOT in docs/releases/)
+- **Version Management (use `bump-version.yml` workflow):**
+  - Trigger via GitHub Actions UI or CLI:
+    `gh workflow run bump-version.yml -f version=X.Y.Z -f push_tag=false`
+  - This automatically: updates `manifest.json`, `pyproject.toml`, promotes
+    `CHANGELOG.md` [Unreleased] → [X.Y.Z], commits on a branch
+  - Alternatively update manually: `manifest.json` version + `CHANGELOG.md`
+    `## [X.Y.Z] - YYYY-MM-DD` section + reset [Unreleased] placeholder
+  - Update `README.md` release notes section
+    (`<!-- RELEASE_NOTES_START/END -->`)
   - Ensure version follows semantic versioning (MAJOR.MINOR.PATCH)
   - NO beta suffixes in manifest.json for production releases
 
@@ -78,13 +49,11 @@ Responsibilities:
   - Delete feature/sync branch after merge
   - Pull latest main locally: `git checkout main && git pull`
 
-- **Release Artifact Creation (after merge to main):**
-  - Create ZIP archive: `luxor_living-{version}.zip`
-  - Build from `custom_components/luxor_living/` directory
-  - Command:
-    `cd custom_components/luxor_living && zip -r /tmp/luxor_living-X.Y.Z.zip . -x "*.pyc" "*/__pycache__/*"`
-  - Verify ZIP has manifest.json at root (not nested in subfolder)
-  - Verify ZIP integrity and size (~40-50KB expected)
+- **Release Artifact Creation (fully automated via `release.yml`):**
+  - Triggered automatically when tag `vX.Y.Z` is pushed to GitHub
+  - Workflow runs: version gate → CHANGELOG gate → tests → ZIP build → ZIP
+    validation → `gh release create` with release notes from CHANGELOG
+  - No manual ZIP building required
 
 - **Git Operations:**
   - **ALWAYS use SSH config workaround:**
@@ -156,132 +125,94 @@ Prerequisites:
 
 Release Workflow (Complete):
 
-1. **Format Code (FIRST STEP):**
+**Option A — Fully automated (preferred):**
+
+1. **Bump version via workflow:**
 
    ```bash
-   source venv/bin/activate
-   black custom_components tests scripts
-   isort custom_components tests scripts
-   git add -A
-   git commit -m "chore: apply black/isort formatting"
+   gh workflow run bump-version.yml -f version=X.Y.Z -f push_tag=false
+   # This creates branch release/X.Y.Z with version bumps committed
    ```
 
-2. **Validate Locally (BEFORE any push):**
+2. **Wait for auto-created PR, then verify CI is green:**
 
    ```bash
-   # Tests
-   pytest tests/ -v --cov-report=xml -m "not enable_socket"
-
-   # Scripts (use local venv)
-   ./scripts/validate_readme.sh
-   ./scripts/check_release_notes.sh
-
-   # Formatting verification
-   black --check custom_components tests scripts
-   isort --check-only custom_components tests scripts
+   gh pr list --state open
+   gh pr checks <PR_NUMBER>
+   # All 4 required checks must pass:
+   # Pre-commit checks, Run Tests, validate-hacs, validate-hassfest
    ```
 
-3. **Update Version & Metadata:**
+3. **Merge PR (only when all checks green):**
 
    ```bash
-   # manifest.json → "version": "X.Y.Z"
-   # CHANGELOG.md → Move [Unreleased] to [X.Y.Z] - YYYY-MM-DD
-   # README.md → Update release notes section (<!-- RELEASE_NOTES_START/END -->)
-   # README.md → Update test count if changed
-   # Create RELEASE_NOTES_vX.Y.Z.md in repo root
-
-   git add manifest.json CHANGELOG.md README.md RELEASE_NOTES_vX.Y.Z.md
-   git commit -m "chore: release vX.Y.Z"
+   gh pr merge <PR_NUMBER> --squash --delete-branch
    ```
 
-4. **Create PR Branch & Push:**
+4. **Pull main & push tag (triggers release.yml automatically):**
 
    ```bash
-   git checkout -b chore/release-vX.Y.Z
-   GIT_SSH_COMMAND='ssh -F /dev/null' git push -u origin chore/release-vX.Y.Z
-   ```
-
-5. **Open PR & Wait for CI:**
-
-   ```bash
-   gh pr create --title "chore: release vX.Y.Z" --body "Release preparation for vX.Y.Z"
-   # Wait for all checks to pass (Release Checks, Tests, Code Quality)
-   # Fix any CI failures immediately (formatting, dependencies, etc.)
-   ```
-
-6. **Merge PR (only after green):**
-
-   ```bash
-   gh pr merge --squash  # or via GitHub UI
    git checkout main
-   git pull
-   ```
-
-7. **Tag & Push Tag:**
-
-   ```bash
+   git reset --hard origin/main
    git tag vX.Y.Z
    GIT_SSH_COMMAND='ssh -F /dev/null' git push origin vX.Y.Z
    ```
 
-8. **Build Artifact:**
+5. **Monitor release workflow:**
 
    ```bash
-   cd custom_components/luxor_living
-   zip -r /tmp/luxor_living-X.Y.Z.zip . -x "*.pyc" "*/__pycache__/*"
-   cd ../..
-   # Verify: unzip -l /tmp/luxor_living-X.Y.Z.zip | grep manifest.json
+   gh run list --limit 5   # find the Release run
+   gh run watch <RUN_ID>
+   gh release view vX.Y.Z  # verify after completion
    ```
 
-9. **Create GitHub Release:**
+**Option B — Fully automated with one command (if push_tag=true):**
 
-   ```bash
-   gh release create vX.Y.Z /tmp/luxor_living-X.Y.Z.zip \
-     --title "vX.Y.Z" \
-     --notes-file RELEASE_NOTES_vX.Y.Z.md \
-     --latest
-   ```
+```bash
+gh workflow run bump-version.yml -f version=X.Y.Z -f push_tag=true
+# After CI passes and auto-PR merges, tag is pushed automatically
+# release.yml then builds and publishes the release
+```
 
-10. **Post-Release Verification:**
-    ```bash
-    gh release view vX.Y.Z
-    # Verify ZIP structure
-    # Test HACS installation (optional)
-    ```
+**Post-Release Verification:**
+
+```bash
+gh release view vX.Y.Z
+# Check: ZIP attached, release notes populated, marked as latest
+# Optional: test HACS installation
+```
 
 Critical Rules:
 
-- **FORMATTING FIRST:** Always run black/isort BEFORE any other commits
-- **LOCAL VALIDATION MANDATORY:** Scripts must pass locally before push
-- **NO DIRECT PUSH TO MAIN:** Always create PR, wait for green checks
+- **PRE-COMMIT FIRST:** Run `pre-commit run --all-files` locally before push
+  (replaces manual black/isort). One-time setup: `pre-commit install`
+- **NO DIRECT PUSH TO MAIN:** Always use PR → merge → tag workflow
 - **NO HARDCODED VERSIONS:** Health endpoint and code must load from
   manifest.json
-- **TEST COUNT SYNC:** README.md test count must match actual
-  `pytest --collect-only`
-- **RELEASE NOTES FILE:** RELEASE_NOTES_vX.Y.Z.md in repo root (not docs/)
-- **SSH WORKAROUND:** Always use `GIT_SSH_COMMAND='ssh -F /dev/null'` for git
-  operations
-- **CI DEPENDENCY FIX:** If CI fails with missing deps, update workflow files
-  immediately
+- **SSH WORKAROUND:** Always use `GIT_SSH_COMMAND='ssh -F /dev/null'` for all
+  `git push` / `git fetch` commands
 - **NEVER SKIP TESTS:** Fix failing tests, never bypass or comment out
-- **CHANGELOG RESET:** After versioned release, reset [Unreleased] with
-  placeholders
-- **MERGE ONLY AFTER GREEN:** Never merge PR before all CI checks pass
-- **TAG AFTER MERGE:** Create git tag only after PR merged to main
+- **CHANGELOG ENTRY REQUIRED:** `release.yml` gate fails if CHANGELOG missing
+  `## [X.Y.Z]` entry
+- **MERGE ONLY AFTER GREEN:** Required checks: Pre-commit checks, Run Tests,
+  validate-hacs, validate-hassfest
+- **TAG AFTER MERGE:** Create git tag only after PR merged to main — tag push
+  triggers `release.yml` which builds and publishes automatically
+- **STALE BRANCH PROTECTION:** If `gh pr merge` fails with "base branch policy
+  prohibits", check required status checks with
+  `gh api repos/OWNER/REPO/branches/main/protection` and remove stale entries
 
 Common Pitfalls (avoid these):
 
-- ❌ Hardcoding version in **init**.py health endpoint → Use
+- ❌ Hardcoding version in `__init__.py` health endpoint → Use
   `_get_manifest_version()`
-- ❌ Forgetting to update test count in README → Run `pytest --collect-only`
-- ❌ Missing RELEASE_NOTES_vX.Y.Z.md → Create in repo root before push
 - ❌ Pushing directly to main → Create PR branch instead
-- ❌ Merging PR with red checks → Wait for all green
-- ❌ Skipping black/isort → CI will fail, fix locally first
-- ❌ Missing black/isort in CI → Update `.github/workflows/release_checks.yml`
+- ❌ Merging PR with red checks → Wait for all four required checks green
+- ❌ Skipping `pre-commit run --all-files` → CI will fail; fix locally first
 - ❌ Forgetting SSH workaround → Use `-F /dev/null` for all git push/fetch
-- ❌ Not running scripts locally → Run `./scripts/validate_readme.sh` and
-  `check_release_notes.sh`
+- ❌ `git pull` failing on main after merge → Use `git reset --hard origin/main`
+- ❌ Stale required checks blocking merge → Update branch protection rules via
+  `gh api --method PATCH repos/OWNER/REPO/branches/main/protection/required_status_checks`
 
 Notes:
 
