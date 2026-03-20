@@ -197,8 +197,8 @@ class LuxorKNXGateway:
             if self._rest_client:
                 try:
                     await self._rest_client.logout()
-                except Exception:
-                    pass
+                except Exception as err:
+                    _LOGGER.debug("Error during REST logout cleanup: %s", err)
 
             return False
 
@@ -363,7 +363,8 @@ class LuxorKNXGateway:
         # Normalize key to consistent string form "x/y/z"
         try:
             normalized = str(GroupAddress(group_address))
-        except Exception:
+        except Exception as err:
+            _LOGGER.debug("Could not parse group address %r, using as-is: %s", group_address, err)
             normalized = str(group_address)
 
         if normalized not in self._listeners:
@@ -397,7 +398,8 @@ class LuxorKNXGateway:
         """Unregister a callback for a group address."""
         try:
             normalized = str(GroupAddress(group_address))
-        except Exception:
+        except Exception as err:
+            _LOGGER.debug("Could not parse group address %r, using as-is: %s", group_address, err)
             normalized = str(group_address)
 
         if normalized in self._listeners:
@@ -440,7 +442,8 @@ class LuxorKNXGateway:
                     try:
                         # IMPORTANT: from_knx() expects DPTArray object, not bytes!
                         value = DPT2ByteFloat().from_knx(payload_value)
-                    except Exception:
+                    except Exception as err:
+                        _LOGGER.debug("DPT2ByteFloat decode failed for %r: %s", payload_value, err)
                         value = raw_value
                 else:
                     # Unknown DPT - return raw value
@@ -450,7 +453,8 @@ class LuxorKNXGateway:
                 try:
                     # Create DPTArray from raw tuple for conversion
                     value = DPT2ByteFloat().from_knx(DPTArray(payload_value))
-                except Exception:
+                except Exception as err:
+                    _LOGGER.debug("DPT2ByteFloat decode failed for %r: %s", payload_value, err)
                     value = payload_value
             elif isinstance(payload_value, int):
                 # Direct integer value (common for binary/switch)
@@ -518,7 +522,8 @@ class LuxorKNXGateway:
             # Source device enrichment via individual address
             try:
                 source_addr = str(telegram.source_address)
-            except Exception:
+            except Exception as err:
+                _LOGGER.debug("Could not stringify telegram source address: %s", err)
                 source_addr = "?"
             src_labels = self._ia_label_map.get(source_addr)
             src_str = (
@@ -607,7 +612,8 @@ class LuxorKNXGateway:
                 # Attempt to decode 2-byte float
                 try:
                     processed_value = DPT2ByteFloat().from_knx(DPTArray(value))
-                except Exception:
+                except Exception as err:
+                    _LOGGER.debug("DPT2ByteFloat decode failed for %r: %s", value, err)
                     processed_value = value
             elif isinstance(value, int):
                 # Preserve integer semantics (e.g., 0/1 for binary)

@@ -72,7 +72,7 @@ async def _create_climate_entity(
     knx_gateway: LuxorKNXGateway,
 ) -> ClimateEntity:
     """Create a climate entity asynchronously."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None, lambda: _create_climate_entity_sync(coordinator, entry, mapped_entity, knx_gateway)
     )

@@ -81,7 +81,7 @@ async def _create_lxp_sensor_entity(
     knx_gateway: LuxorKNXGateway,
 ) -> LuxorLivingSensor:
     """Create a LXP sensor entity asynchronously."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None, lambda: LuxorLivingSensor(coordinator, entry, mapped_entity, knx_gateway)
     )
@@ -94,7 +94,7 @@ async def _create_discovered_sensor_entity(
     knx_gateway: LuxorKNXGateway,
 ) -> LuxorLivingDiscoveredSensor:
     """Create a discovered sensor entity asynchronously."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None, lambda: LuxorLivingDiscoveredSensor(coordinator, entry, sensor_info, knx_gateway)
     )
@@ -239,8 +239,8 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
         if isinstance(value, (list, tuple)) and len(value) == 2:
             try:
                 return DPT2ByteFloat().from_knx(DPTArray(value))
-            except Exception:
-                # Fall through to raw value if decoding fails
+            except Exception as err:
+                _LOGGER.debug("DPT2ByteFloat decode failed for %r: %s", value, err)
                 return value
 
         # For all other values, return as-is

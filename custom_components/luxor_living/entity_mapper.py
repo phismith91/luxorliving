@@ -311,7 +311,10 @@ class EntityMapper:
             for role, addr in entity.datapoints.items():
                 try:
                     ga_str = str(GroupAddress(addr))
-                except Exception:
+                except Exception as err:
+                    _LOGGER.debug(
+                        "Could not parse group address %r, using bitmask fallback: %s", addr, err
+                    )
                     # Fallback: derive GA via bit masks (main/line/group)
                     ga_str = f"{addr >> 11}/{(addr >> 8) & 0x7}/{addr & 0xFF}"
                 if ga_str not in ga_labels:

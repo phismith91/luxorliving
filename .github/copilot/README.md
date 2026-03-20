@@ -144,19 +144,14 @@ README test count updates
 
 ## Utility/Workflow Agents (supporting)
 
-- **agent_planner.md** → lightweight implementation planning with file list,
-  risks, and test plan
 - **agent_tdd_guide.md** → enforces pytest-first workflow with HA async patterns
 - **agent_code_reviewer.md** → severity-ordered review checklist for HA/Python
 - **agent_security_reviewer.md** → security/privacy checks and mitigations
-- **agent_refactor_cleaner.md** → safe dead code removal with minimal diffs
-- **agent_build_error_resolver.md** → minimal fixes for failing tests/lints
-- **agent_doc_updater.md** → proposes doc/CHANGELOG updates after code changes
 
 ## Archive
 
-Agents moved to `archive/` are no longer actively used (features completed or
-merged into other agents):
+Agents moved to `archive/` are no longer actively used (features completed,
+merged into other agents, or scope too narrow for a solo project):
 
 - `agent_code_quality.md` → Merged into **agent_architect.md**
 - `agent_documentation.md` → Documentation handled by architect
@@ -164,6 +159,11 @@ merged into other agents):
 - `agent_lxp_import.md` → Feature complete, archived
 - `agent_mapping.md` → Feature complete, archived
 - `github_release_workflow.md` → Workflow documentation, not an agent
+- `agent_defect_tracker.md` → GitHub Issues sufficient for solo project
+- `agent_refactor_cleaner.md` → Scope covered by agent_architect
+- `agent_build_error_resolver.md` → Too narrow; use agent_architect
+- `agent_doc_updater.md` → Too narrow; use agent_architect
+- `agent_planner.md` → Too narrow; use agent_architect
 
 ---
 
@@ -328,4 +328,4 @@ und Copilot.
 
 ---
 
-Last Updated: 2026-01-16 Active Agents: 7 Archived Agents: 6
+Last Updated: 2026-03-20 Active Agents: 7 Utility Agents: 3 Archived Agents: 11

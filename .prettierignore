@@ -29,5 +29,13 @@ custom_components/luxor_living/manifest.json
 # Documentation - preserve original formatting (focus on content, not formatting)
 docs/**
 
+# AI agent context files — preserve manual formatting
+CLAUDE.md
+AGENTS.md
+
+# Changelog — preserve manual line wrapping
+CHANGELOG.md
+README.md
+
 # Config files that should maintain exact formatting
 .github/**/*.json

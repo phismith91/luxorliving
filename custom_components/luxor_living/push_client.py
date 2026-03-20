@@ -59,8 +59,8 @@ class PushClient:
         if self._session:
             try:
                 await self._session.close()
-            except Exception:
-                pass
+            except Exception as err:
+                _LOGGER.debug("Error closing push client session: %s", err)
 
     async def _run(self) -> None:
         """Run connection loop with exponential backoff."""
@@ -95,7 +95,7 @@ class PushClient:
             if msg.type.name == "TEXT":
                 try:
                     payload = json.loads(msg.data)
-                except Exception:
+                except json.JSONDecodeError:
                     _LOGGER.debug("Received non-json push payload: %s", msg.data)
                     continue
 

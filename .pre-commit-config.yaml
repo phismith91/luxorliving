@@ -5,10 +5,9 @@
 repos:
   # Code formatting
   - repo: https://github.com/psf/black
-    rev: 25.12.0
+    rev: 26.1.0
     hooks:
       - id: black
-        language_version: python3.13
         args: ["--line-length=100", "--target-version=py313"]
 
   # Import sorting
@@ -26,8 +25,7 @@ repos:
         args:
           [
             "--max-line-length=100",
-            "--extend-ignore=E203,E266,E501,W503",
-            "--exit-zero",
+            "--extend-ignore=E203,E266,E402,E501,W503,D100,D101,D102,D103,D104,D105,D107,D202,D401,D403",
           ]
         additional_dependencies:
           - flake8-docstrings
@@ -72,5 +70,4 @@ ci:
   autoupdate_branch: ""
   autoupdate_commit_msg: "ci(pre-commit): autoupdate pre-commit hooks"
   autoupdate_schedule: weekly
-  skip: [prettier]
   submodules: false

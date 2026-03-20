@@ -5,13 +5,16 @@
 pytest_plugins = "pytest_homeassistant_custom_component"
 
 import asyncio
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from custom_components.luxor_living.benchmark import (
+# benchmark.py was moved to scripts/ (it is a dev tool, not part of the integration)
+sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+from benchmark import (  # noqa: E402
     LuxorLivingBenchmark,
     benchmark_circuit_breaker,
     benchmark_entity_creation,
@@ -70,7 +73,7 @@ class TestBenchmarkSuite:
         benchmark = LuxorLivingBenchmark()
 
         # Add a mock result
-        from custom_components.luxor_living.benchmark import BenchmarkResult
+        from benchmark import BenchmarkResult
 
         result = BenchmarkResult(
             operation="Test",
@@ -132,11 +135,9 @@ class TestBenchmarkSuite:
     async def test_full_benchmark_run(self, capsys):
         """Test running the full benchmark suite."""
         with (
-            patch("custom_components.luxor_living.benchmark.benchmark_lxp_parsing") as mock_lxp,
-            patch(
-                "custom_components.luxor_living.benchmark.benchmark_entity_creation"
-            ) as mock_entity,
-            patch("custom_components.luxor_living.benchmark.benchmark_circuit_breaker") as mock_cb,
+            patch("benchmark.benchmark_lxp_parsing") as mock_lxp,
+            patch("benchmark.benchmark_entity_creation") as mock_entity,
+            patch("benchmark.benchmark_circuit_breaker") as mock_cb,
         ):
 
             # Mock the benchmark functions
@@ -225,7 +226,7 @@ class TestRealLXPBenchmark:
         assert result.throughput > 0
 
         # Ensure result registered in global benchmark instance
-        from custom_components.luxor_living.benchmark import get_benchmark
+        from benchmark import get_benchmark
 
         assert any(r.operation == result.operation for r in get_benchmark().results)
 

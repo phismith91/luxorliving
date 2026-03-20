@@ -1,0 +1,117 @@
+name: Release
+
+# Triggered by pushing a version tag (v0.6.2) — use bump-version.yml to prepare the tag.
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.6.2) — tag must already exist"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve tag and version
+        id: meta
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing: tag=$TAG  version=$VERSION"
+
+      # ── Gate 1: manifest.json version must match the tag ──────────────────
+      - name: Validate manifest version == tag version
+        run: |
+          MANIFEST=$(python3 -c "
+          import json
+          v = json.load(open('custom_components/luxor_living/manifest.json'))['version']
+          print(v)
+          ")
+          TAG_VERSION="${{ steps.meta.outputs.version }}"
+          if [ "$MANIFEST" != "$TAG_VERSION" ]; then
+            echo "❌ Version mismatch: manifest.json=$MANIFEST  tag=$TAG_VERSION"
+            echo "   Run bump-version.yml first, or update manifest.json and re-tag."
+            exit 1
+          fi
+          echo "✅ Version match: $MANIFEST"
+
+      # ── Gate 2: CHANGELOG must have an entry for this version ─────────────
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          awk "/^## \[$VERSION\]/{flag=1; next} /^## \[/{if(flag) exit} flag" CHANGELOG.md \
+            | sed '/^[[:space:]]*$/d' > release_notes.md
+
+          if [ ! -s release_notes.md ]; then
+            echo "❌ No CHANGELOG.md entry found for version $VERSION"
+            echo "   Add a '## [$VERSION] - YYYY-MM-DD' section, or run bump-version.yml."
+            exit 1
+          fi
+
+          echo "📋 Release notes preview:"
+          head -20 release_notes.md
+          echo "notes_file=release_notes.md" >> "$GITHUB_OUTPUT"
+
+      # ── Gate 3: run tests before packaging ────────────────────────────────
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements_dev.txt
+
+      - name: Run smoke + integration tests
+        run: |
+          python -m pytest tests/ -q -m "smoke and not enable_socket"
+          python -m pytest tests/ -q -m "integration and not enable_socket"
+
+      # ── Build ZIP (manifest.json at root — required by HACS) ───────────────
+      - name: Build release ZIP
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          pushd custom_components/luxor_living
+          zip -r "../../luxor_living.zip" . \
+            -x "*.pyc" \
+            -x "*/__pycache__/*" \
+            -x "*.git*"
+          popd
+
+          # HACS validation: manifest.json must be at ZIP root
+          if ! unzip -l luxor_living.zip | awk '{print $4}' | grep -qx "manifest.json"; then
+            echo "❌ manifest.json not found at ZIP root — HACS install would fail"
+            unzip -l luxor_living.zip | head -20
+            exit 1
+          fi
+          echo "✅ ZIP structure valid (manifest.json at root)"
+          echo "   Size: $(du -h luxor_living.zip | cut -f1)"
+
+      # ── Publish ────────────────────────────────────────────────────────────
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file release_notes.md \
+            --latest \
+            luxor_living.zip
+
+          echo "✅ Release published: $(gh release view $TAG --json url -q .url)"

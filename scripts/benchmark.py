@@ -186,7 +186,7 @@ def get_benchmark() -> LuxorLivingBenchmark:
 
 async def benchmark_lxp_parsing(lxp_file: str, iterations: int = 10) -> BenchmarkResult:
     """Benchmark LXP file parsing."""
-    from .lxp_parser import LXPParser
+    from custom_components.luxor_living.lxp_parser import LXPParser
 
     async def parse_operation():
         await LXPParser.parse_cached(lxp_file, include_unaffected=False)
@@ -215,7 +215,7 @@ def benchmark_entity_creation(entity_count: int, iterations: int = 50) -> Benchm
 
 async def benchmark_circuit_breaker(iterations: int = 100) -> BenchmarkResult:
     """Benchmark circuit breaker operations."""
-    from .circuit_breaker import get_rest_api_circuit_breaker
+    from custom_components.luxor_living.circuit_breaker import get_rest_api_circuit_breaker
 
     cb = get_rest_api_circuit_breaker()
 

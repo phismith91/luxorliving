@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+import pytest
 from homeassistant.const import Platform
 
 from custom_components.luxor_living.entity_mapper import EntityMapper
@@ -14,6 +15,7 @@ from custom_components.luxor_living.mapped_entity import MappedEntity
 from custom_components.luxor_living.platform_detector import PlatformDetector
 
 
+@pytest.mark.smoke
 def test_mapper_role_to_platform_mapping():
     """Test role to platform mapping via PlatformDetector."""
     detector = PlatformDetector()

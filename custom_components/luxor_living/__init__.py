@@ -3,17 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from pathlib import Path
 
-from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr
 
-from .circuit_breaker import get_knx_circuit_breaker, get_rest_api_circuit_breaker
 from .const import (
     CONF_CONNECTION_TYPE,
     CONF_DISCOVERY_TIMEOUT,
@@ -22,7 +19,6 @@ from .const import (
     CONF_SCAN_INTERVAL,
     CONF_SIMULATION_MODE,
     CONF_USERNAME,
-    DATA_KNX_GATEWAY,
     DEFAULT_CONNECTION_TYPE,
     DEFAULT_DISCOVERY_TIMEOUT,
     DEFAULT_HTTP_PORT,
@@ -32,6 +28,7 @@ from .const import (
 )
 from .coordinator import LuxorLivingCoordinator
 from .entity_mapper import EntityMapper
+from .health_view import LuxorLivingHealthView
 from .integration_state import (
     IntegrationState,
     get_integration_state,
@@ -39,8 +36,9 @@ from .integration_state import (
     unregister_integration_state,
 )
 from .knx_gateway import LuxorKNXGateway
-from .lxp_parser import LXPParser, get_lxp_cache_stats
+from .lxp_parser import LXPParser
 from .overrides import load_overrides
+from .push_view import LuxorLivingPushView
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,247 +51,6 @@ PLATFORMS: list[Platform] = [
     Platform.CLIMATE,
     Platform.COVER,
 ]
-
-
-def _get_manifest_version() -> str:
-    """Return version from manifest.json, fallback to unknown."""
-    manifest_path = Path(__file__).parent / "manifest.json"
-    try:
-        data = json.loads(manifest_path.read_text())
-        if isinstance(data, dict):
-            version = data.get("version")
-            if isinstance(version, str):
-                return version
-        return "unknown"
-    except FileNotFoundError:
-        return "unknown"
-
-
-_MANIFEST_VERSION = _get_manifest_version()
-
-
-class LuxorLivingHealthView(HomeAssistantView):
-    """Health check endpoint for LUXORliving integration."""
-
-    url = "/api/luxor_living/health"
-    name = "api:luxor_living:health"
-    requires_auth = False  # Allow unauthenticated access for monitoring
-
-    def __init__(self, hass: HomeAssistant) -> None:
-        """Initialize the health check view."""
-        self.hass = hass
-
-    async def get(self, request):
-        """Handle GET request to health endpoint."""
-        try:
-            # Get integration data
-            domain_data = self.hass.data.get(DOMAIN, {})
-
-            health_data = {
-                "status": "healthy",
-                "timestamp": asyncio.get_event_loop().time(),
-                "integration": {
-                    "name": "LUXORliving",
-                    "version": _MANIFEST_VERSION,
-                    "domain": DOMAIN,
-                },
-                "entries": {},
-                "system": {
-                    "cache": get_lxp_cache_stats(),
-                    "circuit_breakers": {
-                        "rest_api": get_rest_api_circuit_breaker().get_stats(),
-                        "knx_connection": get_knx_circuit_breaker().get_stats(),
-                    },
-                },
-            }
-
-            # Check each config entry
-            for entry_id, entry_data in domain_data.items():
-                # Skip non-entry data (like _health_registered)
-                if not isinstance(entry_data, dict):
-                    continue
-
-                entry_health = {
-                    "connected": False,
-                    "simulation_mode": False,
-                    "entity_count": 0,
-                    "discovered_sensors": 0,
-                    "known_addresses": 0,
-                }
-
-                # Check KNX gateway status
-                knx_gateway = entry_data.get(DATA_KNX_GATEWAY)
-                if knx_gateway:
-                    entry_health["connected"] = knx_gateway.is_connected()
-                    entry_health["simulation_mode"] = knx_gateway.simulation_mode
-
-                    # Get entity count from mapper
-                    mapper = entry_data.get("mapper")
-                    if mapper:
-                        entry_health["entity_count"] = len(mapper.entities)
-
-                    # Get discovered sensors count
-                    config = entry_data.get("config", {})
-                    discovered_sensors = config.get("discovered_sensors", {})
-                    entry_health["discovered_sensors"] = len(discovered_sensors)
-
-                    # Get known addresses count
-                    if hasattr(knx_gateway, "_known_addresses"):
-                        entry_health["known_addresses"] = len(knx_gateway._known_addresses)
-
-                health_data["entries"][entry_id] = entry_health
-
-                # If any entry is not connected (and not in simulation), mark as unhealthy
-                if not entry_health["connected"] and not entry_health["simulation_mode"]:
-                    health_data["status"] = "unhealthy"
-
-            # Check circuit breaker states
-            rest_cb = health_data["system"]["circuit_breakers"]["rest_api"]
-            knx_cb = health_data["system"]["circuit_breakers"]["knx_connection"]
-
-            if rest_cb["state"] == "open" or knx_cb["state"] == "open":
-                health_data["status"] = "degraded"
-
-            return self.json(health_data)
-
-        except Exception as err:
-            _LOGGER.exception("Health check failed")
-            from aiohttp import web
-            from homeassistant.core import HomeAssistant
-
-            return web.json_response(
-                {
-                    "status": "error",
-                    "error": str(err),
-                    "timestamp": asyncio.get_event_loop().time(),
-                },
-                status=500,
-            )
-
-
-class LuxorLivingPushView(HomeAssistantView):
-    """Endpoint to receive externally pushed KNX values (webhook / websocket forwarder)."""
-
-    url = "/api/luxor_living/push"
-    name = "api:luxor_living:push"
-    requires_auth = False  # Token-based auth handled optionally per config entry
-
-    def __init__(self, hass: HomeAssistant) -> None:
-        """Initialize the push view."""
-        self.hass = hass
-
-    async def post(self, request):
-        """Handle incoming push event.
-
-        Expected JSON payload:
-            {
-                "entry_id": "<config_entry_id>",
-                "address": "1/2/3",
-                "value": true|42|23.5|[...],
-                "value_type": "binary"|"percent"|None
-            }
-
-        Authentication:
-            - If the config entry defines "push_token" in data or options, a matching
-              header "X-LUXOR-PUSH-TOKEN: <token>" is required. If absent, 403 returned.
-            - If no token configured, the endpoint accepts unauthenticated calls (local use).
-        """
-        try:
-            payload = await request.json()
-        except Exception:
-            from aiohttp import web
-
-            return web.json_response({"error": "invalid_json"}, status=400)
-
-        entry_id = payload.get("entry_id")
-        address = payload.get("address")
-        value = payload.get("value")
-        value_type = payload.get("value_type")
-
-        if not entry_id or not address:
-            from aiohttp import web
-
-            return web.json_response({"error": "missing entry_id or address"}, status=400)
-
-        # Authorization: check configured auth method
-        try:
-            state = get_integration_state(entry_id)
-        except KeyError:
-            from aiohttp import web
-
-            return web.json_response({"error": "entry_not_found"}, status=404)
-
-        # Determine configured values (allow in-data or options)
-        config_token = state.entry.data.get("push_token") if state.entry else None
-        options_token = state.entry.options.get("push_token") if state.entry else None
-        configured_token = config_token or options_token
-
-        auth_method = (
-            state.entry.data.get("push_auth_method")
-            if state.entry and state.entry.data.get("push_auth_method")
-            else state.entry.options.get("push_auth_method") if state.entry else None
-        ) or "none"
-
-        # Token-based (legacy): header X-LUXOR-PUSH-TOKEN must match
-        if auth_method == "token":
-            token_header = request.headers.get("X-LUXOR-PUSH-TOKEN")
-            if configured_token and token_header != configured_token:
-                from aiohttp import web
-
-                return web.json_response({"error": "forbidden"}, status=403)
-
-        # Bearer token: Authorization: Bearer <token>
-        elif auth_method == "bearer":
-            auth_header = request.headers.get("Authorization", "")
-            if configured_token and not auth_header.startswith("Bearer "):
-                from aiohttp import web
-
-                return web.json_response({"error": "forbidden"}, status=403)
-            bearer = auth_header.split(" ", 1)[1] if " " in auth_header else ""
-            if configured_token and bearer != configured_token:
-                from aiohttp import web
-
-                return web.json_response({"error": "forbidden"}, status=403)
-
-        # HMAC: header X-LUXOR-PUSH-SIGNATURE hex-encoded sha256 of sorted-json using token as key
-        elif auth_method == "hmac":
-            sig_header = request.headers.get("X-LUXOR-PUSH-SIGNATURE", "")
-            if not configured_token or not sig_header:
-                from aiohttp import web
-
-                return web.json_response({"error": "forbidden"}, status=403)
-            import hashlib
-            import hmac
-            import json
-
-            # Compute signature over deterministic JSON representation
-            expected = hmac.new(
-                configured_token.encode(),
-                json.dumps(payload, sort_keys=True).encode(),
-                hashlib.sha256,
-            ).hexdigest()
-            if not hmac.compare_digest(expected, sig_header):
-                from aiohttp import web
-
-                return web.json_response({"error": "forbidden"}, status=403)
-
-        # else: none -> accept unauthenticated pushes
-        # Handle push
-        try:
-            gateway = state.get_gateway_or_raise()
-            await gateway.process_incoming_value(address, value, value_type)
-            from aiohttp import web
-
-            return web.json_response({"status": "ok"})
-        except RuntimeError as err:
-            from aiohttp import web
-
-            return web.json_response({"error": str(err)}, status=503)
-        except Exception as err:
-            _LOGGER.exception("Error handling push request: %s", err)
-            from aiohttp import web
-
-            return web.json_response({"error": "internal_error"}, status=500)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -607,8 +364,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             state = get_integration_state(entry.entry_id)
             if state.push_client:
                 await state.push_client.stop()
-        except Exception:
-            pass
+        except Exception as err:
+            _LOGGER.debug("Error stopping push client during unload: %s", err)
 
         # Unregister type-safe state
         unregister_integration_state(entry.entry_id)
