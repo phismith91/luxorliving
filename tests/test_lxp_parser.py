@@ -68,7 +68,7 @@ async def main():
         len(s.datapoints) for d in project.devices for s in d.sensors
     )
 
-    print(f"\n📊 Statistics:")
+    print("\n📊 Statistics:")
     print(f"   Actuators: {total_actuators}")
     print(f"   Sensors: {total_sensors}")
     print(f"   Datapoints: {total_datapoints}")

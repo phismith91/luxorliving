@@ -25,12 +25,21 @@ ssh -F /dev/null phil@100.97.159.88 "command"
 GIT_SSH_COMMAND='ssh -F /dev/null' git push
 ```
 
+## One-Time Setup (new machine / fresh clone)
+
+```bash
+pip install pre-commit
+pre-commit install   # installs .git/hooks/pre-commit — runs automatically on every commit
+```
+
 ## Before Every Commit
 
 ```bash
-black custom_components tests && isort custom_components tests
+pre-commit run --all-files          # black, isort, flake8, bandit, prettier, file checks
 python -m pytest tests/ -v -m "not enable_socket"
 ```
+
+Never skip these — CI runs the exact same checks and will fail if you do not.
 
 ## Key Files
 

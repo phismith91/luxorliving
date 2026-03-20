@@ -27,7 +27,7 @@ def main():
             break
 
     if not lxp_file:
-        print(f"❌ No LXP file found. Tried:")
+        print("❌ No LXP file found. Tried:")
         for path in possible_paths:
             print(f"   - {path}")
         return
