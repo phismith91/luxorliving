@@ -3,7 +3,7 @@
 
 # Code formatting
 black==26.1.0
-isort==7.0.0
+isort==8.0.1
 
 # Linting
 flake8==7.3.0
