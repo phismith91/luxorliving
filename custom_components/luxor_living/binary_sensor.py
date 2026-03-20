@@ -69,7 +69,7 @@ async def _create_binary_sensor_entity(
     mapped_entity: Any,
 ) -> LuxorLivingBinarySensor:
     """Create a binary sensor entity asynchronously."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None, lambda: LuxorLivingBinarySensor(coordinator, entry, mapped_entity)
     )

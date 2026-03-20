@@ -1,0 +1,137 @@
+name: Bump Version
+
+# Prepares a new release: updates manifest.json, pyproject.toml, CHANGELOG.md,
+# commits, and optionally pushes the tag — which triggers release.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New version (e.g. 0.6.2)"
+        required: true
+      push_tag:
+        description: "Push git tag after bump? (triggers release.yml)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    name: Bump to v${{ github.event.inputs.version }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "❌ Version must be X.Y.Z (got: $VERSION)"
+            exit 1
+          fi
+          echo "✅ Version: $VERSION"
+
+      - name: Ensure CHANGELOG has [Unreleased] section
+        run: |
+          if ! grep -q "^## Unreleased" CHANGELOG.md; then
+            echo "❌ CHANGELOG.md has no '## Unreleased' section to promote"
+            exit 1
+          fi
+          echo "✅ [Unreleased] section found"
+
+      - name: Update manifest.json
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          python3 - "$VERSION" <<'PY'
+          import json, sys
+          from pathlib import Path
+          version = sys.argv[1]
+          p = Path("custom_components/luxor_living/manifest.json")
+          data = json.loads(p.read_text())
+          old = data.get("version", "?")
+          data["version"] = version
+          p.write_text(json.dumps(data, indent=2) + "\n")
+          print(f"manifest.json: {old} → {version}")
+          PY
+
+      - name: Update pyproject.toml
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+          grep "^version" pyproject.toml
+
+      - name: Promote CHANGELOG [Unreleased] → versioned section
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          DATE=$(date +%Y-%m-%d)
+          python3 - "$VERSION" "$DATE" <<'PY'
+          import sys, re
+          from pathlib import Path
+
+          version, date = sys.argv[1], sys.argv[2]
+          p = Path("CHANGELOG.md")
+          content = p.read_text()
+
+          # Replacement: keep [Unreleased] template at top, insert versioned header below
+          unreleased_block = (
+              "## Unreleased\n\n"
+              "### Added\n\n- Placeholder\n\n"
+              "### Changed\n\n- Placeholder\n\n"
+              "---\n\n"
+          )
+          versioned_header = f"## [{version}] - {date}\n"
+
+          # Replace the existing ## Unreleased line (keep content below it intact)
+          new_content = re.sub(
+              r"## Unreleased\n",
+              unreleased_block + versioned_header,
+              content,
+              count=1,
+          )
+          p.write_text(new_content)
+          print(f"CHANGELOG.md: [Unreleased] → [{version}] - {date}")
+          PY
+
+      - name: Commit version bump
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add \
+            custom_components/luxor_living/manifest.json \
+            pyproject.toml \
+            CHANGELOG.md
+          git commit -m "chore(release): bump version to $VERSION"
+          git push
+          echo "✅ Committed: chore(release): bump version to $VERSION"
+
+      - name: Push tag (triggers release.yml)
+        if: ${{ github.event.inputs.push_tag == 'true' }}
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin "v$VERSION"
+          echo "✅ Tag v$VERSION pushed — release.yml will now run"
+
+      - name: Summary
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          PUSH="${{ github.event.inputs.push_tag }}"
+          echo "## Bump complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "| File | Updated |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| \`manifest.json\` | ✅ \`$VERSION\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| \`pyproject.toml\` | ✅ \`$VERSION\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| \`CHANGELOG.md\` | ✅ \`[$VERSION]\` |" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$PUSH" = "true" ]; then
+            echo "| \`git tag v$VERSION\` | ✅ pushed → release.yml triggered |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| \`git tag v$VERSION\` | ⏸ skipped (push_tag=false) |" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Next step: \`git tag v$VERSION && git push origin v$VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+          fi

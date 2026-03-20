@@ -74,7 +74,7 @@ async def _create_cover_entity(
     knx_gateway: LuxorKNXGateway,
 ) -> CoverEntity:
     """Create a cover entity asynchronously."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None, lambda: _create_cover_entity_sync(coordinator, entry, mapped_entity, knx_gateway)
     )

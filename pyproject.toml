@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "luxor-living"
-version = "0.5.0"
+version = "0.6.3"
 description = "Theben LUXORliving integration for Home Assistant"
 readme = "README.md"
 license = {text = "MIT"}
@@ -63,15 +63,20 @@ known_third_party = ["homeassistant", "xknx"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = [".git"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
-asyncio_mode = "strict"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = "--strict-markers -ra"
 markers = [
     "asyncio: marks tests as async",
     "slow: marks tests as slow",
     "integration: marks tests as integration tests",
+    "enable_socket: marks tests that require socket access (skipped in CI)",
+    "smoke: marks quick smoke tests for PRs (fast subset of critical tests)",
+    "e2e: marks on-demand end-to-end style tests (manual / scheduled runs)",
 ]
 
 [tool.coverage.run]
@@ -98,6 +103,7 @@ show_missing = true
 skip_covered = false
 
 [tool.mypy]
+mypy_path = "custom_components"
 python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true

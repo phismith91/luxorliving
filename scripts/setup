@@ -5,8 +5,8 @@ echo "Setting up development environment..."
 
 # Install dependencies
 pip3 install --upgrade pip
-pip3 install -r requirements.txt
-pip3 install pytest pytest-homeassistant-custom-component black pylint
+pip3 install -r requirements_dev.txt
+pip3 install -r requirements_style.txt
 
 # Create config directory
 mkdir -p config/custom_components

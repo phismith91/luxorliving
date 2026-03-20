@@ -77,7 +77,7 @@ class BAOSRestClient:
 
         import asyncio
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         ssl_context = await loop.run_in_executor(None, create_ssl_context)
 
         connector = aiohttp.TCPConnector(ssl=ssl_context)
@@ -120,7 +120,7 @@ class BAOSRestClient:
 
             import asyncio
 
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             ssl_context = await loop.run_in_executor(None, create_ssl_context)
 
             connector = aiohttp.TCPConnector(ssl=ssl_context)

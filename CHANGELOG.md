@@ -19,6 +19,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2026-03-20
+
+### Changed
+
+- **Dependency fix**: `xknx` requirement bumped from `>=2.12.0` to `>=3.13.0` in
+  `manifest.json` — previously HACS would install an incompatible version
+- **Security**: added `defusedxml>=0.7.1` to `manifest.json` requirements for safe
+  XML parsing
+- **Code split**: extracted `LuxorLivingHealthView` → `health_view.py` and
+  `LuxorLivingPushView` → `push_view.py` out of `__init__.py` (616 → ~250 lines)
+- **Asyncio**: replaced all `asyncio.get_event_loop()` calls with
+  `asyncio.get_running_loop()` across `light`, `switch`, `binary_sensor`,
+  `climate`, `cover`, `sensor`, `rest_client`, `health_view` (deprecation fix for
+  Python 3.10+)
+- **Error handling**: all 11 bare `except Exception: pass/fallback` blocks now log
+  at `DEBUG` level; `push_client.py` narrowed to `json.JSONDecodeError`;
+  `override_handler.py` narrowed to `(ValueError, IndexError, TypeError)`
+- **Tooling**: `black` pre-commit rev synced to `26.1.0`; `flake8 --exit-zero`
+  removed (failures now blocking); docstring codes `D1xx` exempted to avoid
+  noise
+- **CI/CD**: new `release.yml` workflow (tag-triggered, version gate, CHANGELOG
+  extraction, ZIP validation, test gate before publish); new `bump-version.yml`
+  workflow (version bump + CHANGELOG promotion via `workflow_dispatch`); `ci-cd.yml`
+  simplified to CI-only
+- **Scripts**: fixed `deploy_release.sh` manifest path bug and empty release notes;
+  fixed `release_automation.sh` to pass `--notes-file` to `gh release create`;
+  `benchmark.py` moved from integration source to `scripts/`
+
+### Fixed
+
+- `deploy_release.sh` read version from `ROOT/manifest.json` (file does not exist)
+  instead of `custom_components/luxor_living/manifest.json` — would always exit
+  with code 3 unless `--version` was provided explicitly
+- `release_automation.sh` validated release notes file but passed `--notes "Release
+  TAG"` instead — all GitHub releases had empty bodies
+- `ci-cd.yml` release job used `--notes-file CHANGELOG.md`, dumping the entire
+  changelog history as release notes
+
 ## [0.6.1] - 2026-01-16
 
 ### Added

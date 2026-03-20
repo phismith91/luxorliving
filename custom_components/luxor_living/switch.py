@@ -73,7 +73,7 @@ async def _create_switch_entity(
     knx_gateway: LuxorKNXGateway,
 ) -> LuxorLivingSwitch:
     """Create a switch entity asynchronously."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None, lambda: LuxorLivingSwitch(coordinator, entry, mapped_entity, knx_gateway)
     )

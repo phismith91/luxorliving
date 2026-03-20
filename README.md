@@ -42,35 +42,26 @@ discovery from LXP project files.
 
 <!-- RELEASE_NOTES_START -->
 
-# 🎉 LUXORliving v0.6.1
+# 🎉 LUXORliving v0.6.3
 
-**Release Date:** 16. Januar 2026
+**Release Date:** 20. März 2026
 
-### ✨ Added
+### 🛠️ Changed & Fixed
 
-- **Push webhook & WebSocket client**
-  - Optional `POST /api/luxor_living/push` endpoint
-
-  - Configurable WebSocket client (`push_ws_url`) for external KNX state pushes
-
-  - Authentication modes: `none`, `token`, `bearer`, `hmac` (HMAC-SHA256)
-
-### 🛠️ Changed
-
-- Documented push options and added tests for push handling and WebSocket client
-
-### 🧪 Testing & Quality
-
-- **Tests:** 301/301 passing (unit + integration-style)
-
-- **Quality gates:** README/CHANGELOG validation, HACS install test, zip
-  structure validation
+- **Dependency fix**: `xknx>=3.13.0` + `defusedxml>=0.7.1` in `manifest.json`
+  (HACS users now get correct versions automatically)
+- **Asyncio**: `get_event_loop()` → `get_running_loop()` across all entity
+  platforms (Python 3.10+ deprecation fix)
+- **Error handling**: all bare `except Exception: pass` blocks now log at DEBUG
+  level; narrow exception types where possible
+- **Release pipeline**: new automated `release.yml` + `bump-version.yml`
+  workflows; fixed broken `deploy_release.sh` and `release_automation.sh`
+- **Code organisation**: `health_view.py` + `push_view.py` extracted from
+  `__init__.py`
 
 ### ⚡ Upgrade Notes
 
-- If you used earlier betas, remove nested copies before installing
-
-- Install v0.6.1 via HACS and restart Home Assistant
+- Install v0.6.3 via HACS and restart Home Assistant
 
 ---
 

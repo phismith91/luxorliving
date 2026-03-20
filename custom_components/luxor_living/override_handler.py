@@ -176,5 +176,5 @@ class OverrideHandler:
                 return (m << 11) | (l << 8) | g
             # Decimal string
             return int(s)
-        except Exception:
+        except (ValueError, IndexError, TypeError):
             return None

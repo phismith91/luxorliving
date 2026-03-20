@@ -51,7 +51,7 @@ read_version() {
 import json, sys
 from pathlib import Path
 root = Path(sys.argv[1])
-mf = root / 'manifest.json'
+mf = root / 'custom_components' / 'luxor_living' / 'manifest.json'
 data = json.loads(mf.read_text())
 print(data.get('version',''))
 PY
@@ -96,16 +96,29 @@ fi
 git push "$REMOTE" "$TAG"
 
 TITLE="Release (${VERSION})"
-NOTES_DEFAULT=$(git log -1 --pretty=%B || echo "Release ${VERSION}")
-NOTES_TO_USE="$NOTES_DEFAULT"
+
+# Resolve release notes: explicit --notes arg → RELEASE_NOTES file → CHANGELOG extract
+NOTES_FILE=""
 if [[ -n "$RELEASE_NOTES" ]]; then
-  NOTES_TO_USE="$RELEASE_NOTES"
+  NOTES_FILE=$(mktemp /tmp/release_notes_XXXXXX.md)
+  echo "$RELEASE_NOTES" > "$NOTES_FILE"
+elif [[ -f "docs/releases/RELEASE_NOTES_v${VERSION}.md" ]]; then
+  NOTES_FILE="docs/releases/RELEASE_NOTES_v${VERSION}.md"
+elif [[ -f "RELEASE_NOTES_v${VERSION}.md" ]]; then
+  NOTES_FILE="RELEASE_NOTES_v${VERSION}.md"
+else
+  # Extract section for this version from CHANGELOG.md
+  NOTES_FILE=$(mktemp /tmp/release_notes_XXXXXX.md)
+  awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{if(flag) exit} flag" CHANGELOG.md > "$NOTES_FILE"
+  if [[ ! -s "$NOTES_FILE" ]]; then
+    echo "Warning: no CHANGELOG entry found for ${VERSION} — using last commit message" >&2
+    git log -1 --pretty=%B > "$NOTES_FILE"
+  fi
 fi
 
 # Create or update GitHub release
 if gh release view "$TAG" >/dev/null 2>&1; then
   echo "Release ${TAG} already exists on GitHub"
-  # Ensure publish flags according to PRERELEASE
   if [[ "$PRERELEASE" == true ]]; then
     gh release edit "$TAG" --prerelease --draft=false
   else
@@ -113,20 +126,27 @@ if gh release view "$TAG" >/dev/null 2>&1; then
   fi
 else
   if [[ "$PRERELEASE" == true ]]; then
-    gh release create "$TAG" --title "$TITLE" --notes "$NOTES_TO_USE" --prerelease
+    gh release create "$TAG" --title "$TITLE" --notes-file "$NOTES_FILE" --prerelease
   else
-    gh release create "$TAG" --title "$TITLE" --notes "$NOTES_TO_USE"
+    gh release create "$TAG" --title "$TITLE" --notes-file "$NOTES_FILE"
   fi
 fi
 
-# Build ZIP artifact of the integration and upload to release
+# Build ZIP: manifest.json at root (required by HACS with content_in_root: false)
 ARTIFACT="luxor_living-${VERSION}.zip"
 echo "Packing artifact: ${ARTIFACT}"
 rm -f "$ARTIFACT"
-zip -r "$ARTIFACT" custom_components/luxor_living \
-  -x "custom_components/luxor_living/__pycache__/*" \
-     "custom_components/luxor_living/*/__pycache__/*" \
-     "*.pyc"
+pushd "$ROOT_DIR/custom_components/luxor_living" > /dev/null
+zip -r "$ROOT_DIR/$ARTIFACT" . -x "*.pyc" "*/__pycache__/*" "*.git*"
+popd > /dev/null
+
+# Validate ZIP structure
+if ! unzip -l "$ARTIFACT" | awk '{print $4}' | grep -qx "manifest.json"; then
+  echo "Error: manifest.json not at ZIP root — HACS install would fail" >&2
+  exit 4
+fi
+echo "ZIP structure valid (manifest.json at root)"
+
 echo "Uploading artifact to release: ${ARTIFACT}"
 gh release upload "$TAG" "$ARTIFACT" --clobber
 

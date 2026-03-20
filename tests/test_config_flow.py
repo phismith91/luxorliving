@@ -67,6 +67,7 @@ class TestLuxorLivingConfigFlow:
     """Test LuxorLiving config flow."""
 
     @pytest.mark.asyncio
+    @pytest.mark.smoke
     async def test_user_step_show_form(self, mock_hass):
         """Test showing user form with file selector."""
         flow = LuxorLivingConfigFlow()

@@ -125,7 +125,7 @@ if [ "$DRY_RUN" -eq 1 ]; then
   echo "DRY RUN: would create release $TAG with asset $TMP_ZIP"
 else
   set +e
-  CREATE_OUT=$(gh release create "$TAG" "$TMP_ZIP" --title "$TAG" --notes "Release $TAG" 2>&1)
+  CREATE_OUT=$(gh release create "$TAG" "$TMP_ZIP" --title "$TAG" --notes-file "$RELEASE_FILE" 2>&1)
   RC=$?
   set -e
   echo "$CREATE_OUT"
