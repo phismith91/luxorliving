@@ -157,35 +157,20 @@ ssh -F /dev/null phil@100.97.159.88 \
 
 ## Release Process
 
-### Before Release
+The release process is fully automated. See
+`.github/copilot/agent_release_manager.md` for the complete agent-executable
+protocol with trigger phrases, exact commands, and common pitfall fixes.
 
-1. **Run all tests:** `python -m pytest tests/ -v` (all must pass)
-2. **Optional:** Deploy to remote HA for pre-release testing
-3. **Update version and release notes:**
-   - `custom_components/luxor_living/manifest.json` → "version" field
-   - `CHANGELOG.md` with release summary
-   - **IMPORTANT:** Create `docs/releases/RELEASE_NOTES_v<VERSION>.md` with
-     detailed release notes (Release Checks verifies this)
-4. **Commit and tag:**
-   ```bash
-   git add -A
-   git commit -m "Release vX.Y.Z"
-   git tag -a vX.Y.Z -m "Release notes..."
-   GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main
-   GIT_SSH_COMMAND='ssh -F /dev/null' git push origin vX.Y.Z
-   ```
-5. **Create GitHub release:**
-   ```bash
-   gh release create vX.Y.Z --title "vX.Y.Z - Title" \
-     --notes-file docs/releases/RELEASE_NOTES_v<VERSION>.md --latest
-   ```
+**Short version (one command to start):**
 
-### Release Notes Standard
+```bash
+gh workflow run bump-version.yml -f version=X.Y.Z -f push_tag=false
+# Wait for auto-created PR, verify CI green, merge, then push tag:
+git tag vX.Y.Z && GIT_SSH_COMMAND='ssh -F /dev/null' git push origin vX.Y.Z
+```
 
-- **Location:** `docs/releases/RELEASE_NOTES_v<VERSION>.md` (mandatory)
-- **Content:** Must include version tag (e.g., `v0.6.1`) and release description
-- **Validation:** Release Checks workflow validates file exists and contains
-  version
+The tag push triggers `release.yml` which builds the ZIP, validates it, and
+publishes the GitHub release automatically.
 
 ### Git Operations
 
