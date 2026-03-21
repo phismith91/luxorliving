@@ -15,6 +15,35 @@ documented in this file.
 
 ---
 
+## [0.8.0] - 2026-03-21
+
+### Added
+
+- **Reauth flow**: `async_step_reauth` + `async_step_reauth_confirm` in
+  `config_flow.py` — expired credentials trigger HA's native re-authentication
+  flow instead of a hard error (Silver compliance)
+- **Entity availability**: All entities become unavailable when the KNX gateway
+  connection is lost; write actions raise `HomeAssistantError` via
+  `_raise_if_unavailable()` (Silver compliance)
+
+### Changed
+
+- **`entry.runtime_data`**: Removed global `_integration_states` registry;
+  all platform and push files now use `entry.runtime_data` directly (Bronze
+  compliance, HA 2024+ standard)
+- **Unique config entry**: `async_set_unique_id(host)` +
+  `_abort_if_unique_id_configured()` prevent duplicate entries for the same IP
+  (Bronze compliance)
+- **`PARALLEL_UPDATES`**: Set on all 6 platform files (`= 1` for write
+  platforms, `= 0` for read-only) (Silver compliance)
+- **Diagnostic entities**: Health binary sensor and auto-discovered sensors
+  marked `EntityCategory.DIAGNOSTIC` and disabled by default (Gold compliance)
+- **pre-commit**: Fixed prettier v4.0.0-alpha.8 regression (`pass_filenames:
+  false` + `.` target) so commits with only prettierignored files no longer
+  fail the hook
+
+---
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

@@ -147,6 +147,64 @@ gh release view vX.Y.Z
 
 ---
 
+## Pre-Release / RC Workflow
+
+Use this when you want to test a release candidate on a real HA instance via
+HACS **before** merging to main.
+
+### When to use
+
+- Feature branch is ready but not yet merged
+- You want HACS-installable builds for integration testing
+- Tags: `v0.8.0-rc.1`, `v0.8.0-beta.1`, `v0.8.0-alpha.1`
+
+### How it works
+
+`release.yml` now triggers on both stable tags (`v0.8.0`) **and** pre-release
+tags (`v0.8.0-rc.1`). For pre-release tags it:
+
+- Accepts `manifest.json` version `0.8.0` for tag `v0.8.0-rc.1` (strips suffix)
+- Skips CHANGELOG gate if no entry exists yet (uses placeholder notes)
+- Publishes with `--prerelease` flag (not `--latest`)
+- Attaches `luxor_living.zip` automatically
+
+### Steps
+
+```bash
+# 1. Make sure manifest.json contains the BASE version (e.g. 0.8.0)
+#    (run bump-version.yml or update manually and commit to the feature branch)
+
+# 2. Push an RC tag pointing at the feature branch HEAD
+git tag v0.8.0-rc.1
+GIT_SSH_COMMAND='ssh -F /dev/null' git push origin v0.8.0-rc.1
+
+# 3. release.yml runs automatically — monitor it
+gh run list --limit 3
+gh run watch <RUN_ID>
+
+# 4. Verify pre-release with ZIP attached
+gh release view v0.8.0-rc.1
+```
+
+In HACS: enable "Pre-releases einschließen" (Integration → ⋮ → Pre-releases),
+then update.
+
+### Important rules for pre-releases
+
+- **NEVER publish a release manually** (GitHub UI / `gh release create`) without
+  the ZIP attached — GitHub will mark the tag as "immutable" and you cannot
+  reuse it even after deletion. Always let `release.yml` build and attach the
+  ZIP.
+- Tag naming must follow semver: `v<major>.<minor>.<patch>-<prerelease>` — e.g.
+  `v0.8.0-rc.1`, `v0.8.0-beta.2`. Arbitrary suffixes also work.
+- The manifest.json `version` must match the BASE version (`0.8.0` for all RC
+  tags of that release).
+- Multiple RCs are fine: push `v0.8.0-rc.2`, `v0.8.0-rc.3` etc. as needed.
+- When tests pass and the PR is merged, do the **normal Release Workflow** to
+  publish the stable `v0.8.0`.
+
+---
+
 ## Dependabot PR Workflow
 
 ### Step 1 — List open Dependabot PRs
@@ -230,8 +288,15 @@ gh pr merge <PR_NUMBER> --squash --delete-branch
   status checks; use the `gh api --method PATCH` fix in Step 4 above
 - `git pull` fails "Need to specify how to reconcile" → use
   `git reset --hard origin/main` instead
-- Pre-commit "No files matching" error locally when only README is staged →
-  harmless (README is in .prettierignore); CI passes fine
+- Pre-commit "No files matching" error locally when only prettierignored files
+  are staged → fixed by `pass_filenames: false` in `.pre-commit-config.yaml`; if
+  it recurs, run `pre-commit run --all-files` to verify and commit separately
+- **Immutable tag trap**: if you publish a GitHub release for a tag manually
+  (without the ZIP), GitHub locks the tag. Even after deleting the release and
+  the remote tag, `gh release create` for the same tag name fails with
+  "immutable release". Solution: use a different tag (`v0.8.0-rc.2`) or wait
+  ~24h for GitHub's cache to expire. Prevention: ALWAYS let `release.yml` create
+  the release — never do it manually.
 - Dependabot PRs failing "Validate Dependabot PRs" → usually README test count
   stale or docs link missing, NOT a dependency issue; rebase after fixing main
 - isort major version bump failing → check `pylint` dependency constraint first

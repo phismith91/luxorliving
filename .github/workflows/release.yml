@@ -1,14 +1,19 @@
 name: Release
 
-# Triggered by pushing a version tag (v0.6.2) — use bump-version.yml to prepare the tag.
+# Triggered by pushing a version tag.
+# Stable:     v0.8.0   → published as latest release
+# Pre-release: v0.8.0-rc.1, v0.8.0-beta.1, v0.8.0-alpha.1 → published as pre-release
+# Use bump-version.yml to prepare the version bump, then push the tag manually.
 on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g. v0.6.2) — tag must already exist"
+        description:
+          "Tag to release (e.g. v0.8.0 or v0.8.0-rc.1) — tag must already exist"
         required: true
 
 permissions:
@@ -28,38 +33,57 @@ jobs:
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
           VERSION="${TAG#v}"
+          # Base version strips any pre-release suffix (e.g. 0.8.0-rc.1 → 0.8.0)
+          BASE_VERSION="${VERSION%%-*}"
+          # Detect pre-release: tag contains a hyphen after the semver core
+          if [[ "$VERSION" == *-* ]]; then
+            IS_PRERELEASE=true
+          else
+            IS_PRERELEASE=false
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Releasing: tag=$TAG  version=$VERSION"
+          echo "base_version=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "Releasing: tag=$TAG  version=$VERSION  base=$BASE_VERSION  prerelease=$IS_PRERELEASE"
 
-      # ── Gate 1: manifest.json version must match the tag ──────────────────
-      - name: Validate manifest version == tag version
+      # ── Gate 1: manifest.json version must match the base version ────────
+      - name: Validate manifest version == tag base version
         run: |
           MANIFEST=$(python3 -c "
           import json
           v = json.load(open('custom_components/luxor_living/manifest.json'))['version']
           print(v)
           ")
-          TAG_VERSION="${{ steps.meta.outputs.version }}"
-          if [ "$MANIFEST" != "$TAG_VERSION" ]; then
-            echo "❌ Version mismatch: manifest.json=$MANIFEST  tag=$TAG_VERSION"
+          BASE_VERSION="${{ steps.meta.outputs.base_version }}"
+          if [ "$MANIFEST" != "$BASE_VERSION" ]; then
+            echo "❌ Version mismatch: manifest.json=$MANIFEST  tag base=$BASE_VERSION"
             echo "   Run bump-version.yml first, or update manifest.json and re-tag."
             exit 1
           fi
-          echo "✅ Version match: $MANIFEST"
+          echo "✅ Version match: manifest=$MANIFEST  tag=${{ steps.meta.outputs.tag }}"
 
-      # ── Gate 2: CHANGELOG must have an entry for this version ─────────────
+      # ── Gate 2: CHANGELOG must have an entry for the base version ────────
+      # For pre-releases the CHANGELOG entry may not exist yet — skip the gate
+      # but still generate a placeholder so the release has useful notes.
       - name: Extract release notes from CHANGELOG.md
         id: notes
         run: |
-          VERSION="${{ steps.meta.outputs.version }}"
-          awk "/^## \[$VERSION\]/{flag=1; next} /^## \[/{if(flag) exit} flag" CHANGELOG.md \
+          BASE_VERSION="${{ steps.meta.outputs.base_version }}"
+          IS_PRERELEASE="${{ steps.meta.outputs.is_prerelease }}"
+
+          awk "/^## \[$BASE_VERSION\]/{flag=1; next} /^## \[/{if(flag) exit} flag" CHANGELOG.md \
             | sed '/^[[:space:]]*$/d' > release_notes.md
 
           if [ ! -s release_notes.md ]; then
-            echo "❌ No CHANGELOG.md entry found for version $VERSION"
-            echo "   Add a '## [$VERSION] - YYYY-MM-DD' section, or run bump-version.yml."
-            exit 1
+            if [ "$IS_PRERELEASE" = "true" ]; then
+              echo "⚠️  No CHANGELOG.md entry for $BASE_VERSION yet — using placeholder for pre-release."
+              echo "Pre-release ${{ steps.meta.outputs.tag }} — changelog entry pending." > release_notes.md
+            else
+              echo "❌ No CHANGELOG.md entry found for version $BASE_VERSION"
+              echo "   Add a '## [$BASE_VERSION] - YYYY-MM-DD' section, or run bump-version.yml."
+              exit 1
+            fi
           fi
 
           echo "📋 Release notes preview:"
@@ -107,11 +131,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.meta.outputs.tag }}
+          IS_PRERELEASE: ${{ steps.meta.outputs.is_prerelease }}
         run: |
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            RELEASE_FLAGS="--prerelease"
+          else
+            RELEASE_FLAGS="--latest"
+          fi
+
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file release_notes.md \
-            --latest \
+            $RELEASE_FLAGS \
             luxor_living.zip
 
           echo "✅ Release published: $(gh release view $TAG --json url -q .url)"
