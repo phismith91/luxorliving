@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test:
@@ -40,7 +40,19 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          python -m pytest tests/ --cov-report=xml -m "not enable_socket"
+          python -m pytest tests/ --cov-report=xml -m "not enable_socket" | tee pytest_output.txt
+
+      - name: Update test count badge in README
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          COUNT=$(grep -E "^[0-9]+ passed" pytest_output.txt | grep -oE "^[0-9]+")
+          if [ -n "$COUNT" ]; then
+            sed -i "s|https://img.shields.io/badge/Tests-[0-9]*%20passing-brightgreen|https://img.shields.io/badge/Tests-${COUNT}%20passing-brightgreen|g" README.md
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git diff --quiet README.md || git commit -am "ci: update test count badge to ${COUNT} passing [skip ci]"
+            git push
+          fi
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
