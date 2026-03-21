@@ -43,26 +43,31 @@ discovery from LXP project files.
 
 <!-- RELEASE_NOTES_START -->
 
-# 🎉 LUXORliving v0.6.3
+# 🎉 LUXORliving v1.1.0
 
-**Release Date:** 20. März 2026
+**Release Date:** 21. März 2026
 
-### 🛠️ Changed & Fixed
+### ✨ Added
 
-- **Dependency fix**: `xknx>=3.13.0` + `defusedxml>=0.7.1` in `manifest.json`
-  (HACS users now get correct versions automatically)
-- **Asyncio**: `get_event_loop()` → `get_running_loop()` across all entity
-  platforms (Python 3.10+ deprecation fix)
-- **Error handling**: all bare `except Exception: pass` blocks now log at DEBUG
-  level; narrow exception types where possible
-- **Release pipeline**: new automated `release.yml` + `bump-version.yml`
-  workflows; fixed broken `deploy_release.sh` and `release_automation.sh`
-- **Code organisation**: `health_view.py` + `push_view.py` extracted from
-  `__init__.py`
+- **HA Quality Scale — Bronze**: config flow prevents duplicate entries for the
+  same gateway host (`unique_id` + abort-if-already-configured)
+
+### 🛠️ Fixed & Changed
+
+- **README**: test count badge (301 ✅) + `docs/TESTS.md` now tracked in git
+  (was missing on GitHub, broke all Dependabot CI checks)
+- **CI**: `check_release_notes.sh` validates `CHANGELOG.md` instead of deleted
+  per-release files; `actions/upload-artifact` v6 → v7
+- **Docs**: `agent_release_manager.md` rewritten — AI agents can now execute
+  the full release & Dependabot workflow autonomously
+
+### ⬆️ Dependencies
+
+- `black` 26.1.0 → 26.3.1 · `bandit` 1.9.3 → 1.9.4 · `pylint` 4.0.4 → 4.0.5
 
 ### ⚡ Upgrade Notes
 
-- Install v0.6.3 via HACS and restart Home Assistant
+- Install v1.1.0 via HACS and restart Home Assistant
 
 ---
 

@@ -59,7 +59,8 @@ repos:
     hooks:
       - id: prettier
         types_or: [yaml, json, markdown]
-        args: ["--prose-wrap=always"]
+        args: ["--prose-wrap=always", "."]
+        pass_filenames: false
 
 ci:
   autofix_commit_msg: |
