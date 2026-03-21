@@ -49,7 +49,7 @@ Never skip these — CI runs the exact same checks and will fail if you do not.
 | `.github/copilot/CONTEXT.md`      | Architecture, current status, agent coordination (SSoT) |
 | `.github/copilot-instructions.md` | SSH deployment & release workflow                       |
 | `custom_components/luxor_living/` | Integration source                                      |
-| `tests/`                          | pytest test suite (294 tests)                           |
+| `tests/`                          | pytest test suite (301 tests)                           |
 | `docs/`                           | Architecture, KNX implementation, installation          |
 
 ## Domain Reference (Copilot Agents)
