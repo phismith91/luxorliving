@@ -43,7 +43,7 @@ discovery from LXP project files.
 
 <!-- RELEASE_NOTES_START -->
 
-# 🎉 LUXORliving v1.1.0
+# 🎉 LUXORliving v0.8.0
 
 **Release Date:** 21. März 2026
 
@@ -67,7 +67,7 @@ discovery from LXP project files.
 
 ### ⚡ Upgrade Notes
 
-- Install v1.1.0 via HACS and restart Home Assistant
+- Install v0.8.0 via HACS and restart Home Assistant
 
 ---
 

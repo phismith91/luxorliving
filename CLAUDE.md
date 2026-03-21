@@ -8,7 +8,7 @@ instructions, and quality gates are in `AGENTS.md`.
 
 Home Assistant custom integration for Theben LUXORliving KNX systems via the
 IP1 interface (BAOS REST API). HACS-ready, Python 3.13, pytest, HA 2026.1.x.
-Current stable version: v1.1.0.
+Current stable version: v0.8.0.
 
 ## Dual-AI Setup
 
