@@ -86,7 +86,6 @@ setup-custom-runner.sh
 
 # Internal documentation (not relevant for HACS users)
 docs/LXP_AUDIT_*.md
-docs/TESTS.md
 docs/ROADMAP_*.md
 docs/ION_TEMPERATURE_*.md
 docs/AUDIT_REPORT_*.md
