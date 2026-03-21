@@ -28,6 +28,24 @@
           "connection_type": "KNX-Verbindungstyp (Tunneling empfohlen)",
           "simulation_mode": "Testmodus ohne echte Hardwareverbindung"
         }
+      },
+      "reauth_confirm": {
+        "title": "LUXORliving neu authentifizieren",
+        "description": "Deine Gateway-Zugangsdaten sind abgelaufen. Bitte neue Zugangsdaten eingeben.",
+        "data": {
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      },
+      "reconfigure": {
+        "title": "LXP-Projektdatei aktualisieren",
+        "description": "Lade eine neue LXP-Projektdatei hoch, um das Entity-Mapping zu aktualisieren.",
+        "data": {
+          "lxp_file": "LXP-Projektdatei"
+        },
+        "data_description": {
+          "lxp_file": "Aktualisierte .lxp-Projektdatei auswählen"
+        }
       }
     },
     "error": {
