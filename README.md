@@ -5,7 +5,7 @@
 [![Codecov](https://codecov.io/gh/phismith91/luxorliving/branch/main/graph/badge.svg)](https://codecov.io/gh/phismith91/luxorliving)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/phismith91/luxorliving?include_prereleases)](https://github.com/phismith91/luxorliving/releases)
 [![License](https://img.shields.io/github/license/phismith91/luxorliving)](LICENSE)
-[![Tests: 271](https://img.shields.io/badge/Tests-271%20passing-brightgreen)](docs/TESTS.md)
+[![Tests: 296](https://img.shields.io/badge/Tests-296%20passing-brightgreen)](docs/TESTS.md)
 
 ## Support
 
