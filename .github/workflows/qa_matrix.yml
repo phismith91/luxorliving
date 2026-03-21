@@ -71,6 +71,7 @@ jobs:
   render-plantuml:
     name: Render PlantUML diagrams
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,8 +79,11 @@ jobs:
       - name: Render PlantUML diagrams (Docker)
         run: |
           mkdir -p docs/img
-          docker run --rm -v "${{ github.workspace }}":/workspace plantuml/plantuml:latest -tsvg -o docs/img docs/*.puml || \
-            docker run --rm -v "${{ github.workspace }}":/workspace plantuml/plantuml:latest -tpng -o docs/img docs/*.puml
+          docker run --rm \
+            -v "${{ github.workspace }}":/workspace \
+            -w /workspace \
+            plantuml/plantuml:latest \
+            -tsvg -o /workspace/docs/img /workspace/docs/*.puml
 
       - name: Upload PlantUML images
         uses: actions/upload-artifact@v7

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#1565C0"/>
+
+  <!-- House body -->
+  <rect x="148" y="258" width="216" height="160" rx="8" fill="#ffffff"/>
+
+  <!-- Roof -->
+  <polygon points="120,270 256,140 392,270" fill="#E3F2FD"/>
+
+  <!-- Door -->
+  <rect x="220" y="332" width="72" height="86" rx="6" fill="#1565C0"/>
+  <circle cx="284" cy="378" r="5" fill="#E3F2FD"/>
+
+  <!-- Left window -->
+  <rect x="162" y="280" width="52" height="44" rx="4" fill="#90CAF9"/>
+  <line x1="188" y1="280" x2="188" y2="324" stroke="#1565C0" stroke-width="2"/>
+  <line x1="162" y1="302" x2="214" y2="302" stroke="#1565C0" stroke-width="2"/>
+
+  <!-- Right window -->
+  <rect x="298" y="280" width="52" height="44" rx="4" fill="#90CAF9"/>
+  <line x1="324" y1="280" x2="324" y2="324" stroke="#1565C0" stroke-width="2"/>
+  <line x1="298" y1="302" x2="350" y2="302" stroke="#1565C0" stroke-width="2"/>
+
+  <!-- KNX signal dots (connectivity symbol) -->
+  <circle cx="256" cy="185" r="9" fill="#FFA726"/>
+  <circle cx="222" cy="210" r="6" fill="#FFA726" opacity="0.8"/>
+  <circle cx="290" cy="210" r="6" fill="#FFA726" opacity="0.8"/>
+  <line x1="256" y1="185" x2="222" y2="210" stroke="#FFA726" stroke-width="2.5" opacity="0.8"/>
+  <line x1="256" y1="185" x2="290" y2="210" stroke="#FFA726" stroke-width="2.5" opacity="0.8"/>
+
+  <!-- LX text -->
+  <text x="256" y="476" font-family="Arial, sans-serif" font-weight="bold" font-size="52"
+        fill="#ffffff" text-anchor="middle" letter-spacing="4">LX</text>
+</svg>

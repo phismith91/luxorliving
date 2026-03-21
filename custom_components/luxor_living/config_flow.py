@@ -73,25 +73,22 @@ STEP_GATEWAY_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST, default="192.168.1.3"): str,
         vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
         vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
-        vol.Required(CONF_CONNECTION_TYPE, default=DEFAULT_CONNECTION_TYPE): vol.In(
-            [
-                CONNECTION_TYPE_TUNNELING,
-                CONNECTION_TYPE_ROUTING,
-            ]
+        vol.Required(
+            CONF_CONNECTION_TYPE, default=DEFAULT_CONNECTION_TYPE
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    selector.SelectOptionDict(
+                        value=CONNECTION_TYPE_TUNNELING, label="Tunneling (BAOS REST API)"
+                    ),
+                    selector.SelectOptionDict(
+                        value=CONNECTION_TYPE_ROUTING, label="Routing (KNX/IP)"
+                    ),
+                ],
+                mode=selector.SelectSelectorMode.LIST,
+            )
         ),
         vol.Optional(CONF_SIMULATION_MODE, default=False): bool,
-        # Optional push config
-        vol.Optional("push_token", default=""): str,
-        vol.Optional("push_ws_url", default=""): str,
-        vol.Optional("push_ws_token", default=""): str,
-        vol.Optional("push_auth_method", default="none"): vol.In(
-            [
-                "none",
-                "token",
-                "bearer",
-                "hmac",
-            ]
-        ),
     }
 )
 
@@ -225,23 +222,6 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_SIMULATION_MODE: user_input.get(CONF_SIMULATION_MODE, False),
             }
 
-            # Optional push settings
-            push_token = user_input.get("push_token")
-            if push_token:
-                data["push_token"] = push_token
-
-            push_ws_url = user_input.get("push_ws_url")
-            if push_ws_url:
-                data["push_ws_url"] = push_ws_url
-
-            push_ws_token = user_input.get("push_ws_token")
-            if push_ws_token:
-                data["push_ws_token"] = push_ws_token
-
-            push_auth_method = user_input.get("push_auth_method")
-            if push_auth_method:
-                data["push_auth_method"] = push_auth_method
-
             # Create entry
             return self.async_create_entry(
                 title=f"LUXORliving ({self._project_name})",
@@ -293,6 +273,41 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
                 }
             ),
+            errors=errors,
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Allow the user to update the LXP project file without re-entering gateway credentials."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            lxp_file_id = user_input[CONF_LXP_FILE]
+            try:
+                lxp_file = await self.hass.async_add_executor_job(
+                    save_uploaded_lxp_file, self.hass, lxp_file_id
+                )
+                project_name = await self._validate_lxp_file(lxp_file)
+            except (OSError, PermissionError):
+                errors["base"] = "file_not_found"
+            except FileNotFoundError:
+                errors["base"] = "file_not_found"
+            except ValueError:
+                errors["base"] = "invalid_lxp"
+            else:
+                reconfigure_entry = self._get_reconfigure_entry()
+                return self.async_update_reload_and_abort(
+                    reconfigure_entry,
+                    data_updates={
+                        CONF_LXP_FILE: lxp_file,
+                    },
+                    title=f"LUXORliving ({project_name})",
+                )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=STEP_LXP_DATA_SCHEMA,
             errors=errors,
         )
 
@@ -426,13 +441,18 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                         type=selector.TextSelectorType.URL,
                     ),
                 ),
-                vol.Optional("push_auth_method", default=current_push_auth_method): vol.In(
-                    [
-                        "none",
-                        "token",
-                        "bearer",
-                        "hmac",
-                    ]
+                vol.Optional(
+                    "push_auth_method", default=current_push_auth_method
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            selector.SelectOptionDict(value="none", label="None"),
+                            selector.SelectOptionDict(value="token", label="Token"),
+                            selector.SelectOptionDict(value="bearer", label="Bearer"),
+                            selector.SelectOptionDict(value="hmac", label="HMAC"),
+                        ],
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
                 ),
                 vol.Optional("push_token", default=current_push_token): selector.TextSelector(
                     selector.TextSelectorConfig(
