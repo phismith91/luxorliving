@@ -211,6 +211,10 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             errors=errors,
                         )
 
+            # Prevent duplicate entries for the same gateway host
+            await self.async_set_unique_id(user_input[CONF_HOST])
+            self._abort_if_unique_id_configured()
+
             # Combine LXP file and gateway config
             data = {
                 CONF_LXP_FILE: self._lxp_file,
@@ -251,6 +255,45 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "project_name": self._project_name or "Unknown",
             },
+        )
+
+    async def async_step_reauth(self, entry_data: dict[str, Any]) -> ConfigFlowResult:
+        """Handle reauthentication when credentials are rejected by the gateway."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm reauthentication with new credentials."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            reauth_entry = self._get_reauth_entry()
+            host = reauth_entry.data[CONF_HOST]
+            try:
+                await self._validate_credentials(
+                    host, user_input[CONF_USERNAME], user_input[CONF_PASSWORD]
+                )
+            except Exception:
+                errors["base"] = "invalid_auth"
+            else:
+                return self.async_update_reload_and_abort(
+                    reauth_entry,
+                    data_updates={
+                        CONF_USERNAME: user_input[CONF_USERNAME],
+                        CONF_PASSWORD: user_input[CONF_PASSWORD],
+                    },
+                )
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
+                    vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
+                }
+            ),
+            errors=errors,
         )
 
     async def _validate_lxp_file(self, lxp_file: str) -> str:

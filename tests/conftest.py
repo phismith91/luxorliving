@@ -58,15 +58,6 @@ from custom_components.luxor_living.const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
-from custom_components.luxor_living.integration_state import _integration_states
-
-
-@pytest.fixture(autouse=True)
-def cleanup_integration_state():
-    """Clean up global integration state registry between tests."""
-    _integration_states.clear()
-    yield
-    _integration_states.clear()
 
 
 @pytest.fixture

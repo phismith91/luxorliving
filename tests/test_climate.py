@@ -11,10 +11,7 @@ from custom_components.luxor_living.climate import (
     async_setup_entry,
 )
 from custom_components.luxor_living.const import DATA_KNX_GATEWAY, DOMAIN
-from custom_components.luxor_living.integration_state import (
-    IntegrationState,
-    register_integration_state,
-)
+from custom_components.luxor_living.integration_state import IntegrationState
 
 
 @pytest.fixture
@@ -226,7 +223,7 @@ class TestAsyncSetupEntry:
             coordinator=mock_coordinator,
             entry=entry,
         )
-        register_integration_state(entry.entry_id, state)
+        entry.runtime_data = state
 
         # Keep legacy dict storage
         hass.data = {
@@ -271,7 +268,7 @@ class TestAsyncSetupEntry:
             coordinator=mock_coordinator,
             entry=entry,
         )
-        register_integration_state(entry.entry_id, state)
+        entry.runtime_data = state
 
         hass.data = {
             DOMAIN: {
@@ -294,17 +291,17 @@ class TestAsyncSetupEntry:
 
     @pytest.mark.asyncio
     async def test_setup_requires_mapper(self, mock_coordinator, mock_knx_gateway):
-        """Test setup fails without mapper (state not registered)."""
+        """Test setup skips entities when mapper is None."""
         hass = MagicMock()
         entry = MagicMock()
         entry.entry_id = "test_entry"
-
-        # Don't register state - test error handling when state not found
-        hass.data = {}
+        entry.runtime_data = MagicMock()
+        entry.runtime_data.mapper = None
+        entry.runtime_data.coordinator = mock_coordinator
+        entry.runtime_data.knx_gateway = mock_knx_gateway
 
         mock_add_entities = MagicMock()
 
-        # Should log error and return early
         await async_setup_entry(hass, entry, mock_add_entities)
 
         # No entities should be added - function returns early without calling add_entities
@@ -312,21 +309,18 @@ class TestAsyncSetupEntry:
 
     @pytest.mark.asyncio
     async def test_setup_requires_coordinator(self, mock_mapper, mock_knx_gateway):
-        """Test setup fails without coordinator (state not registered)."""
+        """Test setup skips entities when coordinator is None."""
         hass = MagicMock()
         entry = MagicMock()
         entry.entry_id = "test_entry"
-
-        # Don't register state - test error handling when state not found
-        hass.data = {}
+        entry.runtime_data = MagicMock()
+        entry.runtime_data.mapper = mock_mapper
+        entry.runtime_data.coordinator = None
+        entry.runtime_data.knx_gateway = mock_knx_gateway
 
         mock_add_entities = MagicMock()
 
-        # Should log error and return early
         await async_setup_entry(hass, entry, mock_add_entities)
-
-        # No entities should be added
-        mock_add_entities.assert_not_called()
 
         # No entities should be added - function returns early without calling add_entities
         mock_add_entities.assert_not_called()

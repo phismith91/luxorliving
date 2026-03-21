@@ -66,6 +66,18 @@ def mock_file_upload():
 class TestLuxorLivingConfigFlow:
     """Test LuxorLiving config flow."""
 
+    @pytest.fixture(autouse=True)
+    def patch_unique_id_methods(self):
+        """Patch async_set_unique_id and _abort_if_unique_id_configured for all tests."""
+        with patch(
+            "custom_components.luxor_living.config_flow.LuxorLivingConfigFlow.async_set_unique_id",
+            new_callable=AsyncMock,
+        ):
+            with patch(
+                "custom_components.luxor_living.config_flow.LuxorLivingConfigFlow._abort_if_unique_id_configured",
+            ):
+                yield
+
     @pytest.mark.asyncio
     @pytest.mark.smoke
     async def test_user_step_show_form(self, mock_hass):

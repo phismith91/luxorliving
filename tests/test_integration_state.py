@@ -4,13 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from custom_components.luxor_living.integration_state import (
-    IntegrationState,
-    get_integration_state,
-    has_integration_state,
-    register_integration_state,
-    unregister_integration_state,
-)
+from custom_components.luxor_living.integration_state import IntegrationState
 
 
 @pytest.fixture
@@ -183,67 +177,3 @@ class TestIntegrationState:
 
         with pytest.raises(RuntimeError, match="Coordinator not initialized"):
             state.get_coordinator_or_raise()
-
-
-class TestIntegrationStateRegistry:
-    """Test global integration state registry functions."""
-
-    def test_register_and_get_state(self, mock_mapper, mock_config, mock_overrides):
-        """Test registering and retrieving state."""
-        entry_id = "test_entry_123"
-        state = IntegrationState(
-            mapper=mock_mapper,
-            config=mock_config,
-            overrides=mock_overrides,
-        )
-
-        register_integration_state(entry_id, state)
-        retrieved_state = get_integration_state(entry_id)
-
-        assert retrieved_state is state
-        assert has_integration_state(entry_id)
-
-    def test_get_state_not_found(self):
-        """Test get_integration_state raises KeyError when not found."""
-        with pytest.raises(KeyError, match="Integration state not found"):
-            get_integration_state("nonexistent_entry_id")
-
-    def test_unregister_state(self, mock_mapper, mock_config, mock_overrides):
-        """Test unregistering state."""
-        entry_id = "test_entry_456"
-        state = IntegrationState(
-            mapper=mock_mapper,
-            config=mock_config,
-            overrides=mock_overrides,
-        )
-
-        register_integration_state(entry_id, state)
-        assert has_integration_state(entry_id)
-
-        removed_state = unregister_integration_state(entry_id)
-        assert removed_state is state
-        assert not has_integration_state(entry_id)
-
-    def test_unregister_state_not_found(self):
-        """Test unregistering nonexistent state returns None."""
-        result = unregister_integration_state("nonexistent_entry_id")
-        assert result is None
-
-    def test_has_integration_state(self, mock_mapper, mock_config, mock_overrides):
-        """Test has_integration_state returns correct boolean."""
-        entry_id = "test_entry_789"
-
-        assert not has_integration_state(entry_id)
-
-        state = IntegrationState(
-            mapper=mock_mapper,
-            config=mock_config,
-            overrides=mock_overrides,
-        )
-        register_integration_state(entry_id, state)
-
-        assert has_integration_state(entry_id)
-
-        unregister_integration_state(entry_id)
-
-        assert not has_integration_state(entry_id)

@@ -13,13 +13,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from xknx.telegram.address import GroupAddress
 
-from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
 from .entity_mapper import EntityMapper
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 1
 
 
 async def async_setup_entry(
@@ -30,18 +31,11 @@ async def async_setup_entry(
     """Set up LUXORliving switches from a config entry."""
     _LOGGER.info("Setting up LUXORliving switches")
 
-    # Get coordinator, mapper and KNX gateway from integration data
-    try:
-        integration_data = hass.data[DOMAIN][entry.entry_id]
-        if not isinstance(integration_data, dict):
-            _LOGGER.error("Integration data is not a dictionary: %s", type(integration_data))
-            return
-        coordinator: LuxorLivingCoordinator = integration_data.get("coordinator")
-        mapper: EntityMapper = integration_data.get("mapper")
-        knx_gateway: LuxorKNXGateway = integration_data.get("knx_gateway")
-    except (KeyError, AttributeError) as err:
-        _LOGGER.error("Failed to get integration data: %s", err)
-        return
+    # Get coordinator, mapper and KNX gateway from runtime data
+    state = entry.runtime_data
+    coordinator: LuxorLivingCoordinator = state.coordinator
+    mapper: EntityMapper = state.mapper
+    knx_gateway: LuxorKNXGateway = state.knx_gateway
 
     if not mapper:
         _LOGGER.warning("No mapper found, skipping switch setup")
@@ -246,6 +240,7 @@ class LuxorLivingSwitch(LuxorLivingEntity, SwitchEntity):
         Args:
             **kwargs: Additional keyword arguments
         """
+        self._raise_if_unavailable()
         if self._is_rate_limited():
             return
 
@@ -265,6 +260,7 @@ class LuxorLivingSwitch(LuxorLivingEntity, SwitchEntity):
         Args:
             **kwargs: Additional keyword arguments
         """
+        self._raise_if_unavailable()
         if self._is_rate_limited():
             return
 

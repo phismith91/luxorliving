@@ -23,8 +23,6 @@ import logging
 
 from aiohttp import ClientSession, ClientWebSocketResponse
 
-from .integration_state import get_integration_state
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -117,8 +115,8 @@ class PushClient:
                     continue
 
                 try:
-                    state = get_integration_state(self.entry_id)
-                    gateway = state.get_gateway_or_raise()
+                    config_entry = self.hass.config_entries.async_get_entry(self.entry_id)
+                    gateway = config_entry.runtime_data.get_gateway_or_raise()
                     # schedule processing in hass loop
                     self.hass.async_create_task(
                         gateway.process_incoming_value(address, value, value_type)

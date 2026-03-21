@@ -1,6 +1,6 @@
 """Tests for LUXORliving sensor platform."""
 
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntry
@@ -8,10 +8,7 @@ from homeassistant.core import HomeAssistant
 
 from custom_components.luxor_living.const import DOMAIN
 from custom_components.luxor_living.coordinator import LuxorLivingCoordinator
-from custom_components.luxor_living.integration_state import (
-    IntegrationState,
-    register_integration_state,
-)
+from custom_components.luxor_living.integration_state import IntegrationState
 from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
 from custom_components.luxor_living.sensor import LuxorLivingSensor, async_setup_entry
 
@@ -264,7 +261,7 @@ class TestAsyncSetupEntry:
             coordinator=mock_coordinator,
             entry=mock_config_entry,
         )
-        register_integration_state(mock_config_entry.entry_id, state)
+        mock_config_entry.runtime_data = state
 
         # Keep legacy dict storage for backward compatibility
         mock_hass.data[DOMAIN] = {}
@@ -308,7 +305,7 @@ class TestAsyncSetupEntry:
             coordinator=mock_coordinator,
             entry=mock_config_entry,
         )
-        register_integration_state(mock_config_entry.entry_id, state)
+        mock_config_entry.runtime_data = state
 
         # Keep legacy dict storage
         mock_hass.data[DOMAIN] = {}
@@ -333,11 +330,13 @@ class TestAsyncSetupEntry:
     async def test_async_setup_entry_missing_mapper(
         self, mock_hass, mock_config_entry, mock_coordinator, mock_knx_gateway
     ):
-        """Test setup when mapper is missing (integration state not registered)."""
-        # Don't register state - test error handling when state not found
+        """Test setup skips entities when mapper is None."""
+        mock_config_entry.runtime_data = MagicMock()
+        mock_config_entry.runtime_data.mapper = None
+        mock_config_entry.runtime_data.coordinator = mock_coordinator
+        mock_config_entry.runtime_data.knx_gateway = mock_knx_gateway
         async_add_entities = Mock()
 
-        # Should return early without error
         await async_setup_entry(mock_hass, mock_config_entry, async_add_entities)
 
         async_add_entities.assert_not_called()
@@ -346,11 +345,13 @@ class TestAsyncSetupEntry:
     async def test_async_setup_entry_missing_coordinator(
         self, mock_hass, mock_config_entry, mock_knx_gateway
     ):
-        """Test setup when coordinator is missing (integration state not registered)."""
-        # Don't register state - test error handling when state not found
+        """Test setup skips entities when coordinator is None."""
+        mock_config_entry.runtime_data = MagicMock()
+        mock_config_entry.runtime_data.mapper = MagicMock()
+        mock_config_entry.runtime_data.coordinator = None
+        mock_config_entry.runtime_data.knx_gateway = mock_knx_gateway
         async_add_entities = AsyncMock()
 
-        # Should return early without error
         await async_setup_entry(mock_hass, mock_config_entry, async_add_entities)
 
         async_add_entities.assert_not_called()

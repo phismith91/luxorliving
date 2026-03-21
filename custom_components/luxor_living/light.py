@@ -15,10 +15,11 @@ from xknx.telegram.address import GroupAddress
 
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
-from .integration_state import get_integration_state
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 1
 
 
 async def async_setup_entry(
@@ -29,15 +30,10 @@ async def async_setup_entry(
     """Set up LUXORliving lights from a config entry."""
     _LOGGER.info("Setting up LUXORliving lights")
 
-    # Get type-safe integration state
-    try:
-        state = get_integration_state(entry.entry_id)
-        coordinator = state.coordinator
-        mapper = state.mapper
-        knx_gateway = state.knx_gateway
-    except (KeyError, AttributeError) as err:
-        _LOGGER.error("Failed to get integration state: %s", err)
-        return
+    state = entry.runtime_data
+    coordinator = state.coordinator
+    mapper = state.mapper
+    knx_gateway = state.knx_gateway
 
     if not mapper:
         _LOGGER.warning("No mapper found, skipping light setup")
@@ -258,6 +254,7 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         Args:
             **kwargs: Additional keyword arguments (brightness, etc.)
         """
+        self._raise_if_unavailable()
         if self._is_rate_limited():
             return
 
@@ -277,6 +274,7 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         Args:
             **kwargs: Additional keyword arguments
         """
+        self._raise_if_unavailable()
         if self._is_rate_limited():
             return
 

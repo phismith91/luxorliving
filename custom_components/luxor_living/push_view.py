@@ -8,8 +8,6 @@ import logging
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
-from .integration_state import get_integration_state
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -59,12 +57,12 @@ class LuxorLivingPushView(HomeAssistantView):
             return web.json_response({"error": "missing entry_id or address"}, status=400)
 
         # Authorization: check configured auth method
-        try:
-            state = get_integration_state(entry_id)
-        except KeyError:
+        config_entry = self.hass.config_entries.async_get_entry(entry_id)
+        if config_entry is None or not hasattr(config_entry, "runtime_data"):
             from aiohttp import web
 
             return web.json_response({"error": "entry_not_found"}, status=404)
+        state = config_entry.runtime_data
 
         # Determine configured values (allow in-data or options)
         config_token = state.entry.data.get("push_token") if state.entry else None

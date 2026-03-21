@@ -16,14 +16,16 @@ from homeassistant.components.cover import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
-from .integration_state import get_integration_state
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 1
 
 
 async def async_setup_entry(
@@ -34,15 +36,10 @@ async def async_setup_entry(
     """Set up LUXORliving covers from a config entry."""
     _LOGGER.info("Setting up LUXORliving covers")
 
-    # Get type-safe integration state
-    try:
-        state = get_integration_state(entry.entry_id)
-        coordinator = state.coordinator
-        mapper = state.mapper
-        knx_gateway = state.knx_gateway
-    except (KeyError, AttributeError) as err:
-        _LOGGER.error("Failed to get integration state: %s", err)
-        return
+    state = entry.runtime_data
+    coordinator = state.coordinator
+    mapper = state.mapper
+    knx_gateway = state.knx_gateway
 
     if not mapper:
         _LOGGER.warning("No mapper found, skipping cover setup")
@@ -167,6 +164,11 @@ class LuxorCover(CoverEntity):
         """Return if entity is available."""
         return self.knx_gateway.connected
 
+    def _raise_if_unavailable(self) -> None:
+        """Raise HomeAssistantError if the gateway is not available."""
+        if not self.available:
+            raise HomeAssistantError(f"{self.name} is unavailable — gateway connection lost")
+
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to hass."""
         await super().async_added_to_hass()
@@ -206,6 +208,7 @@ class LuxorCover(CoverEntity):
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
+        self._raise_if_unavailable()
         try:
             # Send UP command (value 0 = UP)
             if "UpDown" in self._datapoints:
@@ -216,6 +219,7 @@ class LuxorCover(CoverEntity):
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the cover."""
+        self._raise_if_unavailable()
         try:
             # Send DOWN command (value 1 = DOWN)
             if "UpDown" in self._datapoints:
@@ -226,6 +230,7 @@ class LuxorCover(CoverEntity):
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
+        self._raise_if_unavailable()
         try:
             # Send STOP command
             if "StepStop" in self._datapoints:
@@ -236,6 +241,7 @@ class LuxorCover(CoverEntity):
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Move the cover to a specific position."""
+        self._raise_if_unavailable()
         position = kwargs.get(ATTR_POSITION)
         if position is None:
             return
@@ -253,6 +259,7 @@ class LuxorCover(CoverEntity):
 
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
         """Open the cover tilt."""
+        self._raise_if_unavailable()
         dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
         has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
 
@@ -268,6 +275,7 @@ class LuxorCover(CoverEntity):
 
     async def async_close_cover_tilt(self, **kwargs: Any) -> None:
         """Close the cover tilt."""
+        self._raise_if_unavailable()
         dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
         has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
 
@@ -283,6 +291,7 @@ class LuxorCover(CoverEntity):
 
     async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
         """Stop the cover tilt."""
+        self._raise_if_unavailable()
         dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
         has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
 
@@ -298,6 +307,7 @@ class LuxorCover(CoverEntity):
 
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Move the cover tilt to a specific position."""
+        self._raise_if_unavailable()
         dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
         has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
 

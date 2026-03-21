@@ -13,14 +13,16 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
-from .integration_state import get_integration_state
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
@@ -31,14 +33,9 @@ async def async_setup_entry(
     """Set up LUXORliving binary sensors from a config entry."""
     _LOGGER.info("Setting up LUXORliving binary sensors")
 
-    # Get type-safe integration state
-    try:
-        state = get_integration_state(entry.entry_id)
-        coordinator = state.coordinator
-        mapper = state.mapper
-    except (KeyError, AttributeError) as err:
-        _LOGGER.error("Failed to get integration state: %s", err)
-        return
+    state = entry.runtime_data
+    coordinator = state.coordinator
+    mapper = state.mapper
 
     if not mapper:
         _LOGGER.warning("No mapper found, skipping binary sensor setup")
@@ -98,6 +95,11 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
         # Determine device class based on entity type and name
         self._attr_device_class = self._detect_device_class(mapped_entity)
 
+        # Mark health/connectivity sensors as diagnostic and disabled by default
+        if getattr(mapped_entity, "entity_type", "") == "health":
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
+            self._attr_entity_registry_enabled_default = False
+
         # Store datapoint addresses
         self._address_status: str | None = (
             mapped_entity.datapoints.get("status@OnOff")
@@ -117,16 +119,10 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
         """Return true if the binary sensor is on."""
         if self._mapped_entity.entity_type == "health":
             # Health sensor: check if all gateways are connected or in simulation mode
-            integration_data = self.hass.data.get(DOMAIN, {})
-            for entry_id, entry_data in integration_data.items():
-                if isinstance(entry_data, dict):
-                    knx_gateway = entry_data.get("knx_gateway")
-                    if (
-                        knx_gateway
-                        and not knx_gateway.connected
-                        and not knx_gateway.simulation_mode
-                    ):
-                        return False
+            for config_entry in self.hass.config_entries.async_entries(DOMAIN):
+                knx_gateway = getattr(config_entry.runtime_data, "knx_gateway", None)
+                if knx_gateway and not knx_gateway.connected and not knx_gateway.simulation_mode:
+                    return False
             return True
         else:
             # Default: use coordinator data

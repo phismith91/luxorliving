@@ -29,12 +29,7 @@ from .const import (
 from .coordinator import LuxorLivingCoordinator
 from .entity_mapper import EntityMapper
 from .health_view import LuxorLivingHealthView
-from .integration_state import (
-    IntegrationState,
-    get_integration_state,
-    register_integration_state,
-    unregister_integration_state,
-)
+from .integration_state import IntegrationState
 from .knx_gateway import LuxorKNXGateway
 from .lxp_parser import LXPParser
 from .overrides import load_overrides
@@ -117,8 +112,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 entry=entry,
             )
 
-            # Register state in global registry
-            register_integration_state(entry.entry_id, state)
+            # Store state on config entry (HA runtime_data pattern)
+            entry.runtime_data = state
         except FileNotFoundError:
             _LOGGER.error("LXP file not found: %s", lxp_path)
             return False
@@ -226,7 +221,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # via _async_load_datapoint_mapping() which fetches from REST API
 
     # Store gateway in integration state (type-safe)
-    state = get_integration_state(entry.entry_id)
+    state = entry.runtime_data
     state.knx_gateway = knx_gateway
 
     # If configured, start WebSocket push client
@@ -263,16 +258,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
 
     # Store coordinator in integration state (type-safe)
-    state = get_integration_state(entry.entry_id)
+    state = entry.runtime_data
     state.coordinator = coordinator
-
-    # Also store in hass.data for backward compatibility with platform setup
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {
-        "coordinator": coordinator,
-        "mapper": mapper,
-        "knx_gateway": knx_gateway,
-    }
 
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -302,7 +289,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entities = []
 
         # Get all entities from mapper
-        mapper = hass.data[DOMAIN].get("mapper")
+        mapper = entry.runtime_data.mapper
         if mapper:
             for entity in mapper.entities:
                 if platform_filter and entity.platform.value != platform_filter:
@@ -352,7 +339,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.info("Unloading LUXORliving integration")
 
     # Disconnect KNX gateway using type-safe state
-    state = get_integration_state(entry.entry_id)
+    state = entry.runtime_data
     if state.knx_gateway:
         await state.knx_gateway.async_disconnect()
 
@@ -361,13 +348,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         # Stop push client if running
         try:
-            state = get_integration_state(entry.entry_id)
             if state.push_client:
                 await state.push_client.stop()
         except Exception as err:
             _LOGGER.debug("Error stopping push client during unload: %s", err)
-
-        # Unregister type-safe state
-        unregister_integration_state(entry.entry_id)
 
     return bool(unload_ok)

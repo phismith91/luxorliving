@@ -10,15 +10,17 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from xknx.dpt import DPT2ByteFloat, DPTArray
 
 from .coordinator import LuxorLivingCoordinator
 from .entity import LuxorLivingEntity
-from .integration_state import get_integration_state
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
@@ -29,15 +31,10 @@ async def async_setup_entry(
     """Set up LUXORliving sensors from a config entry."""
     _LOGGER.info("Setting up LUXORliving sensors")
 
-    # Get type-safe integration state
-    try:
-        state = get_integration_state(entry.entry_id)
-        coordinator = state.coordinator
-        mapper = state.mapper
-        knx_gateway = state.knx_gateway
-    except (KeyError, AttributeError) as err:
-        _LOGGER.error("Failed to get integration state: %s", err)
-        return
+    state = entry.runtime_data
+    coordinator = state.coordinator
+    mapper = state.mapper
+    knx_gateway = state.knx_gateway
 
     if not mapper:
         _LOGGER.warning("No mapper found, skipping sensor setup")
@@ -249,6 +246,9 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
 
 class LuxorLivingDiscoveredSensor(SensorEntity):
     """Representation of an auto-discovered LUXORliving sensor."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
 
     def __init__(
         self,

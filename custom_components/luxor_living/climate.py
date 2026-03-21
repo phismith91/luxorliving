@@ -14,14 +14,16 @@ from homeassistant.components.climate import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, Platform, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import LuxorLivingCoordinator
-from .integration_state import get_integration_state
 from .knx_gateway import LuxorKNXGateway
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 1
 
 
 async def async_setup_entry(
@@ -32,15 +34,10 @@ async def async_setup_entry(
     """Set up LUXORliving climate devices from a config entry."""
     _LOGGER.info("Setting up LUXORliving climate devices")
 
-    # Get type-safe integration state
-    try:
-        state = get_integration_state(entry.entry_id)
-        coordinator = state.coordinator
-        mapper = state.mapper
-        knx_gateway = state.knx_gateway
-    except (KeyError, AttributeError) as err:
-        _LOGGER.error("Failed to get integration state: %s", err)
-        return
+    state = entry.runtime_data
+    coordinator = state.coordinator
+    mapper = state.mapper
+    knx_gateway = state.knx_gateway
 
     if not mapper:
         _LOGGER.warning("No mapper found, skipping climate setup")
@@ -151,6 +148,11 @@ class LuxorClimate(ClimateEntity):
         """Return if entity is available."""
         return self.knx_gateway.connected
 
+    def _raise_if_unavailable(self) -> None:
+        """Raise HomeAssistantError if the gateway is not available."""
+        if not self.available:
+            raise HomeAssistantError(f"{self.name} is unavailable — gateway connection lost")
+
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to hass."""
         await super().async_added_to_hass()
@@ -192,6 +194,7 @@ class LuxorClimate(ClimateEntity):
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
+        self._raise_if_unavailable()
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is None:
             return
@@ -214,6 +217,7 @@ class LuxorClimate(ClimateEntity):
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set new HVAC mode."""
+        self._raise_if_unavailable()
         if hvac_mode not in self._attr_hvac_modes:
             _LOGGER.warning("Unsupported HVAC mode: %s", hvac_mode)
             return

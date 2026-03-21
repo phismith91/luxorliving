@@ -5,10 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from custom_components.luxor_living.__init__ import LuxorLivingPushView
-from custom_components.luxor_living.integration_state import (
-    IntegrationState,
-    register_integration_state,
-)
+from custom_components.luxor_living.integration_state import IntegrationState
 
 
 @pytest.mark.smoke
@@ -22,7 +19,7 @@ async def test_push_view_calls_gateway():
     entry.options = {}
 
     state = IntegrationState(mapper=MagicMock(), config={}, overrides={}, entry=entry)
-    register_integration_state(entry.entry_id, state)
+    entry.runtime_data = state
 
     # Attach mock gateway
     gateway = MagicMock()
@@ -31,6 +28,7 @@ async def test_push_view_calls_gateway():
 
     # Use a simple MagicMock for hass (we only need it to instantiate the view)
     hass = MagicMock()
+    hass.config_entries.async_get_entry.return_value = entry
     view = LuxorLivingPushView(hass)
 
     # Fake request with JSON coroutine and headers
@@ -58,7 +56,7 @@ async def test_push_view_forbidden_when_token_mismatch():
     entry.options = {}
 
     state = IntegrationState(mapper=MagicMock(), config={}, overrides={}, entry=entry)
-    register_integration_state(entry.entry_id, state)
+    entry.runtime_data = state
 
     # Mock gateway exists but should not be called due to auth failure
     gateway = MagicMock()
@@ -66,6 +64,7 @@ async def test_push_view_forbidden_when_token_mismatch():
     state.knx_gateway = gateway
 
     hass = MagicMock()
+    hass.config_entries.async_get_entry.return_value = entry
     view = LuxorLivingPushView(hass)
 
     req = MagicMock()
@@ -90,13 +89,14 @@ async def test_push_view_bearer_auth():
     entry.options = {}
 
     state = IntegrationState(mapper=MagicMock(), config={}, overrides={}, entry=entry)
-    register_integration_state(entry.entry_id, state)
+    entry.runtime_data = state
 
     gateway = MagicMock()
     gateway.process_incoming_value = AsyncMock()
     state.knx_gateway = gateway
 
     hass = MagicMock()
+    hass.config_entries.async_get_entry.return_value = entry
     view = LuxorLivingPushView(hass)
 
     req = MagicMock()
@@ -125,13 +125,14 @@ async def test_push_view_hmac_auth():
     entry.options = {}
 
     state = IntegrationState(mapper=MagicMock(), config={}, overrides={}, entry=entry)
-    register_integration_state(entry.entry_id, state)
+    entry.runtime_data = state
 
     gateway = MagicMock()
     gateway.process_incoming_value = AsyncMock()
     state.knx_gateway = gateway
 
     hass = MagicMock()
+    hass.config_entries.async_get_entry.return_value = entry
     view = LuxorLivingPushView(hass)
 
     payload = {"entry_id": entry.entry_id, "address": "1/2/3", "value": True}

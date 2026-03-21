@@ -16,10 +16,7 @@ from custom_components.luxor_living.cover import (
     LuxorCover,
     async_setup_entry,
 )
-from custom_components.luxor_living.integration_state import (
-    IntegrationState,
-    register_integration_state,
-)
+from custom_components.luxor_living.integration_state import IntegrationState
 
 
 @pytest.fixture
@@ -310,7 +307,7 @@ class TestAsyncSetupEntry:
             coordinator=mock_coordinator,
             entry=entry,
         )
-        register_integration_state(entry.entry_id, state)
+        entry.runtime_data = state
 
         hass.data = {
             DOMAIN: {
@@ -354,7 +351,7 @@ class TestAsyncSetupEntry:
             coordinator=mock_coordinator,
             entry=entry,
         )
-        register_integration_state(entry.entry_id, state)
+        entry.runtime_data = state
 
         hass.data = {
             DOMAIN: {
@@ -396,7 +393,7 @@ class TestAsyncSetupEntry:
             coordinator=mock_coordinator,
             entry=entry,
         )
-        register_integration_state(entry.entry_id, state)
+        entry.runtime_data = state
 
         hass.data = {
             DOMAIN: {
@@ -438,7 +435,7 @@ class TestAsyncSetupEntry:
             coordinator=mock_coordinator,
             entry=entry,
         )
-        register_integration_state(entry.entry_id, state)
+        entry.runtime_data = state
 
         hass.data = {
             DOMAIN: {
@@ -479,7 +476,7 @@ class TestAsyncSetupEntry:
             coordinator=mock_coordinator,
             entry=entry,
         )
-        register_integration_state(entry.entry_id, state)
+        entry.runtime_data = state
 
         hass.data = {
             DOMAIN: {

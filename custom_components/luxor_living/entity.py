@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 
@@ -77,7 +78,15 @@ class LuxorLivingEntity(Entity):
 
     @property
     def available(self) -> bool:
-        """Return if entity is available."""
+        """Return if entity is available.
+
+        Marks entity unavailable when the KNX gateway connection is lost
+        (unless in simulation mode). Also propagates coordinator failure.
+        """
+        runtime_data = getattr(self._config_entry, "runtime_data", None)
+        knx_gateway = getattr(runtime_data, "knx_gateway", None)
+        if knx_gateway and not knx_gateway.simulation_mode and not knx_gateway.connected:
+            return False
         return self.coordinator.last_update_success
 
     async def async_added_to_hass(self) -> None:
@@ -97,6 +106,11 @@ class LuxorLivingEntity(Entity):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from coordinator."""
         self.async_write_ha_state()
+
+    def _raise_if_unavailable(self) -> None:
+        """Raise HomeAssistantError if the entity / gateway is not available."""
+        if not self.available:
+            raise HomeAssistantError(f"{self.name} is unavailable — gateway connection lost")
 
     async def async_update(self) -> None:
         """Update the entity state.
