@@ -3,8 +3,8 @@ name: Release Checks
 on:
   push:
     branches: [main]
-  # Release Checks are heavy and require specific Python; run manually or on pushes to main only.
-  # Do NOT run Release Checks on pull_request to avoid failing PRs due to runner Python mismatch
+  pull_request:
+    branches: [main]
   workflow_dispatch: {}
 
 # Purpose: Verify tests and release readiness before allowing merges to main.

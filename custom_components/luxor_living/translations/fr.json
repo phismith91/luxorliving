@@ -28,6 +28,24 @@
           "connection_type": "Type de connexion KNX (tunneling recommandé)",
           "simulation_mode": "Mode test sans connexion matérielle réelle"
         }
+      },
+      "reauth_confirm": {
+        "title": "Ré-authentifier LUXORliving",
+        "description": "Vos identifiants de passerelle ont expiré. Veuillez saisir de nouveaux identifiants.",
+        "data": {
+          "username": "Nom d'utilisateur",
+          "password": "Mot de passe"
+        }
+      },
+      "reconfigure": {
+        "title": "Mettre à jour le fichier LXP",
+        "description": "Téléchargez un nouveau fichier LXP pour mettre à jour le mapping des entités.",
+        "data": {
+          "lxp_file": "Fichier de projet LXP"
+        },
+        "data_description": {
+          "lxp_file": "Sélectionner le fichier .lxp mis à jour"
+        }
       }
     },
     "error": {

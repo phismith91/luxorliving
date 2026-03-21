@@ -28,6 +28,24 @@
           "connection_type": "KNX connection type (tunneling recommended)",
           "simulation_mode": "Test mode without real hardware connection"
         }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate LUXORliving",
+        "description": "Your gateway credentials have expired. Please enter new credentials.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Update LXP Project File",
+        "description": "Upload a new LXP project file to update the entity mapping.",
+        "data": {
+          "lxp_file": "LXP Project File"
+        },
+        "data_description": {
+          "lxp_file": "Select the updated .lxp project file"
+        }
       }
     },
     "error": {

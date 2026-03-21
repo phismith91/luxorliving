@@ -17,8 +17,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.11", "3.13"]
-        ha: ["2025.12", "2026.1", "latest"]
+        python: ["3.12", "3.13"]
+        ha: ["2025.12", "2026.1", "2026.3", "latest"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
