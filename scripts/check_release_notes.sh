@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # check_release_notes.sh
-# Verify that a RELEASE_NOTES_v<version>.md file exists and contains the version heading
-# Note: Code formatting checks (black/isort) are handled separately in release_checks workflow
+# Verify that CHANGELOG.md has a release entry for the current manifest version.
+# Release notes are extracted from CHANGELOG.md by release.yml — no separate file needed.
 
 MANIFEST="custom_components/luxor_living/manifest.json"
 if [ ! -f "$MANIFEST" ]; then
@@ -12,25 +12,16 @@ if [ ! -f "$MANIFEST" ]; then
 fi
 
 VERSION=$(python3 -c "import json,sys;print(json.load(open('$MANIFEST'))['version'])")
-# Release notes MUST be in docs/releases/ (standardized location)
-RELEASE_FILE="docs/releases/RELEASE_NOTES_v${VERSION}.md"
 
-if [ ! -f "$RELEASE_FILE" ]; then
-  echo "Missing release notes file: $RELEASE_FILE" >&2
-  echo "Release notes must be placed in docs/releases/RELEASE_NOTES_v<version>.md" >&2
-  exit 1
+if [ ! -f "CHANGELOG.md" ]; then
+  echo "CHANGELOG.md not found" >&2
+  exit 2
 fi
 
-# Check file contains the version heading
-if ! grep -q "v${VERSION}" "$RELEASE_FILE"; then
-  echo "Release notes file $RELEASE_FILE does not reference version $VERSION" >&2
+if grep -q "## \[${VERSION}\]" CHANGELOG.md; then
+  echo "OK: CHANGELOG.md has release entry for v${VERSION}"
+else
+  echo "Missing CHANGELOG.md entry: ## [${VERSION}]" >&2
+  echo "Add a ## [${VERSION}] - YYYY-MM-DD section to CHANGELOG.md before release." >&2
   exit 1
 fi
-
-# Simple non-empty check
-if [ ! -s "$RELEASE_FILE" ]; then
-  echo "Release notes file $RELEASE_FILE is empty" >&2
-  exit 1
-fi
-
-echo "OK: Release notes $RELEASE_FILE present and valid for version $VERSION"
