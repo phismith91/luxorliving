@@ -15,6 +15,22 @@ documented in this file.
 
 ---
 
+## [1.0.0] - 2026-03-22
+
+### Added
+
+- **Gold Quality Scale**: icon translations (`icons.json`), exception translations (`HomeAssistantError` with `translation_key`), zeroconf discovery (`_knxip._udp.local.`), docs use-cases and known-limitations sections
+- **Options flow sections**: Standard options (scan interval, log level, simulation mode) and collapsible Push Webhook advanced section via `data_entry_flow.section()`
+- **Persona documentation**: `USER_GUIDE.md`, `ADVANCED_GUIDE.md`, `DEVELOPER_GUIDE.md`, `REFERENCE.md` — replaces scattered per-audience docs
+- **README hub**: short hub README with 3-step quickstart, persona router, absolute doc links
+
+### Changed
+
+- **Docs overhaul**: archived 15 outdated/duplicate files; all doc links use absolute `/blob/main/` URLs (avoids 404 on old release tags)
+- **Translation sync**: `strings.json`, `en.json`, `de.json`, `fr.json` updated for all new options fields and zeroconf confirm step
+
+---
+
 ## [0.8.0] - 2026-03-21
 
 ### Added
