@@ -209,6 +209,27 @@ See [`docs/luxor_living_overrides.example.yaml`](luxor_living_overrides.example.
 
 ---
 
+## Use Cases
+
+| Use Case | How |
+| --- | --- |
+| **Whole-home KNX automation** | All KNX lights, covers, climate, and sensors from your LXP project become HA entities. Automate them with standard HA automations, scenes, and scripts. |
+| **KNX + non-KNX devices in one system** | Control KNX lights alongside Zigbee, Z-Wave, or cloud devices in a single HA dashboard and automation engine. |
+| **Wake-up / sleep scenes** | Combine dimmer brightness ramp-ups, cover positions, and thermostat setpoints in a single HA scene triggered by an alarm or button. |
+| **Presence-based automation** | Use KNX motion detectors (binary_sensor) to trigger lights, covers, or notifications — optionally combined with other presence sensors. |
+| **Weather-reactive covers** | Drive KNX blind actuators based on KNX weather station data (wind, rain) or external HA weather integrations. |
+| **Energy monitoring** | Expose KNX sensor values (temperature, CO2, brightness) as HA sensors and use the HA Energy Dashboard or long-term statistics. |
+| **Simulation & testing** | Enable Simulation Mode to test automations and dashboards without a real gateway — useful during HA setup or when the gateway is offline. |
+| **Mobile and remote control** | All KNX entities are available in HA's mobile apps and via the HA Cloud (Nabu Casa) without exposing the KNX gateway directly to the internet. |
+
+---
+
+## Known Limitations
+
+See the [Advanced Guide — Known Limitations](ADVANCED_GUIDE.md#known-limitations) for a full list.
+
+---
+
 ## Dependencies
 
 | Library | Version | Purpose |

@@ -151,7 +151,10 @@ class LuxorClimate(ClimateEntity):
     def _raise_if_unavailable(self) -> None:
         """Raise HomeAssistantError if the gateway is not available."""
         if not self.available:
-            raise HomeAssistantError(f"{self.name} is unavailable — gateway connection lost")
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="entity_unavailable",
+            )
 
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to hass."""

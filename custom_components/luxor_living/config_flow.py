@@ -10,6 +10,7 @@ from typing import Any
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.file_upload import process_uploaded_file
+from homeassistant.components.zeroconf import ZeroconfServiceInfo
 from homeassistant.config_entries import ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant, callback
@@ -102,6 +103,31 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize config flow."""
         self._lxp_file: str | None = None
         self._project_name: str | None = None
+        self._discovered_host: str | None = None
+
+    async def async_step_zeroconf(self, discovery_info: ZeroconfServiceInfo) -> ConfigFlowResult:
+        """Handle zeroconf discovery of a KNX/IP gateway."""
+        host = discovery_info.host
+
+        await self.async_set_unique_id(host)
+        self._abort_if_unique_id_configured(updates={CONF_HOST: host})
+
+        self._discovered_host = host
+        self.context["title_placeholders"] = {"host": host}
+
+        return await self.async_step_zeroconf_confirm()
+
+    async def async_step_zeroconf_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask the user to confirm the discovered gateway and upload the LXP file."""
+        if user_input is not None:
+            return await self.async_step_user()
+
+        return self.async_show_form(
+            step_id="zeroconf_confirm",
+            description_placeholders={"host": self._discovered_host or ""},
+        )
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Handle the initial step - LXP file selection via file browser."""
@@ -228,9 +254,36 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data=data,
             )
 
+        # Pre-fill host from zeroconf discovery if available
+        default_host = self._discovered_host or "192.168.1.3"
+        gateway_schema = vol.Schema(
+            {
+                vol.Required(CONF_HOST, default=default_host): str,
+                vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
+                vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
+                vol.Required(
+                    CONF_CONNECTION_TYPE, default=DEFAULT_CONNECTION_TYPE
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            selector.SelectOptionDict(
+                                value=CONNECTION_TYPE_TUNNELING,
+                                label="Tunneling (BAOS REST API)",
+                            ),
+                            selector.SelectOptionDict(
+                                value=CONNECTION_TYPE_ROUTING, label="Routing (KNX/IP)"
+                            ),
+                        ],
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+                vol.Optional(CONF_SIMULATION_MODE, default=False): bool,
+            }
+        )
+
         return self.async_show_form(
             step_id="gateway",
-            data_schema=STEP_GATEWAY_DATA_SCHEMA,
+            data_schema=gateway_schema,
             errors=errors,
             description_placeholders={
                 "project_name": self._project_name or "Unknown",

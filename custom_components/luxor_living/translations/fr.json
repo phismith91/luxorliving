@@ -29,6 +29,13 @@
           "simulation_mode": "Mode test sans connexion matérielle réelle"
         }
       },
+      "zeroconf_confirm": {
+        "title": "Passerelle LUXORliving détectée",
+        "description": "Une passerelle LUXORliving KNX/IP a été détectée à {host}. Voulez-vous la configurer ?",
+        "data": {
+          "host": "Adresse IP de la passerelle"
+        }
+      },
       "reauth_confirm": {
         "title": "Ré-authentifier LUXORliving",
         "description": "Vos identifiants de passerelle ont expiré. Veuillez saisir de nouveaux identifiants.",
@@ -64,18 +71,37 @@
     "step": {
       "init": {
         "title": "Options LUXORliving",
-        "description": "Configurez le comportement de l'intégration LUXORliving",
+        "description": "Configurer le comportement de l'intégration LUXORliving",
         "data": {
-          "simulation_mode": "Mode simulation (Test)",
           "scan_interval": "Intervalle d'interrogation (secondes)",
-          "log_level": "Niveau de débogage"
+          "simulation_mode": "Mode simulation",
+          "allow_diagnostics": "Autoriser les diagnostics",
+          "log_level": "Niveau de journalisation",
+          "discovery_timeout": "Délai de découverte (secondes)",
+          "push_webhook": "Push Webhook",
+          "push_ws_url": "URL WebSocket",
+          "push_auth_method": "Méthode d'authentification",
+          "push_token": "Token / Secret",
+          "push_ws_token": "Token Bearer WebSocket"
         },
         "data_description": {
-          "simulation_mode": "Activer le mode simulation pour les tests sans matériel",
-          "scan_interval": "Fréquence d'interrogation de la passerelle pour les mises à jour (5-300 secondes)",
-          "log_level": "Verbosité des journaux pour le dépannage"
+          "scan_interval": "Fréquence d'interrogation de la passerelle (5–300 secondes). Avec Push Webhook, 60–120 s suffit.",
+          "simulation_mode": "Fonctionne sans passerelle réelle — accepte les commandes mais n'envoie pas de télégrammes KNX.",
+          "allow_diagnostics": "Permet le téléchargement de diagnostics HA avec l'état de la passerelle et les détails des entités. Les mots de passe sont toujours masqués.",
+          "log_level": "Verbosité des journaux. Utiliser 'debug' pour le dépannage.",
+          "discovery_timeout": "Temps d'attente pour les réponses d'adresses de groupe KNX au démarrage (0,5–10 s).",
+          "push_webhook": "Optionnel : recevoir des mises à jour d'état KNX en temps réel depuis un redirecteur externe.",
+          "push_ws_url": "URL WebSocket d'un redirecteur KNX externe. Laisser vide pour désactiver.",
+          "push_auth_method": "Méthode d'authentification pour les requêtes push HTTP entrantes.",
+          "push_token": "Secret partagé pour l'authentification token / hmac.",
+          "push_ws_token": "Token Bearer envoyé lors de la connexion à l'URL WebSocket."
         }
       }
+    }
+  },
+  "exceptions": {
+    "entity_unavailable": {
+      "message": "L'entité est indisponible — connexion à la passerelle perdue"
     }
   },
   "issues": {

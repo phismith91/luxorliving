@@ -205,6 +205,21 @@ logger:
 
 ---
 
+## Known Limitations
+
+| Limitation | Details |
+| --- | --- |
+| **LXP file required** | The integration cannot discover entities without a valid `.lxp` project file exported from Theben LUXORPlug. There is no way to auto-generate entity mapping without this file. |
+| **KNX/IP only** | Only KNX/IP (tunneling or routing) is supported. USB or RS232 KNX interfaces are not supported. |
+| **BAOS 777 gateway** | Tested exclusively with the Theben LUXORliving IP1 (Weinzierl BAOS 777). Other KNX/IP gateways may work but are untested. |
+| **State latency (polling)** | Without push webhook, state updates arrive at most every `scan_interval` seconds. Physical KNX switch presses are not reflected until the next poll unless push is configured. |
+| **Entity names are fixed** | Entity names come from the LXP file and cannot be changed in the integration — rename them in HA's entity registry instead. |
+| **Cover tilt precision** | Tilt position is rounded to 1% steps due to KNX DPT 5.001 resolution. |
+| **No ETS project support** | Only LXP files (Theben LUXORPlug export) are supported. ETS `.knxproj` files are not parsed. |
+| **Multiple gateways** | Multiple LUXORliving entries are supported, but each gateway needs its own LXP file and config entry. Cross-gateway automations work normally via HA. |
+
+---
+
 ## Further Reading
 
 - [Full Options Reference](REFERENCE.md)
