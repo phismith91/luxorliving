@@ -4,8 +4,8 @@
 [![CI](https://github.com/phismith91/luxorliving/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/phismith91/luxorliving/actions/workflows/ci-cd.yml)
 [![Codecov](https://codecov.io/gh/phismith91/luxorliving/branch/main/graph/badge.svg)](https://codecov.io/gh/phismith91/luxorliving)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/phismith91/luxorliving?include_prereleases)](https://github.com/phismith91/luxorliving/releases)
-[![License](https://img.shields.io/github/license/phismith91/luxorliving)](LICENSE)
-[![Tests: 296](https://img.shields.io/badge/Tests-296%20passing-brightgreen)](docs/TESTS.md)
+[![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](LICENSE)
+[![Tests: 296](https://img.shields.io/badge/Tests-296%20passing-brightgreen.svg)](docs/TESTS.md)
 
 ## Support
 
