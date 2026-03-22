@@ -29,6 +29,13 @@
           "simulation_mode": "Testmodus ohne echte Hardwareverbindung"
         }
       },
+      "zeroconf_confirm": {
+        "title": "LUXORliving Gateway gefunden",
+        "description": "Ein LUXORliving KNX/IP Gateway wurde unter {host} gefunden. Möchten Sie es einrichten?",
+        "data": {
+          "host": "Gateway IP-Adresse"
+        }
+      },
       "reauth_confirm": {
         "title": "LUXORliving neu authentifizieren",
         "description": "Deine Gateway-Zugangsdaten sind abgelaufen. Bitte neue Zugangsdaten eingeben.",
@@ -64,18 +71,37 @@
     "step": {
       "init": {
         "title": "LUXORliving Optionen",
-        "description": "Konfigurieren Sie das Verhalten der LUXORliving-Integration",
+        "description": "Verhalten der LUXORliving-Integration konfigurieren",
         "data": {
-          "simulation_mode": "Simulationsmodus (Testlauf)",
           "scan_interval": "Abfrageintervall (Sekunden)",
-          "log_level": "Debug-Level"
+          "simulation_mode": "Simulationsmodus",
+          "allow_diagnostics": "Diagnose erlauben",
+          "log_level": "Log-Level",
+          "discovery_timeout": "Discovery-Timeout (Sekunden)",
+          "push_webhook": "Push Webhook",
+          "push_ws_url": "WebSocket-URL",
+          "push_auth_method": "Authentifizierungsmethode",
+          "push_token": "Token / Secret",
+          "push_ws_token": "WebSocket Bearer Token"
         },
         "data_description": {
-          "simulation_mode": "Simulationsmodus für Tests ohne Hardware aktivieren",
-          "scan_interval": "Wie oft das Gateway für Updates abgefragt wird (5-300 Sekunden)",
-          "log_level": "Logging-Ausführlichkeit zur Fehlersuche"
+          "scan_interval": "Wie oft der Gateway nach Statusänderungen abgefragt wird (5–300 Sekunden). Mit Push Webhook reichen 60–120 s.",
+          "simulation_mode": "Ohne echtes Gateway betreiben – Befehle werden akzeptiert, aber keine KNX-Telegramme gesendet.",
+          "allow_diagnostics": "Ermöglicht den HA-Diagnose-Download mit Gateway-Status, Entitäten und Gerätedetails. Passwörter werden immer geschwärzt.",
+          "log_level": "Ausführlichkeit der Integrations-Logs. 'debug' für Fehlersuche.",
+          "discovery_timeout": "Wartezeit auf KNX-Gruppenadress-Antworten beim Start (0,5–10 Sekunden). Bei langsamen Netzwerken erhöhen.",
+          "push_webhook": "Optional: Echtzeit-KNX-Statusupdates von einem externen Forwarder empfangen statt nur Polling.",
+          "push_ws_url": "WebSocket-URL eines externen KNX-Forwarders (z. B. ws://192.168.1.100:8765). Leer lassen zum Deaktivieren.",
+          "push_auth_method": "Authentifizierungsmethode für eingehende Push-HTTP-Anfragen: none, token, bearer oder hmac.",
+          "push_token": "Gemeinsames Secret für Token- / HMAC-Authentifizierung.",
+          "push_ws_token": "Bearer Token, der beim Verbinden mit der WebSocket-URL gesendet wird."
         }
       }
+    }
+  },
+  "exceptions": {
+    "entity_unavailable": {
+      "message": "Entität nicht verfügbar — Gateway-Verbindung unterbrochen"
     }
   },
   "issues": {

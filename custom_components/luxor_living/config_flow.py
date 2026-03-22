@@ -5,15 +5,18 @@ from __future__ import annotations
 import logging
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.file_upload import process_uploaded_file
 from homeassistant.config_entries import ConfigFlowResult, OptionsFlow
+
+if TYPE_CHECKING:
+    from homeassistant.components.zeroconf import ZeroconfServiceInfo
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.data_entry_flow import FlowResult
+from homeassistant.data_entry_flow import FlowResult, section
 from homeassistant.helpers import selector
 
 from .const import (
@@ -102,6 +105,31 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize config flow."""
         self._lxp_file: str | None = None
         self._project_name: str | None = None
+        self._discovered_host: str | None = None
+
+    async def async_step_zeroconf(self, discovery_info: ZeroconfServiceInfo) -> ConfigFlowResult:
+        """Handle zeroconf discovery of a KNX/IP gateway."""
+        host = discovery_info.host
+
+        await self.async_set_unique_id(host)
+        self._abort_if_unique_id_configured(updates={CONF_HOST: host})
+
+        self._discovered_host = host
+        self.context["title_placeholders"] = {"host": host}
+
+        return await self.async_step_zeroconf_confirm()
+
+    async def async_step_zeroconf_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask the user to confirm the discovered gateway and upload the LXP file."""
+        if user_input is not None:
+            return await self.async_step_user()
+
+        return self.async_show_form(
+            step_id="zeroconf_confirm",
+            description_placeholders={"host": self._discovered_host or ""},
+        )
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Handle the initial step - LXP file selection via file browser."""
@@ -228,9 +256,36 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data=data,
             )
 
+        # Pre-fill host from zeroconf discovery if available
+        default_host = self._discovered_host or "192.168.1.3"
+        gateway_schema = vol.Schema(
+            {
+                vol.Required(CONF_HOST, default=default_host): str,
+                vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
+                vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
+                vol.Required(
+                    CONF_CONNECTION_TYPE, default=DEFAULT_CONNECTION_TYPE
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            selector.SelectOptionDict(
+                                value=CONNECTION_TYPE_TUNNELING,
+                                label="Tunneling (BAOS REST API)",
+                            ),
+                            selector.SelectOptionDict(
+                                value=CONNECTION_TYPE_ROUTING, label="Routing (KNX/IP)"
+                            ),
+                        ],
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+                vol.Optional(CONF_SIMULATION_MODE, default=False): bool,
+            }
+        )
+
         return self.async_show_form(
             step_id="gateway",
-            data_schema=STEP_GATEWAY_DATA_SCHEMA,
+            data_schema=gateway_schema,
             errors=errors,
             description_placeholders={
                 "project_name": self._project_name or "Unknown",
@@ -357,11 +412,14 @@ class LuxorLivingOptionsFlow(OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
-            # Update log level if changed
-            if CONF_LOG_LEVEL in user_input:
-                await self._async_update_log_level(user_input[CONF_LOG_LEVEL])
+            # Flatten nested push_webhook section into a single dict before saving
+            push_data = user_input.pop("push_webhook", {})
+            flat_input = {**user_input, **push_data}
 
-            return self.async_create_entry(title="", data=user_input)
+            if CONF_LOG_LEVEL in flat_input:
+                await self._async_update_log_level(flat_input[CONF_LOG_LEVEL])
+
+            return self.async_create_entry(title="", data=flat_input)
 
         # Get current values from config_entry (provided by OptionsFlow base class)
         current_simulation_mode = self.config_entry.options.get(
@@ -409,18 +467,21 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             self.config_entry.data.get(CONF_ALLOW_DIAGNOSTICS, DEFAULT_ALLOW_DIAGNOSTICS),
         )
 
-        # Build options schema with clear sections
         options_schema = vol.Schema(
             {
-                # Basic settings
+                # Standard settings — shown by default
+                vol.Optional(
+                    CONF_SCAN_INTERVAL,
+                    default=current_scan_interval,
+                ): vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
                 vol.Optional(
                     CONF_SIMULATION_MODE,
                     default=current_simulation_mode,
                 ): bool,
                 vol.Optional(
-                    CONF_SCAN_INTERVAL,
-                    default=current_scan_interval,
-                ): vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
+                    CONF_ALLOW_DIAGNOSTICS,
+                    default=current_allow_diagnostics,
+                ): bool,
                 vol.Optional(
                     CONF_LOG_LEVEL,
                     default=current_log_level,
@@ -429,42 +490,50 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                     CONF_DISCOVERY_TIMEOUT,
                     default=current_discovery_timeout,
                 ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=10.0)),
-                # Diagnostics sharing consent
-                vol.Optional(
-                    CONF_ALLOW_DIAGNOSTICS,
-                    default=current_allow_diagnostics,
-                ): bool,
-                # --- Advanced: Push Webhook (for external real-time updates) ---
-                vol.Optional("push_ws_url", default=current_push_ws_url): selector.TextSelector(
-                    selector.TextSelectorConfig(
-                        multiline=False,
-                        type=selector.TextSelectorType.URL,
+                # Advanced: Push Webhook — collapsed by default
+                vol.Required("push_webhook"): section(
+                    vol.Schema(
+                        {
+                            vol.Optional(
+                                "push_ws_url", default=current_push_ws_url
+                            ): selector.TextSelector(
+                                selector.TextSelectorConfig(
+                                    multiline=False,
+                                    type=selector.TextSelectorType.URL,
+                                ),
+                            ),
+                            vol.Optional(
+                                "push_auth_method", default=current_push_auth_method
+                            ): selector.SelectSelector(
+                                selector.SelectSelectorConfig(
+                                    options=[
+                                        selector.SelectOptionDict(value="none", label="None"),
+                                        selector.SelectOptionDict(value="token", label="Token"),
+                                        selector.SelectOptionDict(value="bearer", label="Bearer"),
+                                        selector.SelectOptionDict(value="hmac", label="HMAC"),
+                                    ],
+                                    mode=selector.SelectSelectorMode.LIST,
+                                )
+                            ),
+                            vol.Optional(
+                                "push_token", default=current_push_token
+                            ): selector.TextSelector(
+                                selector.TextSelectorConfig(
+                                    multiline=False,
+                                    type=selector.TextSelectorType.PASSWORD,
+                                ),
+                            ),
+                            vol.Optional(
+                                "push_ws_token", default=current_push_ws_token
+                            ): selector.TextSelector(
+                                selector.TextSelectorConfig(
+                                    multiline=False,
+                                    type=selector.TextSelectorType.PASSWORD,
+                                ),
+                            ),
+                        }
                     ),
-                ),
-                vol.Optional(
-                    "push_auth_method", default=current_push_auth_method
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=[
-                            selector.SelectOptionDict(value="none", label="None"),
-                            selector.SelectOptionDict(value="token", label="Token"),
-                            selector.SelectOptionDict(value="bearer", label="Bearer"),
-                            selector.SelectOptionDict(value="hmac", label="HMAC"),
-                        ],
-                        mode=selector.SelectSelectorMode.LIST,
-                    )
-                ),
-                vol.Optional("push_token", default=current_push_token): selector.TextSelector(
-                    selector.TextSelectorConfig(
-                        multiline=False,
-                        type=selector.TextSelectorType.PASSWORD,
-                    ),
-                ),
-                vol.Optional("push_ws_token", default=current_push_ws_token): selector.TextSelector(
-                    selector.TextSelectorConfig(
-                        multiline=False,
-                        type=selector.TextSelectorType.PASSWORD,
-                    ),
+                    {"collapsed": True},
                 ),
             }
         )
@@ -472,15 +541,6 @@ class LuxorLivingOptionsFlow(OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=options_schema,
-            description_placeholders={
-                "description": "Configure basic settings below. Advanced users: Push Webhook options at the bottom are optional and only needed for external real-time KNX state updates.",
-                "scan_interval_description": "Update interval in seconds (5-300)",
-                "log_level_description": "Logging verbosity for troubleshooting",
-                "push_ws_url_description": "⚙️ ADVANCED: WebSocket URL for real-time KNX updates (leave empty to disable)",
-                "push_auth_method_description": "⚙️ ADVANCED: Authentication method",
-                "push_token_description": "⚙️ ADVANCED: Shared secret for authentication",
-                "push_ws_token_description": "⚙️ ADVANCED: Optional WebSocket Bearer token",
-            },
         )
 
     async def _async_update_log_level(self, log_level: str) -> None:

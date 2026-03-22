@@ -1,0 +1,6 @@
+{
+  "services": {
+    "reload": "mdi:reload",
+    "list_entities": "mdi:format-list-bulleted"
+  }
+}

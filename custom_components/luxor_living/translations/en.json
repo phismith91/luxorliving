@@ -29,6 +29,13 @@
           "simulation_mode": "Test mode without real hardware connection"
         }
       },
+      "zeroconf_confirm": {
+        "title": "LUXORliving Gateway Found",
+        "description": "A LUXORliving KNX/IP gateway was discovered at {host}. Do you want to set it up?",
+        "data": {
+          "host": "Gateway IP Address"
+        }
+      },
       "reauth_confirm": {
         "title": "Re-authenticate LUXORliving",
         "description": "Your gateway credentials have expired. Please enter new credentials.",
@@ -66,16 +73,35 @@
         "title": "LUXORliving Options",
         "description": "Configure LUXORliving integration behavior",
         "data": {
-          "simulation_mode": "Simulation Mode (Dry-run)",
           "scan_interval": "Polling Interval (seconds)",
-          "log_level": "Debug Level"
+          "simulation_mode": "Simulation Mode",
+          "allow_diagnostics": "Allow Diagnostics",
+          "log_level": "Log Level",
+          "discovery_timeout": "Discovery Timeout (seconds)",
+          "push_webhook": "Push Webhook",
+          "push_ws_url": "WebSocket URL",
+          "push_auth_method": "Authentication Method",
+          "push_token": "Token / Secret",
+          "push_ws_token": "WebSocket Bearer Token"
         },
         "data_description": {
-          "simulation_mode": "Enable simulation mode for testing without hardware",
-          "scan_interval": "How often to poll the gateway for updates (5-300 seconds)",
-          "log_level": "Logging verbosity for troubleshooting"
+          "scan_interval": "How often to poll the gateway for state updates (5–300 seconds). With Push Webhook active, 60–120 s is sufficient.",
+          "simulation_mode": "Run without a real gateway — accepts commands but sends no KNX telegrams. Useful for testing automations.",
+          "allow_diagnostics": "Allow the HA diagnostics download to include gateway state, entities, and device details. Passwords are always redacted.",
+          "log_level": "Verbosity of integration logs. Use 'debug' for troubleshooting.",
+          "discovery_timeout": "How long to wait for KNX group address responses during startup (0.5–10 seconds). Increase on slow networks.",
+          "push_webhook": "Optional: receive real-time KNX state updates from an external forwarder instead of relying solely on polling.",
+          "push_ws_url": "WebSocket URL of an external KNX forwarder (e.g. ws://192.168.1.100:8765). Leave empty to disable.",
+          "push_auth_method": "Authentication method for incoming push HTTP requests: none, token, bearer, or hmac.",
+          "push_token": "Shared secret for token / hmac authentication.",
+          "push_ws_token": "Bearer token sent when connecting to the WebSocket URL."
         }
       }
+    }
+  },
+  "exceptions": {
+    "entity_unavailable": {
+      "message": "Entity is unavailable — gateway connection lost"
     }
   },
   "issues": {

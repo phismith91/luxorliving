@@ -110,7 +110,10 @@ class LuxorLivingEntity(Entity):
     def _raise_if_unavailable(self) -> None:
         """Raise HomeAssistantError if the entity / gateway is not available."""
         if not self.available:
-            raise HomeAssistantError(f"{self.name} is unavailable — gateway connection lost")
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="entity_unavailable",
+            )
 
     async def async_update(self) -> None:
         """Update the entity state.

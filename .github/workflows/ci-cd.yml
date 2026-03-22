@@ -40,7 +40,20 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          python -m pytest tests/ --cov-report=xml -m "not enable_socket"
+          python -m pytest tests/ --cov=custom_components/luxor_living --cov-report=xml -m "not enable_socket"
+
+      - name: Update test count badge in README
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          COUNT=$(python -m pytest tests/ --collect-only -q 2>&1 | grep "tests collected" | awk '{print $1}')
+          if [ -n "$COUNT" ]; then
+            sed -i "s|Tests-[0-9]*%20passing|Tests-${COUNT}%20passing|g" README.md
+            sed -i "s|\[Tests: [0-9]*\]|\[Tests: ${COUNT}\]|g" README.md
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git diff --quiet README.md || git commit -am "ci: update test count badge to ${COUNT} [skip ci]"
+            git push
+          fi
 
       - name: Update test count badge in README
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
