@@ -7,283 +7,55 @@
 [![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](https://github.com/phismith91/luxorliving/blob/main/LICENSE)
 [![Tests: 296](https://img.shields.io/badge/Tests-296%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
 
-## Support
-
-If you find this project useful, consider buying me a coffee:
-
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Donate-FFDD00?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/philsmith91)
-
-## What is this Integration about
-
-Integrate Theben LUXORliving (BAOS 777) KNX gateways with automatic entity
-discovery from LXP project files.
-
-## Features
-
-- **Automatic entity discovery** – Upload LXP file, entities are created
-  automatically
-- **KNX/IP native** – Tunneling and routing modes supported
-- **Local polling updates** – State refresh via BAOS REST (configurable
-  interval)
-- **Config Flow UI** – Setup in <2 minutes via HA interface
-- **HACS compatible** – One-click installation
-- **🚀 Performance optimized** – Parallel entity creation, async operations
-- **⚙️ Configurable discovery** – Adjustable auto-discovery timeout (0.5-10s)
-- **📊 Performance monitoring** – Built-in benchmarking and regression detection
-- **🛡️ Circuit breaker protection** – Resilient error handling with automatic
-  recovery
-- **💾 Smart caching** – LXP file caching with TTL and memory management
-- **🏥 Health monitoring** – System health endpoint for diagnostics
-- **⚡ Rate limiting** – Prevents "light shows" by blocking rapid on/off cycles
-  (5+ in 1s)
-
-**Working platforms:** Light, Switch, Cover, Climate, Binary Sensor, Sensor
-
-## Current Release
-
-<!-- RELEASE_NOTES_START -->
-
-# 🎉 LUXORliving v0.8.0
-
-**Release Date:** 21. März 2026
-
-### ✨ Added
-
-- **HA Quality Scale — Bronze**: config flow prevents duplicate entries for the
-  same gateway host (`unique_id` + abort-if-already-configured)
-
-### 🛠️ Fixed & Changed
-
-- **README**: test count badge (301 ✅) + `docs/TESTS.md` now tracked in git
-  (was missing on GitHub, broke all Dependabot CI checks)
-- **CI**: `check_release_notes.sh` validates `CHANGELOG.md` instead of deleted
-  per-release files; `actions/upload-artifact` v6 → v7
-- **Docs**: `agent_release_manager.md` rewritten — AI agents can now execute
-  the full release & Dependabot workflow autonomously
-
-### ⬆️ Dependencies
-
-- `black` 26.1.0 → 26.3.1 · `bandit` 1.9.3 → 1.9.4 · `pylint` 4.0.4 → 4.0.5
-
-### ⚡ Upgrade Notes
-
-- Install v0.8.0 via HACS and restart Home Assistant
-
----
-
-For full changelog see `CHANGELOG.md`.
-
-<!-- RELEASE_NOTES_END -->
-
-For full release history see [CHANGELOG.md](./CHANGELOG.md).
-
-For full release history see [CHANGELOG.md](./CHANGELOG.md).
+Home Assistant custom integration for **Theben LUXORliving KNX** systems. Connects via the BAOS 777 IP1 gateway using a LXP project file for automatic entity discovery — lights, covers, climate, sensors, switches and binary sensors, all created without any manual YAML.
 
 ---
 
 ## Quick Start
 
-### 1. Prerequisites
+**Requirements:** Theben LUXORliving IP1 gateway · LXP project file · Home Assistant ≥ 2025.12.0
 
-- Theben LUXORliving IP1 Gateway (BAOS 777)
-- LXP project file (export from Theben LUXORPlug software)
-- Home Assistant ≥ 2025.12.0
+**1. Install via HACS**
 
-### 2. Installation
+Open HACS → Integrations → ⋮ → Custom repositories → add `https://github.com/phismith91/luxorliving` → Download → Restart HA.
 
-**HACS (recommended):**
+**2. Add the Integration**
 
-1. Open HACS → Integrations → ⋮ (menu) → Custom repositories
-2. Add `https://github.com/phismith91/luxorliving` as Integration
-3. Click Download → Restart Home Assistant
+Settings → Devices & Services → Add Integration → **LUXORliving** → follow the config flow.
 
-**Manual:**
+**3. Done**
 
-1. Copy `custom_components/luxor_living` to your HA config directory
-2. Restart Home Assistant
-
-### 3. Configuration
-
-1. **Settings** → **Devices & Services** → **Add Integration** → **LUXORliving**
-2. Upload LXP file (or enter path like `/config/luxor/project.lxp`)
-3. Enter gateway IP (port 3671 is used automatically)
-4. Select connection type: **Tunneling** (recommended) or Routing
-5. Click Submit
-
-Entities are created automatically based on your LXP project.
+Entities are discovered and created automatically from your LXP project file.
 
 ---
 
-## Usage Examples
+## Documentation
 
-### Automation with Physical Switches
+| Who are you? | Start here |
+| --- | --- |
+| 🏠 **User** — just want it working | [User Guide](docs/USER_GUIDE.md) |
+| ⚙️ **Advanced User** — want to tune and extend | [Advanced Guide](docs/ADVANCED_GUIDE.md) |
+| 🛠️ **Contributor** — want to develop or contribute | [Developer Guide](docs/DEVELOPER_GUIDE.md) |
 
-Physical KNX switches trigger HA automations instantly:
+**Reference:**
+[Full Options & Features Reference](docs/REFERENCE.md) · [Compatible Devices](#) · [Automations](docs/AUTOMATIONS.md) · [Dashboard Examples](docs/DASHBOARD_EXAMPLES.md)
 
-```yaml
-automation:
-  - alias: "Living room motion detected"
-    trigger:
-      - platform: state
-        entity_id: binary_sensor.bewegungsmelder_wohnzimmer
-        to: "on"
-    action:
-      - service: light.turn_on
-        target:
-          entity_id: light.deckenleuchte_wohnzimmer
-```
+**Technical:**
+[Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md) · [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) · [Sensor Platform](docs/SENSOR_PLATFORM.md) · [Tests](docs/TESTS.md)
 
-### Lovelace Card
-
-```yaml
-type: entities
-title: LUXORliving
-entities:
-  - entity: light.deckenleuchte_wohnzimmer
-  - entity: switch.steckdose_kueche
-  - entity: binary_sensor.bewegungsmelder_flur
-```
+**Operations:**
+[Release Operations](docs/RELEASE_OPERATIONS.md) · [Incident Response](docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](CHANGELOG.md)
 
 ---
 
-## Troubleshooting
+## Support
 
-| Problem                    | Solution                                                               |
-| -------------------------- | ---------------------------------------------------------------------- |
-| Integration not loading    | Check logs: `tail -f /config/home-assistant.log \| grep luxor_living`  |
-| LXP file not found         | Use absolute path (e.g., `/config/luxor/project.lxp`)                  |
-| Gateway unreachable        | Verify IP address and port 3671, check firewall                        |
-| Entities not created       | Check LXP file contains group addresses, restart HA                    |
-| Tunneling connection fails | Try Routing mode or check BAOS authentication                          |
-| Slow startup               | Check discovery timeout setting (Options → Configure)                  |
-| Performance issues         | Run benchmark: `curl http://localhost:8123/api/luxor_living/benchmark` |
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Donate-FFDD00?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/philsmith91)
 
-## Push / WebSocket Forwarder 🔁
-
-The integration provides an optional push webhook and WebSocket client to accept
-external state updates (useful for gateways or cloud forwarders that push KNX
-values).
-
-- Webhook endpoint: `POST /api/luxor_living/push`
-  - JSON payload:
-    `{ "entry_id": "<entry_id>", "address": "1/2/3", "value": true, "value_type": "binary" }`
-  - Authentication: configurable per config entry: **none**, **token** (header
-    `X-LUXOR-PUSH-TOKEN`), **bearer** (`Authorization: Bearer <token>`), or
-    **hmac** (header `X-LUXOR-PUSH-SIGNATURE` with HMAC-SHA256 hex signature of
-    the JSON body using the configured secret).
-
-- WebSocket client: configure a `push_ws_url` in the integration options to have
-  HA open a websocket to an external forwarder. The WS client supports an
-  optional `push_ws_token` (sent as `Authorization: Bearer <token>`).
-
-This feature improves latency and reduces coordinator polling by letting the
-gateway push updates directly into the integration.
-
-| Circuit breaker open | Check network connectivity, circuit auto-recovers after
-timeout |
-
-**Enable debug logging:**
-
-```yaml
-logger:
-  default: info
-  logs:
-    custom_components.luxor_living: debug
-```
-
-**Health check endpoint:**
-
-```
-GET http://your-ha-ip:8123/api/luxor_living/health
-```
-
-**Performance benchmarking:**
-
-```bash
-# Run full benchmark suite
-curl -X POST http://your-ha-ip:8123/api/luxor_living/benchmark
-```
-
----
-
-## FAQ
-
-**Q: Do I need ETS software?** A: No. Export LXP from Theben LUXORPlug software
-(included with gateway).
-
-**Q: What's the difference between Tunneling and Routing?** A: Tunneling is
-recommended (authenticated, stable). Routing works without auth but may have
-firewall issues.
-
-**Q: Can I test without hardware?** A: Yes. Enable "Simulation Mode" in
-integration options for dry-run testing.
-
-**Q: Which group addresses are supported?** A: All DPT types in LXP file are
-parsed. Light (DPT 1.001, 5.001), Switch (DPT 1.001), Binary Sensors (DPT 1.x).
-
-**Q: How long does initial state reading take?** A: ~30ms per entity via
-GroupValueRead. Example: 27 lights = ~800ms.
-
----
-
-## Advanced Configuration
-
-### Simulation Mode
-
-Test without hardware by enabling in integration options: **Settings** →
-**Devices & Services** → **LUXORliving** → **Options** → Enable **Simulation
-Mode**
-
-### Multiple Gateways
-
-Add multiple integrations for different gateways:
-
-1. Add integration → Configure gateway 1
-2. Add integration again → Configure gateway 2
-
-Each gateway creates separate entities.
-
----
-
-## 📚 Documentation
-
-### For Users
-
-- 📖 [Installation Guide](docs/INSTALLATION.md) – Step-by-step setup
-- 🎨 [Dashboard Examples](docs/DASHBOARD_EXAMPLES.md) – UI card configurations
-- 🤖 [Automation Recipes](docs/AUTOMATIONS.md) – Common automation patterns
-- 🔌 [Compatible Devices](docs/COMPATIBLE_DEVICES.md) – Tested hardware
-- 📊 [Sensor Platform](docs/SENSOR_PLATFORM.md) – Sensor configuration
-
-### For Developers
-
-- 🏗️ [Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md) – System design &
-  data flow
-- 📐 [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) – Core design
-  decisions
-- 🔧 [KNX Implementation](docs/KNX_IMPLEMENTATION.md) – Technical protocol
-  details
-- 🧪 [Testing Guide](docs/TESTS.md) – Running and writing tests
-- 🛠️ [Development Setup](AGENTS.md) – Developer environment setup
-- 🔐 [Security Policy](SECURITY.md) – Vulnerability reporting
-
-### For DevOps
-
-- 🚀 [Release Operations](docs/RELEASE_OPERATIONS.md) – Release process
-- 🚨 [Incident Response](docs/INCIDENT_RESPONSE_RUNBOOK.md) – Emergency
-  procedures
-- 📋 [Documentation Index](docs/INDEX.md) – Complete documentation overview
+Found a bug? [Open an issue](https://github.com/phismith91/luxorliving/issues) · Security issue? See [SECURITY.md](SECURITY.md)
 
 ---
 
 ## License
 
-This project is licensed under the [LICENSE](LICENSE).
-
----
-
-## Credits
-
-- [Theben AG](https://www.theben.de/) – LUXORliving system
-- [xknx](https://github.com/XKNX/xknx) – KNX/IP communication library
-- Home Assistant Community
+[MIT](https://github.com/phismith91/luxorliving/blob/main/LICENSE) · Built with [xknx](https://github.com/XKNX/xknx) · Made for [Theben LUXORliving](https://www.theben.de/)
