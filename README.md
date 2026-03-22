@@ -33,18 +33,18 @@ Entities are discovered and created automatically from your LXP project file.
 
 | Who are you? | Start here |
 | --- | --- |
-| 🏠 **User** — just want it working | [User Guide](docs/USER_GUIDE.md) |
-| ⚙️ **Advanced User** — want to tune and extend | [Advanced Guide](docs/ADVANCED_GUIDE.md) |
-| 🛠️ **Contributor** — want to develop or contribute | [Developer Guide](docs/DEVELOPER_GUIDE.md) |
+| 🏠 **User** — just want it working | [User Guide](https://github.com/phismith91/luxorliving/blob/main/docs/USER_GUIDE.md) |
+| ⚙️ **Advanced User** — want to tune and extend | [Advanced Guide](https://github.com/phismith91/luxorliving/blob/main/docs/ADVANCED_GUIDE.md) |
+| 🛠️ **Contributor** — want to develop or contribute | [Developer Guide](https://github.com/phismith91/luxorliving/blob/main/docs/DEVELOPER_GUIDE.md) |
 
 **Reference:**
-[Full Options & Features Reference](docs/REFERENCE.md) · [Compatible Devices](#) · [Automations](docs/AUTOMATIONS.md) · [Dashboard Examples](docs/DASHBOARD_EXAMPLES.md)
+[Full Options & Features Reference](https://github.com/phismith91/luxorliving/blob/main/docs/REFERENCE.md) · [Automations](https://github.com/phismith91/luxorliving/blob/main/docs/AUTOMATIONS.md) · [Dashboard Examples](https://github.com/phismith91/luxorliving/blob/main/docs/DASHBOARD_EXAMPLES.md)
 
 **Technical:**
-[Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md) · [Architecture Decisions](docs/ARCHITECTURE_DECISION.md) · [Sensor Platform](docs/SENSOR_PLATFORM.md) · [Tests](docs/TESTS.md)
+[Architecture Overview](https://github.com/phismith91/luxorliving/blob/main/docs/ARCHITECTURE_OVERVIEW.md) · [Architecture Decisions](https://github.com/phismith91/luxorliving/blob/main/docs/ARCHITECTURE_DECISION.md) · [Sensor Platform](https://github.com/phismith91/luxorliving/blob/main/docs/SENSOR_PLATFORM.md) · [Tests](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
 
 **Operations:**
-[Release Operations](docs/RELEASE_OPERATIONS.md) · [Incident Response](docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](CHANGELOG.md)
+[Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 ---
 
@@ -52,7 +52,7 @@ Entities are discovered and created automatically from your LXP project file.
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Donate-FFDD00?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/philsmith91)
 
-Found a bug? [Open an issue](https://github.com/phismith91/luxorliving/issues) · Security issue? See [SECURITY.md](SECURITY.md)
+Found a bug? [Open an issue](https://github.com/phismith91/luxorliving/issues) · Security issue? See [SECURITY.md](https://github.com/phismith91/luxorliving/blob/main/SECURITY.md)
 
 ---
 
