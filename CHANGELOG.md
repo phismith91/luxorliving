@@ -15,6 +15,15 @@ documented in this file.
 
 ---
 
+## [1.1.0] - 2026-03-23
+
+### Added
+
+- Extended test suite: 725 tests covering coordinator, binary sensor, sensor, switch, light, and cover platforms
+- Branch coverage raised from 73% to 80%+ (Gold Quality Scale target)
+
+---
+
 ## [1.0.0] - 2026-03-22
 
 ### Added
