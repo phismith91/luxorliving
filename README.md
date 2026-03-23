@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.1.0](https://github.com/phismith91/luxorliving/releases/tag/v1.1.0)
+**Current release:** [v1.1.1](https://github.com/phismith91/luxorliving/releases/tag/v1.1.1)
 <!-- RELEASE_NOTES_END -->
 
 ---
