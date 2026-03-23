@@ -2,14 +2,16 @@
 
 ## Supported Versions
 
-The following versions of the LUXORliving integration are currently supported
-with security updates:
+Only the **latest stable release** receives security updates. Older versions are
+not actively maintained.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.5.x   | :white_check_mark: |
-| 0.4.x   | :white_check_mark: |
-| < 0.4   | :x:                |
+| Version        | Supported          |
+| -------------- | ------------------ |
+| latest (1.1.x) | :white_check_mark: |
+| older          | :x:                |
+
+See the [Releases page](https://github.com/phismith91/luxorliving/releases) for
+the current version.
 
 ## Reporting a Vulnerability
 
@@ -18,7 +20,7 @@ with security updates:
 ### How to Report a Security Vulnerability?
 
 1. **Email:** Send a detailed description to:
-   [philismith91@gmail.com](mailto:philismith91@gmail.com)
+   [software@withphil.de](mailto:software@withphil.de)
 2. **Subject:** Use "SECURITY: [Brief Description]" as subject
 3. **Content:** Please include:
    - Detailed description of the security vulnerability

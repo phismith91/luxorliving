@@ -41,6 +41,9 @@ jobs:
       - name: Run README validation
         run: ./scripts/validate_readme.sh
 
+      - name: Check version references
+        run: ./scripts/check_version_refs.sh
+
       - name: HACS validation
         run: ./scripts/validate_hacs.sh
 
