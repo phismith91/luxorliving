@@ -15,6 +15,15 @@ documented in this file.
 
 ---
 
+## [1.1.1] - 2026-03-23
+
+### Fixed
+
+- HACS default store compliance: brand assets moved to `custom_components/luxor_living/brand/icon.png`
+- Validate workflow: removed `continue-on-error` bypass, added `push` trigger
+
+---
+
 ## [1.1.0] - 2026-03-23
 
 ### Added
