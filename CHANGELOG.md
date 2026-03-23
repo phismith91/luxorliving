@@ -15,6 +15,14 @@ documented in this file.
 
 ---
 
+## [1.1.3] - 2026-03-23
+
+### Fixed
+
+- Replace incorrect icon with correct custom icon (fixes HACS store display)
+
+---
+
 ## [1.1.2] - 2026-03-23
 
 ### Fixed
