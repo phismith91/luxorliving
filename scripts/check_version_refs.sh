@@ -78,7 +78,7 @@ STALE=$(grep -rn --include="*.md" \
 
 if [ -n "$STALE" ]; then
     echo "   ERROR: Found stale roadmap version references:"
-    echo "$STALE" | sed 's/^/     /'
+    while IFS= read -r line; do echo "     $line"; done <<< "$STALE"
     ERRORS=$((ERRORS + 1))
 else
     echo "   OK"
