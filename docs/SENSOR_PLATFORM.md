@@ -179,14 +179,11 @@ template:
 
 ### Climate Integration
 
-Combine with climate entities for thermostat control (v0.4.0+):
+Combine with climate entities for thermostat control:
 
 ```python
-# Current: Sensor platform (v0.3.1+)
-sensor.aussentemperatur  # Outside temperature
-
-# Future: Climate platform (v0.4.0)
-climate.wohnzimmer  # Thermostat with setpoint control
+sensor.aussentemperatur  # Outside temperature (sensor platform)
+climate.wohnzimmer       # Thermostat with setpoint control (climate platform)
 ```
 
 ## Troubleshooting
@@ -282,15 +279,6 @@ exportiert.
 - 10 sensors: <500ms startup
 - 30 sensors: <1.5s startup
 - 100 sensors: <5s startup
-
-## Future Enhancements
-
-**Planned for v0.4.0+:**
-
-- Climate platform for temperature setpoint control
-- Historical sensor data (if enabled in Home Assistant)
-- Custom unit overrides in integration UI
-- CO2/Air Quality threshold alerts
 
 ## Testing
 
