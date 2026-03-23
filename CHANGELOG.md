@@ -15,6 +15,16 @@ documented in this file.
 
 ---
 
+## [1.1.2] - 2026-03-23
+
+### Fixed
+
+- SECURITY.md: replaced stale 0.4/0.5 supported-versions table with "latest only" policy
+- Contact email updated to software@withphil.de
+- Automated version-reference check added to CI (scripts/check_version_refs.sh)
+
+---
+
 ## [1.1.1] - 2026-03-23
 
 ### Fixed
