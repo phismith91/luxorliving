@@ -238,3 +238,38 @@ class TestGetParameterAttributes:
         entity._mapped_entity.attributes = {}
         result = entity._get_parameter_attributes()
         assert "impulse_count" not in result
+
+    def test_cellar_timer(self):
+        entity = _make_entity()
+        entity._mapped_entity.parameters = {"kellerlichtzeit": "00007530"}
+        entity._mapped_entity.attributes = {}
+        result = entity._get_parameter_attributes()
+        assert "cellar_timer" in result
+
+    def test_delay_on(self):
+        entity = _make_entity()
+        entity._mapped_entity.parameters = {"einschaltverzögerung": "00007530"}
+        entity._mapped_entity.attributes = {}
+        result = entity._get_parameter_attributes()
+        assert "delay_on" in result
+
+    def test_delay_off(self):
+        entity = _make_entity()
+        entity._mapped_entity.parameters = {"ausschaltverzögerung": "00007530"}
+        entity._mapped_entity.attributes = {}
+        result = entity._get_parameter_attributes()
+        assert "delay_off" in result
+
+    def test_switch_off_warning_true(self):
+        entity = _make_entity()
+        entity._mapped_entity.parameters = {"ausschaltvorwarnung": "true"}
+        entity._mapped_entity.attributes = {}
+        result = entity._get_parameter_attributes()
+        assert result.get("switch_off_warning") is True
+
+    def test_switch_off_warning_false(self):
+        entity = _make_entity()
+        entity._mapped_entity.parameters = {"ausschaltvorwarnung": "false"}
+        entity._mapped_entity.attributes = {}
+        result = entity._get_parameter_attributes()
+        assert result.get("switch_off_warning") is False
