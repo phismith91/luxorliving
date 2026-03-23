@@ -52,6 +52,33 @@ Entities are discovered and created automatically from your LXP project file.
 
 ---
 
+## Compatible Devices
+
+Tested and confirmed working:
+
+| Device | Function | HA platform |
+| --- | --- | --- |
+| S 4 / S 8 / S 16 | Switching actuator | `switch` / `light` |
+| D 2 / D 4 | Dimming actuator | `light` (with brightness) |
+| J 4 / J 8 | Blind / shutter actuator | `cover` (position + tilt) |
+| H 6 | Heating actuator | `climate` (setpoint + valve) |
+| KNX weather station | Multi-sensor | `sensor` (temperature, wind, brightness) |
+| Motion detectors | Binary input | `binary_sensor` |
+| Window / door contacts | Binary input | `binary_sensor` |
+
+Not yet tested / known limitations:
+
+| Device / feature | Status |
+| --- | --- |
+| Multi-gang switches with mixed functions | Not tested |
+| Scene actuators | Not supported — no LXP role mapping |
+| KNX-RF (wireless) devices | Not tested |
+| Energy metering actuators | Not tested |
+
+If your device works or doesn't work, please [open an issue](https://github.com/phismith91/luxorliving/issues) so we can update this list.
+
+---
+
 ## Support
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Donate-FFDD00?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/philsmith91)

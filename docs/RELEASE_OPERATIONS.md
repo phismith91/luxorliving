@@ -1,10 +1,10 @@
 # 📋 Release & Tagging Operational Guide
 
-**Author:** Release Manager Agent **Date:** 9. Januar 2026 **Purpose:**
-Step-by-step release procedures and quality gates (current: v0.6.0)
+**Author:** Release Manager Agent **Purpose:**
+Step-by-step release procedures and quality gates.
 
-**Note:** Examples use v0.3.0 for illustration. Replace with actual target
-version.
+**Note:** Version numbers in examples are illustrative. Replace with the actual
+target version.
 
 ---
 
