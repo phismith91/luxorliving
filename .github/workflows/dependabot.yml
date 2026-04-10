@@ -42,7 +42,7 @@ jobs:
           pip install -r requirements_style.txt
 
       - name: Run tests
-        run: python -m pytest tests/ -v --tb=short
+        run: python -m pytest tests/ -v --tb=short -m "not enable_socket"
 
       - name: Run Black
         run: black --check custom_components/luxor_living/ tests/
