@@ -12,6 +12,7 @@ from custom_components.luxor_living.climate import (
 )
 from custom_components.luxor_living.const import DATA_KNX_GATEWAY, DOMAIN
 from custom_components.luxor_living.integration_state import IntegrationState
+from custom_components.luxor_living.mapped_entity import MappedEntity
 
 
 @pytest.fixture
@@ -25,8 +26,9 @@ def mock_knx_gateway():
     """Create mock KNX gateway."""
     gateway = MagicMock()
     gateway.connected = True
-    gateway.read_group_address = AsyncMock()
-    gateway.write_group_address = AsyncMock()
+    gateway.async_read_group_address = AsyncMock(return_value=True)
+    gateway.async_send_telegram = AsyncMock(return_value=True)
+    gateway.register_listener = MagicMock()
     return gateway
 
 
@@ -41,21 +43,24 @@ def mock_mapper():
 @pytest.fixture
 def climate_mapped_entity():
     """Create a mapped climate entity (from EntityMapper)."""
-    return {
-        "unique_id": "luxor_ABC123_1_climate",
-        "name": "FBH Wohnzimmer",
-        "device_id": "ABC123",
-        "device_name": "H6 1",
-        "device_model": "H6 Heating Actuator (App ID 18502)",
-        "datapoints": [
-            {"role": "Istwert", "address": 8454},
-            {"role": "Sollwert", "address": 8198},
-            {"role": "StatusSollwert", "address": 8966},
-            {"role": "Stellgrösse", "address": 8710},
-            {"role": "WindowContact", "address": 9222},
-            {"role": "UmschaltenHeitzenKühlen", "address": 10247},
-        ],
-    }
+    return MappedEntity(
+        platform=Platform.CLIMATE,
+        unique_id="luxor_ABC123_1_climate",
+        name="FBH Wohnzimmer",
+        device_name="H6 1",
+        device_id="ABC123",
+        entity_type="climate",
+        datapoints={
+            "Istwert": 8454,
+            "Sollwert": 8198,
+            "StatusSollwert": 8966,
+            "Stellgrösse": 8710,
+            "WindowContact": 9222,
+            "UmschaltenHeitzenKühlen": 10247,
+        },
+        attributes={},
+        parameters={},
+    )
 
 
 class TestLuxorClimate:
@@ -95,13 +100,24 @@ class TestLuxorClimate:
     async def test_update_temperature(
         self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
     ):
-        """Test temperature update from KNX."""
-        mock_knx_gateway.read_group_address.side_effect = [
-            2150,  # Current temp: 21.5°C (2150 / 100)
-            2000,  # Target temp: 20.0°C (2000 / 100)
-            0,  # Window contact: closed
-        ]
+        """Test temperature update triggers KNX read requests."""
+        entity = LuxorClimate(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=climate_mapped_entity,
+            entry_id="test_entry",
+        )
 
+        await entity._update_temperature()
+
+        # Should have sent GroupValueRead requests for temperature datapoints
+        mock_knx_gateway.async_read_group_address.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_handle_temperature_update(
+        self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
+    ):
+        """Test temperature state is updated via listener callback (DPT 9.001 float)."""
         entity = LuxorClimate(
             coordinator=mock_coordinator,
             knx_gateway=mock_knx_gateway,
@@ -110,7 +126,9 @@ class TestLuxorClimate:
         )
         entity.async_write_ha_state = MagicMock()
 
-        await entity._update_temperature()
+        entity._handle_temperature_update("8454", 21.5)
+        entity._handle_setpoint_update("8966", 20.0)
+        entity._handle_window_contact_update("9222", False)
 
         assert entity.current_temperature == 21.5
         assert entity.target_temperature == 20.0
@@ -129,8 +147,8 @@ class TestLuxorClimate:
 
         await entity.async_set_temperature(**{ATTR_TEMPERATURE: 22.5})
 
-        # Should write to Sollwert address (8198) with value 2250 (22.5 * 100)
-        mock_knx_gateway.write_group_address.assert_called_once_with(8198, 2250)
+        # Should send DPT 9.001 temperature value to Sollwert address (8198)
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(8198, 22.5, "temperature")
         assert entity.target_temperature == 22.5
 
     @pytest.mark.asyncio
@@ -150,7 +168,7 @@ class TestLuxorClimate:
         await entity.async_set_hvac_mode(HVACMode.HEAT)
 
         assert entity.hvac_mode == HVACMode.HEAT
-        mock_knx_gateway.write_group_address.assert_called_once_with(8198, 2100)
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(8198, 21.0, "temperature")
 
     @pytest.mark.asyncio
     async def test_set_hvac_mode_off(
@@ -169,7 +187,7 @@ class TestLuxorClimate:
 
         assert entity.hvac_mode == HVACMode.OFF
         # Should set temperature to minimum (5.0°C)
-        mock_knx_gateway.write_group_address.assert_called_once_with(8198, 500)
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(8198, 5.0, "temperature")
 
     def test_available_when_connected(
         self, mock_coordinator, mock_knx_gateway, climate_mapped_entity

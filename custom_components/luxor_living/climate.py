@@ -118,23 +118,22 @@ class LuxorClimate(ClimateEntity):
         self._mapped_entity = mapped_entity
         self._entry_id = entry_id
 
-        # Map datapoint addresses by role
-        self._datapoints = {dp["role"]: dp["address"] for dp in mapped_entity.get("datapoints", [])}
+        # Map datapoint addresses by role (MappedEntity.datapoints is already dict[str, int])
+        self._datapoints = mapped_entity.datapoints
 
         # Set unique ID
-        self._attr_unique_id = mapped_entity.get("unique_id")
+        self._attr_unique_id = mapped_entity.unique_id
 
         # Set name
-        self._attr_name = mapped_entity.get("name")
+        self._attr_name = mapped_entity.name
 
         # Set device info
-        device_id = mapped_entity.get("device_id")
+        device_id = mapped_entity.device_id
         self._attr_device_info = {
             "identifiers": {(DOMAIN, device_id)},
-            "name": mapped_entity.get("device_name"),
+            "name": mapped_entity.device_name,
             "manufacturer": "Theben",
-            "model": mapped_entity.get("device_model"),
-            "sw_version": mapped_entity.get("device_model"),
+            "model": "LUXORliving",
         }
 
         # Initialize state
@@ -142,6 +141,26 @@ class LuxorClimate(ClimateEntity):
         self._attr_target_temperature = None
         self._attr_hvac_mode = HVACMode.HEAT
         self._window_contact_open = False
+
+        # Register KNX listeners for temperature / setpoint / window contact updates
+        if "Istwert" in self._datapoints:
+            self.knx_gateway.register_listener(
+                self._datapoints["Istwert"],
+                self._handle_temperature_update,
+            )
+
+        target_dp = "StatusSollwert" if "StatusSollwert" in self._datapoints else "Sollwert"
+        if target_dp in self._datapoints:
+            self.knx_gateway.register_listener(
+                self._datapoints[target_dp],
+                self._handle_setpoint_update,
+            )
+
+        if "WindowContact" in self._datapoints:
+            self.knx_gateway.register_listener(
+                self._datapoints["WindowContact"],
+                self._handle_window_contact_update,
+            )
 
     @property
     def available(self) -> bool:
@@ -159,41 +178,37 @@ class LuxorClimate(ClimateEntity):
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to hass."""
         await super().async_added_to_hass()
-        # Subscribe to temperature updates
+        # Request initial temperature state from KNX bus
         await self._update_temperature()
 
-    async def _update_temperature(self) -> None:
-        """Update current and target temperature from KNX."""
-        try:
-            # Read current temperature (Istwert)
-            if "Istwert" in self._datapoints:
-                current_temp_raw = await self.knx_gateway.read_group_address(
-                    self._datapoints["Istwert"]
-                )
-                if current_temp_raw is not None:
-                    # KNX DPT 9.001 temperature value (16-bit float)
-                    self._attr_current_temperature = current_temp_raw / 100.0
-
-            # Read target temperature (Sollwert or StatusSollwert)
-            target_dp = "StatusSollwert" if "StatusSollwert" in self._datapoints else "Sollwert"
-            if target_dp in self._datapoints:
-                target_temp_raw = await self.knx_gateway.read_group_address(
-                    self._datapoints[target_dp]
-                )
-                if target_temp_raw is not None:
-                    self._attr_target_temperature = target_temp_raw / 100.0
-
-            # Check window contact if available
-            if "WindowContact" in self._datapoints:
-                window_raw = await self.knx_gateway.read_group_address(
-                    self._datapoints["WindowContact"]
-                )
-                self._window_contact_open = bool(window_raw) if window_raw is not None else False
-
+    def _handle_temperature_update(self, group_address: str, value: Any) -> None:
+        """Handle actual temperature update received via KNX telegram (DPT 9.001 float)."""
+        if isinstance(value, (int, float)):
+            self._attr_current_temperature = float(value)
             self.async_write_ha_state()
 
-        except Exception as e:
-            _LOGGER.error("Error updating temperature for %s: %s", self.name, e)
+    def _handle_setpoint_update(self, group_address: str, value: Any) -> None:
+        """Handle target setpoint update received via KNX telegram (DPT 9.001 float)."""
+        if isinstance(value, (int, float)):
+            self._attr_target_temperature = float(value)
+            self.async_write_ha_state()
+
+    def _handle_window_contact_update(self, group_address: str, value: Any) -> None:
+        """Handle window contact update received via KNX telegram."""
+        self._window_contact_open = bool(value)
+        self.async_write_ha_state()
+
+    async def _update_temperature(self) -> None:
+        """Request current and target temperatures from KNX bus."""
+        if "Istwert" in self._datapoints:
+            await self.knx_gateway.async_read_group_address(self._datapoints["Istwert"])
+
+        target_dp = "StatusSollwert" if "StatusSollwert" in self._datapoints else "Sollwert"
+        if target_dp in self._datapoints:
+            await self.knx_gateway.async_read_group_address(self._datapoints[target_dp])
+
+        if "WindowContact" in self._datapoints:
+            await self.knx_gateway.async_read_group_address(self._datapoints["WindowContact"])
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
@@ -203,12 +218,11 @@ class LuxorClimate(ClimateEntity):
             return
 
         try:
-            # Convert to KNX DPT 9.001 format (multiply by 100)
-            temp_raw = int(temperature * 100)
-
-            # Write to Sollwert address
+            # Write to Sollwert address using DPT 9.001 (2-byte float)
             if "Sollwert" in self._datapoints:
-                await self.knx_gateway.write_group_address(self._datapoints["Sollwert"], temp_raw)
+                await self.knx_gateway.async_send_telegram(
+                    self._datapoints["Sollwert"], float(temperature), "temperature"
+                )
                 self._attr_target_temperature = temperature
                 self.async_write_ha_state()
                 _LOGGER.info("Set temperature for %s to %.1f°C", self.name, temperature)
