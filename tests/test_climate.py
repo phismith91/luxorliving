@@ -126,9 +126,9 @@ class TestLuxorClimate:
         )
         entity.async_write_ha_state = MagicMock()
 
-        entity._handle_temperature_update("8454", 21.5)
-        entity._handle_setpoint_update("8966", 20.0)
-        entity._handle_window_contact_update("9222", False)
+        entity._handle_temperature_update(8454, 21.5)
+        entity._handle_setpoint_update(8966, 20.0)
+        entity._handle_window_contact_update(9222, False)
 
         assert entity.current_temperature == 21.5
         assert entity.target_temperature == 20.0

@@ -162,7 +162,7 @@ class TestLuxorCover:
         )
         entity.async_write_ha_state = MagicMock()
 
-        entity._handle_position_update("8710", 75)
+        entity._handle_position_update(8710, 75)
 
         assert entity.current_cover_position == 75
         assert entity.is_closed is False

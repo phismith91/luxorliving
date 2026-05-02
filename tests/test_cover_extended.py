@@ -380,20 +380,20 @@ class TestUpdatePosition:
     @pytest.mark.asyncio
     async def test_position_set_from_callback(self):
         entity, gateway = _make_cover([{"role": "StatusHöhe%", "address": 202}])
-        entity._handle_position_update("202", 80)
+        entity._handle_position_update(202, 80)
         assert entity._attr_current_cover_position == 80
         assert entity._attr_is_closed is False
 
     @pytest.mark.asyncio
     async def test_position_0_marks_closed(self):
         entity, gateway = _make_cover([{"role": "StatusHöhe%", "address": 202}])
-        entity._handle_position_update("202", 0)
+        entity._handle_position_update(202, 0)
         assert entity._attr_is_closed is True
 
     @pytest.mark.asyncio
     async def test_non_numeric_position_ignored(self):
         entity, gateway = _make_cover([{"role": "StatusHöhe%", "address": 202}])
-        entity._handle_position_update("202", "invalid")
+        entity._handle_position_update(202, "invalid")
         assert entity._attr_current_cover_position is None
 
     @pytest.mark.asyncio
