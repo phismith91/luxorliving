@@ -38,7 +38,7 @@ class PlatformDetector:
         "status@Dim": None,  # Status only
         # Cover-related roles
         "UpDown": Platform.COVER,
-        "StopStep": None,  # Paired with UpDown
+        "StepStop": None,  # Paired with UpDown
         "status@UpDown": None,  # Status only
         # Binary sensor roles
         "MasterSlave": Platform.BINARY_SENSOR,

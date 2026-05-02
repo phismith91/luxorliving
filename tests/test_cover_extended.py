@@ -4,20 +4,32 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.components.cover import CoverDeviceClass, CoverEntityFeature
+from homeassistant.const import Platform
 from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.luxor_living.cover import LuxorCover, _create_cover_entity_sync
+from custom_components.luxor_living.mapped_entity import MappedEntity
 
 
 def _mapped(datapoints=None, name="Test Cover"):
-    return {
-        "unique_id": "test_cover_001",
-        "name": name,
-        "device_id": "dev_001",
-        "device_name": "Test Device",
-        "device_model": "J8",
-        "datapoints": datapoints or [],
-    }
+    """Create a MappedEntity for cover tests.
+
+    Accepts datapoints as a list of {"role": ..., "address": ...} dicts
+    (legacy test format) and converts to the dict[str, Any] format used by MappedEntity.
+    """
+    dp_list = datapoints or []
+    dp_dict = {dp["role"]: dp["address"] for dp in dp_list}
+    return MappedEntity(
+        platform=Platform.COVER,
+        unique_id="test_cover_001",
+        name=name,
+        device_name="Test Device",
+        device_id="dev_001",
+        entity_type="cover",
+        datapoints=dp_dict,
+        attributes={},
+        parameters={},
+    )
 
 
 def _make_cover(datapoints=None, connected=True):

@@ -110,17 +110,17 @@ class LuxorCover(CoverEntity):
         self._mapped_entity = mapped_entity
         self._entry_id = entry_id
 
-        # Map datapoint addresses by role
-        self._datapoints = {dp["role"]: dp["address"] for dp in mapped_entity.get("datapoints", [])}
+        # Map datapoint addresses by role (MappedEntity.datapoints is already dict[str, int])
+        self._datapoints = dict(mapped_entity.datapoints)
 
         # Set unique ID
-        self._attr_unique_id = mapped_entity.get("unique_id")
+        self._attr_unique_id = mapped_entity.unique_id
 
         # Set name
-        self._attr_name = mapped_entity.get("name")
+        self._attr_name = mapped_entity.name
 
         # Determine if this is a blind (has tilt) or shutter
-        dp_roles = {dp["role"] for dp in mapped_entity.get("datapoints", [])}
+        dp_roles = set(mapped_entity.datapoints.keys())
         has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
 
         # Set device class
@@ -145,13 +145,12 @@ class LuxorCover(CoverEntity):
         self._attr_supported_features = features
 
         # Set device info
-        device_id = mapped_entity.get("device_id")
+        device_id = mapped_entity.device_id
         self._attr_device_info = {
             "identifiers": {(DOMAIN, device_id)},
-            "name": mapped_entity.get("device_name"),
+            "name": mapped_entity.device_name,
             "manufacturer": "Theben",
-            "model": mapped_entity.get("device_model"),
-            "sw_version": mapped_entity.get("device_model"),
+            "model": "LUXORliving",
         }
 
         # Initialize state
@@ -194,8 +193,7 @@ class LuxorCover(CoverEntity):
                     self._attr_is_closed = position_raw == 0
 
             # Read current tilt position if available
-            dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
-            has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+            has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
 
             if has_tilt:
                 tilt_dp = "StatusLamelle%" if "StatusLamelle%" in self._datapoints else "Lamelle%"
@@ -263,8 +261,7 @@ class LuxorCover(CoverEntity):
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
         """Open the cover tilt."""
         self._raise_if_unavailable()
-        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
-        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
 
         if not has_tilt:
             return
@@ -279,8 +276,7 @@ class LuxorCover(CoverEntity):
     async def async_close_cover_tilt(self, **kwargs: Any) -> None:
         """Close the cover tilt."""
         self._raise_if_unavailable()
-        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
-        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
 
         if not has_tilt:
             return
@@ -295,8 +291,7 @@ class LuxorCover(CoverEntity):
     async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
         """Stop the cover tilt."""
         self._raise_if_unavailable()
-        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
-        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
 
         if not has_tilt:
             return
@@ -311,8 +306,7 @@ class LuxorCover(CoverEntity):
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Move the cover tilt to a specific position."""
         self._raise_if_unavailable()
-        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
-        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
 
         if not has_tilt:
             return

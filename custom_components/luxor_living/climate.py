@@ -118,23 +118,22 @@ class LuxorClimate(ClimateEntity):
         self._mapped_entity = mapped_entity
         self._entry_id = entry_id
 
-        # Map datapoint addresses by role
-        self._datapoints = {dp["role"]: dp["address"] for dp in mapped_entity.get("datapoints", [])}
+        # Map datapoint addresses by role (MappedEntity.datapoints is already dict[str, int])
+        self._datapoints = dict(mapped_entity.datapoints)
 
         # Set unique ID
-        self._attr_unique_id = mapped_entity.get("unique_id")
+        self._attr_unique_id = mapped_entity.unique_id
 
         # Set name
-        self._attr_name = mapped_entity.get("name")
+        self._attr_name = mapped_entity.name
 
         # Set device info
-        device_id = mapped_entity.get("device_id")
+        device_id = mapped_entity.device_id
         self._attr_device_info = {
             "identifiers": {(DOMAIN, device_id)},
-            "name": mapped_entity.get("device_name"),
+            "name": mapped_entity.device_name,
             "manufacturer": "Theben",
-            "model": mapped_entity.get("device_model"),
-            "sw_version": mapped_entity.get("device_model"),
+            "model": "LUXORliving",
         }
 
         # Initialize state

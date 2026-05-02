@@ -12,6 +12,7 @@ from custom_components.luxor_living.climate import (
 )
 from custom_components.luxor_living.const import DATA_KNX_GATEWAY, DOMAIN
 from custom_components.luxor_living.integration_state import IntegrationState
+from custom_components.luxor_living.mapped_entity import MappedEntity
 
 
 @pytest.fixture
@@ -41,21 +42,24 @@ def mock_mapper():
 @pytest.fixture
 def climate_mapped_entity():
     """Create a mapped climate entity (from EntityMapper)."""
-    return {
-        "unique_id": "luxor_ABC123_1_climate",
-        "name": "FBH Wohnzimmer",
-        "device_id": "ABC123",
-        "device_name": "H6 1",
-        "device_model": "H6 Heating Actuator (App ID 18502)",
-        "datapoints": [
-            {"role": "Istwert", "address": 8454},
-            {"role": "Sollwert", "address": 8198},
-            {"role": "StatusSollwert", "address": 8966},
-            {"role": "Stellgrösse", "address": 8710},
-            {"role": "WindowContact", "address": 9222},
-            {"role": "UmschaltenHeitzenKühlen", "address": 10247},
-        ],
-    }
+    return MappedEntity(
+        platform=Platform.CLIMATE,
+        unique_id="luxor_ABC123_1_climate",
+        name="FBH Wohnzimmer",
+        device_name="H6 1",
+        device_id="ABC123",
+        entity_type="climate",
+        datapoints={
+            "Istwert": 8454,
+            "Sollwert": 8198,
+            "StatusSollwert": 8966,
+            "Stellgrösse": 8710,
+            "WindowContact": 9222,
+            "UmschaltenHeitzenKühlen": 10247,
+        },
+        attributes={},
+        parameters={},
+    )
 
 
 class TestLuxorClimate:

@@ -17,6 +17,7 @@ from custom_components.luxor_living.cover import (
     async_setup_entry,
 )
 from custom_components.luxor_living.integration_state import IntegrationState
+from custom_components.luxor_living.mapped_entity import MappedEntity
 
 
 @pytest.fixture
@@ -46,39 +47,45 @@ def mock_mapper():
 @pytest.fixture
 def shutter_mapped_entity():
     """Create a mapped shutter entity (no tilt)."""
-    return {
-        "unique_id": "luxor_DEF456_1_cover",
-        "name": "Wohnzimmer Rollladen",
-        "device_id": "DEF456",
-        "device_name": "J8 1",
-        "device_model": "J8 Shutter Actuator (App ID 18520)",
-        "datapoints": [
-            {"role": "UpDown", "address": 8454},
-            {"role": "StepStop", "address": 8198},
-            {"role": "Höhe%", "address": 8966},
-            {"role": "StatusHöhe%", "address": 8710},
-        ],
-    }
+    return MappedEntity(
+        platform=Platform.COVER,
+        unique_id="luxor_DEF456_1_cover",
+        name="Wohnzimmer Rollladen",
+        device_name="J8 1",
+        device_id="DEF456",
+        entity_type="cover",
+        datapoints={
+            "UpDown": 8454,
+            "StepStop": 8198,
+            "Höhe%": 8966,
+            "StatusHöhe%": 8710,
+        },
+        attributes={},
+        parameters={},
+    )
 
 
 @pytest.fixture
 def blind_mapped_entity():
     """Create a mapped blind entity (with tilt)."""
-    return {
-        "unique_id": "luxor_DEF456_2_cover",
-        "name": "Wohnzimmer Jalousie",
-        "device_id": "DEF456",
-        "device_name": "J8 1",
-        "device_model": "J8 Shutter Actuator (App ID 18520)",
-        "datapoints": [
-            {"role": "UpDown", "address": 8454},
-            {"role": "StepStop", "address": 8198},
-            {"role": "Höhe%", "address": 8966},
-            {"role": "StatusHöhe%", "address": 8710},
-            {"role": "Lamelle%", "address": 9222},
-            {"role": "StatusLamelle%", "address": 9476},
-        ],
-    }
+    return MappedEntity(
+        platform=Platform.COVER,
+        unique_id="luxor_DEF456_2_cover",
+        name="Wohnzimmer Jalousie",
+        device_name="J8 1",
+        device_id="DEF456",
+        entity_type="cover",
+        datapoints={
+            "UpDown": 8454,
+            "StepStop": 8198,
+            "Höhe%": 8966,
+            "StatusHöhe%": 8710,
+            "Lamelle%": 9222,
+            "StatusLamelle%": 9476,
+        },
+        attributes={},
+        parameters={},
+    )
 
 
 class TestLuxorCover:
