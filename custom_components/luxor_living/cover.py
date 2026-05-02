@@ -111,7 +111,7 @@ class LuxorCover(CoverEntity):
         self._entry_id = entry_id
 
         # Map datapoint addresses by role (MappedEntity.datapoints is already dict[str, int])
-        self._datapoints = dict(mapped_entity.datapoints)
+        self._datapoints = mapped_entity.datapoints
 
         # Set unique ID
         self._attr_unique_id = mapped_entity.unique_id

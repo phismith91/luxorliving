@@ -15,7 +15,7 @@ def _mapped(datapoints=None, name="Test Cover"):
     """Create a MappedEntity for cover tests.
 
     Accepts datapoints as a list of {"role": ..., "address": ...} dicts
-    (legacy test format) and converts to the dict[str, Any] format used by MappedEntity.
+    (legacy test format) and converts to the dict[str, int] format used by MappedEntity.
     """
     dp_list = datapoints or []
     dp_dict = {dp["role"]: dp["address"] for dp in dp_list}
