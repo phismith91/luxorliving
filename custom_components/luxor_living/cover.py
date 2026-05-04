@@ -107,7 +107,6 @@ class LuxorCover(CoverEntity):
         """Initialize the cover entity."""
         self.coordinator = coordinator
         self.knx_gateway = knx_gateway
-        self._mapped_entity = mapped_entity
         self._entry_id = entry_id
 
         # Map datapoint addresses by role (MappedEntity.datapoints is already dict[str, int])
@@ -158,24 +157,8 @@ class LuxorCover(CoverEntity):
         self._attr_current_cover_tilt_position = None
         self._attr_is_closed = None
 
-        # Register KNX listeners for position / tilt status updates
-        position_dp = "StatusHöhe%" if "StatusHöhe%" in self._datapoints else "Höhe%"
-        if position_dp in self._datapoints:
-            self.knx_gateway.register_listener(
-                self._datapoints[position_dp],
-                self._handle_position_update,
-            )
-
-        if "StatusLamelle%" in self._datapoints:
-            self.knx_gateway.register_listener(
-                self._datapoints["StatusLamelle%"],
-                self._handle_tilt_update,
-            )
-        elif "Lamelle%" in self._datapoints:
-            self.knx_gateway.register_listener(
-                self._datapoints["Lamelle%"],
-                self._handle_tilt_update,
-            )
+        # Listener refs stored for cleanup in async_will_remove_from_hass
+        self._knx_listener_refs: list[tuple[int, Any]] = []
 
     @property
     def available(self) -> bool:
@@ -193,8 +176,30 @@ class LuxorCover(CoverEntity):
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to hass."""
         await super().async_added_to_hass()
+
+        # Register KNX listeners — must run here, not in __init__, so that
+        # async_write_ha_state() is safe and __init__ stays thread-safe
+        # (it runs in an executor via run_in_executor).
+        position_dp = "StatusHöhe%" if "StatusHöhe%" in self._datapoints else "Höhe%"
+        if position_dp in self._datapoints:
+            addr = self._datapoints[position_dp]
+            self.knx_gateway.register_listener(addr, self._handle_position_update)
+            self._knx_listener_refs.append((addr, self._handle_position_update))
+
+        tilt_dp_key = "StatusLamelle%" if "StatusLamelle%" in self._datapoints else "Lamelle%"
+        if tilt_dp_key in self._datapoints:
+            addr = self._datapoints[tilt_dp_key]
+            self.knx_gateway.register_listener(addr, self._handle_tilt_update)
+            self._knx_listener_refs.append((addr, self._handle_tilt_update))
+
         # Request initial position state from KNX bus
         await self._update_position()
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Run when entity is removed from hass."""
+        for addr, cb in self._knx_listener_refs:
+            self.knx_gateway.unregister_listener(addr, cb)
+        self._knx_listener_refs.clear()
 
     def _handle_position_update(self, group_address: str, value: Any) -> None:
         """Handle cover position update received via KNX telegram."""

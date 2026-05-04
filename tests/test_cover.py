@@ -34,6 +34,7 @@ def mock_knx_gateway():
     gateway.async_read_group_address = AsyncMock(return_value=True)
     gateway.async_send_telegram = AsyncMock(return_value=True)
     gateway.register_listener = MagicMock()
+    gateway.unregister_listener = MagicMock()
     return gateway
 
 
@@ -136,7 +137,7 @@ class TestLuxorCover:
 
     @pytest.mark.asyncio
     async def test_update_position(self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity):
-        """Test position update triggers KNX read request."""
+        """Test position update triggers KNX read request for the correct address."""
         entity = LuxorCover(
             coordinator=mock_coordinator,
             knx_gateway=mock_knx_gateway,
@@ -146,8 +147,45 @@ class TestLuxorCover:
 
         await entity._update_position()
 
-        # Should have sent a GroupValueRead for the status address
-        mock_knx_gateway.async_read_group_address.assert_called()
+        # StatusHöhe% preferred over Höhe%; address 8710 from shutter_mapped_entity
+        mock_knx_gateway.async_read_group_address.assert_any_call(8710)
+
+    @pytest.mark.asyncio
+    async def test_listeners_registered_on_added_to_hass(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Test KNX listeners are registered in async_added_to_hass, not __init__."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="test_entry",
+        )
+
+        mock_knx_gateway.register_listener.assert_not_called()
+
+        await entity.async_added_to_hass()
+
+        mock_knx_gateway.register_listener.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_listeners_unregistered_on_remove(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Test KNX listeners are cleaned up in async_will_remove_from_hass."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="test_entry",
+        )
+        await entity.async_added_to_hass()
+        registered_count = mock_knx_gateway.register_listener.call_count
+
+        await entity.async_will_remove_from_hass()
+
+        assert mock_knx_gateway.unregister_listener.call_count == registered_count
+        assert entity._knx_listener_refs == []
 
     @pytest.mark.asyncio
     async def test_handle_position_update(

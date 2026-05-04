@@ -115,7 +115,6 @@ class LuxorClimate(ClimateEntity):
         """Initialize the climate entity."""
         self.coordinator = coordinator
         self.knx_gateway = knx_gateway
-        self._mapped_entity = mapped_entity
         self._entry_id = entry_id
 
         # Map datapoint addresses by role (MappedEntity.datapoints is already dict[str, int])
@@ -142,25 +141,8 @@ class LuxorClimate(ClimateEntity):
         self._attr_hvac_mode = HVACMode.HEAT
         self._window_contact_open = False
 
-        # Register KNX listeners for temperature / setpoint / window contact updates
-        if "Istwert" in self._datapoints:
-            self.knx_gateway.register_listener(
-                self._datapoints["Istwert"],
-                self._handle_temperature_update,
-            )
-
-        target_dp = "StatusSollwert" if "StatusSollwert" in self._datapoints else "Sollwert"
-        if target_dp in self._datapoints:
-            self.knx_gateway.register_listener(
-                self._datapoints[target_dp],
-                self._handle_setpoint_update,
-            )
-
-        if "WindowContact" in self._datapoints:
-            self.knx_gateway.register_listener(
-                self._datapoints["WindowContact"],
-                self._handle_window_contact_update,
-            )
+        # Listener refs stored for cleanup in async_will_remove_from_hass
+        self._knx_listener_refs: list[tuple[int, Any]] = []
 
     @property
     def available(self) -> bool:
@@ -175,11 +157,41 @@ class LuxorClimate(ClimateEntity):
                 translation_key="entity_unavailable",
             )
 
+    @property
+    def _target_dp_key(self) -> str:
+        """Return the preferred setpoint datapoint key (StatusSollwert preferred over Sollwert)."""
+        return "StatusSollwert" if "StatusSollwert" in self._datapoints else "Sollwert"
+
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to hass."""
         await super().async_added_to_hass()
+
+        # Register KNX listeners — must run here, not in __init__, so that
+        # async_write_ha_state() is safe and __init__ stays thread-safe
+        # (it runs in an executor via run_in_executor).
+        if "Istwert" in self._datapoints:
+            addr = self._datapoints["Istwert"]
+            self.knx_gateway.register_listener(addr, self._handle_temperature_update)
+            self._knx_listener_refs.append((addr, self._handle_temperature_update))
+
+        if self._target_dp_key in self._datapoints:
+            addr = self._datapoints[self._target_dp_key]
+            self.knx_gateway.register_listener(addr, self._handle_setpoint_update)
+            self._knx_listener_refs.append((addr, self._handle_setpoint_update))
+
+        if "WindowContact" in self._datapoints:
+            addr = self._datapoints["WindowContact"]
+            self.knx_gateway.register_listener(addr, self._handle_window_contact_update)
+            self._knx_listener_refs.append((addr, self._handle_window_contact_update))
+
         # Request initial temperature state from KNX bus
         await self._update_temperature()
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Run when entity is removed from hass."""
+        for addr, cb in self._knx_listener_refs:
+            self.knx_gateway.unregister_listener(addr, cb)
+        self._knx_listener_refs.clear()
 
     def _handle_temperature_update(self, group_address: str, value: Any) -> None:
         """Handle actual temperature update received via KNX telegram (DPT 9.001 float)."""
@@ -195,17 +207,17 @@ class LuxorClimate(ClimateEntity):
 
     def _handle_window_contact_update(self, group_address: str, value: Any) -> None:
         """Handle window contact update received via KNX telegram."""
-        self._window_contact_open = bool(value)
-        self.async_write_ha_state()
+        if value is not None:
+            self._window_contact_open = bool(value)
+            self.async_write_ha_state()
 
     async def _update_temperature(self) -> None:
         """Request current and target temperatures from KNX bus."""
         if "Istwert" in self._datapoints:
             await self.knx_gateway.async_read_group_address(self._datapoints["Istwert"])
 
-        target_dp = "StatusSollwert" if "StatusSollwert" in self._datapoints else "Sollwert"
-        if target_dp in self._datapoints:
-            await self.knx_gateway.async_read_group_address(self._datapoints[target_dp])
+        if self._target_dp_key in self._datapoints:
+            await self.knx_gateway.async_read_group_address(self._datapoints[self._target_dp_key])
 
         if "WindowContact" in self._datapoints:
             await self.knx_gateway.async_read_group_address(self._datapoints["WindowContact"])

@@ -29,6 +29,7 @@ def mock_knx_gateway():
     gateway.async_read_group_address = AsyncMock(return_value=True)
     gateway.async_send_telegram = AsyncMock(return_value=True)
     gateway.register_listener = MagicMock()
+    gateway.unregister_listener = MagicMock()
     return gateway
 
 
@@ -100,7 +101,7 @@ class TestLuxorClimate:
     async def test_update_temperature(
         self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
     ):
-        """Test temperature update triggers KNX read requests."""
+        """Test temperature update triggers KNX read requests for correct addresses."""
         entity = LuxorClimate(
             coordinator=mock_coordinator,
             knx_gateway=mock_knx_gateway,
@@ -110,8 +111,47 @@ class TestLuxorClimate:
 
         await entity._update_temperature()
 
-        # Should have sent GroupValueRead requests for temperature datapoints
-        mock_knx_gateway.async_read_group_address.assert_called()
+        # Istwert (8454), StatusSollwert preferred over Sollwert (8966), WindowContact (9222)
+        mock_knx_gateway.async_read_group_address.assert_any_call(8454)
+        mock_knx_gateway.async_read_group_address.assert_any_call(8966)
+        mock_knx_gateway.async_read_group_address.assert_any_call(9222)
+
+    @pytest.mark.asyncio
+    async def test_listeners_registered_on_added_to_hass(
+        self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
+    ):
+        """Test KNX listeners are registered in async_added_to_hass, not __init__."""
+        entity = LuxorClimate(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=climate_mapped_entity,
+            entry_id="test_entry",
+        )
+
+        mock_knx_gateway.register_listener.assert_not_called()
+
+        await entity.async_added_to_hass()
+
+        mock_knx_gateway.register_listener.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_listeners_unregistered_on_remove(
+        self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
+    ):
+        """Test KNX listeners are cleaned up in async_will_remove_from_hass."""
+        entity = LuxorClimate(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=climate_mapped_entity,
+            entry_id="test_entry",
+        )
+        await entity.async_added_to_hass()
+        registered_count = mock_knx_gateway.register_listener.call_count
+
+        await entity.async_will_remove_from_hass()
+
+        assert mock_knx_gateway.unregister_listener.call_count == registered_count
+        assert entity._knx_listener_refs == []
 
     @pytest.mark.asyncio
     async def test_handle_temperature_update(

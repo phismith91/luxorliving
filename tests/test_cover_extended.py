@@ -39,6 +39,7 @@ def _make_cover(datapoints=None, connected=True):
     gateway.async_send_telegram = AsyncMock(return_value=True)
     gateway.async_read_group_address = AsyncMock(return_value=True)
     gateway.register_listener = MagicMock()
+    gateway.unregister_listener = MagicMock()
 
     entry = MagicMock()
     entry.entry_id = "entry_001"
