@@ -17,6 +17,7 @@ from custom_components.luxor_living.cover import (
     async_setup_entry,
 )
 from custom_components.luxor_living.integration_state import IntegrationState
+from custom_components.luxor_living.mapped_entity import MappedEntity
 
 
 @pytest.fixture
@@ -30,8 +31,10 @@ def mock_knx_gateway():
     """Create mock KNX gateway."""
     gateway = MagicMock()
     gateway.connected = True
-    gateway.read_group_address = AsyncMock()
-    gateway.write_group_address = AsyncMock()
+    gateway.async_read_group_address = AsyncMock(return_value=True)
+    gateway.async_send_telegram = AsyncMock(return_value=True)
+    gateway.register_listener = MagicMock()
+    gateway.unregister_listener = MagicMock()
     return gateway
 
 
@@ -46,39 +49,45 @@ def mock_mapper():
 @pytest.fixture
 def shutter_mapped_entity():
     """Create a mapped shutter entity (no tilt)."""
-    return {
-        "unique_id": "luxor_DEF456_1_cover",
-        "name": "Wohnzimmer Rollladen",
-        "device_id": "DEF456",
-        "device_name": "J8 1",
-        "device_model": "J8 Shutter Actuator (App ID 18520)",
-        "datapoints": [
-            {"role": "UpDown", "address": 8454},
-            {"role": "StepStop", "address": 8198},
-            {"role": "Höhe%", "address": 8966},
-            {"role": "StatusHöhe%", "address": 8710},
-        ],
-    }
+    return MappedEntity(
+        platform=Platform.COVER,
+        unique_id="luxor_DEF456_1_cover",
+        name="Wohnzimmer Rollladen",
+        device_name="J8 1",
+        device_id="DEF456",
+        entity_type="cover",
+        datapoints={
+            "UpDown": 8454,
+            "StepStop": 8198,
+            "Höhe%": 8966,
+            "StatusHöhe%": 8710,
+        },
+        attributes={},
+        parameters={},
+    )
 
 
 @pytest.fixture
 def blind_mapped_entity():
     """Create a mapped blind entity (with tilt)."""
-    return {
-        "unique_id": "luxor_DEF456_2_cover",
-        "name": "Wohnzimmer Jalousie",
-        "device_id": "DEF456",
-        "device_name": "J8 1",
-        "device_model": "J8 Shutter Actuator (App ID 18520)",
-        "datapoints": [
-            {"role": "UpDown", "address": 8454},
-            {"role": "StepStop", "address": 8198},
-            {"role": "Höhe%", "address": 8966},
-            {"role": "StatusHöhe%", "address": 8710},
-            {"role": "Lamelle%", "address": 9222},
-            {"role": "StatusLamelle%", "address": 9476},
-        ],
-    }
+    return MappedEntity(
+        platform=Platform.COVER,
+        unique_id="luxor_DEF456_2_cover",
+        name="Wohnzimmer Jalousie",
+        device_name="J8 1",
+        device_id="DEF456",
+        entity_type="cover",
+        datapoints={
+            "UpDown": 8454,
+            "StepStop": 8198,
+            "Höhe%": 8966,
+            "StatusHöhe%": 8710,
+            "Lamelle%": 9222,
+            "StatusLamelle%": 9476,
+        },
+        attributes={},
+        parameters={},
+    )
 
 
 class TestLuxorCover:
@@ -128,9 +137,61 @@ class TestLuxorCover:
 
     @pytest.mark.asyncio
     async def test_update_position(self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity):
-        """Test position update from KNX."""
-        mock_knx_gateway.read_group_address.side_effect = [75]  # Position: 75%
+        """Test position update triggers KNX read request for the correct address."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="test_entry",
+        )
 
+        await entity._update_position()
+
+        # StatusHöhe% preferred over Höhe%; address 8710 from shutter_mapped_entity
+        mock_knx_gateway.async_read_group_address.assert_any_call(8710)
+
+    @pytest.mark.asyncio
+    async def test_listeners_registered_on_added_to_hass(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Test KNX listeners are registered in async_added_to_hass, not __init__."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="test_entry",
+        )
+
+        mock_knx_gateway.register_listener.assert_not_called()
+
+        await entity.async_added_to_hass()
+
+        mock_knx_gateway.register_listener.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_listeners_unregistered_on_remove(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Test KNX listeners are cleaned up in async_will_remove_from_hass."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="test_entry",
+        )
+        await entity.async_added_to_hass()
+        registered_count = mock_knx_gateway.register_listener.call_count
+
+        await entity.async_will_remove_from_hass()
+
+        assert mock_knx_gateway.unregister_listener.call_count == registered_count
+        assert entity._knx_listener_refs == []
+
+    @pytest.mark.asyncio
+    async def test_handle_position_update(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Test position state is updated via listener callback."""
         entity = LuxorCover(
             coordinator=mock_coordinator,
             knx_gateway=mock_knx_gateway,
@@ -139,7 +200,7 @@ class TestLuxorCover:
         )
         entity.async_write_ha_state = MagicMock()
 
-        await entity._update_position()
+        entity._handle_position_update(8710, 75)
 
         assert entity.current_cover_position == 75
         assert entity.is_closed is False
@@ -156,8 +217,8 @@ class TestLuxorCover:
 
         await entity.async_open_cover()
 
-        # Should write UP command (0) to UpDown address
-        mock_knx_gateway.write_group_address.assert_called_once_with(8454, 0)
+        # Should send UP command (0) to UpDown address as binary
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(8454, 0, "binary")
 
     @pytest.mark.asyncio
     async def test_close_cover(self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity):
@@ -171,8 +232,8 @@ class TestLuxorCover:
 
         await entity.async_close_cover()
 
-        # Should write DOWN command (1) to UpDown address
-        mock_knx_gateway.write_group_address.assert_called_once_with(8454, 1)
+        # Should send DOWN command (1) to UpDown address as binary
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(8454, 1, "binary")
 
     @pytest.mark.asyncio
     async def test_stop_cover(self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity):
@@ -186,8 +247,8 @@ class TestLuxorCover:
 
         await entity.async_stop_cover()
 
-        # Should write STOP command (0) to StepStop address
-        mock_knx_gateway.write_group_address.assert_called_once_with(8198, 0)
+        # Should send STOP command (0) to StepStop address as binary
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(8198, 0, "binary")
 
     @pytest.mark.asyncio
     async def test_set_cover_position(
@@ -204,8 +265,8 @@ class TestLuxorCover:
 
         await entity.async_set_cover_position(**{ATTR_POSITION: 50})
 
-        # Should write to Höhe% address (8966) with value 50
-        mock_knx_gateway.write_group_address.assert_called_once_with(8966, 50)
+        # Should send percent value to Höhe% address (8966)
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(8966, 50, "percent")
         assert entity.current_cover_position == 50
 
     @pytest.mark.asyncio
@@ -220,8 +281,8 @@ class TestLuxorCover:
 
         await entity.async_open_cover_tilt()
 
-        # Should write 100 to Lamelle% address
-        mock_knx_gateway.write_group_address.assert_called_once_with(9222, 100)
+        # Should send 100% to Lamelle% address as percent
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(9222, 100, "percent")
 
     @pytest.mark.asyncio
     async def test_close_tilt(self, mock_coordinator, mock_knx_gateway, blind_mapped_entity):
@@ -235,8 +296,8 @@ class TestLuxorCover:
 
         await entity.async_close_cover_tilt()
 
-        # Should write 0 to Lamelle% address
-        mock_knx_gateway.write_group_address.assert_called_once_with(9222, 0)
+        # Should send 0% to Lamelle% address as percent
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(9222, 0, "percent")
 
     @pytest.mark.asyncio
     async def test_set_tilt_position(self, mock_coordinator, mock_knx_gateway, blind_mapped_entity):
@@ -251,8 +312,8 @@ class TestLuxorCover:
 
         await entity.async_set_cover_tilt_position(**{ATTR_TILT_POSITION: 60})
 
-        # Should write to Lamelle% address (9222) with value 60
-        mock_knx_gateway.write_group_address.assert_called_once_with(9222, 60)
+        # Should send percent value to Lamelle% address (9222)
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(9222, 60, "percent")
         assert entity.current_cover_tilt_position == 60
 
     def test_available_when_connected(

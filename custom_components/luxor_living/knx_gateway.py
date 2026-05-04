@@ -273,6 +273,10 @@ class LuxorKNXGateway:
                 num_value = float(value) if not isinstance(value, (int, float)) else value
                 byte_value = int(num_value * 255 / 100)
                 payload = GroupValueWrite(DPTArray([byte_value]))
+            elif value_type == "temperature":
+                # DPT 9.001 (2-byte float for temperature in °C)
+                encoded = DPT2ByteFloat().to_knx(float(value))
+                payload = GroupValueWrite(DPTArray(encoded))
             else:
                 # For now, treat unknown types as raw bytes
                 payload = GroupValueWrite(

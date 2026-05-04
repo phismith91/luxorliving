@@ -107,20 +107,19 @@ class LuxorCover(CoverEntity):
         """Initialize the cover entity."""
         self.coordinator = coordinator
         self.knx_gateway = knx_gateway
-        self._mapped_entity = mapped_entity
         self._entry_id = entry_id
 
-        # Map datapoint addresses by role
-        self._datapoints = {dp["role"]: dp["address"] for dp in mapped_entity.get("datapoints", [])}
+        # Map datapoint addresses by role (MappedEntity.datapoints is already dict[str, int])
+        self._datapoints = mapped_entity.datapoints
 
         # Set unique ID
-        self._attr_unique_id = mapped_entity.get("unique_id")
+        self._attr_unique_id = mapped_entity.unique_id
 
         # Set name
-        self._attr_name = mapped_entity.get("name")
+        self._attr_name = mapped_entity.name
 
         # Determine if this is a blind (has tilt) or shutter
-        dp_roles = {dp["role"] for dp in mapped_entity.get("datapoints", [])}
+        dp_roles = set(mapped_entity.datapoints.keys())
         has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
 
         # Set device class
@@ -145,19 +144,21 @@ class LuxorCover(CoverEntity):
         self._attr_supported_features = features
 
         # Set device info
-        device_id = mapped_entity.get("device_id")
+        device_id = mapped_entity.device_id
         self._attr_device_info = {
             "identifiers": {(DOMAIN, device_id)},
-            "name": mapped_entity.get("device_name"),
+            "name": mapped_entity.device_name,
             "manufacturer": "Theben",
-            "model": mapped_entity.get("device_model"),
-            "sw_version": mapped_entity.get("device_model"),
+            "model": "LUXORliving",
         }
 
         # Initialize state
         self._attr_current_cover_position = None
         self._attr_current_cover_tilt_position = None
         self._attr_is_closed = None
+
+        # Listener refs stored for cleanup in async_will_remove_from_hass
+        self._knx_listener_refs: list[tuple[int, Any]] = []
 
     @property
     def available(self) -> bool:
@@ -175,39 +176,57 @@ class LuxorCover(CoverEntity):
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to hass."""
         await super().async_added_to_hass()
-        # Subscribe to position updates
+
+        # Register KNX listeners — must run here, not in __init__, so that
+        # async_write_ha_state() is safe and __init__ stays thread-safe
+        # (it runs in an executor via run_in_executor).
+        position_dp = "StatusHöhe%" if "StatusHöhe%" in self._datapoints else "Höhe%"
+        if position_dp in self._datapoints:
+            addr = self._datapoints[position_dp]
+            self.knx_gateway.register_listener(addr, self._handle_position_update)
+            self._knx_listener_refs.append((addr, self._handle_position_update))
+
+        tilt_dp_key = "StatusLamelle%" if "StatusLamelle%" in self._datapoints else "Lamelle%"
+        if tilt_dp_key in self._datapoints:
+            addr = self._datapoints[tilt_dp_key]
+            self.knx_gateway.register_listener(addr, self._handle_tilt_update)
+            self._knx_listener_refs.append((addr, self._handle_tilt_update))
+
+        # Request initial position state from KNX bus
         await self._update_position()
 
-    async def _update_position(self) -> None:
-        """Update current position and tilt from KNX."""
-        try:
-            # Read current position (StatusHöhe% or Höhe%)
-            position_dp = "StatusHöhe%" if "StatusHöhe%" in self._datapoints else "Höhe%"
-            if position_dp in self._datapoints:
-                position_raw = await self.knx_gateway.read_group_address(
-                    self._datapoints[position_dp]
-                )
-                if position_raw is not None:
-                    # KNX position: 0 = closed, 100 = open
-                    # HA expects: 0 = closed, 100 = open
-                    self._attr_current_cover_position = position_raw
-                    self._attr_is_closed = position_raw == 0
+    async def async_will_remove_from_hass(self) -> None:
+        """Run when entity is removed from hass."""
+        for addr, cb in self._knx_listener_refs:
+            self.knx_gateway.unregister_listener(addr, cb)
+        self._knx_listener_refs.clear()
 
-            # Read current tilt position if available
-            dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
-            has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
-
-            if has_tilt:
-                tilt_dp = "StatusLamelle%" if "StatusLamelle%" in self._datapoints else "Lamelle%"
-                if tilt_dp in self._datapoints:
-                    tilt_raw = await self.knx_gateway.read_group_address(self._datapoints[tilt_dp])
-                    if tilt_raw is not None:
-                        self._attr_current_cover_tilt_position = tilt_raw
-
+    def _handle_position_update(self, group_address: str, value: Any) -> None:
+        """Handle cover position update received via KNX telegram."""
+        if isinstance(value, (int, float)):
+            self._attr_current_cover_position = int(value)
+            self._attr_is_closed = int(value) == 0
             self.async_write_ha_state()
 
-        except Exception as e:
-            _LOGGER.error("Error updating position for %s: %s", self.name, e)
+    def _handle_tilt_update(self, group_address: str, value: Any) -> None:
+        """Handle tilt position update received via KNX telegram."""
+        if isinstance(value, (int, float)):
+            self._attr_current_cover_tilt_position = int(value)
+            self.async_write_ha_state()
+
+    async def _update_position(self) -> None:
+        """Request current position and tilt from KNX bus."""
+        # Read current position (StatusHöhe% preferred, fallback to Höhe%)
+        position_dp = "StatusHöhe%" if "StatusHöhe%" in self._datapoints else "Höhe%"
+        if position_dp in self._datapoints:
+            await self.knx_gateway.async_read_group_address(self._datapoints[position_dp])
+
+        # Read current tilt position if available
+        has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
+        if has_tilt:
+            tilt_dp = "StatusLamelle%" if "StatusLamelle%" in self._datapoints else "Lamelle%"
+            if tilt_dp in self._datapoints:
+                await self.knx_gateway.async_read_group_address(self._datapoints[tilt_dp])
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
@@ -215,7 +234,7 @@ class LuxorCover(CoverEntity):
         try:
             # Send UP command (value 0 = UP)
             if "UpDown" in self._datapoints:
-                await self.knx_gateway.write_group_address(self._datapoints["UpDown"], 0)
+                await self.knx_gateway.async_send_telegram(self._datapoints["UpDown"], 0, "binary")
                 _LOGGER.info("Opening cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error opening cover %s: %s", self.name, e)
@@ -226,7 +245,7 @@ class LuxorCover(CoverEntity):
         try:
             # Send DOWN command (value 1 = DOWN)
             if "UpDown" in self._datapoints:
-                await self.knx_gateway.write_group_address(self._datapoints["UpDown"], 1)
+                await self.knx_gateway.async_send_telegram(self._datapoints["UpDown"], 1, "binary")
                 _LOGGER.info("Closing cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error closing cover %s: %s", self.name, e)
@@ -237,7 +256,9 @@ class LuxorCover(CoverEntity):
         try:
             # Send STOP command
             if "StepStop" in self._datapoints:
-                await self.knx_gateway.write_group_address(self._datapoints["StepStop"], 0)
+                await self.knx_gateway.async_send_telegram(
+                    self._datapoints["StepStop"], 0, "binary"
+                )
                 _LOGGER.info("Stopping cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error stopping cover %s: %s", self.name, e)
@@ -252,7 +273,9 @@ class LuxorCover(CoverEntity):
         try:
             # Write to Höhe% address
             if "Höhe%" in self._datapoints:
-                await self.knx_gateway.write_group_address(self._datapoints["Höhe%"], int(position))
+                await self.knx_gateway.async_send_telegram(
+                    self._datapoints["Höhe%"], int(position), "percent"
+                )
                 self._attr_current_cover_position = position
                 self._attr_is_closed = position == 0
                 self.async_write_ha_state()
@@ -263,15 +286,16 @@ class LuxorCover(CoverEntity):
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
         """Open the cover tilt."""
         self._raise_if_unavailable()
-        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
-        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
 
         if not has_tilt:
             return
 
         try:
             if "Lamelle%" in self._datapoints:
-                await self.knx_gateway.write_group_address(self._datapoints["Lamelle%"], 100)
+                await self.knx_gateway.async_send_telegram(
+                    self._datapoints["Lamelle%"], 100, "percent"
+                )
                 _LOGGER.info("Opening tilt for cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error opening tilt for %s: %s", self.name, e)
@@ -279,15 +303,16 @@ class LuxorCover(CoverEntity):
     async def async_close_cover_tilt(self, **kwargs: Any) -> None:
         """Close the cover tilt."""
         self._raise_if_unavailable()
-        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
-        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
 
         if not has_tilt:
             return
 
         try:
             if "Lamelle%" in self._datapoints:
-                await self.knx_gateway.write_group_address(self._datapoints["Lamelle%"], 0)
+                await self.knx_gateway.async_send_telegram(
+                    self._datapoints["Lamelle%"], 0, "percent"
+                )
                 _LOGGER.info("Closing tilt for cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error closing tilt for %s: %s", self.name, e)
@@ -295,15 +320,16 @@ class LuxorCover(CoverEntity):
     async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
         """Stop the cover tilt."""
         self._raise_if_unavailable()
-        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
-        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
 
         if not has_tilt:
             return
 
         try:
             if "StepStop" in self._datapoints:
-                await self.knx_gateway.write_group_address(self._datapoints["StepStop"], 0)
+                await self.knx_gateway.async_send_telegram(
+                    self._datapoints["StepStop"], 0, "binary"
+                )
                 _LOGGER.info("Stopping tilt for cover: %s", self.name)
         except Exception as e:
             _LOGGER.error("Error stopping tilt for %s: %s", self.name, e)
@@ -311,8 +337,7 @@ class LuxorCover(CoverEntity):
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Move the cover tilt to a specific position."""
         self._raise_if_unavailable()
-        dp_roles = {dp["role"] for dp in self._mapped_entity.get("datapoints", [])}
-        has_tilt = "Lamelle%" in dp_roles or "StatusLamelle%" in dp_roles
+        has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
 
         if not has_tilt:
             return
@@ -323,8 +348,8 @@ class LuxorCover(CoverEntity):
 
         try:
             if "Lamelle%" in self._datapoints:
-                await self.knx_gateway.write_group_address(
-                    self._datapoints["Lamelle%"], int(tilt_position)
+                await self.knx_gateway.async_send_telegram(
+                    self._datapoints["Lamelle%"], int(tilt_position), "percent"
                 )
                 self._attr_current_cover_tilt_position = tilt_position
                 self.async_write_ha_state()

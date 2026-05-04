@@ -38,7 +38,7 @@ class PlatformDetector:
         "status@Dim": None,  # Status only
         # Cover-related roles
         "UpDown": Platform.COVER,
-        "StopStep": None,  # Paired with UpDown
+        "StepStop": None,  # Paired with UpDown
         "status@UpDown": None,  # Status only
         # Binary sensor roles
         "MasterSlave": Platform.BINARY_SENSOR,
@@ -104,7 +104,7 @@ class PlatformDetector:
             Platform enum if role maps to a platform, None otherwise.
             None is returned for:
             - Status-only roles (e.g., "StatusOnOff", "status@OnOff")
-            - Paired roles (e.g., "DimmenRel", "StopStep")
+            - Paired roles (e.g., "DimmenRel", "StepStop")
             - Special roles (e.g., "ZentralAus", "Panik")
             - Unknown roles
 
