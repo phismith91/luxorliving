@@ -5,7 +5,7 @@ homeassistant>=2026.2.3
 xknx>=3.13.0
 
 # Config Flow Dependencies
-voluptuous>=0.15.2
+voluptuous>=0.16.0
 
 # Security
 defusedxml>=0.7.1
