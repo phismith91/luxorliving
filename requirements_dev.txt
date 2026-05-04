@@ -18,5 +18,5 @@ pytest-timeout>=2.3.1
 pytest-homeassistant-custom-component>=0.13.316
 black>=26.1.0
 pylint>=4.0.0
-mypy>=1.19.0
+mypy>=1.20.2
 zeroconf
