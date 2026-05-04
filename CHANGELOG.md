@@ -15,6 +15,22 @@ documented in this file.
 
 ---
 
+## [1.1.4] - 2026-05-04
+
+### Fixed
+
+- Cover and climate entities crash on setup with AttributeError: MappedEntity has no attribute get
+  (MappedEntity is a dataclass, not a dict — use attribute access instead)
+- KNX listener registration moved to async_added_to_hass (was in __init__ which runs in a
+  thread executor, causing thread-safety and lifecycle issues with async_write_ha_state)
+- async_will_remove_from_hass cleanup prevents stale listeners and memory leaks on reload
+- Temperature DPT encoding: removed incorrect x100/÷100 integer conversion; gateway already
+  decodes DPT 9.001 as Python float
+- StopStep → StepStop typo in platform_detector.py ROLE_TO_PLATFORM mapping
+- device_info: remove non-existent device_model/sw_version fields; use model=LUXORliving
+
+---
+
 ## [1.1.3] - 2026-03-23
 
 ### Fixed
