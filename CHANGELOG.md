@@ -5,6 +5,18 @@ documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Placeholder
+
+### Changed
+
+- Placeholder
+
+---
+
+## [1.1.5] - 2026-05-14
+
 ### Fixed
 
 - Heating entities (RTR thermostats and heating actuators) were silently ignored by the entity mapper and never created as climate entities in Home Assistant

@@ -148,6 +148,13 @@ class TestAutoDiscovery:
         candidates = gateway._discovery_candidates["5/1/10"]
         assert len(candidates) <= DISCOVERY_MAX_CANDIDATES_PER_ADDRESS
 
+        # Cancel pending debounce task — asyncio.create_task leaves it running
+        # after the test body finishes, which causes "lingering task" errors in
+        # strict asyncio environments (Python 3.14+).
+        if gateway._debounce_task and not gateway._debounce_task.done():
+            gateway._debounce_task.cancel()
+            await asyncio.gather(gateway._debounce_task, return_exceptions=True)
+
     @pytest.mark.asyncio
     async def test_debouncing_batches_discoveries(self, gateway: LuxorKNXGateway):
         """Test that debouncing batches multiple discoveries into one callback."""
