@@ -51,6 +51,10 @@ class EntityMapper:
         self.platform_detector = platform_detector or PlatformDetector()
         self.override_handler = override_handler or OverrideHandler(self._overrides)
 
+        # Track Istwert addresses already mapped to climate to prevent duplicates
+        # when both an RTR sensor and a heating actuator share the same KNX group address.
+        self._claimed_climate_istwert_addresses: set[int] = set()
+
         # Automatically map all entities on init
         self.map_all()
 
@@ -110,20 +114,38 @@ class EntityMapper:
                 },
             )
 
-        # Determine platform based on primary roles
-        platform = self._determine_platform(datapoints)
-        if platform is None:
-            _LOGGER.debug("Skipping actuator %s - no mappable roles", actuator.name)
-            return
-
-        # Determine entity type
-        if platform == Platform.LIGHT:
-            if "Dimmen%" in datapoints or "status@Dim" in datapoints:
-                entity_type = "dimmable_light"
-            else:
-                entity_type = "light"
+        # Heating actuator detection: heizungsart parameter + Istwert + Sollwert roles
+        if (
+            "heizungsart" in actuator.parameters
+            and "Istwert" in datapoints
+            and "Sollwert" in datapoints
+        ):
+            istwert_addr = datapoints["Istwert"]
+            if istwert_addr in self._claimed_climate_istwert_addresses:
+                _LOGGER.debug(
+                    "Skipping heating actuator %s - Istwert address %d already claimed by RTR sensor",
+                    actuator.name,
+                    istwert_addr,
+                )
+                return
+            platform = Platform.CLIMATE
+            entity_type = "climate"
+            self._claimed_climate_istwert_addresses.add(istwert_addr)
         else:
-            entity_type = platform.value
+            # Determine platform based on primary roles
+            platform = self._determine_platform(datapoints)
+            if platform is None:
+                _LOGGER.debug("Skipping actuator %s - no mappable roles", actuator.name)
+                return
+
+            # Determine entity type
+            if platform == Platform.LIGHT:
+                if "Dimmen%" in datapoints or "status@Dim" in datapoints:
+                    entity_type = "dimmable_light"
+                else:
+                    entity_type = "light"
+            else:
+                entity_type = platform.value
 
         # Generate unique ID - use control address to ensure uniqueness
         # Different actuators can have same name but different addresses
@@ -180,6 +202,39 @@ class EntityMapper:
         # Special handling for Wetterstation: extract individual sensor entities
         if "wetterstation" in device.name.lower():
             self._map_wetterstation_sensor(device, sensor, datapoints)
+            return
+
+        # RTR thermostat detection: activateRTR=1 + Istwert + (Sollwert or status@Sollwert)
+        if (
+            sensor.parameters.get("activateRTR") == "1"
+            and "Istwert" in datapoints
+            and ("Sollwert" in datapoints or "status@Sollwert" in datapoints)
+        ):
+            istwert_addr = datapoints["Istwert"]
+            self._claimed_climate_istwert_addresses.add(istwert_addr)
+            address = istwert_addr
+            unique_id = f"{device.id}_{address}"
+            name = sensor.name or f"{device.name} Ch{sensor.channel}"
+            if name.startswith(device.name + " "):
+                name = name[len(device.name) + 1 :]
+            entity = MappedEntity(
+                platform=Platform.CLIMATE,
+                unique_id=unique_id,
+                name=name,
+                device_name=device.name,
+                device_id=device.id,
+                entity_type="climate",
+                datapoints=datapoints,
+                attributes={
+                    "channel": sensor.channel,
+                    "sensor_type": sensor.sensor_type,
+                    "serial_number": device.serial_number,
+                    "knx_address": device.address,
+                },
+                parameters=sensor.parameters,
+            )
+            self.entities.append(entity)
+            _LOGGER.debug("Mapped RTR sensor '%s' to climate", name)
             return
 
         # Determine platform based on sensor roles

@@ -258,6 +258,75 @@ class TestLuxorClimate:
         assert entity.available is False
 
 
+class TestTargetDpKey:
+    """Test _target_dp_key property for all RTR/actuator datapoint variants."""
+
+    def _make_entity(self, mock_coordinator, mock_knx_gateway, datapoints: dict):
+        entity_data = MappedEntity(
+            platform=Platform.CLIMATE,
+            unique_id="test_climate",
+            name="Test",
+            device_name="Device",
+            device_id="dev",
+            entity_type="climate",
+            datapoints=datapoints,
+            attributes={},
+            parameters={},
+        )
+        return LuxorClimate(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=entity_data,
+            entry_id="entry",
+        )
+
+    def test_prefers_status_sollwert_over_sollwert(self, mock_coordinator, mock_knx_gateway):
+        """StatusSollwert (actuator variant) takes highest priority."""
+        entity = self._make_entity(
+            mock_coordinator,
+            mock_knx_gateway,
+            {"Istwert": 8454, "Sollwert": 8198, "StatusSollwert": 8966},
+        )
+        assert entity._target_dp_key == "StatusSollwert"
+
+    def test_prefers_status_at_sollwert_over_sollwert(self, mock_coordinator, mock_knx_gateway):
+        """status@Sollwert (RTR sensor variant) is used when StatusSollwert absent."""
+        entity = self._make_entity(
+            mock_coordinator,
+            mock_knx_gateway,
+            {"Istwert": 8449, "Sollwert": 8193, "status@Sollwert": 8961},
+        )
+        assert entity._target_dp_key == "status@Sollwert"
+
+    def test_falls_back_to_sollwert(self, mock_coordinator, mock_knx_gateway):
+        """Sollwert is used when neither status variant is present."""
+        entity = self._make_entity(
+            mock_coordinator,
+            mock_knx_gateway,
+            {"Istwert": 8449, "Sollwert": 8193},
+        )
+        assert entity._target_dp_key == "Sollwert"
+
+    @pytest.mark.asyncio
+    async def test_rtr_listener_registered_on_status_at_sollwert(
+        self, mock_coordinator, mock_knx_gateway
+    ):
+        """RTR entity registers listener on status@Sollwert address, not Sollwert."""
+        entity = self._make_entity(
+            mock_coordinator,
+            mock_knx_gateway,
+            {"Istwert": 8449, "Sollwert": 8193, "status@Sollwert": 8961},
+        )
+        await entity.async_added_to_hass()
+        registered_addresses = [
+            call[0][0] for call in mock_knx_gateway.register_listener.call_args_list
+        ]
+        assert 8961 in registered_addresses  # status@Sollwert
+        assert (
+            8193 not in registered_addresses
+        )  # Sollwert not registered (status variant takes over)
+
+
 class TestAsyncSetupEntry:
     """Test async_setup_entry function."""
 

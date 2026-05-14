@@ -5,13 +5,13 @@ documented in this file.
 
 ## Unreleased
 
-### Added
+### Fixed
 
-- Placeholder
-
-### Changed
-
-- Placeholder
+- Heating entities (RTR thermostats and heating actuators) were silently ignored by the entity mapper and never created as climate entities in Home Assistant
+- RTR sensors (`activateRTR=1` parameter, e.g. iON touch panels) with `Istwert`/`Sollwert` datapoints are now correctly mapped to `Platform.CLIMATE`
+- Heating actuators (`heizungsart` parameter, e.g. H6 valves, infrared heaters) with `Istwert`/`Sollwert` datapoints are now mapped to `Platform.CLIMATE`
+- Deduplication: when an RTR sensor and a heating actuator share the same KNX group address, only one climate entity is created (RTR sensor takes precedence)
+- `climate.py`: `_target_dp_key` now recognises `status@Sollwert` (RTR sensor variant) in addition to `StatusSollwert` (actuator variant) so the correct setpoint feedback address is used
 
 ---
 
