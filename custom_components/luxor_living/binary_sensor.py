@@ -107,12 +107,41 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
             or mapped_entity.datapoints.get("SchaltenOnOff")
         )
 
+        # KNX listener ref for cleanup (populated in async_added_to_hass)
+        self._knx_listener_addr: int | None = None
+
         _LOGGER.debug(
             "📊 Binary Sensor '%s' (class: %s) status address: %s",
             self.name,
             self._attr_device_class,
             self._address_status,
         )
+
+    async def async_added_to_hass(self) -> None:
+        """Register KNX listener for real-time state updates."""
+        await super().async_added_to_hass()
+        if self._address_status is None:
+            return
+        runtime_data = getattr(self._config_entry, "runtime_data", None)
+        knx_gateway = getattr(runtime_data, "knx_gateway", None)
+        if knx_gateway:
+            self._knx_listener_addr = self._address_status
+            knx_gateway.register_listener(self._address_status, self._handle_knx_state)
+            await knx_gateway.async_read_group_address(self._address_status)
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Unregister KNX listener on removal."""
+        if self._knx_listener_addr is None:
+            return
+        runtime_data = getattr(self._config_entry, "runtime_data", None)
+        knx_gateway = getattr(runtime_data, "knx_gateway", None)
+        if knx_gateway:
+            knx_gateway.unregister_listener(self._knx_listener_addr, self._handle_knx_state)
+        self._knx_listener_addr = None
+
+    def _handle_knx_state(self, address: Any, value: Any) -> None:
+        """Handle KNX telegram for this binary sensor's status address."""
+        self.coordinator.set_state(self._address_status, bool(value))
 
     @property
     def is_on(self) -> bool:

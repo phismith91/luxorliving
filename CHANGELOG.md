@@ -15,6 +15,26 @@ documented in this file.
 
 ---
 
+## [1.1.6] - 2026-05-15
+
+### Fixed
+
+- **Cover position inverted**: KNX `Höhe%` / `StatusHöhe%` uses 0 = fully open, 100 = fully closed.
+  Home Assistant uses the opposite convention (0 = closed, 100 = open). Position values are now
+  correctly inverted on both read (`_handle_position_update`) and write (`async_set_cover_position`).
+  Affects all J4/J8 actuators in every LXP file.
+
+- **BWM / BI motion sensors — status always unknown**: Motion sensors (BWM, BI180, BI360) are now
+  registered as KNX listeners in `async_added_to_hass`. An initial read of the status address is
+  also triggered on startup, so the entity's state is never stuck at "unknown" after the first
+  gateway connection.
+
+- **Wetterstation rain sensor missing**: The `Regen` role was explicitly skipped in
+  `_map_wetterstation_sensor`. It is now mapped as a `binary_sensor` (entity type `regen`), making
+  the weather station's rain detection visible in Home Assistant.
+
+---
+
 ## [1.1.4] - 2026-05-04
 
 ### Fixed

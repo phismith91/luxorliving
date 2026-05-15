@@ -5,7 +5,7 @@
 [![Codecov](https://codecov.io/gh/phismith91/luxorliving/branch/main/graph/badge.svg)](https://codecov.io/gh/phismith91/luxorliving)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/phismith91/luxorliving?include_prereleases)](https://github.com/phismith91/luxorliving/releases)
 [![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](https://github.com/phismith91/luxorliving/blob/main/LICENSE)
-[![Tests: 731](https://img.shields.io/badge/Tests-731%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
+[![Tests: 715](https://img.shields.io/badge/Tests-715%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
 
 Home Assistant custom integration for **Theben LUXORliving KNX** systems. Connects via the BAOS 777 IP1 gateway using a LXP project file for automatic entity discovery — lights, covers, climate, sensors, switches and binary sensors, all created without any manual YAML.
 
@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.1.4](https://github.com/phismith91/luxorliving/releases/tag/v1.1.4)
+**Current release:** [v1.1.6](https://github.com/phismith91/luxorliving/releases/tag/v1.1.6) — Cover position inversion fixed · BWM/BI motion sensor state now live · Wetterstation rain sensor added
 <!-- RELEASE_NOTES_END -->
 
 ---

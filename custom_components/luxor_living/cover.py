@@ -204,8 +204,11 @@ class LuxorCover(CoverEntity):
     def _handle_position_update(self, group_address: str, value: Any) -> None:
         """Handle cover position update received via KNX telegram."""
         if isinstance(value, (int, float)):
-            self._attr_current_cover_position = int(value)
-            self._attr_is_closed = int(value) == 0
+            # KNX Höhe% convention: 0 = fully up (open), 100 = fully down (closed)
+            # HA position convention: 0 = closed, 100 = open → invert
+            ha_position = 100 - int(value)
+            self._attr_current_cover_position = ha_position
+            self._attr_is_closed = ha_position == 0
             self.async_write_ha_state()
 
     def _handle_tilt_update(self, group_address: str, value: Any) -> None:
@@ -271,13 +274,14 @@ class LuxorCover(CoverEntity):
             return
 
         try:
-            # Write to Höhe% address
+            # Write to Höhe% address — invert HA position to KNX Höhe% convention
             if "Höhe%" in self._datapoints:
+                knx_position = 100 - int(position)
                 await self.knx_gateway.async_send_telegram(
-                    self._datapoints["Höhe%"], int(position), "percent"
+                    self._datapoints["Höhe%"], knx_position, "percent"
                 )
-                self._attr_current_cover_position = position
-                self._attr_is_closed = position == 0
+                self._attr_current_cover_position = int(position)
+                self._attr_is_closed = int(position) == 0
                 self.async_write_ha_state()
                 _LOGGER.info("Set cover position for %s to %d%%", self.name, position)
         except Exception as e:

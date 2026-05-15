@@ -244,13 +244,16 @@ class TestWetterstationMapping:
         sensors = mapper.get_entities_by_platform(Platform.SENSOR)
         assert any("Wetterstation" in e.name for e in sensors)
 
-    def test_skips_regen_role(self):
+    def test_maps_regen_to_binary_sensor(self):
         dp = _datapoint("Regen", 0x3001)
         sensor = _sensor("Rain", 1, [dp])
         device = _device("Wetterstation EG", sensors=[sensor])
         mapper = _mapper([device])
-        non_health = [e for e in mapper.entities if e.entity_type != "health"]
-        assert len(non_health) == 0
+        binary_sensors = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)
+        regen_entity = next(
+            (e for e in binary_sensors if "Regen" in e.name or e.entity_type == "regen"), None
+        )
+        assert regen_entity is not None, "Expected a binary_sensor entity for the Regen role"
 
     def test_skips_duplicate_wetterstation_entity(self):
         dp = _datapoint("Temperatur", 0x3000)

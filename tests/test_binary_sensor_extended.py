@@ -215,3 +215,86 @@ class TestExtraStateAttributes:
         del entity._mapped_entity.attributes
         attrs = entity.extra_state_attributes
         assert "sensor_type" not in attrs
+
+
+# ── KNX listener (motion sensor real-time state) ──────────────────────────────
+#
+# BWM motion sensors (and BI180/BI360 in Einliegerwohnung) need to register a
+# KNX listener on their status address so state updates are received in
+# real-time rather than relying on coordinator polling (which is a no-op).
+
+
+class TestKNXListener:
+    @pytest.mark.asyncio
+    async def test_async_added_to_hass_registers_knx_listener(self):
+        entity = _make_sensor(
+            entity_type="motion",
+            datapoints={"status@OnOff": 2330, "OnOff": 2074, "MasterSlave": 11520},
+        )
+        gateway = entity._config_entry.runtime_data.knx_gateway
+        gateway.async_read_group_address = AsyncMock()
+
+        await entity.async_added_to_hass()
+
+        gateway.register_listener.assert_called_once_with(2330, entity._handle_knx_state)
+
+    @pytest.mark.asyncio
+    async def test_async_added_to_hass_requests_initial_read(self):
+        entity = _make_sensor(
+            entity_type="motion",
+            datapoints={"status@OnOff": 2330},
+        )
+        gateway = entity._config_entry.runtime_data.knx_gateway
+        gateway.async_read_group_address = AsyncMock()
+
+        await entity.async_added_to_hass()
+
+        gateway.async_read_group_address.assert_awaited_once_with(2330)
+
+    @pytest.mark.asyncio
+    async def test_knx_state_true_updates_coordinator(self):
+        entity = _make_sensor(
+            entity_type="motion",
+            datapoints={"status@OnOff": 2330},
+        )
+        entity.coordinator.set_state = MagicMock()
+
+        entity._handle_knx_state("2330", True)
+
+        entity.coordinator.set_state.assert_called_once_with(2330, True)
+
+    @pytest.mark.asyncio
+    async def test_knx_state_false_updates_coordinator(self):
+        entity = _make_sensor(
+            entity_type="motion",
+            datapoints={"status@OnOff": 2330},
+        )
+        entity.coordinator.set_state = MagicMock()
+
+        entity._handle_knx_state("2330", False)
+
+        entity.coordinator.set_state.assert_called_once_with(2330, False)
+
+    @pytest.mark.asyncio
+    async def test_no_listener_when_no_address(self):
+        entity = _make_sensor(entity_type="motion", datapoints={})
+        gateway = entity._config_entry.runtime_data.knx_gateway
+        gateway.async_read_group_address = AsyncMock()
+
+        await entity.async_added_to_hass()
+
+        gateway.register_listener.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_async_will_remove_unregisters_listener(self):
+        entity = _make_sensor(
+            entity_type="motion",
+            datapoints={"status@OnOff": 2330},
+        )
+        gateway = entity._config_entry.runtime_data.knx_gateway
+        gateway.async_read_group_address = AsyncMock()
+        await entity.async_added_to_hass()
+
+        await entity.async_will_remove_from_hass()
+
+        gateway.unregister_listener.assert_called_once_with(2330, entity._handle_knx_state)

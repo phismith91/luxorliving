@@ -371,9 +371,28 @@ class EntityMapper:
             if any(e.unique_id == unique_id for e in self.entities):
                 continue
 
-            # Skip non-sensor roles
+            # Regen (rain sensor) is a binary signal → binary_sensor entity
             if role == "Regen":
-                # Regen is binary (OnOff), skip for now
+                entity = MappedEntity(
+                    platform=Platform.BINARY_SENSOR,
+                    unique_id=unique_id,
+                    name=f"{device.name} {name_suffix}",
+                    device_name=device.name,
+                    device_id=device.id,
+                    entity_type="regen",
+                    datapoints={role: addr},
+                    attributes={
+                        "channel": sensor.channel,
+                        "sensor_type": sensor.sensor_type,
+                        "serial_number": device.serial_number,
+                        "knx_address": device.address,
+                    },
+                    parameters=sensor.parameters,
+                )
+                self.entities.append(entity)
+                _LOGGER.debug(
+                    "Mapped Wetterstation rain sensor '%s' at address %s", entity.name, addr
+                )
                 continue
 
             # Use PlatformDetector for device class and unit

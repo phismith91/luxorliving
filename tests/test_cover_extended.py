@@ -380,15 +380,17 @@ class TestUpdatePosition:
 
     @pytest.mark.asyncio
     async def test_position_set_from_callback(self):
+        # KNX 80% (80% down) → HA position 20 (20% open)
         entity, gateway = _make_cover([{"role": "StatusHöhe%", "address": 202}])
         entity._handle_position_update(202, 80)
-        assert entity._attr_current_cover_position == 80
+        assert entity._attr_current_cover_position == 20
         assert entity._attr_is_closed is False
 
     @pytest.mark.asyncio
-    async def test_position_0_marks_closed(self):
+    async def test_position_100_marks_closed(self):
+        # KNX 100% (fully down/closed) → HA position 0 → is_closed=True
         entity, gateway = _make_cover([{"role": "StatusHöhe%", "address": 202}])
-        entity._handle_position_update(202, 0)
+        entity._handle_position_update(202, 100)
         assert entity._attr_is_closed is True
 
     @pytest.mark.asyncio
@@ -408,3 +410,51 @@ class TestUpdatePosition:
         entity, gateway = _make_cover([{"role": "StatusHöhe%", "address": 202}])
         await entity.async_update()
         gateway.async_read_group_address.assert_awaited()
+
+
+# ── KNX position inversion ────────────────────────────────────────────────────
+#
+# LUXORliving / KNX convention: Höhe% 0 = fully up (open), 100 = fully down (closed)
+# Home Assistant convention:    position 0 = closed, 100 = open
+# Correct mapping: HA_position = 100 - KNX_value
+
+
+class TestCoverPositionInversion:
+    def test_knx_0_percent_maps_to_ha_position_100_open(self):
+        entity, _ = _make_cover([{"role": "StatusHöhe%", "address": 202}])
+        entity._handle_position_update(202, 0)
+        assert entity._attr_current_cover_position == 100
+        assert entity._attr_is_closed is False
+
+    def test_knx_100_percent_maps_to_ha_position_0_closed(self):
+        entity, _ = _make_cover([{"role": "StatusHöhe%", "address": 202}])
+        entity._handle_position_update(202, 100)
+        assert entity._attr_current_cover_position == 0
+        assert entity._attr_is_closed is True
+
+    def test_knx_30_percent_maps_to_ha_position_70(self):
+        entity, _ = _make_cover([{"role": "StatusHöhe%", "address": 202}])
+        entity._handle_position_update(202, 30)
+        assert entity._attr_current_cover_position == 70
+        assert entity._attr_is_closed is False
+
+    @pytest.mark.asyncio
+    async def test_set_ha_position_70_sends_knx_30(self):
+        entity, gateway = _make_cover([{"role": "Höhe%", "address": 203}])
+        await entity.async_set_cover_position(**{"position": 70})
+        gateway.async_send_telegram.assert_awaited_once_with(203, 30, "percent")
+        assert entity._attr_current_cover_position == 70
+
+    @pytest.mark.asyncio
+    async def test_set_ha_position_0_sends_knx_100(self):
+        entity, gateway = _make_cover([{"role": "Höhe%", "address": 203}])
+        await entity.async_set_cover_position(**{"position": 0})
+        gateway.async_send_telegram.assert_awaited_once_with(203, 100, "percent")
+        assert entity._attr_is_closed is True
+
+    @pytest.mark.asyncio
+    async def test_set_ha_position_100_sends_knx_0(self):
+        entity, gateway = _make_cover([{"role": "Höhe%", "address": 203}])
+        await entity.async_set_cover_position(**{"position": 100})
+        gateway.async_send_telegram.assert_awaited_once_with(203, 0, "percent")
+        assert entity._attr_is_closed is False
