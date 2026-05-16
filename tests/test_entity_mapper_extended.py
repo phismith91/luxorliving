@@ -438,3 +438,74 @@ class TestClimateMapping:
         mapper = _mapper([sensor_device, actuator_device])
         climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
         assert len(climate_entities) == 1
+
+
+class TestR718ThermostatMapping:
+    def test_maps_r718_to_climate(self):
+        """R718 sensor with Istwert+Sollwert+status@Sollwert but no activateRTR → Platform.CLIMATE."""
+        dp_ist = _datapoint("Istwert", 7680)
+        dp_soll = _datapoint("Sollwert", 7424)
+        dp_status = _datapoint("status@Sollwert", 7936)
+        sensor = _sensor("7 R718 105", 0, [dp_ist, dp_soll, dp_status])
+        sensor.parameters = {"abgleichwert": "0"}
+        device = _device("7 R718 105", sensors=[sensor])
+        mapper = _mapper([device])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 1
+        assert climate_entities[0].entity_type == "climate"
+
+    def test_r718_climate_has_correct_datapoints(self):
+        """R718 climate entity exposes all three thermostat datapoints."""
+        dp_ist = _datapoint("Istwert", 7680)
+        dp_soll = _datapoint("Sollwert", 7424)
+        dp_status = _datapoint("status@Sollwert", 7936)
+        sensor = _sensor("R718", 0, [dp_ist, dp_soll, dp_status])
+        sensor.parameters = {"abgleichwert": "0"}
+        device = _device("R718 Dev", sensors=[sensor])
+        mapper = _mapper([device])
+        entity = mapper.get_entities_by_platform(Platform.CLIMATE)[0]
+        assert entity.datapoints["Istwert"] == 7680
+        assert entity.datapoints["Sollwert"] == 7424
+        assert entity.datapoints["status@Sollwert"] == 7936
+
+    def test_r718_with_umschalten_has_umschalten_datapoint(self):
+        """R718 with UmschaltenHeitzenKühlen datapoint passes it through to entity."""
+        dp_ist = _datapoint("Istwert", 7680)
+        dp_soll = _datapoint("Sollwert", 7424)
+        dp_status = _datapoint("status@Sollwert", 7936)
+        dp_umschalten = _datapoint("UmschaltenHeitzenKühlen", 8192)
+        sensor = _sensor("R718", 0, [dp_ist, dp_soll, dp_status, dp_umschalten])
+        sensor.parameters = {"abgleichwert": "0"}
+        device = _device("R718 Dev", sensors=[sensor])
+        mapper = _mapper([device])
+        entity = mapper.get_entities_by_platform(Platform.CLIMATE)[0]
+        assert entity.datapoints["UmschaltenHeitzenKühlen"] == 8192
+
+    def test_sensor_with_only_istwert_and_sollwert_not_r718(self):
+        """Sensor with Istwert+Sollwert but no status@Sollwert is not mapped as R718 climate."""
+        dp_ist = _datapoint("Istwert", 7680)
+        dp_soll = _datapoint("Sollwert", 7424)
+        sensor = _sensor("Plain Temp", 0, [dp_ist, dp_soll])
+        sensor.parameters = {}
+        device = _device("Dev", sensors=[sensor])
+        mapper = _mapper([device])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 0
+
+    def test_no_duplicate_when_r718_and_actuator_share_istwert(self):
+        """R718 sensor takes precedence; H6 actuator with same Istwert address is skipped."""
+        shared = 7680
+        dp_ist_s = _datapoint("Istwert", shared)
+        dp_soll_s = _datapoint("Sollwert", 7424)
+        dp_status_s = _datapoint("status@Sollwert", 7936)
+        sensor = _sensor("R718", 0, [dp_ist_s, dp_soll_s, dp_status_s])
+        sensor.parameters = {"abgleichwert": "0"}
+        dp_ist_a = _datapoint("Istwert", shared)
+        dp_soll_a = _datapoint("Sollwert", 7424)
+        actuator = _actuator("H6", 0, [dp_ist_a, dp_soll_a])
+        actuator.parameters = {"heizungsart": "230"}
+        s_dev = _device("R718 Dev", sensors=[sensor], device_id="r718_dev")
+        a_dev = _device("H6 Dev", actuators=[actuator], device_id="h6_dev")
+        mapper = _mapper([s_dev, a_dev])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 1
