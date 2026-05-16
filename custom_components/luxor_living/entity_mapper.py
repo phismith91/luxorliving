@@ -204,6 +204,40 @@ class EntityMapper:
             self._map_wetterstation_sensor(device, sensor, datapoints)
             return
 
+        # R718 standalone thermostat: Istwert + Sollwert + status@Sollwert (no activateRTR param)
+        # Theben RTR 718 is a dedicated room thermostat device, distinct from iON panel RTR
+        if (
+            "Istwert" in datapoints
+            and "Sollwert" in datapoints
+            and "status@Sollwert" in datapoints
+            and sensor.parameters.get("activateRTR") != "1"
+        ):
+            istwert_addr = datapoints["Istwert"]
+            self._claimed_climate_istwert_addresses.add(istwert_addr)
+            unique_id = f"{device.id}_{istwert_addr}"
+            name = sensor.name or f"{device.name} Ch{sensor.channel}"
+            if name.startswith(device.name + " "):
+                name = name[len(device.name) + 1 :]
+            entity = MappedEntity(
+                platform=Platform.CLIMATE,
+                unique_id=unique_id,
+                name=name,
+                device_name=device.name,
+                device_id=device.id,
+                entity_type="climate",
+                datapoints=datapoints,
+                attributes={
+                    "channel": sensor.channel,
+                    "sensor_type": sensor.sensor_type,
+                    "serial_number": device.serial_number,
+                    "knx_address": device.address,
+                },
+                parameters=sensor.parameters,
+            )
+            self.entities.append(entity)
+            _LOGGER.debug("Mapped R718 thermostat '%s' to climate", name)
+            return
+
         # RTR thermostat detection: activateRTR=1 + Istwert + (Sollwert or status@Sollwert)
         if (
             sensor.parameters.get("activateRTR") == "1"

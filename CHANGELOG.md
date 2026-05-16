@@ -15,6 +15,18 @@ documented in this file.
 
 ---
 
+## [1.1.7] - 2026-05-16
+
+### Added
+
+- **Theben RTR 718 thermostat support**: The RTR 718 is a standalone room thermostat device
+  (distinct from iON panel RTR channels). It is now automatically detected and mapped to a
+  `climate` entity via its three characteristic datapoints (`Istwert`, `Sollwert`,
+  `status@Sollwert`). The optional `UmschaltenHeitzenKühlen` datapoint (heating/cooling mode
+  switch) is passed through to the entity for future use.
+
+---
+
 ## [1.1.6] - 2026-05-15
 
 ### Fixed
