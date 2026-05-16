@@ -49,23 +49,6 @@ audits
 
 ---
 
-### 🐛 **agent_defect_tracker.md**
-
-**Role:** Bug Management & Quality Assurance **Responsibilities:**
-
-- Bug triage and prioritization (CRITICAL/HIGH/MEDIUM/LOW)
-- Root cause analysis
-- GitHub issue tracking
-- Regression prevention
-- Fix verification
-- **CI failure classification** (formatting, tests, version, docs)
-- **Version verification** (always from manifest.json, never hardcoded)
-
-**When to use:** Bug reports, code review findings, regression testing, CI
-failures, quality metrics
-
----
-
 ### 🚀 **agent_release_manager.md**
 
 **Role:** Release Coordination, Merge Authority & Deployment

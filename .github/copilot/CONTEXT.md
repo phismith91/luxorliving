@@ -1,6 +1,6 @@
 # LUXORliving Integration - Project Context
 
-**Last Updated:** 2026-01-16 **Version:** v0.6.1 (Production) **Status:** Active
+**Last Updated:** 2026-05-16 **Version:** v1.1.6 (Production) **Status:** Active
 Development (Public Repository, HACS-ready) **Subscription:** GitHub Copilot
 Individual ($10/month)
 
@@ -29,10 +29,10 @@ LUXORliving KNX-Systeme über das IP1 Interface.
 
 ### Current Version Status
 
-- **Stable:** v0.6.1 (2026-01-16)
+- **Stable:** v1.1.6 (2026-05-16)
 - **Quality:** Silver (Home Assistant Compliance)
 - **Next Milestone:** Gold Compliance (Enhanced diagnostics, QA automation)
-- **Roadmap:** v0.7.0 (Advanced features, community feedback)
+- **Roadmap:** v1.2.x (community feedback, energy metering, KNX-RF)
 
 ---
 
@@ -149,11 +149,13 @@ luxorliving/
 
 ### Python Environment
 
-- **Python:** 3.13.11 (local), 3.11/3.13 (CI)
-- **Home Assistant:** 2026.1.x (OS)
+- **Python:** 3.12.x (local), 3.14.x (CI) — minimum supported: 3.13
+  (pyproject.toml)
+- **Home Assistant:** ≥2026.4.4 (required by requirements_dev.txt)
 - **Test Framework:** pytest 9.0.0
-- **pytest-homeassistant-custom-component:** 0.13.306
-- **Venv:** `/home/phil/gitlab_github/luxorliving/venv/`
+- **pytest-homeassistant-custom-component:** ≥0.13.325
+- **Venv:** project-local `.venv/` (run `python3.14 -m venv .venv` for CI
+  parity)
 - **Formatters:** black, isort (enforced in CI)
 
 ### Key Dependencies
@@ -166,9 +168,9 @@ luxorliving/
 
 ### Quality Gates
 
-- ✅ All tests passing (`pytest tests/ -v -m "not enable_socket"` → 294/294)- ✅
-  **Gold Gates** enforced in CI: Smoke → Integration subset → HACS validation →
-  Release dry-run (all must pass before merge)- ✅ Code formatted
+- ✅ All tests passing (`pytest tests/ -v -m "not enable_socket"` → 756 as of
+  v1.1.6)- ✅ **Gold Gates** enforced in CI: Smoke → Integration subset → HACS
+  validation → Release dry-run (all must pass before merge)- ✅ Code formatted
   (black/isort) - MANDATORY before commits
 - ✅ Local validation scripts pass (`./scripts/validate_readme.sh`,
   `./scripts/check_release_notes.sh`)
