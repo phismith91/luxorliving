@@ -87,8 +87,9 @@
 2. **[2026-05-16] Climate entity detection requires two conditions** H6 heating
    actuator: `heizungsart` param + `Istwert` + `Sollwert` datapoints. RTR
    thermostat: `activateRTR=1` param + `Istwert` + (`Sollwert` or
-   `status@Sollwert`). Do instead: when H6/climate stops working, check
-   `entity_mapper._map_actuator` first.
+   `status@Sollwert`). R718 standalone thermostat: `Istwert` + `Sollwert` +
+   `status@Sollwert` (no `activateRTR`). Do instead: when climate stops working,
+   check `entity_mapper._map_sensor` and `_map_actuator` first.
 
 3. **[2026-05-16] KNX listeners must be registered in `async_added_to_hass`, not
    `__init__`** `__init__` may run in an executor (thread-unsafe for
@@ -96,7 +97,14 @@
    `knx_gateway.register_listener(...)` + initial read in `async_added_to_hass`;
    unregister in `async_will_remove_from_hass`.
 
-4. **[2026-05-16] Debounce tasks must be cancelled on `async_disconnect`**
+4. **[2026-05-16] knxprod DB ist die autoritative Gerätedatenbank** Alle 57
+   LUXORliving-Geräte + vollständige Datapoint/DPT-Definitionen in
+   `docs/LUXORliving_ETS5_KNX_DB_V2_23_2510.knxprod_FILES/`. Issue #131 trackt
+   den Plan, `appId` aus LXP gegen Catalog.xml abzugleichen statt Parameter-
+   Heuristiken. Do instead: bevor neue Geräteerkennung per Heuristik
+   implementiert wird — erst in `M-0048/M-0048_A-<appId>.xml` nachschauen.
+
+5. **[2026-05-16] Debounce tasks must be cancelled on `async_disconnect`**
    Lingering `asyncio.Task` from `_execute_debounced_callbacks` causes HA test
    framework failures. Do instead: `async_disconnect` cancels `_debounce_task` —
    don't remove that line.
