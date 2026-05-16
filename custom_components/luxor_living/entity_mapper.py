@@ -292,26 +292,17 @@ class EntityMapper:
             unit_of_measurement = self.platform_detector.get_unit(detected_role)
 
         # Priority 2: Check for binary control/status
+        # Sensors are always input devices — OnOff in a sensor context is a contact
+        # state, never a controllable switch. B6, T-series, and other binary inputs
+        # must map to binary_sensor regardless of whether status@OnOff is also present.
         if platform is None:
-            map_onoff_to_binary = bool(self._overrides.get("map_onoff_to_binary", False))
-            if "status@OnOff" in datapoints and "OnOff" not in datapoints:
-                # Pure status sensor -> binary_sensor
-                platform = Platform.BINARY_SENSOR
-                entity_type = "binary_sensor"
-            elif "OnOff" in datapoints:
-                # Control sensor -> could be switch or binary_sensor
-                # For now, treat motion sensors as binary_sensor
+            if "status@OnOff" in datapoints or "OnOff" in datapoints:
                 if "MasterSlave" in datapoints or sensor.sensor_type == 1:
                     platform = Platform.BINARY_SENSOR
                     entity_type = "motion"
                 else:
-                    # Regular switch sensor -> switch platform
-                    if map_onoff_to_binary:
-                        platform = Platform.BINARY_SENSOR
-                        entity_type = "binary_sensor"
-                    else:
-                        platform = Platform.SWITCH
-                        entity_type = "switch"
+                    platform = Platform.BINARY_SENSOR
+                    entity_type = "binary_sensor"
 
         if platform is None:
             _LOGGER.debug("Skipping sensor %s - no mappable roles", sensor.name)

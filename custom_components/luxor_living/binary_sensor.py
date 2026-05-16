@@ -100,11 +100,12 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
             self._attr_entity_category = EntityCategory.DIAGNOSTIC
             self._attr_entity_registry_enabled_default = False
 
-        # Store datapoint addresses
+        # Store datapoint addresses — cover all known binary roles incl. Wetterstation rain
         self._address_status: str | None = (
             mapped_entity.datapoints.get("status@OnOff")
             or mapped_entity.datapoints.get("OnOff")
             or mapped_entity.datapoints.get("SchaltenOnOff")
+            or mapped_entity.datapoints.get("Regen")
         )
 
         # KNX listener ref for cleanup (populated in async_added_to_hass)
