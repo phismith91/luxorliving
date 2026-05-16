@@ -34,6 +34,10 @@ documented in this file.
   After this update they become `binary_sensor` entities — update any automations or dashboards
   that referenced the old `switch.*` entity IDs.
 
+- **Wetterstation rain sensor always showing "unknown"**: The KNX listener for the
+  `Regen` datapoint was never registered because the `_address_status` lookup did not
+  include the `"Regen"` key. Rain sensor state now updates in real time via KNX telegrams.
+
 ---
 
 ## [1.1.6] - 2026-05-15

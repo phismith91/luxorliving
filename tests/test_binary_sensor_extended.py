@@ -338,3 +338,30 @@ class TestKNXListener:
         await entity.async_will_remove_from_hass()
 
         assert entity._knx_listener_addr is None
+
+
+class TestRainSensorListener:
+    @pytest.mark.asyncio
+    async def test_rain_sensor_registers_knx_listener_on_regen_address(self):
+        """Wetterstation rain sensor uses 'Regen' datapoint — must register listener."""
+        entity = _make_sensor(entity_type="regen", datapoints={"Regen": 5120})
+        gateway = entity._config_entry.runtime_data.knx_gateway
+        gateway.async_read_group_address = AsyncMock()
+
+        await entity.async_added_to_hass()
+
+        assert entity._knx_listener_addr == 5120
+        gateway.register_listener.assert_called_once_with(5120, entity._handle_knx_state)
+        gateway.async_read_group_address.assert_called_once_with(5120)
+
+    @pytest.mark.asyncio
+    async def test_rain_sensor_state_updates_on_knx_telegram(self):
+        """Rain sensor state reflects incoming KNX telegram value."""
+        entity = _make_sensor(entity_type="regen", datapoints={"Regen": 5120})
+        gateway = entity._config_entry.runtime_data.knx_gateway
+        gateway.async_read_group_address = AsyncMock()
+        await entity.async_added_to_hass()
+
+        entity._handle_knx_state(5120, True)
+
+        entity.coordinator.set_state.assert_called_with(5120, True)

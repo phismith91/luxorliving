@@ -19,3 +19,8 @@
   **Migration note:** If you had B6 entities appearing as `switch.*` in v1.1.6, they will
   be recreated as `binary_sensor.*` entities after updating. Please update any automations,
   scripts, or dashboards that referenced the old entity IDs.
+
+- **Wetterstation rain sensor always showing "unknown"**: The KNX listener for the
+  `Regen` datapoint was never registered because the `_address_status` address lookup
+  did not include the `"Regen"` key. Rain sensor state now updates in real time as KNX
+  telegrams arrive — no more stuck "unknown" state.
