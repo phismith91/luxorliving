@@ -298,3 +298,43 @@ class TestKNXListener:
         await entity.async_will_remove_from_hass()
 
         gateway.unregister_listener.assert_called_once_with(2330, entity._handle_knx_state)
+
+    @pytest.mark.asyncio
+    async def test_added_to_hass_no_op_when_gateway_is_none(self):
+        """No listener is registered when runtime_data has no knx_gateway."""
+        entity = _make_sensor(
+            entity_type="motion",
+            datapoints={"status@OnOff": 2330},
+        )
+        entity._config_entry.runtime_data.knx_gateway = None
+
+        await entity.async_added_to_hass()
+
+        assert entity._knx_listener_addr is None
+
+    @pytest.mark.asyncio
+    async def test_will_remove_no_op_when_listener_addr_is_none(self):
+        """async_will_remove_from_hass returns early when no listener was registered."""
+        entity = _make_sensor(entity_type="motion", datapoints={"status@OnOff": 2330})
+        assert entity._knx_listener_addr is None
+
+        await entity.async_will_remove_from_hass()
+
+        entity._config_entry.runtime_data.knx_gateway.unregister_listener.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_will_remove_skips_unregister_when_gateway_is_none(self):
+        """Listener addr is cleared even when gateway disappears before removal."""
+        entity = _make_sensor(
+            entity_type="motion",
+            datapoints={"status@OnOff": 2330},
+        )
+        gateway = entity._config_entry.runtime_data.knx_gateway
+        gateway.async_read_group_address = AsyncMock()
+        await entity.async_added_to_hass()
+        assert entity._knx_listener_addr == 2330
+
+        entity._config_entry.runtime_data.knx_gateway = None
+        await entity.async_will_remove_from_hass()
+
+        assert entity._knx_listener_addr is None
