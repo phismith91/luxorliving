@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.1.6](https://github.com/phismith91/luxorliving/releases/tag/v1.1.6) — Cover position inversion fixed · BWM/BI motion sensor state now live · Wetterstation rain sensor added
+**Current release:** [v1.1.7](https://github.com/phismith91/luxorliving/releases/tag/v1.1.7) — RTR 718 thermostat support · B6 binary input fix · Rain sensor live state
 <!-- RELEASE_NOTES_END -->
 
 ---
@@ -62,6 +62,7 @@ Tested and confirmed working:
 | D 2 / D 4 | Dimming actuator | `light` (with brightness) |
 | J 4 / J 8 | Blind / shutter actuator | `cover` (position + tilt) |
 | H 6 | Heating actuator | `climate` (setpoint + valve) |
+| RTR 718 | Standalone room thermostat | `climate` (setpoint + current temp) |
 | KNX weather station | Multi-sensor | `sensor` (temperature, wind, brightness) |
 | Motion detectors | Binary input | `binary_sensor` |
 | Window / door contacts | Binary input | `binary_sensor` |
