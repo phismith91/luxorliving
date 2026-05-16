@@ -13,3 +13,9 @@
 
 - **Wetterstation rain sensor missing**: The `Regen` role is now mapped as a `binary_sensor`
   (entity type `regen`), making the weather station's rain detection visible in Home Assistant.
+
+- **H6 heating actuator and RTR thermostat not detected as climate entities**: A regression caused
+  H6 actuators (`heizungsart` parameter) and RTR thermostats (`activateRTR=1`) to be silently
+  skipped during entity mapping. Both are now correctly mapped to `climate` entities with current
+  temperature, setpoint control, and live KNX state updates. Duplicate climate entities (when RTR
+  and H6 share an Istwert address) are also prevented.
