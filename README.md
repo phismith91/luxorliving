@@ -13,7 +13,7 @@ Home Assistant custom integration for **Theben LUXORliving KNX** systems. Connec
 
 ## Quick Start
 
-**Requirements:** Theben LUXORliving IP1 gateway · LXP project file · Home Assistant ≥ 2025.12.0
+**Requirements:** Theben LUXORliving IP1 gateway · LXP project file · Home Assistant ≥ 2026.4.4
 
 **1. Install via HACS**
 
