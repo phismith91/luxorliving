@@ -10,7 +10,7 @@
 - **LXP project file** — exported from the Theben LUXORPlug software on your PC
 - **Gateway IP address** — find it in your router's DHCP list or via the LUXORPlug software
 - **Gateway credentials** — default is `admin` / `admin` (change this if you already secured your gateway)
-- **Home Assistant ≥ 2025.12.0** — check Settings → About
+- **Home Assistant ≥ 2026.4.4** — check Settings → About
 
 ---
 

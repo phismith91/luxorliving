@@ -22,9 +22,9 @@ def mock_hass():
 
 
 @pytest.fixture
-def gateway(mock_hass):
+async def gateway(mock_hass):
     """Create a KNX gateway instance for testing."""
-    return LuxorKNXGateway(
+    gw = LuxorKNXGateway(
         hass=mock_hass,
         host="192.168.1.100",
         port=3671,
@@ -34,6 +34,8 @@ def gateway(mock_hass):
         connection_type="tunneling",
         simulation_mode=True,
     )
+    yield gw
+    await gw.async_disconnect()
 
 
 class TestAutoDiscovery:

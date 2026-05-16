@@ -227,6 +227,11 @@ class LuxorKNXGateway:
             finally:
                 self._rest_client = None
 
+        # Cancel pending debounce task so no orphaned coroutines remain
+        if self._debounce_task and not self._debounce_task.done():
+            self._debounce_task.cancel()
+        self._debounce_task = None
+
         self._connected = False
         self._tunneling_enabled = False
         self._xknx = None

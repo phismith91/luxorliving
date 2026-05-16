@@ -36,7 +36,7 @@ git clone git@github.com:phismith91/luxorliving.git
 cd luxorliving
 
 # Create virtual environment
-python3.13 -m venv .venv
+python3.14 -m venv .venv
 source .venv/bin/activate
 
 # Install all dependencies

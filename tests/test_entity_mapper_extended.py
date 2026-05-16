@@ -244,13 +244,16 @@ class TestWetterstationMapping:
         sensors = mapper.get_entities_by_platform(Platform.SENSOR)
         assert any("Wetterstation" in e.name for e in sensors)
 
-    def test_skips_regen_role(self):
+    def test_maps_regen_to_binary_sensor(self):
         dp = _datapoint("Regen", 0x3001)
         sensor = _sensor("Rain", 1, [dp])
         device = _device("Wetterstation EG", sensors=[sensor])
         mapper = _mapper([device])
-        non_health = [e for e in mapper.entities if e.entity_type != "health"]
-        assert len(non_health) == 0
+        binary_sensors = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)
+        regen_entity = next(
+            (e for e in binary_sensors if "Regen" in e.name or e.entity_type == "regen"), None
+        )
+        assert regen_entity is not None, "Expected a binary_sensor entity for the Regen role"
 
     def test_skips_duplicate_wetterstation_entity(self):
         dp = _datapoint("Temperatur", 0x3000)
@@ -348,3 +351,90 @@ class TestOverrideErrorHandling:
         health = [e for e in mapper.entities if e.entity_type == "health"]
         assert len(health) == 1
         assert health[0].name == "System Health"
+
+
+# ── Climate mapping ───────────────────────────────────────────────────────────
+
+
+class TestClimateMapping:
+    def test_maps_rtr_sensor_to_climate(self):
+        """Sensor with activateRTR=1, Istwert, Sollwert → Platform.CLIMATE."""
+        dp_ist = _datapoint("Istwert", 8449)
+        dp_soll = _datapoint("Sollwert", 8193)
+        dp_status = _datapoint("status@Sollwert", 8961)
+        dp_switch = _datapoint("UmschaltenHeitzenKühlen", 10247)
+        sensor = _sensor("iON8 Wohnzimmer (°C)", 0, [dp_ist, dp_soll, dp_status, dp_switch])
+        sensor.parameters = {"activateRTR": "1", "heatingCoolingFormat": "1"}
+        device = _device("iON8 Wohnzimmer", sensors=[sensor])
+        mapper = _mapper([device])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 1
+        assert climate_entities[0].entity_type == "climate"
+
+    def test_rtr_climate_has_correct_datapoints(self):
+        """RTR sensor climate entity contains all heating datapoints."""
+        dp_ist = _datapoint("Istwert", 8449)
+        dp_soll = _datapoint("Sollwert", 8193)
+        dp_status = _datapoint("status@Sollwert", 8961)
+        sensor = _sensor("RTR", 0, [dp_ist, dp_soll, dp_status])
+        sensor.parameters = {"activateRTR": "1"}
+        device = _device("Panel", sensors=[sensor])
+        mapper = _mapper([device])
+        entity = mapper.get_entities_by_platform(Platform.CLIMATE)[0]
+        assert entity.datapoints["Istwert"] == 8449
+        assert entity.datapoints["Sollwert"] == 8193
+        assert entity.datapoints["status@Sollwert"] == 8961
+
+    def test_sensor_without_activate_rtr_not_mapped_to_climate(self):
+        """Sensor without activateRTR=1 is not mapped to climate even with Istwert/Sollwert."""
+        dp_ist = _datapoint("Istwert", 8449)
+        dp_soll = _datapoint("Sollwert", 8193)
+        sensor = _sensor("Plain Sensor", 0, [dp_ist, dp_soll])
+        sensor.parameters = {}
+        device = _device("Dev", sensors=[sensor])
+        mapper = _mapper([device])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 0
+
+    def test_maps_heating_actuator_to_climate(self):
+        """Actuator with heizungsart, Istwert, Sollwert → Platform.CLIMATE."""
+        dp_ist = _datapoint("Istwert", 8456)
+        dp_soll = _datapoint("Sollwert", 8200)
+        dp_status = _datapoint("StatusSollwert", 8968)
+        actuator = _actuator("Infrarot Heizung", 0, [dp_ist, dp_soll, dp_status])
+        actuator.parameters = {"heizungsart": "51", "maxSollwert": "15"}
+        device = _device("H6 Spielzimmer", actuators=[actuator])
+        mapper = _mapper([device])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 1
+        assert climate_entities[0].entity_type == "climate"
+
+    def test_actuator_without_heizungsart_not_mapped_to_climate(self):
+        """Actuator with Istwert/Sollwert but no heizungsart parameter is not climate."""
+        dp_ist = _datapoint("Istwert", 8456)
+        dp_soll = _datapoint("Sollwert", 8200)
+        actuator = _actuator("Unknown Actuator", 0, [dp_ist, dp_soll])
+        actuator.parameters = {}
+        device = _device("Dev", actuators=[actuator])
+        mapper = _mapper([device])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 0
+
+    def test_no_duplicate_when_rtr_and_actuator_share_istwert_address(self):
+        """RTR sensor takes precedence; actuator with same Istwert address is not mapped."""
+        shared_istwert = 8456
+        dp_ist_s = _datapoint("Istwert", shared_istwert)
+        dp_soll_s = _datapoint("Sollwert", 8200)
+        dp_status_s = _datapoint("status@Sollwert", 8968)
+        sensor = _sensor("RTR Panel", 0, [dp_ist_s, dp_soll_s, dp_status_s])
+        sensor.parameters = {"activateRTR": "1"}
+        dp_ist_a = _datapoint("Istwert", shared_istwert)
+        dp_soll_a = _datapoint("Sollwert", 8200)
+        dp_status_a = _datapoint("StatusSollwert", 8968)
+        actuator = _actuator("H6 Valve", 0, [dp_ist_a, dp_soll_a, dp_status_a])
+        actuator.parameters = {"heizungsart": "230"}
+        sensor_device = _device("iON Panel", sensors=[sensor], device_id="panel_dev")
+        actuator_device = _device("H6", actuators=[actuator], device_id="h6_dev")
+        mapper = _mapper([sensor_device, actuator_device])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 1

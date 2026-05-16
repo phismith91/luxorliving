@@ -7,7 +7,7 @@ devices via REST API.
 
 **Tech Stack:**
 
-- Python 3.11+
+- Python 3.13+ (CI: 3.14, local: 3.12)
 - Home Assistant Custom Component
 - KNX/BAOS REST API
 - pytest for testing

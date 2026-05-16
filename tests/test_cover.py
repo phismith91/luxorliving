@@ -200,9 +200,10 @@ class TestLuxorCover:
         )
         entity.async_write_ha_state = MagicMock()
 
+        # KNX 75% (75% down) → HA position 25 (25% open); is_closed=False
         entity._handle_position_update(8710, 75)
 
-        assert entity.current_cover_position == 75
+        assert entity.current_cover_position == 25
         assert entity.is_closed is False
 
     @pytest.mark.asyncio

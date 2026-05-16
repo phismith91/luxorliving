@@ -159,8 +159,15 @@ class LuxorClimate(ClimateEntity):
 
     @property
     def _target_dp_key(self) -> str:
-        """Return the preferred setpoint datapoint key (StatusSollwert preferred over Sollwert)."""
-        return "StatusSollwert" if "StatusSollwert" in self._datapoints else "Sollwert"
+        """Return the preferred setpoint datapoint key.
+
+        Priority: StatusSollwert (actuator) > status@Sollwert (RTR sensor) > Sollwert.
+        """
+        if "StatusSollwert" in self._datapoints:
+            return "StatusSollwert"
+        if "status@Sollwert" in self._datapoints:
+            return "status@Sollwert"
+        return "Sollwert"
 
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to hass."""
