@@ -182,23 +182,44 @@ class TestSensorMapping:
         non_health = [e for e in bsensors if e.entity_type != "health"]
         assert any(e.entity_type == "motion" for e in non_health)
 
-    def test_maps_onoff_sensor_to_switch_by_default(self):
+    def test_maps_onoff_sensor_to_binary_sensor_by_default(self):
+        """Sensors are input devices — OnOff always maps to binary_sensor, never switch."""
         dp = _datapoint("OnOff", 0x1000)
-        sensor = _sensor("WallSwitch", 1, [dp])
+        sensor = _sensor("Contact", 1, [dp])
         device = _device("Dev", sensors=[sensor])
         mapper = _mapper([device])
-        # Sensors with OnOff and no MasterSlave/sensor_type=1 → switch platform
-        switches = mapper.get_entities_by_platform(Platform.SWITCH)
-        assert len(switches) > 0
-
-    def test_maps_onoff_to_binary_with_override(self):
-        dp = _datapoint("OnOff", 0x1000)
-        sensor = _sensor("Btn", 1, [dp])
-        device = _device("Dev", sensors=[sensor])
-        mapper = _mapper([device], overrides={"map_onoff_to_binary": True})
         bsensors = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)
         non_health = [e for e in bsensors if e.entity_type != "health"]
         assert len(non_health) > 0
+        switches = mapper.get_entities_by_platform(Platform.SWITCH)
+        assert len(switches) == 0
+
+    def test_onoff_and_status_onoff_together_maps_to_binary_sensor(self):
+        """B6 channels report both OnOff and status@OnOff — must be binary_sensor, not switch."""
+        dp_onoff = _datapoint("OnOff", 0x1000)
+        dp_status = _datapoint("status@OnOff", 0x1001)
+        sensor = _sensor("B6 Kanal", 1, [dp_onoff, dp_status])
+        device = _device("B6-1", sensors=[sensor])
+        mapper = _mapper([device])
+        bsensors = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)
+        non_health = [e for e in bsensors if e.entity_type != "health"]
+        assert len(non_health) == 1
+        assert non_health[0].entity_type == "binary_sensor"
+        switches = mapper.get_entities_by_platform(Platform.SWITCH)
+        assert len(switches) == 0
+
+    def test_b6_rauchmelder_channel_is_binary_sensor(self):
+        """B6 smoke detector channel (sensorCase=12, OnOff only) → binary_sensor."""
+        dp = _datapoint("OnOff", 0x2B10)
+        sensor = _sensor("B6-1 C4 - Rauchmelder", 3, [dp], sensor_type=0)
+        sensor.parameters = {"sensorCase": "12", "sensorTyp": "0", "kontaktCase": "0"}
+        device = _device("B6-1", sensors=[sensor])
+        mapper = _mapper([device])
+        bsensors = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)
+        non_health = [e for e in bsensors if e.entity_type != "health"]
+        assert len(non_health) == 1
+        switches = mapper.get_entities_by_platform(Platform.SWITCH)
+        assert len(switches) == 0
 
     def test_skips_sensor_without_datapoints(self):
         sensor = _sensor("Empty", 1, [])

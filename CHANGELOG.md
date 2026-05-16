@@ -25,6 +25,15 @@ documented in this file.
   `status@Sollwert`). The optional `UmschaltenHeitzenKühlen` datapoint (heating/cooling mode
   switch) is passed through to the entity for future use.
 
+### Fixed
+
+- **B6 binary input channels mapped as `switch` instead of `binary_sensor`**: All sensor
+  channels (B6, T-series, and any other input device) now correctly map to `binary_sensor`
+  regardless of whether both `OnOff` and `status@OnOff` datapoints are present.
+  **Migration note:** If you had B6 entities in v1.1.6, they appeared as `switch` entities.
+  After this update they become `binary_sensor` entities — update any automations or dashboards
+  that referenced the old `switch.*` entity IDs.
+
 ---
 
 ## [1.1.6] - 2026-05-15
