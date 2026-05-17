@@ -149,9 +149,11 @@ class EntityMapper:
 
     def _map_device(self, device: LXPDevice) -> None:
         """Map a single device to entities."""
-        # Wetterstation is identified by name and handled entirely in _map_sensor;
-        # bypass the appId-based category check so it is never silently skipped.
-        is_weather_station = "wetterstation" in device.name.lower()
+        # Wetterstation is identified by name (matches lxp_parser._is_weather_station_device)
+        # and handled entirely in _map_sensor; bypass the appId-based category check
+        # so it is never silently skipped. The device shares appId 18585 with M140.
+        name_lower = device.name.lower()
+        is_weather_station = "wetterstation" in name_lower or "weather station" in name_lower
 
         if not is_weather_station:
             category = DEVICE_CATEGORIES.get(device.device_type)

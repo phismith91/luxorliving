@@ -522,32 +522,26 @@ class TestDeviceTypeParsing:
         </project>
         """)
 
-    def test_known_appid_sets_device_type(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_known_appid_sets_device_type(self, tmp_path):
         lxp = tmp_path / "test.lxp"
         lxp.write_text(self._LXP_WITH_APP_IDS, encoding="utf-8")
-        parser = LXPParser(lxp)
-        import asyncio
-
-        project = asyncio.get_event_loop().run_until_complete(parser.parse())
+        project = await LXPParser(lxp).parse()
         h6_dev = next(d for d in project.devices if d.name == "H6 Dev")
         assert h6_dev.device_type == "H6"
 
-    def test_b6_appid_sets_device_type(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_b6_appid_sets_device_type(self, tmp_path):
         lxp = tmp_path / "test.lxp"
         lxp.write_text(self._LXP_WITH_APP_IDS, encoding="utf-8")
-        parser = LXPParser(lxp)
-        import asyncio
-
-        project = asyncio.get_event_loop().run_until_complete(parser.parse())
+        project = await LXPParser(lxp).parse()
         b6_dev = next(d for d in project.devices if d.name == "B6 Dev")
         assert b6_dev.device_type == "B6"
 
-    def test_unknown_appid_sets_empty_device_type(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_unknown_appid_sets_empty_device_type(self, tmp_path):
         lxp = tmp_path / "test.lxp"
         lxp.write_text(self._LXP_WITH_APP_IDS, encoding="utf-8")
-        parser = LXPParser(lxp)
-        import asyncio
-
-        project = asyncio.get_event_loop().run_until_complete(parser.parse())
+        project = await LXPParser(lxp).parse()
         unknown_dev = next(d for d in project.devices if d.name == "Unknown Dev")
         assert unknown_dev.device_type == ""

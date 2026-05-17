@@ -65,14 +65,16 @@ APP_ID_TO_DEVICE: dict[int, str] = {
     # Not supported
     1170: "M130",
     18585: "M140",
-    18482: "AC IR1",
-    41154: "AC IR1",
+    18482: "AC IR1",  # ETS product v1
+    41154: "AC IR1",  # ETS product v2 (different firmware, same hardware)
     18536: "RF1",
 }
 
 # Device name → HA category
-# "input_only"   → no HA entities created
-# "unsupported"  → logged, no entities
+# "input_only"   → no HA entities created (consumed by entity_mapper._map_device)
+# "unsupported"  → logged, no entities   (consumed by entity_mapper._map_device)
+# All other categories are reserved for future heuristic guidance — entity_mapper
+# currently delegates platform selection to datapoint heuristics for supported devices.
 # "switch"       → switch / light (heuristic decides)
 # "light"        → light (dimmable)
 # "cover"        → cover
