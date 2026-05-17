@@ -1,5 +1,6 @@
 """Extended tests for BAOSRestClient covering uncovered branches."""
 
+import asyncio
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -414,3 +415,348 @@ class TestBAOSRestClientIntegration:
         async with BAOSRestClient(tc.server.host, port=tc.server.port, use_https=False) as client:
             assert client._session is not None
         await tc.close()
+
+
+# ── Mock-based tests (no socket) ─────────────────────────────────────────────
+
+
+class TestBAOSRestClientMockedHTTP:
+    """Cover HTTP response branches using MagicMock — no socket required."""
+
+    @staticmethod
+    def _make_response(status=200, text="", json_data=None):
+        resp = MagicMock()
+        resp.status = status
+        resp.text = AsyncMock(return_value=text)
+        resp.json = AsyncMock(return_value=json_data)
+        resp.headers = {}
+        return resp
+
+    @staticmethod
+    def _wire_cm(session_mock, response, method="post"):
+        cm = MagicMock()
+        cm.__aenter__ = AsyncMock(return_value=response)
+        cm.__aexit__ = AsyncMock(return_value=False)
+        getattr(session_mock, method).return_value = cm
+
+    def _authenticated_client(self):
+        client = BAOSRestClient("10.0.0.1", use_https=False)
+        client.session_token = "fake_token"
+        client.session_expires = datetime.now() + timedelta(hours=1)
+        client._session = MagicMock()
+        return client
+
+    # ── login() ──────────────────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_login_success_with_existing_session(self):
+        client = BAOSRestClient("10.0.0.1", use_https=False)
+        client._session = MagicMock()
+        resp = self._make_response(200, text="my_token")
+        self._wire_cm(client._session, resp, "post")
+        token = await client.login("admin", "pass")
+        assert token == "my_token"
+        assert client.session_token == "my_token"
+        assert client.session_expires is not None
+
+    @pytest.mark.asyncio
+    async def test_login_401_raises(self):
+        client = BAOSRestClient("10.0.0.1", use_https=False)
+        client._session = MagicMock()
+        resp = self._make_response(401, text="Unauthorized")
+        self._wire_cm(client._session, resp, "post")
+        with pytest.raises(AuthenticationError, match="Invalid username"):
+            await client.login("bad", "creds")
+
+    @pytest.mark.asyncio
+    async def test_login_500_raises(self):
+        client = BAOSRestClient("10.0.0.1", use_https=False)
+        client._session = MagicMock()
+        resp = self._make_response(500)
+        self._wire_cm(client._session, resp, "post")
+        with pytest.raises(AuthenticationError, match="status 500"):
+            await client.login("admin", "pass")
+
+    @pytest.mark.asyncio
+    async def test_login_empty_token_raises(self):
+        client = BAOSRestClient("10.0.0.1", use_https=False)
+        client._session = MagicMock()
+        resp = self._make_response(200, text="   ")
+        self._wire_cm(client._session, resp, "post")
+        with pytest.raises(AuthenticationError, match="No session cookie"):
+            await client.login("admin", "pass")
+
+    @pytest.mark.asyncio
+    async def test_login_client_error_raises(self):
+        import aiohttp
+
+        client = BAOSRestClient("10.0.0.1", use_https=False)
+        client._session = MagicMock()
+        cm = MagicMock()
+        cm.__aenter__ = AsyncMock(side_effect=aiohttp.ClientError("net"))
+        cm.__aexit__ = AsyncMock(return_value=False)
+        client._session.post.return_value = cm
+        with pytest.raises(AuthenticationError, match="Network error"):
+            await client.login("admin", "pass")
+
+    @pytest.mark.asyncio
+    async def test_login_creates_session_when_none(self):
+        """When _session is None, login() creates a ClientSession."""
+        client = BAOSRestClient("10.0.0.1", use_https=False)
+        assert client._session is None
+
+        mock_session = MagicMock()
+        resp = self._make_response(200, text="token_new")
+        self._wire_cm(mock_session, resp, "post")
+
+        with (
+            patch("aiohttp.ClientSession", return_value=mock_session),
+            patch("aiohttp.TCPConnector"),
+        ):
+            token = await client.login("admin", "pass")
+
+        assert token == "token_new"
+        assert client._session is not None
+
+    # ── logout() ─────────────────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_logout_200_clears_state(self):
+        client = self._authenticated_client()
+        client.tunneling_enabled = True
+        resp = self._make_response(200)
+        self._wire_cm(client._session, resp, "post")
+        await client.logout()
+        assert client.session_token is None
+        assert client.tunneling_enabled is False
+
+    @pytest.mark.asyncio
+    async def test_logout_204_clears_state(self):
+        client = self._authenticated_client()
+        resp = self._make_response(204)
+        self._wire_cm(client._session, resp, "post")
+        await client.logout()
+        assert client.session_token is None
+
+    @pytest.mark.asyncio
+    async def test_logout_error_status_still_clears(self):
+        client = self._authenticated_client()
+        resp = self._make_response(500)
+        self._wire_cm(client._session, resp, "post")
+        await client.logout()
+        assert client.session_token is None
+
+    @pytest.mark.asyncio
+    async def test_logout_client_error_still_clears(self):
+        import aiohttp
+
+        client = self._authenticated_client()
+        cm = MagicMock()
+        cm.__aenter__ = AsyncMock(side_effect=aiohttp.ClientError("net"))
+        cm.__aexit__ = AsyncMock(return_value=False)
+        client._session.post.return_value = cm
+        await client.logout()
+        assert client.session_token is None
+
+    # ── enable_tunneling() ───────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_enable_tunneling_204_success(self):
+        client = self._authenticated_client()
+        resp = self._make_response(204)
+        self._wire_cm(client._session, resp, "put")
+        with patch(
+            "custom_components.luxor_living.rest_client.get_rest_api_circuit_breaker"
+        ) as mock_cb:
+            cb = MagicMock()
+
+            async def relay_et(fn):
+                return await fn()  # noqa: E704
+
+            cb.call = relay_et
+            mock_cb.return_value = cb
+            result = await client.enable_tunneling()
+        assert result is True
+        assert client.tunneling_enabled is True
+
+    @pytest.mark.asyncio
+    async def test_enable_tunneling_200_json_success(self):
+        client = self._authenticated_client()
+        resp = self._make_response(200, json_data={"enabled": True})
+        self._wire_cm(client._session, resp, "put")
+        with patch(
+            "custom_components.luxor_living.rest_client.get_rest_api_circuit_breaker"
+        ) as mock_cb:
+            cb = MagicMock()
+
+            async def relay_et200(fn):
+                return await fn()  # noqa: E704
+
+            cb.call = relay_et200
+            mock_cb.return_value = cb
+            result = await client.enable_tunneling()
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_enable_tunneling_401_raises_auth_error(self):
+        client = self._authenticated_client()
+        resp = self._make_response(401)
+        self._wire_cm(client._session, resp, "put")
+        with patch(
+            "custom_components.luxor_living.rest_client.get_rest_api_circuit_breaker"
+        ) as mock_cb:
+            cb = MagicMock()
+
+            async def relay_et401(fn):
+                return await fn()  # noqa: E704
+
+            cb.call = relay_et401
+            mock_cb.return_value = cb
+            with pytest.raises(AuthenticationError):
+                await client.enable_tunneling()
+
+    @pytest.mark.asyncio
+    async def test_enable_tunneling_403_raises_tunneling_error(self):
+        client = self._authenticated_client()
+        resp = self._make_response(403, text="Forbidden")
+        self._wire_cm(client._session, resp, "put")
+        with patch(
+            "custom_components.luxor_living.rest_client.get_rest_api_circuit_breaker"
+        ) as mock_cb:
+            cb = MagicMock()
+
+            async def relay_et403(fn):
+                return await fn()  # noqa: E704
+
+            cb.call = relay_et403
+            mock_cb.return_value = cb
+            with pytest.raises(TunnelingError, match="Forbidden"):
+                await client.enable_tunneling()
+
+    @pytest.mark.asyncio
+    async def test_enable_tunneling_500_raises_tunneling_error(self):
+        client = self._authenticated_client()
+        resp = self._make_response(500, text="Internal Error")
+        self._wire_cm(client._session, resp, "put")
+        with patch(
+            "custom_components.luxor_living.rest_client.get_rest_api_circuit_breaker"
+        ) as mock_cb:
+            cb = MagicMock()
+
+            async def relay_et500(fn):
+                return await fn()  # noqa: E704
+
+            cb.call = relay_et500
+            mock_cb.return_value = cb
+            with pytest.raises(TunnelingError):
+                await client.enable_tunneling()
+
+    # ── disable_tunneling() ──────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_disable_tunneling_200_success(self):
+        client = self._authenticated_client()
+        client.tunneling_enabled = True
+        resp = self._make_response(200)
+        self._wire_cm(client._session, resp, "put")
+        with patch(
+            "custom_components.luxor_living.rest_client.get_rest_api_circuit_breaker"
+        ) as mock_cb:
+            cb = MagicMock()
+
+            async def relay_dt200(fn):
+                return await fn()  # noqa: E704
+
+            cb.call = relay_dt200
+            mock_cb.return_value = cb
+            result = await client.disable_tunneling()
+        assert result is True
+        assert client.tunneling_enabled is False
+
+    @pytest.mark.asyncio
+    async def test_disable_tunneling_204_success(self):
+        client = self._authenticated_client()
+        resp = self._make_response(204)
+        self._wire_cm(client._session, resp, "put")
+        with patch(
+            "custom_components.luxor_living.rest_client.get_rest_api_circuit_breaker"
+        ) as mock_cb:
+            cb = MagicMock()
+
+            async def relay_dt204(fn):
+                return await fn()  # noqa: E704
+
+            cb.call = relay_dt204
+            mock_cb.return_value = cb
+            result = await client.disable_tunneling()
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_disable_tunneling_500_returns_false(self):
+        client = self._authenticated_client()
+        resp = self._make_response(500, text="err")
+        self._wire_cm(client._session, resp, "put")
+        with patch(
+            "custom_components.luxor_living.rest_client.get_rest_api_circuit_breaker"
+        ) as mock_cb:
+            cb = MagicMock()
+
+            async def relay_dt500(fn):
+                return await fn()  # noqa: E704
+
+            cb.call = relay_dt500
+            mock_cb.return_value = cb
+            result = await client.disable_tunneling()
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_disable_tunneling_exception_returns_false(self):
+        client = self._authenticated_client()
+        with patch(
+            "custom_components.luxor_living.rest_client.get_rest_api_circuit_breaker"
+        ) as mock_cb:
+            cb = MagicMock()
+            cb.call = AsyncMock(side_effect=RuntimeError("CB open"))
+            mock_cb.return_value = cb
+            result = await client.disable_tunneling()
+        assert result is False
+
+    # ── get_tunneling_status() ───────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_get_tunneling_status_200(self):
+        client = self._authenticated_client()
+        resp = self._make_response(
+            200, json_data={"enabled": True, "connectedClients": 1, "maxSlots": 4}
+        )
+        self._wire_cm(client._session, resp, "get")
+        result = await client.get_tunneling_status()
+        assert result["enabled"] is True
+
+    @pytest.mark.asyncio
+    async def test_get_tunneling_status_non_200_returns_default(self):
+        client = self._authenticated_client()
+        resp = self._make_response(500)
+        self._wire_cm(client._session, resp, "get")
+        result = await client.get_tunneling_status()
+        assert result == {"enabled": False, "connectedClients": 0, "maxSlots": 1}
+
+    # ── __aenter__ / __aexit__ ───────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_aenter_creates_session(self):
+        with patch("aiohttp.ClientSession") as mock_cls, patch("aiohttp.TCPConnector"):
+            mock_cls.return_value = MagicMock()
+            client = BAOSRestClient("10.0.0.1", use_https=False)
+            result = await client.__aenter__()
+            assert result is client
+            assert client._session is not None
+
+    @pytest.mark.asyncio
+    async def test_aexit_closes_session(self):
+        client = BAOSRestClient("10.0.0.1", use_https=False)
+        mock_session = MagicMock()
+        mock_session.close = AsyncMock()
+        client._session = mock_session
+        await client.__aexit__(None, None, None)
+        mock_session.close.assert_awaited_once()

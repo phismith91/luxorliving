@@ -26,11 +26,7 @@ rules:
   docs-installation-parameters: done
   entity-unavailable: done
   integration-owner: done
-  log-when-unavailable:
-    status: todo
-    comment: >
-      The integration does not yet emit a log message at the moment the KNX
-      gateway transitions from connected to disconnected. Planned for v1.3.0.
+  log-when-unavailable: done
   parallel-updates: done
   reauthentication-flow: done
   test-coverage: done
@@ -59,11 +55,5 @@ rules:
 
   # Platinum
   async-dependency: done
-  inject-websession:
-    status: exempt
-    comment: >
-      The BAOS 777 IP1 gateway uses a self-signed TLS certificate. The
-      integration requires ssl=False / CERT_NONE to connect. Injecting the
-      HA-managed aiohttp ClientSession would cause certificate validation to
-      fail, so the integration manages its own session.
+  inject-websession: done
   strict-typing: done
