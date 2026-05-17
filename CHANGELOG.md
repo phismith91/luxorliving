@@ -15,6 +15,25 @@ documented in this file.
 
 ---
 
+## [1.1.8] - 2026-05-17
+
+### Added
+
+- **Configuration parameters documented**: README now includes a dedicated section describing all
+  config-flow and options-flow parameters (gateway host, credentials, push-token, auth method).
+- **Known Limitations section**: README documents SSL certificate constraints, unsupported device
+  types, LXP reload behaviour, and other known limitations.
+- **Removal instructions**: README documents how to remove the integration from HA and HACS.
+
+### Changed
+
+- **Config flow test coverage expanded**: Added tests for the reauthentication flow
+  (`async_step_reauth`, `async_step_reauth_confirm`) and the reconfigure flow
+  (`async_step_reconfigure`), covering success paths and error cases. Satisfies HA quality
+  scale Bronze rule `config-flow-test-coverage`.
+
+---
+
 ## [1.1.7] - 2026-05-16
 
 ### Added

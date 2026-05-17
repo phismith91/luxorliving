@@ -5,7 +5,7 @@
 [![Codecov](https://codecov.io/gh/phismith91/luxorliving/branch/main/graph/badge.svg)](https://codecov.io/gh/phismith91/luxorliving)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/phismith91/luxorliving?include_prereleases)](https://github.com/phismith91/luxorliving/releases)
 [![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](https://github.com/phismith91/luxorliving/blob/main/LICENSE)
-[![Tests: 765](https://img.shields.io/badge/Tests-765%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
+[![Tests: 771](https://img.shields.io/badge/Tests-771%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
 
 Home Assistant custom integration for **Theben LUXORliving KNX** systems. Connects via the BAOS 777 IP1 gateway using a LXP project file for automatic entity discovery — lights, covers, climate, sensors, switches and binary sensors, all created without any manual YAML.
 
@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.1.7](https://github.com/phismith91/luxorliving/releases/tag/v1.1.7) — RTR 718 thermostat support · B6 binary input fix · Rain sensor live state
+**Current release:** [v1.1.8](https://github.com/phismith91/luxorliving/releases/tag/v1.1.8) — HA quality scale compliance: docs, config-flow test coverage
 <!-- RELEASE_NOTES_END -->
 
 ---
@@ -78,6 +78,48 @@ Not yet tested / known limitations:
 | Energy metering actuators | Not tested |
 
 If your device works or doesn't work, please [open an issue](https://github.com/phismith91/luxorliving/issues) so we can update this list.
+
+---
+
+## Configuration Parameters
+
+The integration is configured entirely via the UI config flow. Key parameters:
+
+| Parameter | Where | Description |
+| --- | --- | --- |
+| **LXP project file** | Setup | The `.lxp` file exported from LUXORplug. Upload via file picker. |
+| **Gateway host** | Setup | IP address of the BAOS 777 IP1 gateway (e.g. `192.168.1.3`). |
+| **Port** | Setup | KNX/IP port — default `3671`. |
+| **Username / Password** | Setup | BAOS 777 REST API credentials — factory default is `admin` / `admin`. |
+| **Connection type** | Setup | `Tunneling` (point-to-point, recommended) or `Routing` (multicast). |
+| **Push token** | Options | Optional token for the `/api/luxor_living/push` webhook endpoint. |
+| **Push auth method** | Options | `none` · `token` (X-LUXOR-PUSH-TOKEN header) · `bearer` · `hmac` (SHA-256). |
+
+The gateway password is stored in HA's encrypted config-entry storage — it is never logged in plain text.
+
+---
+
+## Known Limitations
+
+| Limitation | Notes |
+| --- | --- |
+| **SSL certificate** | The BAOS 777 uses a factory self-signed certificate. Certificate verification is intentionally disabled; a custom CA is not supported by the hardware. |
+| **Scene actuators** | No LXP role mapping exists for scenes — entities are not created. |
+| **Multi-gang switches with mixed functions** | Not tested; entity detection relies on datapoint heuristics which may misidentify channels. |
+| **KNX-RF wireless devices** | Parsed, but RF-only devices without wired group addresses may not produce entities. |
+| **Energy metering actuators** | Not tested. |
+| **LXP reload without HA restart** | Use the *Reload integration* service action. Changing the LXP file requires a reconfigure flow (no entities are removed from the registry automatically). |
+| **No zeroconf auto-discovery** | Gateway must be configured manually; IP address is not auto-discovered at setup time. |
+
+---
+
+## Removing the Integration
+
+1. Go to **Settings → Devices & Services → LUXORliving** → ⋮ → **Delete**.
+2. HA removes all entities and the config entry automatically.
+3. To fully clean up, restart HA after deletion so lingering KNX group address listeners are released.
+
+If installed via HACS: open HACS → Integrations → LUXORliving → **Remove** after deleting the config entry.
 
 ---
 
