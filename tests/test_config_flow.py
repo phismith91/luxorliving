@@ -264,3 +264,127 @@ class TestLuxorLivingConfigFlow:
 
         assert result["type"] == "create_entry"
         assert result["title"] == "LUXORliving (Test Project)"
+
+
+class TestReauthFlow:
+    """Tests for the reauthentication flow."""
+
+    @pytest.fixture
+    def mock_reauth_entry(self):
+        """Return a mock config entry for reauthentication."""
+        entry = MagicMock()
+        entry.data = {"host": "192.168.1.3", "username": "admin", "password": "old"}
+        return entry
+
+    @pytest.mark.asyncio
+    async def test_reauth_shows_confirm_form(self, mock_hass, mock_reauth_entry):
+        """async_step_reauth delegates straight to reauth_confirm form."""
+        flow = LuxorLivingConfigFlow()
+        flow.hass = mock_hass
+
+        with patch.object(flow, "_get_reauth_entry", return_value=mock_reauth_entry):
+            result = await flow.async_step_reauth({})
+
+        assert result["type"] == "form"
+        assert result["step_id"] == "reauth_confirm"
+
+    @pytest.mark.asyncio
+    async def test_reauth_confirm_invalid_credentials(self, mock_hass, mock_reauth_entry):
+        """Bad credentials return form with invalid_auth error."""
+        flow = LuxorLivingConfigFlow()
+        flow.hass = mock_hass
+
+        with patch.object(flow, "_get_reauth_entry", return_value=mock_reauth_entry):
+            with patch.object(flow, "_validate_credentials", side_effect=Exception("auth failed")):
+                result = await flow.async_step_reauth_confirm(
+                    {"username": "admin", "password": "wrong"}
+                )
+
+        assert result["type"] == "form"
+        assert result["errors"]["base"] == "invalid_auth"
+
+    @pytest.mark.asyncio
+    async def test_reauth_confirm_success(self, mock_hass, mock_reauth_entry):
+        """Valid credentials update the entry and abort the flow."""
+        flow = LuxorLivingConfigFlow()
+        flow.hass = mock_hass
+
+        with patch.object(flow, "_get_reauth_entry", return_value=mock_reauth_entry):
+            with patch.object(flow, "_validate_credentials", return_value=None):
+                with patch.object(
+                    flow,
+                    "async_update_reload_and_abort",
+                    return_value={"type": "abort", "reason": "reauth_successful"},
+                ) as mock_update:
+                    result = await flow.async_step_reauth_confirm(
+                        {"username": "admin", "password": "newpass"}
+                    )
+
+        assert result["type"] == "abort"
+        mock_update.assert_called_once()
+        _, kwargs = mock_update.call_args
+        assert kwargs["data_updates"]["password"] == "newpass"
+
+
+class TestReconfigureFlow:
+    """Tests for the reconfigure flow (update LXP file without re-entering credentials)."""
+
+    @pytest.fixture
+    def mock_reconfigure_entry(self):
+        """Return a mock config entry for reconfiguration."""
+        entry = MagicMock()
+        entry.data = {"lxp_file": "/old/path.lxp"}
+        return entry
+
+    @pytest.mark.asyncio
+    async def test_reconfigure_shows_form(self, mock_hass, mock_reconfigure_entry):
+        """async_step_reconfigure shows the LXP file form."""
+        flow = LuxorLivingConfigFlow()
+        flow.hass = mock_hass
+
+        with patch.object(flow, "_get_reconfigure_entry", return_value=mock_reconfigure_entry):
+            result = await flow.async_step_reconfigure()
+
+        assert result["type"] == "form"
+        assert result["step_id"] == "reconfigure"
+
+    @pytest.mark.asyncio
+    async def test_reconfigure_invalid_lxp(self, mock_hass, mock_reconfigure_entry):
+        """Invalid LXP file returns form with invalid_lxp error."""
+        flow = LuxorLivingConfigFlow()
+        flow.hass = mock_hass
+
+        with patch.object(flow, "_get_reconfigure_entry", return_value=mock_reconfigure_entry):
+            with patch(
+                "custom_components.luxor_living.config_flow.save_uploaded_lxp_file",
+                return_value="/some/path.lxp",
+            ):
+                with patch.object(flow, "_validate_lxp_file", side_effect=ValueError("bad xml")):
+                    result = await flow.async_step_reconfigure({"lxp_file": "bad-file-id"})
+
+        assert result["type"] == "form"
+        assert result["errors"]["base"] == "invalid_lxp"
+
+    @pytest.mark.asyncio
+    async def test_reconfigure_success(self, mock_hass, mock_reconfigure_entry, mock_file_upload):
+        """Valid LXP file updates the config entry and aborts."""
+        flow = LuxorLivingConfigFlow()
+        flow.hass = mock_hass
+
+        with patch.object(flow, "_get_reconfigure_entry", return_value=mock_reconfigure_entry):
+            with patch.object(flow, "_validate_lxp_file", return_value="New Project"):
+                with patch(
+                    "custom_components.luxor_living.config_flow.save_uploaded_lxp_file",
+                    return_value="/new/path.lxp",
+                ):
+                    with patch.object(
+                        flow,
+                        "async_update_reload_and_abort",
+                        return_value={"type": "abort", "reason": "reconfigure_successful"},
+                    ) as mock_update:
+                        result = await flow.async_step_reconfigure({"lxp_file": "new-file-id"})
+
+        assert result["type"] == "abort"
+        mock_update.assert_called_once()
+        _, kwargs = mock_update.call_args
+        assert kwargs["data_updates"]["lxp_file"] == "/new/path.lxp"
