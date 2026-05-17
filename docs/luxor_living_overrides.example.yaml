@@ -3,7 +3,7 @@
 # Adjust addresses and names as needed.
 
 include_unaffected: true
-map_onoff_to_binary: true
+# map_onoff_to_binary: true  # DEPRECATED since v1.1.7 — all sensor OnOff channels now always map to binary_sensor
 
 sensors:
   # Wetterstation 1

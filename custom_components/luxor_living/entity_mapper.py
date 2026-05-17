@@ -60,6 +60,12 @@ class EntityMapper:
 
     def map_all(self) -> list[MappedEntity]:
         """Map all devices to entities."""
+        if self._overrides.get("map_onoff_to_binary") is not None:
+            _LOGGER.warning(
+                "Override key 'map_onoff_to_binary' is no longer needed and will be ignored. "
+                "All sensor OnOff channels now always map to binary_sensor. "
+                "Remove this key from your luxor_living_overrides.yaml."
+            )
         _LOGGER.info("Mapping %d devices to entities", len(self.project.devices))
 
         for device in self.project.devices:
@@ -213,6 +219,13 @@ class EntityMapper:
             and sensor.parameters.get("activateRTR") != "1"
         ):
             istwert_addr = datapoints["Istwert"]
+            if istwert_addr in self._claimed_climate_istwert_addresses:
+                _LOGGER.debug(
+                    "Skipping R718 sensor '%s' — Istwert address %s already claimed",
+                    sensor.name,
+                    istwert_addr,
+                )
+                return
             self._claimed_climate_istwert_addresses.add(istwert_addr)
             unique_id = f"{device.id}_{istwert_addr}"
             name = sensor.name or f"{device.name} Ch{sensor.channel}"

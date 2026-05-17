@@ -177,6 +177,8 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
             return BinarySensorDeviceClass.MOTION
         if entity_type == "health":
             return BinarySensorDeviceClass.CONNECTIVITY
+        if entity_type == "regen":
+            return BinarySensorDeviceClass.MOISTURE
 
         # Check name for keywords
         if "rauchmelder" in entity_name or "smoke" in entity_name:
