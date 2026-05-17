@@ -367,6 +367,18 @@ class TestDataclasses:
         )
         assert d.serial_number == "SN"
 
+    def test_lxp_device_has_device_type_field(self):
+        d = LXPDevice(
+            serial_number="SN",
+            name="Dev",
+            app_id="18502",
+            address="1.1.1",
+            id="d1",
+            sensors=[],
+            actuators=[],
+        )
+        assert hasattr(d, "device_type")
+
     def test_lxp_project(self):
         p = LXPProject(name="Proj", gateway_address="192.168.1.1", gateway_port=3671, devices=[])
         assert p.gateway_port == 3671
@@ -473,3 +485,69 @@ class TestLXPCacheMutationTargets:
         stats = c.get_stats()
         for key in ("size", "max_size", "hits", "misses", "hit_rate_percent"):
             assert key in stats, f"missing stats key: {key}"
+
+
+class TestDeviceTypeParsing:
+    """Parser resolves device_type from appId via knxprod_reader."""
+
+    _LXP_WITH_APP_IDS = dedent(f"""\
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project xmlns="{NS}" name="AppIdTest">
+          <adapter address="192.168.1.50:3671"/>
+          <devices>
+            <device serialNumber="SN1" name="H6 Dev" appId="18502"
+                    address="1.1.1" id="d1" affected="1">
+              <actuator name="H6 Ch1" channel="1" id="a1" onIcon="" offIcon=""
+                        useCase="0" affected="1">
+                <datapoint address="1024" role="Istwert" id="dp1"/>
+                <datapoint address="1280" role="Sollwert" id="dp2"/>
+                <parameter name="heizungsart" value="230"/>
+              </actuator>
+            </device>
+            <device serialNumber="SN2" name="B6 Dev" appId="18486"
+                    address="1.1.2" id="d2" affected="1">
+              <sensor name="B6 Ch1" channel="1" id="s1" onIcon="" offIcon=""
+                      sensor_type="0" affected="1">
+                <datapoint address="2048" role="OnOff" id="dp3"/>
+              </sensor>
+            </device>
+            <device serialNumber="SN3" name="Unknown Dev" appId="9999"
+                    address="1.1.3" id="d3" affected="1">
+              <sensor name="Unknown Ch1" channel="1" id="s2" onIcon="" offIcon=""
+                      sensor_type="0" affected="1">
+                <datapoint address="3072" role="OnOff" id="dp4"/>
+              </sensor>
+            </device>
+          </devices>
+        </project>
+        """)
+
+    def test_known_appid_sets_device_type(self, tmp_path):
+        lxp = tmp_path / "test.lxp"
+        lxp.write_text(self._LXP_WITH_APP_IDS, encoding="utf-8")
+        parser = LXPParser(lxp)
+        import asyncio
+
+        project = asyncio.get_event_loop().run_until_complete(parser.parse())
+        h6_dev = next(d for d in project.devices if d.name == "H6 Dev")
+        assert h6_dev.device_type == "H6"
+
+    def test_b6_appid_sets_device_type(self, tmp_path):
+        lxp = tmp_path / "test.lxp"
+        lxp.write_text(self._LXP_WITH_APP_IDS, encoding="utf-8")
+        parser = LXPParser(lxp)
+        import asyncio
+
+        project = asyncio.get_event_loop().run_until_complete(parser.parse())
+        b6_dev = next(d for d in project.devices if d.name == "B6 Dev")
+        assert b6_dev.device_type == "B6"
+
+    def test_unknown_appid_sets_empty_device_type(self, tmp_path):
+        lxp = tmp_path / "test.lxp"
+        lxp.write_text(self._LXP_WITH_APP_IDS, encoding="utf-8")
+        parser = LXPParser(lxp)
+        import asyncio
+
+        project = asyncio.get_event_loop().run_until_complete(parser.parse())
+        unknown_dev = next(d for d in project.devices if d.name == "Unknown Dev")
+        assert unknown_dev.device_type == ""

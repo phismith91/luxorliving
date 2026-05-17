@@ -49,7 +49,13 @@ def _sensor(name: str, channel: int, datapoints: list, sensor_type: int = 0) -> 
     return s
 
 
-def _device(name: str, actuators=None, sensors=None, device_id="dev_001") -> LXPDevice:
+def _device(
+    name: str,
+    actuators=None,
+    sensors=None,
+    device_id="dev_001",
+    device_type="",
+) -> LXPDevice:
     d = MagicMock(spec=LXPDevice)
     d.name = name
     d.id = device_id
@@ -57,6 +63,8 @@ def _device(name: str, actuators=None, sensors=None, device_id="dev_001") -> LXP
     d.serial_number = "SN123"
     d.actuators = actuators or []
     d.sensors = sensors or []
+    d.device_type = device_type
+    d.app_id = ""
     return d
 
 
@@ -666,3 +674,46 @@ class TestUniqueIdCollisionGuard:
         uids = [e.unique_id for e in lights]
         assert len(set(uids)) == 3, f"unique_ids collide: {uids}"
         assert uids[0] == "s1_2089"
+
+
+class TestAppIdBasedDeviceCategory:
+    """entity_mapper skips input_only and unsupported devices via device_type."""
+
+    def test_input_only_device_produces_no_entities(self):
+        """T4 (input_only) yields zero entities regardless of datapoints."""
+        dp = _datapoint("OnOff", 2048)
+        sensor = _sensor("T4 Ch1", 1, [dp])
+        device = _device("T4 Panel", sensors=[sensor], device_type="T4")
+        mapper = _mapper([device])
+        # Health entity is always added; subtract it
+        non_health = [e for e in mapper.entities if e.entity_type != "health"]
+        assert len(non_health) == 0
+
+    def test_unsupported_device_produces_no_entities(self):
+        """M130 (unsupported) yields zero entities."""
+        dp = _datapoint("OnOff", 3072)
+        sensor = _sensor("M130 Ch1", 1, [dp])
+        device = _device("M130 Meter", sensors=[sensor], device_type="M130")
+        mapper = _mapper([device])
+        non_health = [e for e in mapper.entities if e.entity_type != "health"]
+        assert len(non_health) == 0
+
+    def test_unknown_device_type_falls_through_to_heuristics(self):
+        """Empty device_type falls through to existing heuristic detection."""
+        dp = _datapoint("OnOff", 2048)
+        actuator = _actuator("Switch", 1, [dp])
+        device = _device("Unknown Dev", actuators=[actuator], device_type="")
+        mapper = _mapper([device])
+        non_health = [e for e in mapper.entities if e.entity_type != "health"]
+        assert len(non_health) == 1
+
+    def test_known_supported_device_type_falls_through_to_heuristics(self):
+        """Known but supported type (e.g. H6) still uses heuristic for entity details."""
+        dp_ist = _datapoint("Istwert", 1024)
+        dp_soll = _datapoint("Sollwert", 1280)
+        actuator = _actuator("H6 Ch1", 1, [dp_ist, dp_soll])
+        actuator.parameters = {"heizungsart": "230"}
+        device = _device("H6 Dev", actuators=[actuator], device_type="H6")
+        mapper = _mapper([device])
+        climate = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate) == 1

@@ -8,6 +8,8 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
+from .knxprod_reader import get_device_name
+
 try:
     from defusedxml import ElementTree as ET
 except ImportError:
@@ -230,6 +232,7 @@ class LXPDevice:
     id: str
     sensors: list[LXPSensor]
     actuators: list[LXPActuator]
+    device_type: str = ""
 
 
 @dataclass
@@ -420,6 +423,10 @@ class LXPParser:
                 app_id,
             )
 
+        device_type = get_device_name(app_id) or ""
+        if not device_type and app_id:
+            _LOGGER.debug("Unknown appId %s for device '%s'", app_id, name)
+
         return LXPDevice(
             serial_number=serial,
             name=name,
@@ -428,6 +435,7 @@ class LXPParser:
             id=dev_id,
             sensors=sensors,
             actuators=actuators,
+            device_type=device_type,
         )
 
     def _parse_sensor(
