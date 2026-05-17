@@ -513,6 +513,19 @@ class TestR718ThermostatMapping:
         climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
         assert len(climate_entities) == 0
 
+    def test_activate_rtr_zero_with_status_sollwert_maps_as_r718(self):
+        """activateRTR=0 (not '1') + status@Sollwert → treated as R718, not iON RTR."""
+        dp_ist = _datapoint("Istwert", 7680)
+        dp_soll = _datapoint("Sollwert", 7424)
+        dp_status = _datapoint("status@Sollwert", 7936)
+        sensor = _sensor("Thermostat", 0, [dp_ist, dp_soll, dp_status])
+        sensor.parameters = {"activateRTR": "0"}
+        device = _device("Dev", sensors=[sensor])
+        mapper = _mapper([device])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 1
+        assert climate_entities[0].platform == Platform.CLIMATE
+
     def test_no_duplicate_when_r718_and_actuator_share_istwert(self):
         """R718 sensor takes precedence; H6 actuator with same Istwert address is skipped."""
         shared = 7680

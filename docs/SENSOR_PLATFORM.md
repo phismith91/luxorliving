@@ -230,7 +230,7 @@ Hinweis zu `include_unaffected`:
 
 ```yaml
 include_unaffected: true  # optional: Parser nimmt auch affected=0 auf
-map_onoff_to_binary: true # optional: OnOff-Kontakte als binary_sensor
+# map_onoff_to_binary: true  # DEPRECATED since v1.1.7 — no longer needed, all sensor OnOff channels always map to binary_sensor
 
 sensors:
    - name: "Außentemperatur"
