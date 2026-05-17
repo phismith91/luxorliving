@@ -90,18 +90,33 @@ class TestSensorInit:
         entity, _ = _make_sensor("custom", datapoints={})
         assert entity._datapoint_address is None
 
-    def test_device_class_set_from_attributes(self):
+    def test_device_class_set_from_description(self):
+        from homeassistant.components.sensor import SensorDeviceClass
+
+        entity, _ = _make_sensor("temperature")
+        # Known types use entity_description instead of _attr_device_class
+        assert entity.entity_description.device_class == SensorDeviceClass.TEMPERATURE
+
+    def test_unit_set_from_description(self):
+        from homeassistant.const import UnitOfTemperature
+
+        entity, _ = _make_sensor("temperature")
+        # Known types carry the unit via entity_description
+        assert entity.entity_description.native_unit_of_measurement == UnitOfTemperature.CELSIUS
+
+    def test_unknown_type_device_class_set_from_attributes(self):
         from homeassistant.components.sensor import SensorDeviceClass
 
         entity, _ = _make_sensor(
-            "temperature",
+            "custom_type",
             attributes={"device_class": SensorDeviceClass.TEMPERATURE},
         )
+        # Unknown types still fall back to _attr_* from LXP attributes
         assert entity._attr_device_class == SensorDeviceClass.TEMPERATURE
 
-    def test_unit_set_from_attributes(self):
+    def test_unknown_type_unit_set_from_attributes(self):
         entity, _ = _make_sensor(
-            "temperature",
+            "custom_type",
             attributes={"unit_of_measurement": "°C"},
         )
         assert entity._attr_native_unit_of_measurement == "°C"

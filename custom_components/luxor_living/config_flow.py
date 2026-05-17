@@ -143,7 +143,8 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         host = discovery_info.host
 
         await self.async_set_unique_id(host)
-        self._abort_if_unique_id_configured(updates={CONF_HOST: host})
+        # Update host and reload so device info reflects the current gateway address
+        self._abort_if_unique_id_configured(updates={CONF_HOST: host}, reload_on_update=True)
 
         self._discovered_host = host
         self.context["title_placeholders"] = {"host": host}

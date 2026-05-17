@@ -48,6 +48,33 @@ PLATFORMS: list[Platform] = [
 ]
 
 
+def _async_cleanup_stale_devices(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    mapper: EntityMapper,
+) -> None:
+    """Remove devices from the registry that no longer exist in the LXP project."""
+    device_registry = dr.async_get(hass)
+
+    # Build the set of valid device identifiers from the current LXP project
+    current_device_ids: set[str] = {
+        entity.device_id for entity in mapper.entities if getattr(entity, "device_id", None)
+    }
+    # The gateway hub device is keyed by entry_id
+    current_device_ids.add(entry.entry_id)
+
+    for device_entry in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        for identifier_domain, identifier_key in device_entry.identifiers:
+            if identifier_domain == DOMAIN and identifier_key not in current_device_ids:
+                _LOGGER.info(
+                    "Removing stale device '%s' (%s) from registry",
+                    device_entry.name,
+                    identifier_key,
+                )
+                device_registry.async_remove_device(device_entry.id)
+                break
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up LUXORliving from a config entry."""
     _LOGGER.debug("LUXORliving setup started")
@@ -265,6 +292,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Remove devices that no longer exist in the current LXP project
+    _async_cleanup_stale_devices(hass, entry, mapper)
 
     # Register device with configuration URL
     device_registry = dr.async_get(hass)
