@@ -241,6 +241,28 @@ class TestBAOSRestClientUnit:
         with pytest.raises(AuthenticationError):
             await c.async_get_datapoint_value(1)
 
+    @pytest.mark.asyncio
+    async def test_login_debug_log_omits_password(self):
+        """Ensure the login debug log never contains the password (CodeQL S2068)."""
+        c = BAOSRestClient("10.0.0.1", use_https=False)
+
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.text = AsyncMock(return_value="test_token_abc")
+        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_response.__aexit__ = AsyncMock(return_value=False)
+
+        mock_session = MagicMock()
+        mock_session.post = MagicMock(return_value=mock_response)
+        c._session = mock_session
+
+        with patch("custom_components.luxor_living.rest_client._LOGGER") as mock_logger:
+            await c.login("admin", "s3cr3t")
+
+        logged_messages = " ".join(str(call) for call in mock_logger.debug.call_args_list)
+        assert "s3cr3t" not in logged_messages
+        assert "admin" in logged_messages
+
 
 # ── Integration tests with mock HTTP server ───────────────────────────────────
 

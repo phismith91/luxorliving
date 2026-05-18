@@ -7,6 +7,9 @@ on:
 # To run the full QA matrix on a PR add the `run-qa-matrix` label to the PR.
 # This prevents the expensive matrix from running on every push/sync.
 
+permissions:
+  contents: read
+
 jobs:
   matrix-tests:
     name: QA matrix — Python ${{ matrix.python }} / HA ${{ matrix.ha }}

@@ -109,7 +109,7 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
         )
 
         # KNX listener ref for cleanup (populated in async_added_to_hass)
-        self._knx_listener_addr: int | None = None
+        self._knx_listener_addr: str | None = None
 
         _LOGGER.debug(
             "📊 Binary Sensor '%s' (class: %s) status address: %s",
@@ -142,7 +142,8 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
 
     def _handle_knx_state(self, address: Any, value: Any) -> None:
         """Handle KNX telegram for this binary sensor's status address."""
-        self.coordinator.set_state(self._address_status, bool(value))
+        if self._address_status is not None:
+            self.coordinator.set_state(self._address_status, bool(value))
 
     @property
     def is_on(self) -> bool:
@@ -156,7 +157,9 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
             return True
         else:
             # Default: use coordinator data
-            return self.coordinator.get_state(self._address_status)
+            if self._address_status is None:
+                return False
+            return bool(self.coordinator.get_state(self._address_status))
 
     def _detect_device_class(self, mapped_entity: Any) -> BinarySensorDeviceClass | None:
         """Detect the device class based on entity type and name.

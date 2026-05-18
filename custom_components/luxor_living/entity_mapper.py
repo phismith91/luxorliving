@@ -139,10 +139,11 @@ class EntityMapper:
             self._claimed_climate_istwert_addresses.add(istwert_addr)
         else:
             # Determine platform based on primary roles
-            platform = self._determine_platform(datapoints)
-            if platform is None:
+            determined_platform = self._determine_platform(datapoints)
+            if determined_platform is None:
                 _LOGGER.debug("Skipping actuator %s - no mappable roles", actuator.name)
                 return
+            platform = determined_platform
 
             # Determine entity type
             if platform == Platform.LIGHT:
@@ -323,8 +324,8 @@ class EntityMapper:
 
         # Generate unique ID - use the first datapoint address to ensure uniqueness
         # Different sensors can have same name but different addresses
-        address = list(datapoints.values())[0] if datapoints else "unknown"
-        unique_id = f"{device.id}_{address}"
+        primary_addr: str | int = list(datapoints.values())[0] if datapoints else "unknown"
+        unique_id = f"{device.id}_{primary_addr}"
 
         # Generate friendly name
         name = sensor.name or f"{device.name} Ch{sensor.channel}"
