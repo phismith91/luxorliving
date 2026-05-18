@@ -131,7 +131,7 @@ class BAOSRestClient:
         url = f"{self.base_url}/rest/login"
         payload = {"username": username, "password": password}
 
-        _LOGGER.debug(f"Attempting login to {url} with payload: {payload}")
+        _LOGGER.debug(f"Attempting login to {url} with user: {username}")
 
         try:
             async with self._session.post(url, json=payload) as response:
