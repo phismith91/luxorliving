@@ -107,7 +107,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Create type-safe integration state
             state = IntegrationState(
                 mapper=mapper,
-                config=entry.data,
+                config=dict(entry.data),
                 overrides=overrides,
                 entry=entry,
             )
