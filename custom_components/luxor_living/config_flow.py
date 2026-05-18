@@ -419,7 +419,7 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             if CONF_LOG_LEVEL in flat_input:
                 await self._async_update_log_level(flat_input[CONF_LOG_LEVEL])
 
-            return self.async_create_entry(title="", data=flat_input)
+            return self.async_create_entry(title="", data=flat_input)  # type: ignore[return-value]
 
         # Get current values from config_entry (provided by OptionsFlow base class)
         current_simulation_mode = self.config_entry.options.get(
@@ -538,7 +538,7 @@ class LuxorLivingOptionsFlow(OptionsFlow):
             }
         )
 
-        return self.async_show_form(
+        return self.async_show_form(  # type: ignore[return-value]
             step_id="init",
             data_schema=options_schema,
         )

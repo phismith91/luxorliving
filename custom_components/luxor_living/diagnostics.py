@@ -51,7 +51,7 @@ async def async_get_config_entry_diagnostics(
     coordinator = data.get("coordinator")
     overrides = data.get("overrides", {})
 
-    diagnostics = {
+    diagnostics: dict[str, Any] = {
         "diagnostics_allowed": True,
         "config_entry": {
             "entry_id": entry.entry_id,
@@ -98,7 +98,7 @@ async def async_get_config_entry_diagnostics(
         try:
             entities = getattr(mapper, "entities", [])
             entity_list: list[dict[str, Any]] = []
-            diagnostics["entities"] = entity_list  # type: ignore
+            diagnostics["entities"] = entity_list
 
             # Collect entity details (limit to 50 for performance)
             for entity in entities[:50]:
