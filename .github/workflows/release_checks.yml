@@ -11,6 +11,9 @@ on:
 # This workflow runs: smoke & integration tests, HACS validation, release notes verification,
 # and shell scripts linting. Format checks run in PR workflows to keep this lean.
 
+permissions:
+  contents: read
+
 jobs:
   release_checks:
     name: Release Checks

@@ -57,7 +57,7 @@ class LuxorLivingAuthenticationRepairFlow(RepairsFlow):
 
         if user_input is not None:
             # Test credentials
-            host = self.entry.data.get(CONF_HOST)
+            host: str = self.entry.data[CONF_HOST]
             username = user_input[CONF_USERNAME]
             password = user_input[CONF_PASSWORD]
 
