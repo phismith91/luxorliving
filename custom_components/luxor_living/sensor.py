@@ -68,7 +68,7 @@ async def async_setup_entry(
         ]
     )
 
-    async_add_entities(lxp_entities + discovered_entities)
+    async_add_entities([*lxp_entities, *discovered_entities])
 
 
 async def _create_lxp_sensor_entity(
@@ -288,7 +288,7 @@ class LuxorLivingDiscoveredSensor(SensorEntity):
             UnitOfTemperature,
         )
 
-        type_config = {
+        type_config: dict[str, dict[str, Any]] = {
             "temperature": {
                 "device_class": SensorDeviceClass.TEMPERATURE,
                 "unit": UnitOfTemperature.CELSIUS,
