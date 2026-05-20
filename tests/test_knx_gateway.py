@@ -653,3 +653,21 @@ class TestReconnectHandler:
         await gateway._async_on_reconnect()
 
         mock_rest.logout.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_async_disconnect_without_connection_callback(self, mock_hass):
+        """Disconnect must be safe when no connection-state callback was registered."""
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=True,
+        )
+        await gateway.async_setup()
+        assert gateway._unregister_connection_cb is None
+
+        await gateway.async_disconnect()
+
+        assert gateway.connected is False
