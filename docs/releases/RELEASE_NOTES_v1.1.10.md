@@ -1,4 +1,4 @@
-# Release Notes — v1.1.9
+# Release Notes — v1.1.10
 
 ## Fixed
 

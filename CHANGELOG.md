@@ -3,7 +3,7 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## [1.1.9] - 2026-05-20
+## [1.1.10] - 2026-05-20
 
 ### Fixed
 
