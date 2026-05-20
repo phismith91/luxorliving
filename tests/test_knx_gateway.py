@@ -490,3 +490,166 @@ class TestLuxorKNXGateway:
         discovered = gateway.get_discovered_sensors()
         assert "5/1/10" in discovered
         assert discovered["5/1/10"]["type"] in {"temperature", "humidity", "generic_sensor"}
+
+
+class TestReconnectHandler:
+    """Tests for the KNX reconnect handler (_on_connection_state_changed / _async_on_reconnect)."""
+
+    def test_on_connection_state_changed_noop_before_setup_complete(self, mock_hass):
+        """Callback must be ignored when _setup_complete is False."""
+        from xknx.core import XknxConnectionState
+
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=False,
+        )
+        assert gateway._setup_complete is False
+
+        gateway._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
+
+        assert gateway._connected is False
+        mock_hass.async_create_task.assert_not_called()
+
+    def test_on_connection_state_changed_disconnected_clears_connected_flag(self, mock_hass):
+        """DISCONNECTED state must set _connected=False."""
+        from xknx.core import XknxConnectionState
+
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=False,
+        )
+        gateway._setup_complete = True
+        gateway._connected = True
+
+        gateway._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
+
+        assert gateway._connected is False
+        mock_hass.async_create_task.assert_not_called()
+
+    def test_on_connection_state_changed_connecting_does_not_schedule_task(self, mock_hass):
+        """CONNECTING state must not schedule a reconnect task."""
+        from xknx.core import XknxConnectionState
+
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=False,
+        )
+        gateway._setup_complete = True
+        gateway._connected = False
+
+        gateway._on_connection_state_changed(XknxConnectionState.CONNECTING)
+
+        assert gateway._connected is False
+        mock_hass.async_create_task.assert_not_called()
+
+    def test_on_connection_state_changed_connected_schedules_reconnect(self, mock_hass):
+        """CONNECTED state must schedule _async_on_reconnect via hass.async_create_task."""
+        from xknx.core import XknxConnectionState
+
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=False,
+        )
+        gateway._setup_complete = True
+
+        gateway._on_connection_state_changed(XknxConnectionState.CONNECTED)
+
+        mock_hass.async_create_task.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_async_on_reconnect_success(self, mock_hass):
+        """Successful reconnect must re-authenticate and set _connected=True."""
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=False,
+        )
+        gateway._connected = False
+
+        mock_rest = AsyncMock()
+        mock_rest.logout = AsyncMock()
+        mock_rest.login = AsyncMock()
+        mock_rest.enable_tunneling = AsyncMock()
+        gateway._rest_client = mock_rest
+
+        await gateway._async_on_reconnect()
+
+        mock_rest.logout.assert_called_once()
+        mock_rest.login.assert_called_once_with("admin", "admin")
+        mock_rest.enable_tunneling.assert_called_once()
+        assert gateway._connected is True
+
+    @pytest.mark.asyncio
+    async def test_async_on_reconnect_failure_leaves_disconnected(self, mock_hass):
+        """Reconnect exception must not set _connected=True."""
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=False,
+        )
+        gateway._connected = False
+
+        mock_rest = AsyncMock()
+        mock_rest.logout = AsyncMock(side_effect=Exception("Network error"))
+        gateway._rest_client = mock_rest
+
+        await gateway._async_on_reconnect()
+
+        assert gateway._connected is False
+
+    @pytest.mark.asyncio
+    async def test_async_on_reconnect_skipped_without_rest_client(self, mock_hass):
+        """Reconnect must be a no-op when _rest_client is None."""
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=False,
+        )
+        gateway._rest_client = None
+
+        await gateway._async_on_reconnect()
+
+        assert gateway._connected is False
+
+    @pytest.mark.asyncio
+    async def test_async_on_reconnect_skipped_in_simulation_mode(self, mock_hass):
+        """Reconnect must be a no-op in simulation mode even when rest_client is set."""
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=True,
+        )
+        mock_rest = AsyncMock()
+        gateway._rest_client = mock_rest
+
+        await gateway._async_on_reconnect()
+
+        mock_rest.logout.assert_not_called()
