@@ -155,8 +155,10 @@ class BAOSRestClient:
 
                 self.session_token = cookie
 
-                # Session timeout: 1 hour (API doesn't send expiresIn in plain cookie response)
-                timeout_seconds = 3600
+                # IP1 firmware enforces a hard 24 h session limit. Track expiry at 23.5 h
+                # so _ensure_authenticated() fails before the gateway drops the session.
+                # The reconnect handler in knx_gateway.py renews tunneling on actual drops.
+                timeout_seconds = int(23.5 * 3600)  # 84600 s
                 self.session_expires = datetime.now() + timedelta(seconds=timeout_seconds)
 
                 _LOGGER.info(f"Login successful. Session expires at {self.session_expires}")

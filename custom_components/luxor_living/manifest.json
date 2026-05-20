@@ -17,7 +17,7 @@
     "xknx>=3.13.0",
     "defusedxml>=0.7.1"
   ],
-  "version": "1.1.8",
+  "version": "1.1.9",
   "zeroconf": [
     {
       "type": "_knxip._udp.local."

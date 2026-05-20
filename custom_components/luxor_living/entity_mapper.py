@@ -51,9 +51,13 @@ class EntityMapper:
         self.platform_detector = platform_detector or PlatformDetector()
         self.override_handler = override_handler or OverrideHandler(self._overrides)
 
-        # Track Istwert addresses already mapped to climate to prevent duplicates
-        # when both an RTR sensor and a heating actuator share the same KNX group address.
-        self._claimed_climate_istwert_addresses: set[int] = set()
+        # Track (device_id, istwert_addr) already mapped for H6 actuators.
+        # Prevents duplicate climate entities when two channels within the SAME H6 device
+        # share a KNX Istwert address (both wired to one room sensor).
+        # Intentionally per-device: R718 thermostats and iON RTR sensors are separate
+        # physical units and must each produce their own climate entity even when they
+        # share Istwert addresses with an H6 actuator in the same heating zone.
+        self._h6_claimed_zones: set[tuple[str, int]] = set()
 
         # Automatically map all entities on init
         self.map_all()
@@ -127,16 +131,18 @@ class EntityMapper:
             and "Sollwert" in datapoints
         ):
             istwert_addr = datapoints["Istwert"]
-            if istwert_addr in self._claimed_climate_istwert_addresses:
+            zone_key = (device.id, istwert_addr)
+            if zone_key in self._h6_claimed_zones:
                 _LOGGER.debug(
-                    "Skipping heating actuator %s - Istwert address %d already claimed by RTR sensor",
+                    "Skipping H6 channel %s — Istwert %d already claimed by another channel on device %s",
                     actuator.name,
                     istwert_addr,
+                    device.id,
                 )
                 return
             platform = Platform.CLIMATE
             entity_type = "climate"
-            self._claimed_climate_istwert_addresses.add(istwert_addr)
+            self._h6_claimed_zones.add(zone_key)
         else:
             # Determine platform based on primary roles
             determined_platform = self._determine_platform(datapoints)
@@ -212,7 +218,9 @@ class EntityMapper:
             return
 
         # R718 standalone thermostat: Istwert + Sollwert + status@Sollwert (no activateRTR param)
-        # Theben RTR 718 is a dedicated room thermostat device, distinct from iON panel RTR
+        # Theben RTR 718 is a dedicated room thermostat device, distinct from iON panel RTR.
+        # R718 and H6 in the same zone intentionally share KNX group addresses — both must
+        # produce a climate entity (wall display vs. valve actuator). See issue #141.
         if (
             "Istwert" in datapoints
             and "Sollwert" in datapoints
@@ -220,14 +228,6 @@ class EntityMapper:
             and sensor.parameters.get("activateRTR") != "1"
         ):
             istwert_addr = datapoints["Istwert"]
-            if istwert_addr in self._claimed_climate_istwert_addresses:
-                _LOGGER.debug(
-                    "Skipping R718 sensor '%s' — Istwert address %s already claimed",
-                    sensor.name,
-                    istwert_addr,
-                )
-                return
-            self._claimed_climate_istwert_addresses.add(istwert_addr)
             unique_id = f"{device.id}_{istwert_addr}"
             name = sensor.name or f"{device.name} Ch{sensor.channel}"
             if name.startswith(device.name + " "):
@@ -259,7 +259,6 @@ class EntityMapper:
             and ("Sollwert" in datapoints or "status@Sollwert" in datapoints)
         ):
             istwert_addr = datapoints["Istwert"]
-            self._claimed_climate_istwert_addresses.add(istwert_addr)
             address = istwert_addr
             unique_id = f"{device.id}_{address}"
             name = sensor.name or f"{device.name} Ch{sensor.channel}"

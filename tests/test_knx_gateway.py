@@ -107,6 +107,9 @@ class TestLuxorKNXGateway:
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
+        mock_xknx.connection_manager.register_connection_state_changed_cb = MagicMock(
+            return_value=MagicMock()
+        )
         mock_xknx_class.return_value = mock_xknx
 
         gateway = LuxorKNXGateway(
@@ -399,6 +402,9 @@ class TestLuxorKNXGateway:
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
         mock_xknx.connection_manager.connect = AsyncMock()
+        mock_xknx.connection_manager.register_connection_state_changed_cb = MagicMock(
+            return_value=MagicMock()
+        )
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
         mock_xknx.stop = AsyncMock()
         mock_xknx_class.return_value = mock_xknx

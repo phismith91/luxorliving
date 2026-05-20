@@ -10,6 +10,7 @@ from typing import Any, Callable, cast
 
 from homeassistant.core import HomeAssistant
 from xknx import XKNX
+from xknx.core import XknxConnectionState
 from xknx.dpt import DPTArray, DPTBinary
 from xknx.dpt.dpt_9 import DPT2ByteFloat
 from xknx.io import ConnectionConfig, ConnectionType
@@ -67,6 +68,8 @@ class LuxorKNXGateway:
         self._listeners: dict[str, list[Callable]] = {}
         self._connected = False
         self._tunneling_enabled = False
+        self._setup_complete = False  # Guards reconnect handler against initial-connect events
+        self._unregister_connection_cb: Callable[[], None] | None = None
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
@@ -173,7 +176,16 @@ class LuxorKNXGateway:
 
             self._xknx.telegram_queue.register_telegram_received_cb(_sync_callback)
 
+            # Register connection-state callback AFTER start() so the initial
+            # CONNECTED event is not mistaken for a reconnect.
+            self._unregister_connection_cb = (
+                self._xknx.connection_manager.register_connection_state_changed_cb(
+                    self._on_connection_state_changed
+                )
+            )
+
             self._connected = True
+            self._setup_complete = True  # Reconnect handler is now active
             _LOGGER.info(
                 "Successfully connected to KNX Gateway %s:%s (%s mode)",
                 self.host,
@@ -208,6 +220,12 @@ class LuxorKNXGateway:
 
         NOTE: Logout automatically deactivates tunneling!
         """
+        # Stop reconnect handler before disconnecting so it doesn't fire during teardown
+        self._setup_complete = False
+        if self._unregister_connection_cb:
+            self._unregister_connection_cb()
+            self._unregister_connection_cb = None
+
         # Disconnect KNX
         if self._xknx and not self.simulation_mode:
             try:
@@ -235,6 +253,55 @@ class LuxorKNXGateway:
         self._connected = False
         self._tunneling_enabled = False
         self._xknx = None
+
+    def _on_connection_state_changed(self, state: XknxConnectionState) -> None:
+        """Handle xknx connection state changes.
+
+        Called synchronously by xknx on every state transition. Schedules async
+        work via hass.async_create_task so the event loop is not blocked.
+        """
+        if not self._setup_complete:
+            return  # Ignore events that fire before/during initial setup
+
+        if state == XknxConnectionState.DISCONNECTED:
+            self._connected = False
+            _LOGGER.warning(
+                "KNX gateway %s:%s disconnected — entities will be unavailable",
+                self.host,
+                self.port,
+            )
+        elif state == XknxConnectionState.CONNECTING:
+            _LOGGER.info("KNX gateway %s:%s reconnecting…", self.host, self.port)
+        elif state == XknxConnectionState.CONNECTED:
+            _LOGGER.info(
+                "KNX gateway %s:%s reconnected — re-enabling REST tunneling",
+                self.host,
+                self.port,
+            )
+            self.hass.async_create_task(self._async_on_reconnect())
+
+    async def _async_on_reconnect(self) -> None:
+        """Re-authenticate and re-enable tunneling after xknx auto-reconnect.
+
+        xknx restores the KNX/IP transport layer on its own (auto_reconnect=True),
+        but the IP1's REST tunneling authorisation must be explicitly renewed.
+        Without this the gateway accepts the KNX connection but ignores all telegrams.
+        """
+        if not self._rest_client or self.simulation_mode:
+            return
+        try:
+            _LOGGER.info("Re-authenticating after reconnect (host=%s)", self.host)
+            await self._rest_client.logout()
+            await self._rest_client.login(self.username, self.password)
+            await self._rest_client.enable_tunneling()
+            self._connected = True
+            _LOGGER.info("Tunneling re-enabled — entities are available again")
+        except Exception as err:
+            _LOGGER.error(
+                "Failed to re-enable tunneling after reconnect: %s — "
+                "reload the integration if the gateway remains unreachable",
+                err,
+            )
 
     async def async_send_telegram(
         self,

@@ -3,15 +3,26 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## Unreleased
+## [1.1.9] - 2026-05-20
 
-### Added
+### Fixed
 
-- Placeholder
+- **R718 climate entities missing when H6 present (issue #141 regression)**: v1.1.7 introduced
+  a global Istwert-address set to deduplicate climate entities. Since H6 actuators are processed
+  before R718 sensors, the set claimed every shared address and blocked all R718 entities.
+  Replaced with per-device H6 tracking (`(device_id, istwert_addr)` key): channels within the
+  *same* H6 device sharing one room sensor are still deduplicated correctly, but R718 thermostats
+  on separate devices always produce their own climate entity. A setup with 3×H6 + 13×R718 now
+  correctly shows 26 climate entities instead of 13.
 
-### Changed
-
-- Placeholder
+- **KNX gateway loses bus access after reconnect / ~24 h uptime (issue #141)**: xknx's
+  `auto_reconnect=True` restores the KNX/IP transport layer after a connection drop, but
+  the IP1's REST tunneling authorisation was never renewed. The gateway accepted the KNX
+  connection yet ignored all telegrams. A connection-state callback now fires on every
+  xknx state transition:
+  - `DISCONNECTED` → log warning, mark gateway unavailable (entities become unavailable in HA)
+  - `CONNECTED` (after reconnect) → logout → login → `enable_tunneling` → mark available again
+  Session expiry tracking corrected from 1 h to 23.5 h to match the IP1 firmware's actual limit.
 
 ---
 

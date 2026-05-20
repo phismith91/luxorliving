@@ -441,8 +441,11 @@ class TestClimateMapping:
         climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
         assert len(climate_entities) == 0
 
-    def test_no_duplicate_when_rtr_and_actuator_share_istwert_address(self):
-        """RTR sensor takes precedence; actuator with same Istwert address is not mapped."""
+    def test_rtr_and_h6_sharing_istwert_both_get_entities(self):
+        """iON RTR and H6 sharing an Istwert are separate devices — both get an entity.
+
+        Wall panel and valve driver are independent physical units.
+        """
         shared_istwert = 8456
         dp_ist_s = _datapoint("Istwert", shared_istwert)
         dp_soll_s = _datapoint("Sollwert", 8200)
@@ -458,7 +461,7 @@ class TestClimateMapping:
         actuator_device = _device("H6", actuators=[actuator], device_id="h6_dev")
         mapper = _mapper([sensor_device, actuator_device])
         climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
-        assert len(climate_entities) == 1
+        assert len(climate_entities) == 2
 
 
 class TestR718ThermostatMapping:
@@ -526,8 +529,11 @@ class TestR718ThermostatMapping:
         assert len(climate_entities) == 1
         assert climate_entities[0].platform == Platform.CLIMATE
 
-    def test_no_duplicate_when_r718_and_actuator_share_istwert(self):
-        """R718 sensor takes precedence; H6 actuator with same Istwert address is skipped."""
+    def test_r718_and_h6_sharing_istwert_both_get_entities(self):
+        """R718 and H6 sharing KNX addresses must both produce a climate entity.
+
+        Regression fix for issue #141 (introduced in v1.1.7).
+        """
         shared = 7680
         dp_ist_s = _datapoint("Istwert", shared)
         dp_soll_s = _datapoint("Sollwert", 7424)
@@ -542,4 +548,40 @@ class TestR718ThermostatMapping:
         a_dev = _device("H6 Dev", actuators=[actuator], device_id="h6_dev")
         mapper = _mapper([s_dev, a_dev])
         climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 2
+        unique_ids = {e.unique_id for e in climate_entities}
+        assert len(unique_ids) == 2
+
+
+class TestH6WithinDeviceDedup:
+    """Within a single H6 device, channels sharing the same Istwert address must produce one entity."""
+
+    def test_two_h6_channels_same_istwert_one_entity(self):
+        shared_istwert = 8457
+        act_ch2 = _actuator(
+            "Chauffage salon 1",
+            2,
+            [_datapoint("Istwert", shared_istwert), _datapoint("Sollwert", 8201)],
+        )
+        act_ch2.parameters = {"heizungsart": "230"}
+        act_ch5 = _actuator(
+            "Chauffage salon 2",
+            5,
+            [_datapoint("Istwert", shared_istwert), _datapoint("Sollwert", 8201)],
+        )
+        act_ch5.parameters = {"heizungsart": "230"}
+        device = _device("511 H6", actuators=[act_ch2, act_ch5], device_id="h6_511")
+        mapper = _mapper([device])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
         assert len(climate_entities) == 1
+
+    def test_two_h6_devices_same_istwert_two_entities(self):
+        act1 = _actuator("Zone A", 0, [_datapoint("Istwert", 8457), _datapoint("Sollwert", 8200)])
+        act1.parameters = {"heizungsart": "230"}
+        act2 = _actuator("Zone A′", 0, [_datapoint("Istwert", 8457), _datapoint("Sollwert", 8201)])
+        act2.parameters = {"heizungsart": "230"}
+        dev1 = _device("H6 A", actuators=[act1], device_id="h6_A")
+        dev2 = _device("H6 B", actuators=[act2], device_id="h6_B")
+        mapper = _mapper([dev1, dev2])
+        climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
+        assert len(climate_entities) == 2
