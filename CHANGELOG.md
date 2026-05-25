@@ -3,6 +3,26 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
+## [1.1.11] - 2026-05-25
+
+### Fixed
+
+- **KNX bus freeze after 24–72 h uptime (issue #141 — complete fix)**: The
+  reactive reconnect handler from v1.1.10 only recovered *after* XKNX detected
+  a connection drop. This leaves the "silent freeze" case open: the IP1's
+  session/channel table saturates and the bus stops routing telegrams while
+  XKNX stays "connected". Two-layer protection now in place:
+  - **Proactive** — `_session_refresh_loop` background task wakes every 6 h and
+    cycles the REST session (logout → login → enable_tunneling) to flush stale
+    table entries before saturation. The 6 h interval is well below the observed
+    ~7 h freeze onset.
+  - **Reactive** (unchanged from v1.1.10) — `_on_connection_state_changed`
+    callback fires when XKNX detects a disconnect and immediately re-authenticates.
+- **Blocking file read in event loop** (`overrides.py:55`): `load_overrides()`
+  was called directly in the async setup path, triggering HA's
+  "Detected blocking call to `open()`" warning. Moved to
+  `hass.async_add_executor_job` so the file I/O runs in the executor thread pool.
+
 ## [1.1.10] - 2026-05-20
 
 ### Fixed
