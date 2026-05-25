@@ -106,11 +106,13 @@ class TestLuxorKNXGateway:
         # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
+        mock_xknx.stop = AsyncMock()
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
         mock_xknx.connection_manager.register_connection_state_changed_cb = MagicMock(
             return_value=MagicMock()
         )
         mock_xknx_class.return_value = mock_xknx
+        mock_rest_client.__aexit__ = AsyncMock()
 
         gateway = LuxorKNXGateway(
             hass=mock_hass,
@@ -138,6 +140,9 @@ class TestLuxorKNXGateway:
         assert gateway._tunneling_enabled is True
         mock_xknx.start.assert_called_once()
         # In XKNX 3.x, connection happens automatically in start()
+
+        # Teardown: cancel background session-refresh task so no lingering tasks remain
+        await gateway.async_disconnect()
 
     @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
