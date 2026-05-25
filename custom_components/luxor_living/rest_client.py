@@ -226,10 +226,10 @@ class BAOSRestClient:
             payload = {"enabled": True}
             headers = self._get_auth_headers()
 
-            _LOGGER.debug(f"Enabling tunneling at {url}")
-            _LOGGER.debug(f"Tunneling headers: {headers}")
             _LOGGER.debug(
-                f"Session token: {self.session_token[:10]}..." if self.session_token else "No token"
+                "Enabling tunneling at %s (token: %s)",
+                url,
+                "set" if self.session_token else "missing",
             )
 
             async with self._session.put(url, json=payload, headers=headers) as response:
