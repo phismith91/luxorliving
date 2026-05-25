@@ -270,6 +270,7 @@ class BAOSRestClient:
 
         return cast(bool, await circuit_breaker.call(_enable_tunneling))
 
+    # NOT CALLED BY INTEGRATION — logout disables tunneling automatically; kept for completeness
     async def disable_tunneling(self) -> bool:
         """
         Disable KNX Tunneling with circuit breaker protection.
@@ -308,6 +309,7 @@ class BAOSRestClient:
             _LOGGER.error(f"Error disabling tunneling: {e}")
             return False
 
+    # NOT CALLED BY INTEGRATION — reserved for future diagnostics/health checks
     async def get_tunneling_status(self) -> Dict[str, Any]:
         """
         Get current tunneling status.
@@ -332,6 +334,7 @@ class BAOSRestClient:
                 _LOGGER.warning(f"Get tunneling status returned {response.status}")
                 return {"enabled": False, "connectedClients": 0, "maxSlots": 1}
 
+    # NOT CALLED BY INTEGRATION — reserved for future datapoint polling (superseded by knxprod static lookup)
     async def async_get_datapoints(self) -> Optional[list]:
         """
         Get all BAOS datapoints with their current values.
@@ -393,6 +396,7 @@ class BAOSRestClient:
             _LOGGER.error(f"Network error fetching datapoints: {e}")
             return None
 
+    # NOT CALLED BY INTEGRATION — reserved for future datapoint polling (superseded by knxprod static lookup)
     async def async_get_datapoint_details(
         self, datapoint_id: int, timeout: float = 2.0
     ) -> Optional[dict]:
@@ -457,6 +461,7 @@ class BAOSRestClient:
             _LOGGER.debug(f"Network error fetching datapoint {datapoint_id}: {e}")
             return None
 
+    # NOT CALLED BY INTEGRATION — reserved for future datapoint polling (superseded by knxprod static lookup)
     async def async_get_datapoint_value(
         self, datapoint_id: int, timeout: float = 2.0
     ) -> Optional[Any]:
@@ -570,6 +575,7 @@ class BAOSRestClient:
 
         return True
 
+    # NOT CALLED BY INTEGRATION — used only in tests; diagnostics.py uses knx_gateway attributes directly
     def get_diagnostics(self) -> Dict[str, Any]:
         """
         Get diagnostic information.
