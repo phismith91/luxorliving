@@ -92,7 +92,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         try:
             # Optional: include_unaffected controlled via overrides 'include_unaffected'
             config_dir = Path(hass.config.path(""))
-            overrides = load_overrides(config_dir)
+            overrides = await hass.async_add_executor_job(load_overrides, config_dir)
             include_unaffected = bool(overrides.get("include_unaffected", False))
 
             project = await LXPParser.parse_cached(

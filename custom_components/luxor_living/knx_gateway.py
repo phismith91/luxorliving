@@ -19,6 +19,7 @@ from xknx.telegram.address import GroupAddress
 from xknx.telegram.apci import GroupValueRead, GroupValueResponse, GroupValueWrite
 
 from .circuit_breaker import CircuitBreakerOpenException, get_knx_circuit_breaker
+from .const import SESSION_REFRESH_INTERVAL
 from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
 
 _LOGGER = logging.getLogger(__name__)
@@ -70,6 +71,7 @@ class LuxorKNXGateway:
         self._tunneling_enabled = False
         self._setup_complete = False  # Guards reconnect handler against initial-connect events
         self._unregister_connection_cb: Callable[[], None] | None = None
+        self._session_refresh_task: asyncio.Task | None = None
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
@@ -186,6 +188,16 @@ class LuxorKNXGateway:
 
             self._connected = True
             self._setup_complete = True  # Reconnect handler is now active
+
+            if self._connection_type == ConnectionType.TUNNELING:
+                self._session_refresh_task = asyncio.create_task(
+                    self._session_refresh_loop(),
+                    name="luxor_session_refresh",
+                )
+                _LOGGER.debug(
+                    "Session refresh loop started (interval %ds)", SESSION_REFRESH_INTERVAL
+                )
+
             _LOGGER.info(
                 "Successfully connected to KNX Gateway %s:%s (%s mode)",
                 self.host,
@@ -245,6 +257,15 @@ class LuxorKNXGateway:
             finally:
                 self._rest_client = None
 
+        # Cancel session refresh loop
+        if self._session_refresh_task and not self._session_refresh_task.done():
+            self._session_refresh_task.cancel()
+            try:
+                await self._session_refresh_task
+            except asyncio.CancelledError:
+                pass
+        self._session_refresh_task = None
+
         # Cancel pending debounce task so no orphaned coroutines remain
         if self._debounce_task and not self._debounce_task.done():
             self._debounce_task.cancel()
@@ -253,6 +274,36 @@ class LuxorKNXGateway:
         self._connected = False
         self._tunneling_enabled = False
         self._xknx = None
+
+    async def _session_refresh_loop(self) -> None:
+        """Periodically re-authenticate to prevent IP1 session-table saturation.
+
+        The IP1 gateway accumulates stale tunneling sessions until the KNX bus
+        freezes (typically 24-72 h).  Proactively cycling the REST session every
+        6 h keeps the table clean even when XKNX never detects a disconnect.
+        """
+        try:
+            while True:
+                await asyncio.sleep(SESSION_REFRESH_INTERVAL)
+                if not self._rest_client or self.simulation_mode:
+                    continue
+                _LOGGER.info(
+                    "Proactive session refresh — cycling REST auth to prevent gateway lockup"
+                )
+                try:
+                    await self._rest_client.logout()
+                    await self._rest_client.login(self.username, self.password)
+                    await self._rest_client.enable_tunneling()
+                    _LOGGER.info("Proactive session refresh complete")
+                except Exception as err:
+                    _LOGGER.error(
+                        "Proactive session refresh failed (will retry in %ds): %s",
+                        SESSION_REFRESH_INTERVAL,
+                        err,
+                    )
+        except asyncio.CancelledError:
+            _LOGGER.debug("Session refresh loop cancelled")
+            raise
 
     def _on_connection_state_changed(self, state: XknxConnectionState) -> None:
         """Handle xknx connection state changes.
