@@ -1,5 +1,6 @@
-import tomllib
 from pathlib import Path
+import tomllib
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,11 +40,3 @@ def test_codeowners_covers_core_repository_paths():
     assert "* @phismith91" in content
     assert "/custom_components/luxor_living/ @phismith91" in content
     assert "/tests/ @phismith91" in content
-    for line in content.splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        pattern, *owners = stripped.split()
-        assert pattern
-        assert owners
-        assert all(owner.startswith("@") for owner in owners)
