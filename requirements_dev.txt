@@ -13,7 +13,7 @@ defusedxml>=0.7.1
 # Development - Versionen kompatibel mit pytest-homeassistant-custom-component
 pytest>=8.3.4
 pytest-cov>=6.0.0
-pytest-asyncio>=1.3.0
+pytest-asyncio>=1.4.0
 pytest-timeout>=2.4.0
 pytest-homeassistant-custom-component>=0.13.325
 black>=26.5.0
