@@ -1,0 +1,7 @@
+# Default owner for repository review routing.
+* @phismith91
+
+/custom_components/luxor_living/ @phismith91
+/tests/ @phismith91
+/.github/ @phismith91
+/docs/ @phismith91

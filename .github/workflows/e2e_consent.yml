@@ -24,7 +24,7 @@ jobs:
       - name: Install dev dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements_dev.txt
+          python -m pip install -e ".[dev]"
 
       - name: "Run E2E consent tests (marker: e2e)"
         run: |
