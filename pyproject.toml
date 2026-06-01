@@ -149,5 +149,5 @@ ignore_missing_imports = true
 [tool.mutmut]
 paths_to_mutate = "custom_components/luxor_living"
 tests_dir = "tests"
-runner = "python -m pytest tests/ -q -m \"smoke and not enable_socket\""
+runner = 'python -m pytest tests/ -q -m "smoke and not enable_socket"'
 use_coverage = true

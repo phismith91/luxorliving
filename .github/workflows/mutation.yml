@@ -33,8 +33,9 @@ jobs:
 
       - name: Check surviving mutants
         run: |
-          mutmut results | tee mutmut-results.txt
-          if [ -s mutmut-results.txt ]; then
+          RESULTS="$(mutmut results)"
+          printf '%s\n' "$RESULTS" | tee mutmut-results.txt
+          if [ -n "$RESULTS" ]; then
             echo "❌ Mutation survivors detected"
             exit 1
           fi
