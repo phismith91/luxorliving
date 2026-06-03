@@ -8,6 +8,8 @@ import pytest
 from homeassistant.const import Platform
 
 from custom_components.luxor_living.entity_mapper import EntityMapper
+
+pytestmark = pytest.mark.smoke
 from custom_components.luxor_living.lxp_parser import (
     LXPProject,
 )

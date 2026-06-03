@@ -21,6 +21,7 @@ def mock_hass():
 class TestLuxorKNXGateway:
     """Test LuxorKNXGateway class."""
 
+    @pytest.mark.smoke
     def test_init_simulation_mode(self, mock_hass):
         """Test initialization in simulation mode."""
         gateway = LuxorKNXGateway(
@@ -39,6 +40,7 @@ class TestLuxorKNXGateway:
         assert gateway.username == "admin"
         assert gateway._connected is False
 
+    @pytest.mark.smoke
     def test_init_tunneling_mode(self, mock_hass):
         """Test initialization with tunneling mode."""
         gateway = LuxorKNXGateway(
@@ -187,6 +189,7 @@ class TestLuxorKNXGateway:
 
         assert result is True
 
+    @pytest.mark.smoke
     @pytest.mark.asyncio
     async def test_async_send_telegram_not_connected(self, mock_hass):
         """Test sending telegram when not connected."""
@@ -281,6 +284,7 @@ class TestLuxorKNXGateway:
         assert result is True
         mock_xknx.telegrams.put.assert_called_once()
 
+    @pytest.mark.smoke
     def test_register_listener(self, mock_hass):
         """Test registering a listener."""
         gateway = LuxorKNXGateway(
@@ -420,6 +424,7 @@ class TestLuxorKNXGateway:
         # We now call __aexit__ instead of logout directly
         mock_rest.__aexit__.assert_called_once()
 
+    @pytest.mark.smoke
     def test_properties(self, mock_hass):
         """Test gateway properties."""
         gateway = LuxorKNXGateway(

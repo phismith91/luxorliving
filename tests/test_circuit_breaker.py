@@ -33,6 +33,7 @@ class TestCircuitBreaker:
         """Create a circuit breaker instance for testing."""
         return CircuitBreaker("test_circuit_breaker", circuit_breaker_config)
 
+    @pytest.mark.smoke
     def test_initial_state_closed(self, circuit_breaker):
         """Test that circuit breaker starts in CLOSED state."""
         assert circuit_breaker.state == CircuitBreakerState.CLOSED
@@ -40,6 +41,7 @@ class TestCircuitBreaker:
         assert stats["failure_count"] == 0
         assert stats["last_failure_time"] == 0.0
 
+    @pytest.mark.smoke
     @pytest.mark.asyncio
     async def test_successful_call(self, circuit_breaker):
         """Test successful call doesn't change state."""
@@ -70,6 +72,7 @@ class TestCircuitBreaker:
         assert stats["failure_count"] == 1
         assert stats["last_failure_time"] > 0
 
+    @pytest.mark.smoke
     @pytest.mark.asyncio
     async def test_failure_threshold_trip(self, circuit_breaker):
         """Test circuit breaker trips after reaching failure threshold."""
@@ -87,6 +90,7 @@ class TestCircuitBreaker:
         assert stats["failure_count"] == 3
         assert stats["failure_count"] == 3
 
+    @pytest.mark.smoke
     @pytest.mark.asyncio
     async def test_open_circuit_rejects_calls(self, circuit_breaker):
         """Test that open circuit breaker rejects calls."""
