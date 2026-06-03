@@ -16,6 +16,15 @@ This repo uses **GitHub Copilot** (primary agent system) and **Claude Code**
 (you) interchangeably. The `.github/copilot/` folder contains Copilot agent
 definitions — treat them as domain-expert documentation and project conventions.
 
+## Critical: SSH Rule
+
+Local `~/.ssh/config` has invalid entries. Always use `-F /dev/null`:
+
+```bash
+ssh -F /dev/null phil@100.97.159.88 "command"
+GIT_SSH_COMMAND='ssh -F /dev/null' git push
+```
+
 ## One-Time Setup (new machine / fresh clone)
 
 ```bash

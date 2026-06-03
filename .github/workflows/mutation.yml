@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v4
         with:
           python-version: "3.14"
           cache: "pip"
@@ -31,19 +31,19 @@ jobs:
       - name: Run mutmut
         run: mutmut run
 
-      - name: Check surviving mutants
+      - name: Save and check mutation results
         run: |
-          RESULTS="$(mutmut results)"
-          printf '%s\n' "$RESULTS" | tee mutmut-results.txt
-          if [ -n "$RESULTS" ]; then
-            echo "❌ Mutation survivors detected"
+          mutmut results | tee mutmut-results.txt
+          SURVIVORS=$(mutmut results 2>/dev/null | grep -c "^[0-9]" || true)
+          if [ "$SURVIVORS" -gt 0 ]; then
+            echo "❌ $SURVIVORS surviving mutant(s) detected"
             exit 1
           fi
-          echo "✅ No surviving mutants reported"
+          echo "✅ No surviving mutants"
 
       - name: Upload mutation results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: mutmut-results
           path: mutmut-results.txt
