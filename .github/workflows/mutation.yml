@@ -1,0 +1,49 @@
+name: Mutation Tests
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  mutmut:
+    name: Mutation Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,mutation]"
+
+      - name: Run mutmut
+        run: mutmut run
+
+      - name: Save and check mutation results
+        run: |
+          mutmut results | tee mutmut-results.txt
+          SURVIVORS=$(mutmut results 2>/dev/null | grep -c "^[0-9]" || true)
+          if [ "$SURVIVORS" -gt 0 ]; then
+            echo "❌ $SURVIVORS surviving mutant(s) detected"
+            exit 1
+          fi
+          echo "✅ No surviving mutants"
+
+      - name: Upload mutation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutmut-results
+          path: mutmut-results.txt

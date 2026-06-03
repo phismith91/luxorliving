@@ -7,7 +7,7 @@ devices via REST API.
 
 **Tech Stack:**
 
-- Python 3.13+ (CI: 3.14, local: 3.12)
+- Python 3.13+ (CI: 3.14)
 - Home Assistant Custom Component
 - KNX/BAOS REST API
 - pytest for testing
@@ -20,8 +20,7 @@ python3 -m venv venv
 source venv/bin/activate
 
 # Install dependencies
-pip install -r requirements_dev.txt
-pip install -r requirements_style.txt
+pip install -e ".[dev,mutation]"
 
 # Run tests
 python -m pytest tests/ -v
@@ -54,7 +53,7 @@ mypy custom_components/luxor_living/
   basic checks. Run once in your checkout:
 
 ```bash
-pip install -r requirements_style.txt
+pip install -e ".[dev]"
 pre-commit install
 # Optional: run all hooks locally
 pre-commit run --all-files
@@ -132,14 +131,14 @@ authentication.
 ```bash
 # Deploy to remote HA (100.97.159.88 via Tailscale)
 # Step 1: Sync to temp directory
-ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
+ssh phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
 rsync -avz --exclude="__pycache__" \
-  -e "ssh -F /dev/null" \
+  -e "ssh" \
   custom_components/luxor_living/ \
   phil@100.97.159.88:/tmp/luxor_deploy/
 
 # Step 2: Copy with sudo to final location
-ssh -F /dev/null phil@100.97.159.88 \
+ssh phil@100.97.159.88 \
   "sudo cp -r /tmp/luxor_deploy/* /config/custom_components/luxor_living/ && \
    rm -rf /tmp/luxor_deploy"
 
@@ -152,7 +151,6 @@ ssh -F /dev/null phil@100.97.159.88 \
 - Host: `100.97.159.88` (Tailscale VPN)
 - User: `phil`
 - Auth: SSH key (`~/.ssh/id_rsa`)
-- Always use `-F /dev/null` to bypass invalid local SSH config
 - Files owned by root → use `sudo` for file operations
 
 ## Release Process
@@ -166,19 +164,11 @@ protocol with trigger phrases, exact commands, and common pitfall fixes.
 ```bash
 gh workflow run bump-version.yml -f version=X.Y.Z -f push_tag=false
 # Wait for auto-created PR, verify CI green, merge, then push tag:
-git tag vX.Y.Z && GIT_SSH_COMMAND='ssh -F /dev/null' git push origin vX.Y.Z
+git tag vX.Y.Z && git push origin vX.Y.Z
 ```
 
 The tag push triggers `release.yml` which builds the ZIP, validates it, and
 publishes the GitHub release automatically.
-
-### Git Operations
-
-**CRITICAL:** Always use `GIT_SSH_COMMAND='ssh -F /dev/null'` for git
-operations:
-
-- Local `~/.ssh/config` has invalid entries
-- Example: `GIT_SSH_COMMAND='ssh -F /dev/null' git push origin main`
 
 ## Security Guidelines
 
@@ -187,7 +177,7 @@ operations:
 - Deployment scripts can be committed (use SSH keys)
 - If credentials accidentally committed:
   1. Reset git history: `git reset --hard HEAD~N`
-  2. Force push: `GIT_SSH_COMMAND='ssh -F /dev/null' git push -f origin main`
+  2. Force push: `git push -f origin main`
   3. Delete tags if needed
   4. **Immediately change the compromised credential**
 

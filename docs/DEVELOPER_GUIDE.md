@@ -40,14 +40,13 @@ python3.14 -m venv .venv
 source .venv/bin/activate
 
 # Install all dependencies
-pip install -r requirements_dev.txt   # homeassistant, xknx, defusedxml, pytest, etc.
-pip install -r requirements_style.txt # black, isort, flake8, bandit, pylint, mypy
+pip install -e ".[dev]"
+# Optional: install mutation testing tooling
+pip install -e ".[mutation]"
 
 # Install pre-commit hooks
 pre-commit install
 ```
-
-> **Note:** Always use `GIT_SSH_COMMAND='ssh -F /dev/null'` for git push/pull — the local `~/.ssh/config` has entries that break direct SSH connections.
 
 ---
 
@@ -63,7 +62,10 @@ pre-commit install
 **Rules:**
 - Never push directly to `main`
 - All merges go through a PR with CI green
+- GitHub branch protection requires reviews + green required checks on `main`
 - Pre-commit hooks must pass before every commit
+
+See [Branch Protection](BRANCH_PROTECTION.md) for the enforced GitHub settings.
 
 ---
 
@@ -103,6 +105,9 @@ python -m pytest tests/test_config_flow.py -v
 
 # Fast mode (pre-push check)
 make pre-push
+
+# Mutation testing (manual / on-demand)
+make mutation
 ```
 
 296 tests across these categories:
@@ -137,6 +142,8 @@ Two main workflows in `.github/workflows/`:
 3. Validate ZIP structure (HACS-compatible)
 4. Create GitHub release (pre-release if tag contains `-rc`, `-beta`, `-alpha`)
 
+**`mutation.yml`** — runs scheduled or manual mutation testing with `mutmut` against the smoke test subset to catch weak assertions that coverage alone can miss.
+
 ---
 
 ## Release Process
@@ -149,7 +156,7 @@ gh workflow run bump-version.yml -f version=X.Y.Z -f push_tag=false
 
 # 3. Tag and push (triggers release.yml)
 git tag vX.Y.Z
-GIT_SSH_COMMAND='ssh -F /dev/null' git push origin vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 **Pre-release tags** (`v0.8.0-rc.1`, `v0.8.0-beta.1`, etc.) are published as GitHub pre-releases. Stable tags (`v0.8.0`) are published as the latest release.
@@ -184,7 +191,6 @@ For full rationale see [Architecture Decisions](ARCHITECTURE_DECISION.md).
 ## Security Guidelines
 
 - **Never commit credentials** — passwords, tokens, or API keys
-- SSH uses key authentication; use `GIT_SSH_COMMAND='ssh -F /dev/null'` for all git operations
 - If credentials are accidentally committed: `git reset --hard HEAD~N` + force push + rotate the credential immediately
 - See [SECURITY.md](../SECURITY.md) for the vulnerability reporting process
 

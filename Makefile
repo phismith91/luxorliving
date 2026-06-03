@@ -1,7 +1,7 @@
 # Makefile for LUXORliving Development
 # Common tasks for local development and CI validation
 
-.PHONY: help test test-fast test-full format lint check security pre-push install clean
+.PHONY: help test test-fast test-full mutation format lint check security pre-push install clean
 
 help:  ## Show this help message
 	@echo 'Usage: make [target]'
@@ -12,8 +12,7 @@ help:  ## Show this help message
 install:  ## Install all dependencies
 	@echo "📦 Installing dependencies..."
 	python -m pip install --upgrade pip
-	pip install -r requirements_dev.txt
-	pip install -r requirements_style.txt
+	pip install -e ".[dev,mutation]"
 
 format:  ## Auto-format code with black and isort
 	@echo "🎨 Formatting code..."
@@ -55,6 +54,11 @@ test-full:  ## Run all tests with coverage report
 	@echo "🧪 Running full test suite with coverage..."
 	@python -m pytest tests/ -m "not enable_socket" --cov=custom_components.luxor_living --cov-report=html --cov-report=term
 	@echo "📊 Coverage report: htmlcov/index.html"
+
+mutation:  ## Run mutation tests against the smoke subset
+	@echo "🧬 Running mutation tests..."
+	@mutmut run
+	@mutmut results
 
 pre-push:  ## Run all pre-push checks (same as CI) - FAST mode
 	@./scripts/pre_push_checks.sh --fast

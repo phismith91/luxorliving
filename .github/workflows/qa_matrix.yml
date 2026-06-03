@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.12", "3.13"]
+        python: ["3.13", "3.14"]
         ha: ["2025.12", "2026.1", "2026.3", "latest"]
     steps:
       - name: Checkout
@@ -31,12 +31,12 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: "pip"
-          cache-dependency-path: requirements_dev.txt
+          cache-dependency-path: pyproject.toml
 
       - name: Install dev dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements_dev.txt
+          python -m pip install -e ".[dev]"
 
       - name: Formatting check (black)
         run: |
@@ -108,7 +108,7 @@ jobs:
       - name: Install dev dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements_dev.txt
+          python -m pip install -e ".[dev]"
 
       - name: Run HACS validation script
         run: |

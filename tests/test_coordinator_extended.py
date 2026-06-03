@@ -74,6 +74,7 @@ class TestAsyncUpdateData:
             await coord._async_update_data()
 
 
+@pytest.mark.smoke
 class TestGetSetState:
     def test_get_state_returns_none_for_unknown(self):
         coord = _make_coordinator()

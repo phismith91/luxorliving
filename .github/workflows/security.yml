@@ -24,6 +24,7 @@ jobs:
         with:
           python-version: "3.14"
           cache: "pip"
+          cache-dependency-path: pyproject.toml
 
       - name: Install bandit
         run: pip install bandit[toml]
@@ -56,11 +57,11 @@ jobs:
         with:
           python-version: "3.14"
           cache: "pip"
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
-          pip install -r requirements_dev.txt
-          pip install pip-audit
+          pip install -e ".[dev]"
 
       - name: Run pip-audit
         run: |

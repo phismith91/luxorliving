@@ -5,8 +5,7 @@ echo "Setting up development environment..."
 
 # Install dependencies
 pip3 install --upgrade pip
-pip3 install -r requirements_dev.txt
-pip3 install -r requirements_style.txt
+pip3 install -e ".[dev,mutation]"
 
 # Create config directory
 mkdir -p config/custom_components
