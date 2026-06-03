@@ -150,7 +150,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.mutmut]
-paths_to_mutate = "custom_components/luxor_living"
-tests_dir = "tests"
-runner = 'python -m pytest tests/ -q -m "smoke and not enable_socket"'
-use_coverage = true
+paths_to_mutate = ["custom_components/luxor_living"]
+tests_dir = ["tests"]
+pytest_add_cli_args = ["--ignore=tests/test_performance.py", "--ignore=tests/test_lxp_integration.py"]
+pytest_add_cli_args_test_selection = ["-m", "smoke and not enable_socket"]
