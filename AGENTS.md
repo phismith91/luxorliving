@@ -131,14 +131,14 @@ authentication.
 ```bash
 # Deploy to remote HA (100.97.159.88 via Tailscale)
 # Step 1: Sync to temp directory
-ssh phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
+ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
 rsync -avz --exclude="__pycache__" \
-  -e "ssh" \
+  -e "ssh -F /dev/null" \
   custom_components/luxor_living/ \
   phil@100.97.159.88:/tmp/luxor_deploy/
 
 # Step 2: Copy with sudo to final location
-ssh phil@100.97.159.88 \
+ssh -F /dev/null phil@100.97.159.88 \
   "sudo cp -r /tmp/luxor_deploy/* /config/custom_components/luxor_living/ && \
    rm -rf /tmp/luxor_deploy"
 
@@ -151,6 +151,7 @@ ssh phil@100.97.159.88 \
 - Host: `100.97.159.88` (Tailscale VPN)
 - User: `phil`
 - Auth: SSH key (`~/.ssh/id_rsa`)
+- **Always use `-F /dev/null`** — local `~/.ssh/config` has invalid entries that break SSH
 - Files owned by root → use `sudo` for file operations
 
 ## Release Process
