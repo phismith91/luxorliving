@@ -199,3 +199,65 @@ def test_determine_platform_cover():
 
         # UpDown -> Cover
         _ = mapper._determine_platform({"UpDown": 10})
+
+
+class TestEntityMapperMutationTargets:
+    """Smoke tests targeting surviving mutants in EntityMapper."""
+
+    def _make_mapper(self):
+        project = MagicMock(spec=LXPProject)
+        project.devices = []
+        with patch.object(EntityMapper, "map_all", return_value=[]):
+            return EntityMapper(project)
+
+    # ── _determine_platform: control_roles list mutations ─────────────────
+
+    @pytest.mark.smoke
+    def test_determine_platform_uses_exact_role_names(self):
+        """Kill mutmut_1-10: all mutations of control_roles string values.
+
+        OnOff, SchaltenOnOff, Dimmen%, UpDown must match case-sensitively.
+        Any typo (XXOnOffXX, onoff, ONOFF…) would change or hide a platform.
+        """
+        mapper = self._make_mapper()
+        assert mapper._determine_platform({"OnOff": 1}) is not None
+        assert mapper._determine_platform({"SchaltenOnOff": 1}) is not None
+        assert mapper._determine_platform({"Dimmen%": 1}) is not None
+        assert mapper._determine_platform({"UpDown": 1}) is not None
+
+        # Wrong-case variants must NOT be treated as control roles
+        assert mapper._determine_platform({"onoff": 1}) is None
+        assert mapper._determine_platform({"ONOFF": 1}) is None
+        assert mapper._determine_platform({"schaltenonoff": 1}) is None
+        assert mapper._determine_platform({"dimmen%": 1}) is None
+        assert mapper._determine_platform({"updown": 1}) is None
+
+    # ── __init__: attribute mutations ────────────────────────────────────
+
+    @pytest.mark.smoke
+    def test_init_project_stored(self):
+        """Kill mutmut_1: self.project = None."""
+        project = MagicMock(spec=LXPProject)
+        project.devices = []
+        with patch.object(EntityMapper, "map_all", return_value=[]):
+            mapper = EntityMapper(project)
+        assert mapper.project is project
+
+    @pytest.mark.smoke
+    def test_init_entities_is_list(self):
+        """Kill mutmut_2: self.entities = None."""
+        mapper = self._make_mapper()
+        assert isinstance(mapper.entities, list)
+
+    @pytest.mark.smoke
+    def test_init_overrides_defaults_to_empty_dict(self):
+        """Kill mutmut_3/4: _overrides = None / overrides and {}."""
+        mapper = self._make_mapper()
+        assert isinstance(mapper._overrides, dict)
+
+    @pytest.mark.smoke
+    def test_init_platform_detector_is_usable(self):
+        """Kill mutmut_5/6: platform_detector = None / and PlatformDetector()."""
+        mapper = self._make_mapper()
+        assert mapper.platform_detector is not None
+        assert hasattr(mapper.platform_detector, "detect_platform")
