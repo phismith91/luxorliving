@@ -1,5 +1,6 @@
 """Tests for OverrideHandler module (TDD approach)."""
 
+import pytest
 from homeassistant.const import Platform
 
 from custom_components.luxor_living.override_handler import OverrideHandler
@@ -227,3 +228,21 @@ class TestExceptionHandling:
         assert len(entities) == 2
         assert entities[0].name == "Valid"
         assert entities[1].name == "Also Valid"
+
+
+class TestOverrideHandlerMutationTargets:
+    """Smoke tests targeting the lone surviving mutant in OverrideHandler."""
+
+    @pytest.mark.smoke
+    def test_overrides_stored_on_init(self):
+        """Kill mutmut_1: self._overrides = None.
+
+        The constructor must store the provided overrides dict, not None.
+        """
+        from custom_components.luxor_living.override_handler import OverrideHandler
+
+        overrides = {"sensors": [{"address": "1/2/3", "name": "Test"}]}
+        handler = OverrideHandler(overrides)
+
+        assert handler._overrides is not None
+        assert handler._overrides is overrides
