@@ -3,6 +3,31 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
+## [1.1.12] - 2026-06-03
+
+### Fixed
+
+- **KNX bus freeze after ~47 h — race condition between session refresh and
+  reconnect handler (issue #141)**: The `_session_refresh_loop` calls `logout()`
+  which causes xknx to detect a disconnect and fire `_async_on_reconnect`
+  *concurrently*. Without synchronization both coroutines executed
+  `logout → login → enable_tunneling` in parallel, creating 2+ orphaned sessions
+  per refresh cycle instead of 1. After ~7 cycles the IP1 session table overflowed
+  and the KNX bus froze (L_DATA_CON timeouts on all group addresses, confirmed by
+  user log from 2026-06-03).
+
+  Fix: `asyncio.Lock` (`_session_lock`) shared by both coroutines. The reconnect
+  handler skips execution immediately if the refresh loop holds the lock; otherwise
+  it acquires the lock before any REST session operation. This guarantees only one
+  session is active at a time.
+
+- **Session refresh interval reduced 6 h → 4 h** for a wider safety margin against
+  IP1 session table saturation.
+
+- **Lingering `_session_refresh_task` in tests**: two gateway tests that called
+  `async_setup()` without a matching `async_disconnect()` left a background task
+  running, causing pytest-asyncio ≥ 1.3 to raise `Failed: Lingering task after test`.
+
 ## [1.1.11] - 2026-05-25
 
 ### Fixed

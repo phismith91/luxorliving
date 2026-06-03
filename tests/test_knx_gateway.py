@@ -230,7 +230,11 @@ class TestLuxorKNXGateway:
         # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
+        mock_xknx.stop = AsyncMock()
         mock_xknx.connection_manager.connect = AsyncMock()
+        mock_xknx.connection_manager.register_connection_state_changed_cb = MagicMock(
+            return_value=MagicMock()
+        )
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
         mock_xknx.telegrams.put = AsyncMock()
         mock_xknx_class.return_value = mock_xknx
@@ -249,6 +253,8 @@ class TestLuxorKNXGateway:
 
         assert result is True
         mock_xknx.telegrams.put.assert_called_once()
+
+        await gateway.async_disconnect()  # cancel session_refresh_task
 
     @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
@@ -269,7 +275,11 @@ class TestLuxorKNXGateway:
         # Mock XKNX
         mock_xknx = AsyncMock()
         mock_xknx.start = AsyncMock()
+        mock_xknx.stop = AsyncMock()
         mock_xknx.connection_manager.connect = AsyncMock()
+        mock_xknx.connection_manager.register_connection_state_changed_cb = MagicMock(
+            return_value=MagicMock()
+        )
         mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
         mock_xknx.telegrams.put = AsyncMock()
         mock_xknx_class.return_value = mock_xknx
@@ -288,6 +298,8 @@ class TestLuxorKNXGateway:
 
         assert result is True
         mock_xknx.telegrams.put.assert_called_once()
+
+        await gateway.async_disconnect()  # cancel session_refresh_task
 
     def test_register_listener(self, mock_hass):
         """Test registering a listener."""
