@@ -23,7 +23,7 @@ DEFAULT_CONNECTION_TYPE = "tunneling"
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin"
 DEFAULT_SCAN_INTERVAL = 30  # seconds
-SESSION_REFRESH_INTERVAL = 6 * 3600  # proactive REST session refresh every 6 h
+SESSION_REFRESH_INTERVAL = 4 * 3600  # proactive REST session refresh every 4 h
 DEFAULT_LOG_LEVEL = "info"
 DEFAULT_DISCOVERY_TIMEOUT = 2.0  # seconds
 

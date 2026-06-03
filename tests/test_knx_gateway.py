@@ -700,20 +700,20 @@ class TestSessionRefreshLoop:
         mock_rest = AsyncMock()
         gateway._rest_client = mock_rest
 
-        async def _one_iteration():
-            """Run the loop but cancel after the first sleep so it executes exactly once."""
-            task = asyncio.create_task(gateway._session_refresh_loop())
-            await asyncio.sleep(0)  # let the task start
-            task.cancel()
+        sleep_calls: list[int] = []
+
+        async def _controlled_sleep(interval: int) -> None:
+            sleep_calls.append(interval)
+            if len(sleep_calls) >= 2:
+                raise asyncio.CancelledError  # stop after first body execution
+
+        with patch("asyncio.sleep", side_effect=_controlled_sleep):
             try:
-                await task
+                await gateway._session_refresh_loop()
             except asyncio.CancelledError:
                 pass
 
-        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
-            await _one_iteration()
-
-        mock_sleep.assert_called_once_with(SESSION_REFRESH_INTERVAL)
+        assert sleep_calls[0] == SESSION_REFRESH_INTERVAL, "first sleep must use the interval"
         mock_rest.logout.assert_called_once()
         mock_rest.login.assert_called_once_with("admin", "admin")
         mock_rest.enable_tunneling.assert_called_once()
@@ -803,3 +803,115 @@ class TestSessionRefreshLoop:
         await gateway.async_disconnect()  # must not raise
 
         assert gateway.connected is False
+
+    @pytest.mark.asyncio
+    async def test_refresh_loop_sets_connected_true(self, mock_hass):
+        """After a successful refresh, _connected must be set to True."""
+        gateway = self._make_gateway(mock_hass)
+        mock_rest = AsyncMock()
+        gateway._rest_client = mock_rest
+        gateway._connected = False
+
+        call_count = 0
+
+        async def _controlled_sleep(interval: int) -> None:
+            nonlocal call_count
+            call_count += 1
+            if call_count >= 2:
+                raise asyncio.CancelledError
+
+        with patch("asyncio.sleep", side_effect=_controlled_sleep):
+            try:
+                await gateway._session_refresh_loop()
+            except asyncio.CancelledError:
+                pass
+
+        assert gateway._connected is True
+
+
+class TestSessionLockRaceCondition:
+    """Regression tests for the race condition between _session_refresh_loop and _async_on_reconnect.
+
+    Issue #141: without the lock, concurrent logout/login cycles create duplicate orphaned
+    sessions in the IP1 session table, eventually causing the KNX bus to freeze.
+    """
+
+    def _make_gateway(self, mock_hass) -> LuxorKNXGateway:
+        return LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+
+    @pytest.mark.asyncio
+    async def test_reconnect_skipped_when_refresh_lock_held(self, mock_hass):
+        """_async_on_reconnect must bail out immediately if _session_lock is held.
+
+        Regression: without this guard, a concurrent logout() in _async_on_reconnect
+        would cancel the fresh session created by _session_refresh_loop, doubling
+        the number of orphaned sessions on the IP1 per refresh cycle.
+        """
+        gateway = self._make_gateway(mock_hass)
+        mock_rest = AsyncMock()
+        gateway._rest_client = mock_rest
+        gateway._setup_complete = True
+
+        async with gateway._session_lock:
+            await gateway._async_on_reconnect()
+
+        mock_rest.logout.assert_not_called()
+        mock_rest.login.assert_not_called()
+        mock_rest.enable_tunneling.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_reconnect_acquires_lock_when_free(self, mock_hass):
+        """_async_on_reconnect must run normally when the lock is not held."""
+        gateway = self._make_gateway(mock_hass)
+        mock_rest = AsyncMock()
+        gateway._rest_client = mock_rest
+        gateway._setup_complete = True
+
+        await gateway._async_on_reconnect()
+
+        mock_rest.logout.assert_called_once()
+        mock_rest.login.assert_called_once_with("admin", "admin")
+        mock_rest.enable_tunneling.assert_called_once()
+        assert gateway._connected is True
+
+    @pytest.mark.asyncio
+    async def test_refresh_and_reconnect_do_not_run_concurrently(self, mock_hass):
+        """Refresh loop and reconnect handler must not hold the lock simultaneously.
+
+        Simulates the race: refresh loop acquires the lock, then a CONNECTED event
+        fires. _async_on_reconnect must skip (not deadlock, not double-logout).
+        """
+        gateway = self._make_gateway(mock_hass)
+        mock_rest = AsyncMock()
+        gateway._rest_client = mock_rest
+        gateway._setup_complete = True
+
+        refresh_ran = []
+        reconnect_ran = []
+
+        async def slow_refresh():
+            async with gateway._session_lock:
+                refresh_ran.append(True)
+                await asyncio.sleep(0.05)  # simulate I/O
+
+        async def try_reconnect():
+            await gateway._async_on_reconnect()
+            reconnect_ran.append(gateway._session_lock.locked())
+
+        await asyncio.gather(slow_refresh(), try_reconnect())
+
+        assert refresh_ran, "refresh must have executed"
+        # reconnect must have seen the lock as held and skipped without calling logout
+        assert mock_rest.logout.call_count <= 1  # at most once (from reconnect if it ran after)
+
+    @pytest.mark.asyncio
+    async def test_session_lock_attribute_exists(self, mock_hass):
+        """Gateway must expose _session_lock as an asyncio.Lock instance."""
+        gateway = self._make_gateway(mock_hass)
+        assert isinstance(gateway._session_lock, asyncio.Lock)

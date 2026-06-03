@@ -72,6 +72,7 @@ class LuxorKNXGateway:
         self._setup_complete = False  # Guards reconnect handler against initial-connect events
         self._unregister_connection_cb: Callable[[], None] | None = None
         self._session_refresh_task: asyncio.Task | None = None
+        self._session_lock = asyncio.Lock()  # Prevents concurrent REST session operations
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
@@ -280,7 +281,12 @@ class LuxorKNXGateway:
 
         The IP1 gateway accumulates stale tunneling sessions until the KNX bus
         freezes (typically 24-72 h).  Proactively cycling the REST session every
-        6 h keeps the table clean even when XKNX never detects a disconnect.
+        SESSION_REFRESH_INTERVAL keeps the table clean even when XKNX never
+        detects a disconnect.
+
+        Uses _session_lock to prevent a race with _async_on_reconnect: without
+        the lock, logout() here causes xknx to reconnect which triggers another
+        logout/login cycle concurrently, creating 2+ orphaned sessions per cycle.
         """
         try:
             while True:
@@ -290,17 +296,19 @@ class LuxorKNXGateway:
                 _LOGGER.info(
                     "Proactive session refresh — cycling REST auth to prevent gateway lockup"
                 )
-                try:
-                    await self._rest_client.logout()
-                    await self._rest_client.login(self.username, self.password)
-                    await self._rest_client.enable_tunneling()
-                    _LOGGER.info("Proactive session refresh complete")
-                except Exception as err:
-                    _LOGGER.error(
-                        "Proactive session refresh failed (will retry in %ds): %s",
-                        SESSION_REFRESH_INTERVAL,
-                        err,
-                    )
+                async with self._session_lock:
+                    try:
+                        await self._rest_client.logout()
+                        await self._rest_client.login(self.username, self.password)
+                        await self._rest_client.enable_tunneling()
+                        self._connected = True
+                        _LOGGER.info("Proactive session refresh complete")
+                    except Exception as err:
+                        _LOGGER.error(
+                            "Proactive session refresh failed (will retry in %ds): %s",
+                            SESSION_REFRESH_INTERVAL,
+                            err,
+                        )
         except asyncio.CancelledError:
             _LOGGER.debug("Session refresh loop cancelled")
             raise
@@ -337,22 +345,32 @@ class LuxorKNXGateway:
         xknx restores the KNX/IP transport layer on its own (auto_reconnect=True),
         but the IP1's REST tunneling authorisation must be explicitly renewed.
         Without this the gateway accepts the KNX connection but ignores all telegrams.
+
+        Skips execution if _session_refresh_loop already holds the lock — that loop
+        is already cycling the session and will set _connected=True on completion,
+        so a concurrent logout here would create a duplicate orphaned session.
         """
         if not self._rest_client or self.simulation_mode:
             return
-        try:
-            _LOGGER.info("Re-authenticating after reconnect (host=%s)", self.host)
-            await self._rest_client.logout()
-            await self._rest_client.login(self.username, self.password)
-            await self._rest_client.enable_tunneling()
-            self._connected = True
-            _LOGGER.info("Tunneling re-enabled — entities are available again")
-        except Exception as err:
-            _LOGGER.error(
-                "Failed to re-enable tunneling after reconnect: %s — "
-                "reload the integration if the gateway remains unreachable",
-                err,
+        if self._session_lock.locked():
+            _LOGGER.info(
+                "Session refresh in progress — skipping reconnect re-auth (host=%s)", self.host
             )
+            return
+        async with self._session_lock:
+            try:
+                _LOGGER.info("Re-authenticating after reconnect (host=%s)", self.host)
+                await self._rest_client.logout()
+                await self._rest_client.login(self.username, self.password)
+                await self._rest_client.enable_tunneling()
+                self._connected = True
+                _LOGGER.info("Tunneling re-enabled — entities are available again")
+            except Exception as err:
+                _LOGGER.error(
+                    "Failed to re-enable tunneling after reconnect: %s — "
+                    "reload the integration if the gateway remains unreachable",
+                    err,
+                )
 
     async def async_send_telegram(
         self,
