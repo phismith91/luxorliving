@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Tests for Health Check endpoint."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from custom_components.luxor_living import LuxorLivingHealthView
+from custom_components.luxor_living.health_view import _get_manifest_version
 
 
 class TestLuxorLivingHealthView:
@@ -183,3 +185,73 @@ class TestLuxorLivingHealthView:
 
             # Should be degraded when circuit breaker is open
             assert data["status"] == "degraded"
+
+
+@pytest.mark.smoke
+class TestHealthViewMutationTargets:
+    """Kill surviving mutants in health_view.py."""
+
+    def test_get_manifest_version_returns_real_version(self):
+        """Kill: manifest path mutations that cause fallback to 'unknown'.
+
+        _get_manifest_version() is called at module import time and cached.
+        By calling it directly in a smoke test, mutmut can attribute coverage
+        to it and kill mutations that cause it to return 'unknown'.
+        """
+        version = _get_manifest_version()
+        assert version != "unknown"
+        assert isinstance(version, str)
+        assert "." in version  # semver: "1.1.x"
+
+    def test_get_manifest_version_reads_version_key(self):
+        """Kill: data.get('version') → data.get('VERSION') / None mutations."""
+        version = _get_manifest_version()
+        # If 'version' key mutation → None → falls back to 'unknown'
+        assert version is not None
+        assert version != "XXunknownXX"
+        assert version != "UNKNOWN"
+
+    @pytest.mark.asyncio
+    async def test_status_value_is_healthy_lowercase(self):
+        """Kill: 'status': 'healthy' → 'HEALTHY' mutation."""
+        hass = MagicMock()
+        hass.data = {"luxor_living": {}}
+        view = LuxorLivingHealthView(hass)
+        resp = await view.get(MagicMock())
+        data = json.loads(resp.body.decode())
+        assert data["status"] == "healthy"
+
+    @pytest.mark.asyncio
+    async def test_integration_domain_key_present(self):
+        """Kill: 'domain' → 'XXdomainXX' / 'DOMAIN' key mutations."""
+        from custom_components.luxor_living.const import DOMAIN
+
+        hass = MagicMock()
+        hass.data = {"luxor_living": {}}
+        view = LuxorLivingHealthView(hass)
+        resp = await view.get(MagicMock())
+        data = json.loads(resp.body.decode())
+        assert "domain" in data["integration"]
+        assert data["integration"]["domain"] == DOMAIN
+
+    @pytest.mark.asyncio
+    async def test_integration_name_is_luxorliving(self):
+        """Kill: 'LUXORliving' string → mutation (already in existing test but now explicit)."""
+        hass = MagicMock()
+        hass.data = {"luxor_living": {}}
+        view = LuxorLivingHealthView(hass)
+        resp = await view.get(MagicMock())
+        data = json.loads(resp.body.decode())
+        assert data["integration"]["name"] == "LUXORliving"
+
+    @pytest.mark.asyncio
+    async def test_domain_data_defaults_to_empty_dict_not_none(self):
+        """Kill: hass.data.get(DOMAIN, {}) → default=None mutation."""
+        hass = MagicMock()
+        hass.data = {}  # No DOMAIN key → should default to {}
+        view = LuxorLivingHealthView(hass)
+        # Should not raise TypeError even if domain_data is empty
+        resp = await view.get(MagicMock())
+        data = json.loads(resp.body.decode())
+        assert data["status"] == "healthy"
+        assert data["entries"] == {}
