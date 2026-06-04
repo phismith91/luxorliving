@@ -451,3 +451,33 @@ class TestTargetDpKey:
         assert (
             8193 not in registered_addresses
         )  # Sollwert not registered (status variant takes over)
+
+
+class TestClimateAuditFix:
+    """Test for audit-fix: skip initial read when gateway not connected."""
+
+    @pytest.mark.asyncio
+    async def test_async_added_to_hass_skips_initial_read_when_not_connected(
+        self, climate_mapped_entity
+    ):
+        """Initial temperature read must be skipped when gateway is not yet connected."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        from custom_components.luxor_living.climate import LuxorClimate
+
+        gateway = MagicMock()
+        gateway.connected = False
+        gateway.async_read_group_address = AsyncMock()
+        gateway.register_listener = MagicMock()
+        gateway.simulation_mode = False
+
+        entity = LuxorClimate(
+            coordinator=MagicMock(),
+            knx_gateway=gateway,
+            mapped_entity=climate_mapped_entity,
+            entry_id="test_entry",
+        )
+
+        await entity.async_added_to_hass()
+
+        gateway.async_read_group_address.assert_not_called()

@@ -174,8 +174,11 @@ class BAOSRestClient:
 
         NOTE: Logout automatically deactivates tunneling!
         """
-        if not self.session_token:
+        if not self.session_token or not self._session:
             _LOGGER.debug("No active session to logout from")
+            self.session_token = None
+            self.session_expires = None
+            self.tunneling_enabled = False
             return
 
         url = f"{self.base_url}/rest/logout"  # Correct endpoint per API docs

@@ -229,3 +229,21 @@ class TestBAOSRestClient:
         client.session_expires = datetime.now() + timedelta(hours=1)
 
         assert client.is_authenticated is True
+
+
+class TestLogoutAuditFix:
+    """Test for audit-fix: logout null-session guard."""
+
+    @pytest.mark.asyncio
+    async def test_logout_skips_when_session_is_none(self):
+        """logout() must return early when _session is None, even if session_token is set."""
+        from custom_components.luxor_living.rest_client import BAOSRestClient
+
+        client = BAOSRestClient("192.168.1.3")
+        client.session_token = "orphaned_token"
+        client._session = None  # session never initialized
+
+        # Must not raise AttributeError
+        await client.logout()
+
+        assert client.session_token is None  # still cleaned up
