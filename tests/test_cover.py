@@ -557,3 +557,64 @@ class TestAsyncSetupEntry:
         # No entities should be added
         entities = mock_add_entities.call_args[0][0]
         assert len(entities) == 0
+
+
+class TestCoverAuditFixes:
+    """Tests for audit-fix branches: failed send + connection guard."""
+
+    @pytest.mark.asyncio
+    async def test_set_cover_position_does_not_update_state_on_failed_send(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """State must NOT update when async_send_telegram returns False."""
+        mock_knx_gateway.async_send_telegram = AsyncMock(return_value=False)
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="test_entry",
+        )
+        entity.async_write_ha_state = MagicMock()
+        original_position = entity.current_cover_position
+
+        await entity.async_set_cover_position(**{ATTR_POSITION: 50})
+
+        entity.async_write_ha_state.assert_not_called()
+        assert entity.current_cover_position == original_position
+
+    @pytest.mark.asyncio
+    async def test_set_tilt_position_does_not_update_state_on_failed_send(
+        self, mock_coordinator, mock_knx_gateway, blind_mapped_entity
+    ):
+        """Tilt state must NOT update when async_send_telegram returns False."""
+        mock_knx_gateway.async_send_telegram = AsyncMock(return_value=False)
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=blind_mapped_entity,
+            entry_id="test_entry",
+        )
+        entity.async_write_ha_state = MagicMock()
+        original_tilt = entity.current_cover_tilt_position
+
+        await entity.async_set_cover_tilt_position(**{ATTR_TILT_POSITION: 60})
+
+        entity.async_write_ha_state.assert_not_called()
+        assert entity.current_cover_tilt_position == original_tilt
+
+    @pytest.mark.asyncio
+    async def test_async_added_to_hass_skips_initial_read_when_not_connected(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Initial read must be skipped when gateway is not yet connected."""
+        mock_knx_gateway.connected = False
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="test_entry",
+        )
+
+        await entity.async_added_to_hass()
+
+        mock_knx_gateway.async_read_group_address.assert_not_called()
