@@ -174,7 +174,7 @@ class BAOSRestClient:
 
         NOTE: Logout automatically deactivates tunneling!
         """
-        if not self.session_token:
+        if not self.session_token or not self._session:
             _LOGGER.debug("No active session to logout from")
             return
 

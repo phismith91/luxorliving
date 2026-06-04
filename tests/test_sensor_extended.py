@@ -305,8 +305,12 @@ class TestDiscoveredSensor:
     @pytest.mark.asyncio
     async def test_async_will_remove_unregisters(self):
         entity, gateway = _make_discovered_sensor()
+        # Must add first so the callback reference is stored
+        await entity.async_added_to_hass()
         await entity.async_will_remove_from_hass()
+        # register + unregister both called exactly once with the same callback
+        gateway.register_listener.assert_called_once()
         gateway.unregister_listener.assert_called_once()
-        # Also call the dummy callback to cover the pass branch
-        captured_cb = gateway.unregister_listener.call_args[0][1]
-        captured_cb("5/1/10", 1.0)  # dummy_callback — does nothing
+        reg_cb = gateway.register_listener.call_args[0][1]
+        unreg_cb = gateway.unregister_listener.call_args[0][1]
+        assert reg_cb is unreg_cb, "unregister must use exact same callback reference"
