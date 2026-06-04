@@ -312,7 +312,7 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except Exception:
                 errors["base"] = "invalid_auth"
             else:
-                return self.async_update_reload_and_abort(
+                return self.async_update_and_abort(
                     reauth_entry,
                     data_updates={
                         CONF_USERNAME: user_input[CONF_USERNAME],
@@ -352,7 +352,7 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "invalid_lxp"
             else:
                 reconfigure_entry = self._get_reconfigure_entry()
-                return self.async_update_reload_and_abort(
+                return self.async_update_and_abort(
                     reconfigure_entry,
                     data_updates={
                         CONF_LXP_FILE: lxp_file,
