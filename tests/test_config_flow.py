@@ -313,7 +313,8 @@ class TestReauthFlow:
             with patch.object(flow, "_validate_credentials", return_value=None):
                 with patch.object(
                     flow,
-                    "async_update_reload_and_abort",
+                    "async_update_and_abort",
+                    create=True,
                     return_value={"type": "abort", "reason": "reauth_successful"},
                 ) as mock_update:
                     result = await flow.async_step_reauth_confirm(
@@ -379,7 +380,8 @@ class TestReconfigureFlow:
                 ):
                     with patch.object(
                         flow,
-                        "async_update_reload_and_abort",
+                        "async_update_and_abort",
+                        create=True,
                         return_value={"type": "abort", "reason": "reconfigure_successful"},
                     ) as mock_update:
                         result = await flow.async_step_reconfigure({"lxp_file": "new-file-id"})
