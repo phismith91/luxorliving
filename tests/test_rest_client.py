@@ -231,6 +231,7 @@ class TestBAOSRestClient:
         assert client.is_authenticated is True
 
 
+@pytest.mark.smoke
 class TestLogoutAuditFix:
     """Test for audit-fix: logout null-session guard."""
 

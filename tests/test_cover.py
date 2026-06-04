@@ -559,6 +559,7 @@ class TestAsyncSetupEntry:
         assert len(entities) == 0
 
 
+@pytest.mark.smoke
 class TestCoverAuditFixes:
     """Tests for audit-fix branches: failed send + connection guard."""
 

@@ -453,6 +453,7 @@ class TestTargetDpKey:
         )  # Sollwert not registered (status variant takes over)
 
 
+@pytest.mark.smoke
 class TestClimateAuditFix:
     """Test for audit-fix: skip initial read when gateway not connected."""
 
