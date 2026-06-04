@@ -70,14 +70,43 @@ STEP_LXP_DATA_SCHEMA = vol.Schema(
     }
 )
 
-# Step 2: Gateway configuration with authentication
+# Step 2: Gateway configuration — Tunneling (with credentials)
 STEP_GATEWAY_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_HOST, default="192.168.1.3"): str,
+        vol.Required(CONF_HOST, default="192.168.1.3"): selector.TextSelector(
+            selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)
+        ),
         vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
-        vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
+        vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): selector.TextSelector(
+            selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+        ),
         vol.Required(
             CONF_CONNECTION_TYPE, default=DEFAULT_CONNECTION_TYPE
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    selector.SelectOptionDict(
+                        value=CONNECTION_TYPE_TUNNELING, label="Tunneling (BAOS REST API)"
+                    ),
+                    selector.SelectOptionDict(
+                        value=CONNECTION_TYPE_ROUTING, label="Routing (KNX/IP)"
+                    ),
+                ],
+                mode=selector.SelectSelectorMode.LIST,
+            )
+        ),
+        vol.Optional(CONF_SIMULATION_MODE, default=False): bool,
+    }
+)
+
+# Step 2 variant — Routing (no credentials needed)
+STEP_GATEWAY_ROUTING_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_HOST, default="192.168.1.3"): selector.TextSelector(
+            selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)
+        ),
+        vol.Required(
+            CONF_CONNECTION_TYPE, default=CONNECTION_TYPE_ROUTING
         ): selector.SelectSelector(
             selector.SelectSelectorConfig(
                 options=[
@@ -241,12 +270,13 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
 
             # Combine LXP file and gateway config
+            connection_type = user_input.get(CONF_CONNECTION_TYPE, DEFAULT_CONNECTION_TYPE)
             data = {
                 CONF_LXP_FILE: self._lxp_file,
                 CONF_HOST: user_input[CONF_HOST],
-                CONF_USERNAME: user_input[CONF_USERNAME],
-                CONF_PASSWORD: user_input[CONF_PASSWORD],
-                CONF_CONNECTION_TYPE: user_input[CONF_CONNECTION_TYPE],
+                CONF_USERNAME: user_input.get(CONF_USERNAME, DEFAULT_USERNAME),
+                CONF_PASSWORD: user_input.get(CONF_PASSWORD, DEFAULT_PASSWORD),
+                CONF_CONNECTION_TYPE: connection_type,
                 CONF_SIMULATION_MODE: user_input.get(CONF_SIMULATION_MODE, False),
             }
 
@@ -260,9 +290,13 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         default_host = self._discovered_host or "192.168.1.3"
         gateway_schema = vol.Schema(
             {
-                vol.Required(CONF_HOST, default=default_host): str,
+                vol.Required(CONF_HOST, default=default_host): selector.TextSelector(
+                    selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)
+                ),
                 vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
-                vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
+                vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): selector.TextSelector(
+                    selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+                ),
                 vol.Required(
                     CONF_CONNECTION_TYPE, default=DEFAULT_CONNECTION_TYPE
                 ): selector.SelectSelector(
@@ -320,12 +354,16 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
+        reauth_entry = self._get_reauth_entry()
+        current_username = reauth_entry.data.get(CONF_USERNAME, DEFAULT_USERNAME)
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
-                    vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
+                    vol.Required(CONF_USERNAME, default=current_username): str,
+                    vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): selector.TextSelector(
+                        selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+                    ),
                 }
             ),
             errors=errors,
@@ -473,7 +511,9 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                 vol.Optional(
                     CONF_SCAN_INTERVAL,
                     default=current_scan_interval,
-                ): vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(min=5, max=300, step=1, unit_of_measurement="s")
+                ),
                 vol.Optional(
                     CONF_SIMULATION_MODE,
                     default=current_simulation_mode,
@@ -485,11 +525,25 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                 vol.Optional(
                     CONF_LOG_LEVEL,
                     default=current_log_level,
-                ): vol.In(["debug", "info", "warning", "error"]),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            selector.SelectOptionDict(value="debug", label="Debug"),
+                            selector.SelectOptionDict(value="info", label="Info"),
+                            selector.SelectOptionDict(value="warning", label="Warning"),
+                            selector.SelectOptionDict(value="error", label="Error"),
+                        ],
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
                 vol.Optional(
                     CONF_DISCOVERY_TIMEOUT,
                     default=current_discovery_timeout,
-                ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=10.0)),
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=0.5, max=10.0, step=0.5, unit_of_measurement="s"
+                    )
+                ),
                 # Advanced: Push Webhook — collapsed by default
                 vol.Required("push_webhook"): section(
                     vol.Schema(

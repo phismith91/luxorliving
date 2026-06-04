@@ -81,8 +81,8 @@
           "push_webhook": "Push Webhook",
           "push_ws_url": "WebSocket-URL",
           "push_auth_method": "Authentifizierungsmethode",
-          "push_token": "Token / Secret",
-          "push_ws_token": "WebSocket Bearer Token"
+          "push_token": "Eingehender Token / HMAC-Secret",
+          "push_ws_token": "Ausgehender WebSocket Bearer Token"
         },
         "data_description": {
           "scan_interval": "Wie oft der Gateway nach Statusänderungen abgefragt wird (5–300 Sekunden). Mit Push Webhook reichen 60–120 s.",
@@ -93,8 +93,8 @@
           "push_webhook": "Optional: Echtzeit-KNX-Statusupdates von einem externen Forwarder empfangen statt nur Polling.",
           "push_ws_url": "WebSocket-URL eines externen KNX-Forwarders (z. B. ws://192.168.1.100:8765). Leer lassen zum Deaktivieren.",
           "push_auth_method": "Authentifizierungsmethode für eingehende Push-HTTP-Anfragen: none, token, bearer oder hmac.",
-          "push_token": "Gemeinsames Secret für Token- / HMAC-Authentifizierung.",
-          "push_ws_token": "Bearer Token, der beim Verbinden mit der WebSocket-URL gesendet wird."
+          "push_token": "Gemeinsames Secret zur Prüfung eingehender Push-Anfragen (token / hmac).",
+          "push_ws_token": "Bearer Token, der ausgehend beim Verbinden mit der WebSocket-URL gesendet wird."
         }
       }
     }
