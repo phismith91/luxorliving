@@ -315,3 +315,239 @@ class TestPushViewMutationTargets:
 
         assert resp.status == 200
         gateway.process_incoming_value.assert_awaited_once()
+
+
+@pytest.mark.smoke
+class TestPushViewResponseBody:
+    """Kill surviving mutants that mutate response body keys/values and value_type key."""
+
+    @pytest.mark.asyncio
+    async def test_success_response_body_has_status_ok(self):
+        """Kill: {'status': 'ok'} → {'status': 'XX'} or None mutations."""
+        import json
+
+        view, entry, _ = _make_view()
+        resp = await view.post(
+            _make_request({"entry_id": entry.entry_id, "address": "1/2/3", "value": True})
+        )
+        body = json.loads(resp.body)
+        assert body.get("status") == "ok"
+
+    @pytest.mark.asyncio
+    async def test_invalid_json_response_body_error_key(self):
+        """Kill: {'error': 'invalid_json'} → {None / key mutations}."""
+        import json
+
+        view, _, _ = _make_view()
+        req = MagicMock()
+        req.json = AsyncMock(side_effect=ValueError("bad"))
+        req.headers = {}
+        resp = await view.post(req)
+        body = json.loads(resp.body)
+        assert "error" in body
+        assert body["error"] == "invalid_json"
+
+    @pytest.mark.asyncio
+    async def test_missing_fields_response_error_key(self):
+        """Kill: 'missing entry_id or address' → string mutations."""
+        import json
+
+        view, _, _ = _make_view()
+        resp = await view.post(_make_request({"value": True}))
+        body = json.loads(resp.body)
+        assert "error" in body
+        assert "missing" in body["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_unknown_entry_response_error_key(self):
+        """Kill: {'error': 'entry_not_found'} → key/value mutations."""
+        import json
+
+        view, _, _ = _make_view()
+        view.hass.config_entries.async_get_entry.return_value = None
+        resp = await view.post(_make_request({"entry_id": "ghost", "address": "1/2/3", "value": 1}))
+        body = json.loads(resp.body)
+        assert "error" in body
+        assert body["error"] == "entry_not_found"
+
+    @pytest.mark.asyncio
+    async def test_token_forbidden_response_error_key(self):
+        """Kill: {'error': 'forbidden'} → key/value mutations."""
+        import json
+
+        view, entry, _ = _make_view(
+            entry_data={"push_token": "secret", "push_auth_method": "token"}
+        )
+        resp = await view.post(
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": 1},
+                headers={"X-LUXOR-PUSH-TOKEN": "wrong"},
+            )
+        )
+        body = json.loads(resp.body)
+        assert "error" in body
+        assert body["error"] == "forbidden"
+
+    @pytest.mark.asyncio
+    async def test_value_type_forwarded_to_gateway(self):
+        """Kill: value_type = None / payload.get('VALUE_TYPE') mutations."""
+        view, entry, gateway = _make_view()
+        resp = await view.post(
+            _make_request(
+                {
+                    "entry_id": entry.entry_id,
+                    "address": "1/2/3",
+                    "value": 42,
+                    "value_type": "percent",
+                }
+            )
+        )
+        assert resp.status == 200
+        gateway.process_incoming_value.assert_awaited_once_with("1/2/3", 42, "percent")
+
+    @pytest.mark.asyncio
+    async def test_value_type_key_is_value_type_not_uppercase(self):
+        """Kill: payload.get('value_type') → payload.get('VALUE_TYPE') mutation."""
+        view, entry, gateway = _make_view()
+        # Lowercase key: 'value_type' — only correct key should be recognized
+        await view.post(
+            _make_request(
+                {
+                    "entry_id": entry.entry_id,
+                    "address": "1/2/3",
+                    "value": 1,
+                    "value_type": "binary",
+                }
+            )
+        )
+        args = gateway.process_incoming_value.call_args
+        assert args[0][2] == "binary"
+
+    @pytest.mark.asyncio
+    async def test_address_key_forwarded_correctly(self):
+        """Kill: payload.get('address') → payload.get('ADDRESS') mutations."""
+        view, entry, gateway = _make_view()
+        await view.post(
+            _make_request({"entry_id": entry.entry_id, "address": "5/4/3", "value": True})
+        )
+        args = gateway.process_incoming_value.call_args[0]
+        assert args[0] == "5/4/3"
+
+    @pytest.mark.asyncio
+    async def test_value_key_forwarded_correctly(self):
+        """Kill: payload.get('value') → payload.get('VALUE') mutations."""
+        view, entry, gateway = _make_view()
+        await view.post(
+            _make_request({"entry_id": entry.entry_id, "address": "1/1/1", "value": 99})
+        )
+        args = gateway.process_incoming_value.call_args[0]
+        assert args[1] == 99
+
+    @pytest.mark.asyncio
+    async def test_bearer_wrong_token_returns_403_with_error_body(self):
+        """Kill: bearer forbidden body key/value mutations."""
+        import json
+
+        view, entry, _ = _make_view(
+            entry_data={"push_token": "secret", "push_auth_method": "bearer"}
+        )
+        resp = await view.post(
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": 1},
+                headers={"Authorization": "Bearer wrong"},
+            )
+        )
+        assert resp.status == 403
+        body = json.loads(resp.body)
+        assert "error" in body
+        assert body["error"] == "forbidden"
+
+    @pytest.mark.asyncio
+    async def test_bearer_missing_prefix_returns_403(self):
+        """Kill: 'Bearer ' prefix check mutations."""
+        import json
+
+        view, entry, _ = _make_view(
+            entry_data={"push_token": "secret", "push_auth_method": "bearer"}
+        )
+        resp = await view.post(
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": 1},
+                headers={"Authorization": "secret"},  # no "Bearer " prefix
+            )
+        )
+        assert resp.status == 403
+        body = json.loads(resp.body)
+        assert body["error"] == "forbidden"
+
+    @pytest.mark.asyncio
+    async def test_bearer_splits_on_space_to_get_token(self):
+        """Kill: auth_header.split(' ', 1)[1] → [0] index mutation."""
+        view, entry, gateway = _make_view(
+            entry_data={"push_token": "mytoken", "push_auth_method": "bearer"}
+        )
+        resp = await view.post(
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": True},
+                headers={"Authorization": "Bearer mytoken"},
+            )
+        )
+        assert resp.status == 200
+
+    @pytest.mark.asyncio
+    async def test_hmac_missing_signature_returns_403(self):
+        """Kill: HMAC sig guard mutations."""
+        import json
+
+        view, entry, _ = _make_view(
+            entry_data={"push_token": "hmac-key", "push_auth_method": "hmac"}
+        )
+        resp = await view.post(
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": 1},
+                headers={},  # no signature header
+            )
+        )
+        assert resp.status == 403
+        body = json.loads(resp.body)
+        assert body["error"] == "forbidden"
+
+    @pytest.mark.asyncio
+    async def test_hmac_wrong_signature_returns_403(self):
+        """Kill: hmac.compare_digest mutations."""
+        import json
+
+        view, entry, _ = _make_view(
+            entry_data={"push_token": "hmac-key", "push_auth_method": "hmac"}
+        )
+        resp = await view.post(
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": 1},
+                headers={"X-LUXOR-PUSH-SIGNATURE": "badhash"},
+            )
+        )
+        assert resp.status == 403
+        body = json.loads(resp.body)
+        assert body["error"] == "forbidden"
+
+    @pytest.mark.asyncio
+    async def test_options_token_used_for_auth(self):
+        """Kill: options_token = state.entry.options.get('push_token') mutations."""
+        view, entry, gateway = _make_view(
+            entry_data={},
+            entry_options={"push_token": "opts-secret", "push_auth_method": "token"},
+        )
+        good = await view.post(
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": 1},
+                headers={"X-LUXOR-PUSH-TOKEN": "opts-secret"},
+            )
+        )
+        bad = await view.post(
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": 1},
+                headers={"X-LUXOR-PUSH-TOKEN": "wrong"},
+            )
+        )
+        assert good.status == 200
+        assert bad.status == 403

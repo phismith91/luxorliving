@@ -57,6 +57,7 @@ def mock_mapped_entity():
     return entity
 
 
+@pytest.mark.smoke
 class TestLuxorLivingSwitch:
     """Test LuxorLivingSwitch class."""
 
@@ -179,6 +180,7 @@ class TestLuxorLivingSwitch:
         assert mock_knx_gateway.unregister_listener.call_count >= 1
 
 
+@pytest.mark.smoke
 class TestRateLimiting:
     """Test rate limiting functionality."""
 
@@ -275,3 +277,160 @@ class TestRateLimiting:
         # turn_off should not send telegram
         await switch.async_turn_off()
         mock_knx_gateway.async_send_telegram.assert_not_called()
+
+
+@pytest.mark.smoke
+class TestSwitchMutationTargets:
+    """Smoke tests targeting surviving mutants in LuxorLivingSwitch."""
+
+    @pytest.mark.asyncio
+    async def test_turn_on_sends_true_with_binary_type(
+        self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+    ):
+        """Kill: send value True → False, type 'binary' → None."""
+        switch = LuxorLivingSwitch(
+            mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+        )
+        switch.async_write_ha_state = Mock()
+        await switch.async_turn_on()
+        args = mock_knx_gateway.async_send_telegram.call_args[0]
+        assert args[1] is True
+        assert args[2] == "binary"
+
+    @pytest.mark.asyncio
+    async def test_turn_off_sends_false_with_binary_type(
+        self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+    ):
+        """Kill: send value False → True, type 'binary' → None."""
+        switch = LuxorLivingSwitch(
+            mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+        )
+        switch.async_write_ha_state = Mock()
+        await switch.async_turn_off()
+        args = mock_knx_gateway.async_send_telegram.call_args[0]
+        assert args[1] is False
+        assert args[2] == "binary"
+
+    def test_status_address_priority_status_at_onoff(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: 'status@OnOff' key → 'StatusOnOff' order mutation."""
+        entity = Mock()
+        entity.unique_id = "priority_test"
+        entity.name = "Priority Switch"
+        entity.device_id = "dev1"
+        entity.device_name = "Device 1"
+        entity.entity_type = "switch"
+        entity.datapoints = {"OnOff": "1/1/1", "status@OnOff": "1/1/2", "StatusOnOff": "1/1/3"}
+        entity.parameters = {}
+        entity.attributes = {}
+        switch = LuxorLivingSwitch(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        assert switch._address_status == "1/1/2"
+
+    def test_fallback_address_on_from_schalten_onoff(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: 'OnOff' key mutation loses SchaltenOnOff fallback."""
+        entity = Mock()
+        entity.unique_id = "schalten_test"
+        entity.name = "Schalten Switch"
+        entity.device_id = "dev1"
+        entity.device_name = "Device 1"
+        entity.entity_type = "switch"
+        entity.datapoints = {"SchaltenOnOff": "2/3/4"}
+        entity.parameters = {}
+        entity.attributes = {}
+        switch = LuxorLivingSwitch(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        assert switch._address_on == "2/3/4"
+
+    def test_extra_state_attributes_key_names(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: 'knx_address_on' / 'knx_address_status' key string mutations."""
+        entity = Mock()
+        entity.unique_id = "attrs_test"
+        entity.name = "Attrs Switch"
+        entity.device_id = "dev1"
+        entity.device_name = "Device"
+        entity.entity_type = "switch"
+        entity.datapoints = {"OnOff": "1/2/3", "StatusOnOff": "1/2/4"}
+        entity.parameters = {}
+        entity.attributes = {}
+        switch = LuxorLivingSwitch(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        attrs = switch.extra_state_attributes
+        assert "knx_address_on" in attrs
+        assert "knx_address_status" in attrs
+
+
+@pytest.mark.smoke
+class TestSwitchRegistrationMutants:
+    """Kill surviving mutants about super() args, register_listener, is_initial."""
+
+    def test_config_entry_stored_not_none(
+        self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+    ):
+        """Kill: super().__init__(coordinator, None, mapped_entity) mutation."""
+        switch = LuxorLivingSwitch(
+            mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+        )
+        assert switch._config_entry is mock_config_entry
+
+    def test_mapped_entity_stored_not_none(
+        self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+    ):
+        """Kill: super().__init__(coordinator, entry, None) mutation."""
+        switch = LuxorLivingSwitch(
+            mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+        )
+        assert switch._mapped_entity is mock_mapped_entity
+
+    def test_register_listener_uses_real_addresses(
+        self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+    ):
+        """Kill: register_listener(None, handler) mutations."""
+        _ = LuxorLivingSwitch(
+            mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+        )
+        registered = [c[0][0] for c in mock_knx_gateway.register_listener.call_args_list]
+        assert "1/2/3" in registered
+        assert "1/2/4" in registered
+
+    def test_listen_addresses_contain_real_addresses(
+        self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+    ):
+        """Kill: _listen_addresses.append(None) mutation."""
+        switch = LuxorLivingSwitch(
+            mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+        )
+        assert "1/2/3" in switch._listen_addresses
+        assert "1/2/4" in switch._listen_addresses
+
+    def test_same_address_not_registered_twice(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: _address_on != _address_status → or mutation."""
+        entity = Mock()
+        entity.unique_id = "same_addr"
+        entity.name = "Same Switch"
+        entity.device_id = "d1"
+        entity.device_name = "Dev"
+        entity.entity_type = "switch"
+        entity.datapoints = {"OnOff": "1/1/1", "status@OnOff": "1/1/1"}
+        entity.parameters = {}
+        entity.attributes = {}
+        _ = LuxorLivingSwitch(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        assert mock_knx_gateway.register_listener.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_async_added_reads_with_is_initial_true(
+        self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+    ):
+        """Kill: is_initial=True → is_initial=False mutation."""
+        mock_knx_gateway._connected = True
+        switch = LuxorLivingSwitch(
+            mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+        )
+        switch.async_on_remove = Mock(return_value=lambda: None)
+        await switch.async_added_to_hass()
+        for call in mock_knx_gateway.async_read_group_address.call_args_list:
+            assert call.kwargs.get("is_initial") is True

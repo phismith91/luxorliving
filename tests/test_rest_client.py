@@ -231,6 +231,7 @@ class TestBAOSRestClient:
         assert client.is_authenticated is True
 
 
+@pytest.mark.smoke
 class TestLogoutAuditFix:
     """Test for audit-fix: logout null-session guard."""
 
@@ -247,3 +248,91 @@ class TestLogoutAuditFix:
         await client.logout()
 
         assert client.session_token is None  # still cleaned up
+
+
+class TestRestClientMutationTargets:
+    """Smoke tests targeting surviving mutants in BAOSRestClient."""
+
+    # ── __init__: default values and attribute mutations ──────────────────
+
+    @pytest.mark.smoke
+    def test_default_port_is_443(self):
+        """Kill mutmut_1: default port 443 → 444."""
+        import inspect
+
+        from custom_components.luxor_living.rest_client import BAOSRestClient
+
+        sig = inspect.signature(BAOSRestClient.__init__)
+        assert sig.parameters["port"].default == 443
+
+    @pytest.mark.smoke
+    def test_default_use_https_is_true(self):
+        """Kill mutmut_2: use_https=True → False."""
+        import inspect
+
+        from custom_components.luxor_living.rest_client import BAOSRestClient
+
+        sig = inspect.signature(BAOSRestClient.__init__)
+        assert sig.parameters["use_https"].default is True
+
+    @pytest.mark.smoke
+    def test_host_stored(self):
+        """Kill mutmut_3: self.host = None."""
+        from custom_components.luxor_living.rest_client import BAOSRestClient
+
+        c = BAOSRestClient("192.168.1.3")
+        assert c.host == "192.168.1.3"
+
+    @pytest.mark.smoke
+    def test_port_stored(self):
+        """Kill mutmut_4: self.port = None."""
+        from custom_components.luxor_living.rest_client import BAOSRestClient
+
+        c = BAOSRestClient("192.168.1.3", port=8080)
+        assert c.port == 8080
+
+    @pytest.mark.smoke
+    def test_base_url_uses_https_when_true(self):
+        """Kill mutmut_2 (use_https): base_url must start with https."""
+        from custom_components.luxor_living.rest_client import BAOSRestClient
+
+        c = BAOSRestClient("192.168.1.3", use_https=True)
+        assert c.base_url.startswith("https://")
+
+    @pytest.mark.smoke
+    def test_base_url_uses_http_when_false(self):
+        """Complementary: http when use_https=False (boundary check)."""
+        from custom_components.luxor_living.rest_client import BAOSRestClient
+
+        c = BAOSRestClient("192.168.1.3", use_https=False)
+        assert c.base_url.startswith("http://")
+
+    # ── logout: guard mutations ───────────────────────────────────────────
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_logout_with_token_but_no_session_clears_token(self):
+        """Kill mutmut_1: 'or not _session' → 'and not _session'.
+
+        With 'and': if session_token is set AND _session is None, the guard
+        is False (both must be falsy for early return) → crashes on _session.post.
+        """
+        from custom_components.luxor_living.rest_client import BAOSRestClient
+
+        c = BAOSRestClient("192.168.1.3")
+        c.session_token = "tok"
+        c._session = None
+        await c.logout()
+        assert c.session_token is None  # must be cleared
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_logout_clears_tunneling_enabled(self):
+        """Kill mutmut_10: tunneling_enabled = False → None."""
+        from custom_components.luxor_living.rest_client import BAOSRestClient
+
+        c = BAOSRestClient("192.168.1.3")
+        c.session_token = None  # no session → early return path
+        c.tunneling_enabled = True
+        await c.logout()
+        assert c.tunneling_enabled is False  # not None
