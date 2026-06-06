@@ -74,6 +74,7 @@ class TestAsyncUpdateData:
             await coord._async_update_data()
 
 
+@pytest.mark.smoke
 class TestGetSetState:
     def test_get_state_returns_none_for_unknown(self):
         coord = _make_coordinator()
@@ -94,3 +95,46 @@ class TestGetSetState:
         coord.set_state("1/0/0", True)
         coord.set_state("1/0/0", False)
         assert coord.get_state("1/0/0") is False
+
+
+class TestCoordinatorMutationTargets:
+    """Smoke tests targeting surviving mutants in coordinator.__init__ and set_state."""
+
+    # ── __init__ parameter mutations ──────────────────────────────────────
+
+    @pytest.mark.smoke
+    def test_default_scan_interval_is_30(self):
+        """Kill mutmut_1: scan_interval default 30 → 31."""
+        import inspect
+
+        from custom_components.luxor_living.coordinator import LuxorLivingCoordinator
+
+        sig = inspect.signature(LuxorLivingCoordinator.__init__)
+        assert sig.parameters["scan_interval"].default == 30
+
+    @pytest.mark.smoke
+    def test_coordinator_name_is_luxor_living(self):
+        """Kill mutmut_4: name='Luxor Living' → name=None."""
+        coord = _make_coordinator()
+        assert coord.name == "Luxor Living"
+
+    @pytest.mark.smoke
+    def test_update_interval_matches_scan_interval(self):
+        """Kill mutmut_5: update_interval=timedelta(seconds=scan) → None."""
+        from datetime import timedelta
+
+        coord = _make_coordinator()
+        assert coord.update_interval == timedelta(seconds=30)
+
+    # ── set_state: async_set_updated_data argument ────────────────────────
+
+    @pytest.mark.smoke
+    def test_set_state_passes_cache_not_none(self):
+        """Kill mutmut_2: async_set_updated_data(self._state_cache) → (None)."""
+        coord = _make_coordinator()
+        coord.set_state("2/0/0", 42)
+
+        coord.async_set_updated_data.assert_called_once()
+        call_arg = coord.async_set_updated_data.call_args[0][0]
+        assert call_arg is not None
+        assert call_arg["2/0/0"] == 42

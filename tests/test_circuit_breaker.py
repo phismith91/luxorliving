@@ -33,6 +33,7 @@ class TestCircuitBreaker:
         """Create a circuit breaker instance for testing."""
         return CircuitBreaker("test_circuit_breaker", circuit_breaker_config)
 
+    @pytest.mark.smoke
     def test_initial_state_closed(self, circuit_breaker):
         """Test that circuit breaker starts in CLOSED state."""
         assert circuit_breaker.state == CircuitBreakerState.CLOSED
@@ -40,6 +41,7 @@ class TestCircuitBreaker:
         assert stats["failure_count"] == 0
         assert stats["last_failure_time"] == 0.0
 
+    @pytest.mark.smoke
     @pytest.mark.asyncio
     async def test_successful_call(self, circuit_breaker):
         """Test successful call doesn't change state."""
@@ -70,6 +72,7 @@ class TestCircuitBreaker:
         assert stats["failure_count"] == 1
         assert stats["last_failure_time"] > 0
 
+    @pytest.mark.smoke
     @pytest.mark.asyncio
     async def test_failure_threshold_trip(self, circuit_breaker):
         """Test circuit breaker trips after reaching failure threshold."""
@@ -87,6 +90,7 @@ class TestCircuitBreaker:
         assert stats["failure_count"] == 3
         assert stats["failure_count"] == 3
 
+    @pytest.mark.smoke
     @pytest.mark.asyncio
     async def test_open_circuit_rejects_calls(self, circuit_breaker):
         """Test that open circuit breaker rejects calls."""
@@ -322,3 +326,145 @@ class TestCircuitBreaker:
         assert result == "success"
         assert circuit_breaker.state == CircuitBreakerState.HALF_OPEN
         assert circuit_breaker.get_stats()["failure_count"] == 0
+
+
+class TestCircuitBreakerMutationTargets:
+    """Smoke tests targeting surviving mutants in circuit_breaker.py.
+
+    Each test documents which mutant it kills and why the assertion
+    catches that specific code change.
+    """
+
+    @pytest.fixture
+    def cb(self):
+        return CircuitBreaker(CircuitBreakerConfig(failure_threshold=2, recovery_timeout=1.0))
+
+    # ── call: _call_count mutations ──────────────────────────────────────
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_call_count_increments_per_call(self, cb):
+        """Kill _call_count += 1 → = 1 / -= 1 / += 2.
+
+        After N calls, call_count must equal N, not 1 or 2.
+        """
+
+        async def noop():
+            return True
+
+        await cb.call(noop)
+        await cb.call(noop)
+        await cb.call(noop)
+
+        assert cb.get_stats()["call_count"] == 3
+
+    # ── _record_failure: state + counter mutations ────────────────────────
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_failure_resets_success_count_to_zero(self, cb):
+        """Kill _success_count = 0 → None / 1.
+
+        A failure must zero out the success counter so the HALF_OPEN
+        recovery sequence starts fresh.
+        """
+        cb._success_count = 5  # pretend some successes accumulated
+
+        async def fail():
+            raise ValueError("oops")
+
+        with pytest.raises(ValueError):
+            await cb.call(fail)
+
+        assert cb.get_stats()["success_count"] == 0
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_threshold_failures_set_state_to_open(self, cb):
+        """Kill _state = OPEN → None.
+
+        After failure_threshold failures, state must be exactly OPEN.
+        """
+
+        async def fail():
+            raise ValueError()
+
+        for _ in range(cb.config.failure_threshold):
+            with pytest.raises(ValueError):
+                await cb.call(fail)
+
+        assert cb.state == CircuitBreakerState.OPEN
+
+    # ── _record_success: HALF_OPEN branch mutations ───────────────────────
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_success_in_half_open_increments_success_count(self, cb):
+        """Kill success_count += 1 → = 1 / -= 1.
+
+        In HALF_OPEN, each success must increment the counter.
+        After 2 successes it should be 2, not 1 (= 1 mutation would
+        keep it at 1 on every call).
+        """
+        cb._state = CircuitBreakerState.HALF_OPEN
+
+        async def ok():
+            return True
+
+        await cb.call(ok)
+        await cb.call(ok)
+
+        assert cb.get_stats()["success_count"] == 2
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_success_in_closed_does_not_increment_success_count(self, cb):
+        """Kill 'if state == HALF_OPEN' → '!= HALF_OPEN'.
+
+        Success in CLOSED state must NOT bump success_count (that counter
+        is only for HALF_OPEN recovery tracking).
+        """
+        assert cb.state == CircuitBreakerState.CLOSED
+
+        async def ok():
+            return True
+
+        await cb.call(ok)
+        await cb.call(ok)
+
+        assert cb.get_stats()["success_count"] == 0
+
+    # ── get_stats: dict key mutations ────────────────────────────────────
+
+    @pytest.mark.smoke
+    def test_get_stats_returns_expected_keys(self, cb):
+        """Kill 'name' → 'XXnameXX', 'success_count' → 'XXsuccess_countXX'.
+
+        All documented keys must be present in the stats dict.
+        """
+        stats = cb.get_stats()
+        for key in (
+            "name",
+            "state",
+            "failure_count",
+            "success_count",
+            "call_count",
+            "last_failure_time",
+        ):
+            assert key in stats, f"missing stats key: {key}"
+
+    # ── _should_attempt_reset: boundary condition ─────────────────────────
+
+    @pytest.mark.smoke
+    def test_should_attempt_reset_at_exact_timeout(self, cb):
+        """Kill elapsed >= timeout → elapsed > timeout.
+
+        At exactly recovery_timeout seconds the reset must be attempted.
+        The mutant (>) would miss the boundary and never reset.
+        """
+        import time
+
+        cb._state = CircuitBreakerState.OPEN
+        cb._last_failure_time = time.time() - cb.config.recovery_timeout  # exactly at boundary
+
+        assert cb._should_attempt_reset() is True

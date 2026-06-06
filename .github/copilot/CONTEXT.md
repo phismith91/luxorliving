@@ -149,9 +149,8 @@ luxorliving/
 
 ### Python Environment
 
-- **Python:** 3.12.x (local), 3.14.x (CI) — minimum supported: 3.13
-  (pyproject.toml)
-- **Home Assistant:** ≥2026.4.4 (required by requirements_dev.txt)
+- **Python:** 3.13+ (3.14.x in CI, see `pyproject.toml`)
+- **Home Assistant:** ≥2026.4.4 (installed via `.[dev]`)
 - **Test Framework:** pytest 9.0.0
 - **pytest-homeassistant-custom-component:** ≥0.13.325
 - **Venv:** project-local `.venv/` (run `python3.14 -m venv .venv` for CI
@@ -381,14 +380,14 @@ requests
 4. Clear conversation when switching contexts (new task)
 5. Monitor token usage (stays visible in responses) | **HACS Compliance** | L2 |
    25k tokens | hacs.json, manifest.json | <80% | | **Code Quality** | L3 | 20k
-   tokens | requirements_style.txt | <80% |
+   tokens | pyproject.toml | <80% |
 
 **Skills Reference**: [skills/](skills/) - Context Engineering Patterns
 
 ### All Agents Must:
 
 1. ✅ **Read CONTEXT.md first** (Single Source of Truth)
-2. ✅ Respect production environment (Remote SSH, `-F /dev/null`)
+2. ✅ Respect production environment and documented release procedures
 3. ✅ Follow architecture principles and code quality standards
 4. ✅ Monitor context budget (<80% efficiency target)
 5. ✅ Maintain quality (type hints, tests, formatting)

@@ -695,9 +695,6 @@ class LuxorKNXGateway:
                     "🔔 Notifying %d listener(s) for address %s", len(callbacks), group_address
                 )
                 for callback in callbacks:
-                    # Check if still registered (could be removed during iteration)
-                    if callback not in self._listeners.get(group_address, []):
-                        continue
                     try:
                         # Ensure callbacks run in HA event loop thread to avoid thread-safety issues.
                         # In tests or simulation, hass may not provide a loop; fallback to direct call.
@@ -772,8 +769,6 @@ class LuxorKNXGateway:
             if group_address in self._listeners:
                 callbacks = list(self._listeners[group_address])
                 for callback in callbacks:
-                    if callback not in self._listeners.get(group_address, []):
-                        continue
                     try:
                         loop = getattr(self.hass, "loop", None)
                         call_in_loop = getattr(loop, "call_soon_threadsafe", None) if loop else None

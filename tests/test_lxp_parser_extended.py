@@ -370,3 +370,106 @@ class TestDataclasses:
     def test_lxp_project(self):
         p = LXPProject(name="Proj", gateway_address="192.168.1.1", gateway_port=3671, devices=[])
         assert p.gateway_port == 3671
+
+
+class TestLXPCacheMutationTargets:
+    """Smoke tests targeting surviving mutants in LXPCache.__init__ and get_stats."""
+
+    # ── __init__: default values and attribute mutations ──────────────────
+
+    @pytest.mark.smoke
+    def test_default_max_size_is_10(self):
+        """Kill mutmut_1: default max_size 10 → 11."""
+        import inspect
+
+        from custom_components.luxor_living.lxp_parser import LXPCache
+
+        sig = inspect.signature(LXPCache.__init__)
+        assert sig.parameters["max_size"].default == 10
+
+    @pytest.mark.smoke
+    def test_default_ttl_is_3600(self):
+        """Kill mutmut_2: default ttl_seconds 3600 → 3601."""
+        import inspect
+
+        from custom_components.luxor_living.lxp_parser import LXPCache
+
+        sig = inspect.signature(LXPCache.__init__)
+        assert sig.parameters["ttl_seconds"].default == 3600
+
+    @pytest.mark.smoke
+    def test_cache_dict_is_empty_dict_on_init(self):
+        """Kill mutmut_3: self._cache = None."""
+        from custom_components.luxor_living.lxp_parser import LXPCache
+
+        c = LXPCache()
+        assert isinstance(c._cache, dict)
+        assert len(c._cache) == 0
+
+    @pytest.mark.smoke
+    def test_max_size_stored(self):
+        """Kill mutmut_4: self._max_size = None."""
+        from custom_components.luxor_living.lxp_parser import LXPCache
+
+        c = LXPCache(max_size=5)
+        assert c._max_size == 5
+
+    @pytest.mark.smoke
+    def test_ttl_stored(self):
+        """Kill mutmut_5: self._ttl_seconds = None."""
+        from custom_components.luxor_living.lxp_parser import LXPCache
+
+        c = LXPCache(ttl_seconds=60)
+        assert c._ttl_seconds == 60
+
+    @pytest.mark.smoke
+    def test_hits_initialised_to_zero(self):
+        """Kill mutmut_6: self._hits = None."""
+        from custom_components.luxor_living.lxp_parser import LXPCache
+
+        c = LXPCache()
+        assert c._hits == 0
+
+    # ── get_stats: arithmetic and dict key mutations ──────────────────────
+
+    @pytest.mark.smoke
+    def test_get_stats_total_accesses_is_sum(self):
+        """Kill mutmut_1/2: hits + misses → None / hits - misses."""
+        from custom_components.luxor_living.lxp_parser import LXPCache
+
+        c = LXPCache()
+        c._hits = 3
+        c._misses = 7
+        stats = c.get_stats()
+        # hit_rate with 3 hits out of 10 total = 30%
+        assert abs(stats["hit_rate_percent"] - 30.0) < 0.1
+
+    @pytest.mark.smoke
+    def test_get_stats_hit_rate_uses_multiplication_not_division(self):
+        """Kill mutmut_4/5: * 100 → / 100 or * total."""
+        from custom_components.luxor_living.lxp_parser import LXPCache
+
+        c = LXPCache()
+        c._hits = 1
+        c._misses = 1
+        stats = c.get_stats()
+        assert abs(stats["hit_rate_percent"] - 50.0) < 0.1  # not 0.5 or 50*2=100
+
+    @pytest.mark.smoke
+    def test_get_stats_hit_rate_zero_when_no_accesses(self):
+        """Kill mutmut_7: total > 0 → total >= 0 (would divide by zero at 0)."""
+        from custom_components.luxor_living.lxp_parser import LXPCache
+
+        c = LXPCache()
+        stats = c.get_stats()
+        assert stats["hit_rate_percent"] == 0
+
+    @pytest.mark.smoke
+    def test_get_stats_returns_expected_keys(self):
+        """Kill mutmut_11-15: dict key name mutations (SIZE/MAX_SIZE/HITS/etc.)."""
+        from custom_components.luxor_living.lxp_parser import LXPCache
+
+        c = LXPCache()
+        stats = c.get_stats()
+        for key in ("size", "max_size", "hits", "misses", "hit_rate_percent"):
+            assert key in stats, f"missing stats key: {key}"

@@ -21,6 +21,7 @@ def mock_hass():
 class TestLuxorKNXGateway:
     """Test LuxorKNXGateway class."""
 
+    @pytest.mark.smoke
     def test_init_simulation_mode(self, mock_hass):
         """Test initialization in simulation mode."""
         gateway = LuxorKNXGateway(
@@ -39,6 +40,7 @@ class TestLuxorKNXGateway:
         assert gateway.username == "admin"
         assert gateway._connected is False
 
+    @pytest.mark.smoke
     def test_init_tunneling_mode(self, mock_hass):
         """Test initialization with tunneling mode."""
         gateway = LuxorKNXGateway(
@@ -195,6 +197,7 @@ class TestLuxorKNXGateway:
 
         assert result is True
 
+    @pytest.mark.smoke
     @pytest.mark.asyncio
     async def test_async_send_telegram_not_connected(self, mock_hass):
         """Test sending telegram when not connected."""
@@ -301,6 +304,7 @@ class TestLuxorKNXGateway:
 
         await gateway.async_disconnect()  # cancel session_refresh_task
 
+    @pytest.mark.smoke
     def test_register_listener(self, mock_hass):
         """Test registering a listener."""
         gateway = LuxorKNXGateway(
@@ -443,6 +447,7 @@ class TestLuxorKNXGateway:
         # We now call __aexit__ instead of logout directly
         mock_rest.__aexit__.assert_called_once()
 
+    @pytest.mark.smoke
     def test_properties(self, mock_hass):
         """Test gateway properties."""
         gateway = LuxorKNXGateway(
@@ -927,3 +932,151 @@ class TestSessionLockRaceCondition:
         """Gateway must expose _session_lock as an asyncio.Lock instance."""
         gateway = self._make_gateway(mock_hass)
         assert isinstance(gateway._session_lock, asyncio.Lock)
+
+
+class TestSendTelegramMutationTargets:
+    """Smoke tests targeting surviving mutants in async_send_telegram.
+
+    Each test is written to kill a specific class of mutant identified
+    by mutmut (see mutants/custom_components/luxor_living/knx_gateway.py.meta).
+    """
+
+    def _make_connected_gateway(self, mock_hass):
+        gw = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+        gw._connected = True
+        gw._xknx = MagicMock()
+        gw._xknx.telegrams = MagicMock()
+        gw._xknx.telegrams.put = AsyncMock()
+        return gw
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_send_returns_false_when_xknx_is_none(self, mock_hass):
+        """Kill mutmut_15: 'or' → 'and' in the not-connected guard.
+
+        If _connected=True but _xknx=None the gateway cannot send.
+        The mutant changes 'or' to 'and', making this case slip through.
+        """
+        gw = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+        gw._connected = True
+        gw._xknx = None  # connected flag says True, but no xknx instance
+
+        result = await gw.async_send_telegram("1/2/3", True, "binary")
+
+        assert result is False
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_binary_type_sends_dpt_binary_payload(self, mock_hass):
+        """Kill mutmut_25: 'value_type == binary' → 'value_type != binary'.
+
+        Verifies the value_type dispatch is correct: binary → DPTBinary,
+        not percent → DPTArray.
+        """
+        from xknx.dpt import DPTBinary
+        from xknx.telegram.apci import GroupValueWrite
+
+        gw = self._make_connected_gateway(mock_hass)
+
+        await gw.async_send_telegram("1/2/3", True, "binary")
+
+        gw._xknx.telegrams.put.assert_called_once()
+        telegram = gw._xknx.telegrams.put.call_args[0][0]
+        assert isinstance(telegram.payload, GroupValueWrite)
+        assert isinstance(telegram.payload.value, DPTBinary)
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_percent_type_sends_correct_byte_value(self, mock_hass):
+        """Kill mutations in percent conversion: int(value * 255 / 100).
+
+        50% must encode to 127 (floor of 50*255/100=127.5 → 127).
+        A mutant changing 255 to 254 would give 127 too, but 100% = 255
+        is unambiguous.
+        """
+        from xknx.dpt import DPTArray
+        from xknx.telegram.apci import GroupValueWrite
+
+        gw = self._make_connected_gateway(mock_hass)
+
+        await gw.async_send_telegram("1/2/3", 100, "percent")
+
+        telegram = gw._xknx.telegrams.put.call_args[0][0]
+        assert isinstance(telegram.payload.value, DPTArray)
+        assert telegram.payload.value.value == (255,)  # 100% → 255
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_zero_percent_sends_zero_byte(self, mock_hass):
+        """0% must encode to byte 0, not a garbage value."""
+        from xknx.dpt import DPTArray
+
+        gw = self._make_connected_gateway(mock_hass)
+        await gw.async_send_telegram("1/2/3", 0, "percent")
+
+        telegram = gw._xknx.telegrams.put.call_args[0][0]
+        assert telegram.payload.value.value == (0,)
+
+
+class TestRegisterListenerMutationTargets:
+    """Smoke tests targeting surviving mutants in register_listener.
+
+    mutmut_1/2/3 all mutate the address normalization step:
+    normalized = str(GroupAddress(group_address)) → None / str(None) / etc.
+    """
+
+    @pytest.mark.smoke
+    def test_listener_stored_under_normalized_address(self, mock_hass):
+        """Kill mutmut_1: normalization result used as dict key.
+
+        After register_listener("1/2/3", cb), the callback must be
+        retrievable under the canonical "1/2/3" string key.
+        """
+        gw = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+        cb = MagicMock()
+        gw.register_listener("1/2/3", cb)
+
+        assert "1/2/3" in gw._listeners
+        assert cb in gw._listeners["1/2/3"]
+
+    @pytest.mark.smoke
+    def test_integer_address_normalized_to_string(self, mock_hass):
+        """Kill mutmut_2/3: normalization must convert non-string addresses.
+
+        Integer GA 0x0803 = group address 1/0/3 — the callback must be
+        stored under the canonical '1/0/3' string, not under None or
+        'None'.
+        """
+        gw = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+        cb = MagicMock()
+        gw.register_listener(0x0803, cb)  # integer address
+
+        # Must be stored under a string key, never None
+        for key in gw._listeners:
+            assert key is not None
+            assert key != "None"
+        assert any(cb in cbs for cbs in gw._listeners.values())

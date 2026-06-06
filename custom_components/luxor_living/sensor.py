@@ -263,6 +263,7 @@ class LuxorLivingDiscoveredSensor(SensorEntity):
         self._sensor_info = sensor_info
         self._knx_gateway = knx_gateway
         self._address = sensor_info["address"]
+        self._knx_callback: Any = None
 
         # Generate unique ID from address
         address_clean = self._address.replace("/", "_")
@@ -330,13 +331,12 @@ class LuxorLivingDiscoveredSensor(SensorEntity):
                 self._attr_native_value = value
                 self.async_write_ha_state()
 
-        self._knx_gateway.register_listener(self._address, on_telegram_update)
+        self._knx_callback = on_telegram_update
+        self._knx_gateway.register_listener(self._address, self._knx_callback)
         _LOGGER.info("Registered auto-discovered sensor: %s (%s)", self._attr_name, self._address)
 
     async def async_will_remove_from_hass(self) -> None:
         """Unregister KNX listener when removed."""
-
-        def dummy_callback(address: str, value: Any) -> None:
-            pass
-
-        self._knx_gateway.unregister_listener(self._address, dummy_callback)
+        if self._knx_callback is not None:
+            self._knx_gateway.unregister_listener(self._address, self._knx_callback)
+            self._knx_callback = None

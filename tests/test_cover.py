@@ -557,3 +557,214 @@ class TestAsyncSetupEntry:
         # No entities should be added
         entities = mock_add_entities.call_args[0][0]
         assert len(entities) == 0
+
+
+@pytest.mark.smoke
+class TestCoverAuditFixes:
+    """Tests for audit-fix branches: failed send + connection guard."""
+
+    @pytest.mark.asyncio
+    async def test_set_cover_position_does_not_update_state_on_failed_send(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """State must NOT update when async_send_telegram returns False."""
+        mock_knx_gateway.async_send_telegram = AsyncMock(return_value=False)
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="test_entry",
+        )
+        entity.async_write_ha_state = MagicMock()
+        original_position = entity.current_cover_position
+
+        await entity.async_set_cover_position(**{ATTR_POSITION: 50})
+
+        entity.async_write_ha_state.assert_not_called()
+        assert entity.current_cover_position == original_position
+
+    @pytest.mark.asyncio
+    async def test_set_tilt_position_does_not_update_state_on_failed_send(
+        self, mock_coordinator, mock_knx_gateway, blind_mapped_entity
+    ):
+        """Tilt state must NOT update when async_send_telegram returns False."""
+        mock_knx_gateway.async_send_telegram = AsyncMock(return_value=False)
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=blind_mapped_entity,
+            entry_id="test_entry",
+        )
+        entity.async_write_ha_state = MagicMock()
+        original_tilt = entity.current_cover_tilt_position
+
+        await entity.async_set_cover_tilt_position(**{ATTR_TILT_POSITION: 60})
+
+        entity.async_write_ha_state.assert_not_called()
+        assert entity.current_cover_tilt_position == original_tilt
+
+    @pytest.mark.asyncio
+    async def test_async_added_to_hass_skips_initial_read_when_not_connected(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Initial read must be skipped when gateway is not yet connected."""
+        mock_knx_gateway.connected = False
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="test_entry",
+        )
+
+        await entity.async_added_to_hass()
+
+        mock_knx_gateway.async_read_group_address.assert_not_called()
+
+
+class TestCoverMutationTargets:
+    """Smoke tests targeting surviving mutants in LuxorCover."""
+
+    # ── __init__: attribute + tilt-detection mutations ────────────────────
+
+    @pytest.mark.smoke
+    def test_init_datapoints_stored(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Kill mutmut_4: self._datapoints = None."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="e1",
+        )
+        assert entity._datapoints is not None
+        assert entity._datapoints is shutter_mapped_entity.datapoints
+
+    @pytest.mark.smoke
+    def test_init_unique_id_stored(self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity):
+        """Kill mutmut_5: _attr_unique_id = None."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="e1",
+        )
+        assert entity._attr_unique_id is not None
+
+    @pytest.mark.smoke
+    def test_tilt_detected_with_only_lamelle(
+        self, mock_coordinator, mock_knx_gateway, blind_mapped_entity
+    ):
+        """Kill mutmut_10: has_tilt = 'Lamelle%' in dp or 'StatusLamelle%' → and.
+
+        blind_mapped_entity has 'Lamelle%' but not 'StatusLamelle%'.
+        With 'and', tilt would not be detected.
+        """
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=blind_mapped_entity,
+            entry_id="e1",
+        )
+        assert CoverEntityFeature.SET_TILT_POSITION in entity.supported_features
+
+    @pytest.mark.smoke
+    def test_device_class_shutter_not_none(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Kill mutmut_20: device_class = None."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="e1",
+        )
+        assert entity._attr_device_class is not None
+
+    # ── async_set_cover_position: inversion + key case ────────────────────
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_position_inverted_correctly(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Kill mutmut_10: 100 - position → 101 - position.
+
+        HA position 100 (fully open) must send KNX 0 (Höhe%=0 = fully up).
+        With 101: sends 1 instead of 0.
+        """
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="e1",
+        )
+        entity.async_write_ha_state = MagicMock()
+
+        await entity.async_set_cover_position(**{ATTR_POSITION: 100})
+
+        call_args = mock_knx_gateway.async_send_telegram.call_args
+        assert call_args[0][1] == 0  # 100 - 100 = 0, not 101 - 100 = 1
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_position_value_type_is_percent(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Kill mutmut_15: value_type 'percent' → None."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="e1",
+        )
+        entity.async_write_ha_state = MagicMock()
+
+        await entity.async_set_cover_position(**{ATTR_POSITION: 50})
+
+        call_args = mock_knx_gateway.async_send_telegram.call_args
+        assert call_args[0][2] == "percent"
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_tilt_position_inverted_correctly(
+        self, mock_coordinator, mock_knx_gateway, blind_mapped_entity
+    ):
+        """Kill off-by-one mutations in tilt inversion."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=blind_mapped_entity,
+            entry_id="e1",
+        )
+        entity.async_write_ha_state = MagicMock()
+
+        await entity.async_set_cover_tilt_position(**{ATTR_TILT_POSITION: 75})
+
+        call_args = mock_knx_gateway.async_send_telegram.call_args
+        assert call_args[0][1] == 75  # tilt passes through unchanged
+        assert call_args[0][2] == "percent"
+
+    # ── async_added_to_hass: listener key names ───────────────────────────
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_position_listener_registered_for_status_address(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        """Kill mutations in 'StatusHöhe%' / 'Höhe%' key lookup."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="e1",
+        )
+        await entity.async_added_to_hass()
+
+        registered_addresses = [
+            call[0][0] for call in mock_knx_gateway.register_listener.call_args_list
+        ]
+        # StatusHöhe% address (from shutter_mapped_entity) must be registered
+        assert any(
+            addr in registered_addresses for addr in shutter_mapped_entity.datapoints.values()
+        )

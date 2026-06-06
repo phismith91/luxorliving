@@ -451,3 +451,121 @@ class TestTargetDpKey:
         assert (
             8193 not in registered_addresses
         )  # Sollwert not registered (status variant takes over)
+
+
+@pytest.mark.smoke
+class TestClimateAuditFix:
+    """Test for audit-fix: skip initial read when gateway not connected."""
+
+    @pytest.mark.asyncio
+    async def test_async_added_to_hass_skips_initial_read_when_not_connected(
+        self, climate_mapped_entity
+    ):
+        """Initial temperature read must be skipped when gateway is not yet connected."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        from custom_components.luxor_living.climate import LuxorClimate
+
+        gateway = MagicMock()
+        gateway.connected = False
+        gateway.async_read_group_address = AsyncMock()
+        gateway.register_listener = MagicMock()
+        gateway.simulation_mode = False
+
+        entity = LuxorClimate(
+            coordinator=MagicMock(),
+            knx_gateway=gateway,
+            mapped_entity=climate_mapped_entity,
+            entry_id="test_entry",
+        )
+
+        await entity.async_added_to_hass()
+
+        gateway.async_read_group_address.assert_not_called()
+
+
+class TestClimateMutationTargets:
+    """Smoke tests targeting surviving mutants in LuxorClimate."""
+
+    # ── __init__: attribute + device_info key mutations ───────────────────
+
+    @pytest.mark.smoke
+    def test_init_unique_id_stored(self, climate_mapped_entity):
+        """Kill mutmut_5: _attr_unique_id = None."""
+        from custom_components.luxor_living.climate import LuxorClimate
+
+        entity = LuxorClimate(
+            coordinator=MagicMock(),
+            knx_gateway=MagicMock(),
+            mapped_entity=climate_mapped_entity,
+            entry_id="e1",
+        )
+        assert entity._attr_unique_id is not None
+        assert entity._attr_unique_id == climate_mapped_entity.unique_id
+
+    @pytest.mark.smoke
+    def test_device_info_has_correct_keys(self, climate_mapped_entity):
+        """Kill mutmut_10/15/20: dict key mutations ('IDENTIFIERS', 'XXThebenXX', etc.)."""
+        from custom_components.luxor_living.climate import LuxorClimate
+
+        entity = LuxorClimate(
+            coordinator=MagicMock(),
+            knx_gateway=MagicMock(),
+            mapped_entity=climate_mapped_entity,
+            entry_id="e1",
+        )
+        info = entity.device_info
+        assert "identifiers" in info
+        assert info.get("manufacturer") == "Theben"
+        assert info.get("model") == "LUXORliving"
+
+    # ── async_added_to_hass: datapoint key names ──────────────────────────
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_istwert_listener_registered(self, climate_mapped_entity):
+        """Kill mutmut_1: 'Istwert' → 'XXIstwertXX'."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        from custom_components.luxor_living.climate import LuxorClimate
+
+        gateway = MagicMock()
+        gateway.connected = True
+        gateway.register_listener = MagicMock()
+        gateway.async_read_group_address = AsyncMock()
+
+        entity = LuxorClimate(
+            coordinator=MagicMock(),
+            knx_gateway=gateway,
+            mapped_entity=climate_mapped_entity,
+            entry_id="e1",
+        )
+        await entity.async_added_to_hass()
+
+        registered = [c[0][0] for c in gateway.register_listener.call_args_list]
+        assert climate_mapped_entity.datapoints["Istwert"] in registered
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_target_setpoint_listener_registered(self, climate_mapped_entity):
+        """Kill mutmut_15: addr = self._datapoints[target_dp_key] → None."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        from custom_components.luxor_living.climate import LuxorClimate
+
+        gateway = MagicMock()
+        gateway.connected = True
+        gateway.register_listener = MagicMock()
+        gateway.async_read_group_address = AsyncMock()
+
+        entity = LuxorClimate(
+            coordinator=MagicMock(),
+            knx_gateway=gateway,
+            mapped_entity=climate_mapped_entity,
+            entry_id="e1",
+        )
+        await entity.async_added_to_hass()
+
+        registered = [c[0][0] for c in gateway.register_listener.call_args_list]
+        # StatusSollwert is in fixture, must be registered
+        assert climate_mapped_entity.datapoints["StatusSollwert"] in registered

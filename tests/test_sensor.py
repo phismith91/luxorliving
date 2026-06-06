@@ -99,6 +99,7 @@ def mock_humidity_entity():
     return entity
 
 
+@pytest.mark.smoke
 class TestLuxorLivingSensor:
     """Test LuxorLivingSensor entity."""
 
@@ -355,6 +356,206 @@ class TestAsyncSetupEntry:
         await async_setup_entry(mock_hass, mock_config_entry, async_add_entities)
 
         async_add_entities.assert_not_called()
+
+
+@pytest.mark.smoke
+class TestSensorRegistrationMutants:
+    """Kill surviving sensor.py mutants: super() args, datapoint dispatch, entity_type."""
+
+    def test_config_entry_stored_not_none(
+        self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+    ):
+        """Kill: super().__init__(coordinator, None, mapped_entity) mutation."""
+        sensor = LuxorLivingSensor(
+            mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+        )
+        assert sensor._config_entry is mock_config_entry
+
+    def test_datapoint_address_none_initially_then_set(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: _datapoint_address = '' instead of None mutation."""
+        entity = Mock()
+        entity.unique_id = "no_dp"
+        entity.name = "No DP Sensor"
+        entity.device_id = "d1"
+        entity.device_name = "Dev"
+        entity.entity_type = "unknowntype"
+        entity.datapoints = {}
+        entity.attributes = {}
+        entity.parameters = {}
+        sensor = LuxorLivingSensor(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        assert sensor._datapoint_address is None
+
+    def test_entity_type_lowercased_for_dispatch(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: entity_type.lower() → entity_type.upper() mutation."""
+        entity = Mock()
+        entity.unique_id = "upper_test"
+        entity.name = "Upper Sensor"
+        entity.device_id = "d1"
+        entity.device_name = "Dev"
+        entity.entity_type = "TEMPERATURE"  # uppercase — .lower() makes it match
+        entity.datapoints = {"Temperature": "5/1/1"}
+        entity.attributes = {}
+        entity.parameters = {}
+        sensor = LuxorLivingSensor(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        # With .lower(): "temperature" == "temperature" → address set
+        # With .upper(): "TEMPERATURE" == "temperature" → no match → None
+        assert sensor._datapoint_address == "5/1/1"
+
+    def test_temperature_dispatch_uses_temperature_key(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: 'temperature' == 'XXtemperatureXX' or 'TEMPERATURE' mutations."""
+        entity = Mock()
+        entity.unique_id = "t_dispatch"
+        entity.name = "T Sensor"
+        entity.device_id = "d1"
+        entity.device_name = "Dev"
+        entity.entity_type = "temperature"
+        entity.datapoints = {"Temperature": "6/1/1"}
+        entity.attributes = {}
+        entity.parameters = {}
+        sensor = LuxorLivingSensor(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        assert sensor._datapoint_address == "6/1/1"
+
+    def test_humidity_dispatch_uses_humidity_key(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: 'humidity' == 'XXhumidityXX' or 'HUMIDITY' mutations."""
+        entity = Mock()
+        entity.unique_id = "h_dispatch"
+        entity.name = "H Sensor"
+        entity.device_id = "d1"
+        entity.device_name = "Dev"
+        entity.entity_type = "humidity"
+        entity.datapoints = {"Humidity": "6/2/1"}
+        entity.attributes = {}
+        entity.parameters = {}
+        sensor = LuxorLivingSensor(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        assert sensor._datapoint_address == "6/2/1"
+
+    def test_humidity_datapoint_not_none_when_present(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: self._datapoint_address = None (instead of datapoints.get('Humidity'))."""
+        entity = Mock()
+        entity.unique_id = "h_none"
+        entity.name = "H Sensor"
+        entity.device_id = "d1"
+        entity.device_name = "Dev"
+        entity.entity_type = "humidity"
+        entity.datapoints = {"Humidity": "6/2/1"}
+        entity.attributes = {}
+        entity.parameters = {}
+        sensor = LuxorLivingSensor(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        assert sensor._datapoint_address is not None
+
+    @pytest.mark.asyncio
+    async def test_async_added_registers_listener_with_address(
+        self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+    ):
+        """Kill: register_listener(None, handler) mutation."""
+        sensor = LuxorLivingSensor(
+            mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+        )
+        await sensor.async_added_to_hass()
+        registered = [c[0][0] for c in mock_knx_gateway.register_listener.call_args_list]
+        assert "1/2/3" in registered
+
+
+@pytest.mark.smoke
+class TestSensorMutationTargets:
+    """Smoke tests targeting surviving mutants in LuxorLivingSensor."""
+
+    def test_native_value_initially_none(
+        self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+    ):
+        """Kill: _attr_native_value = None → some other default."""
+        sensor = LuxorLivingSensor(
+            mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+        )
+        assert sensor.native_value is None
+
+    def test_on_telegram_none_value_skips_state_update(
+        self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+    ):
+        """Kill: 'if normalized is None: return' guard removed."""
+        sensor = LuxorLivingSensor(
+            mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+        )
+        sensor.async_write_ha_state = Mock()
+        sensor._on_telegram("1/2/3", None)
+        assert sensor.native_value is None
+        sensor.async_write_ha_state.assert_not_called()
+
+    def test_normalize_value_len1_tuple_passthrough(
+        self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+    ):
+        """Kill: len == 2 → len == 1, would decode 1-byte tuples as DPT float."""
+        sensor = LuxorLivingSensor(
+            mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+        )
+        result = sensor._normalize_value((42,))
+        assert result == (42,)
+
+    def test_normalize_value_len3_tuple_passthrough(
+        self, mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+    ):
+        """Kill: len == 2 → len == 3, would decode 3-byte tuples as DPT float."""
+        sensor = LuxorLivingSensor(
+            mock_coordinator, mock_config_entry, mock_temperature_entity, mock_knx_gateway
+        )
+        result = sensor._normalize_value((1, 2, 3))
+        assert result == (1, 2, 3)
+
+    def test_datapoint_address_temperature_key(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: 'Temperature' key → 'temperature' case mutation."""
+        entity = Mock()
+        entity.unique_id = "temp_test"
+        entity.name = "Test"
+        entity.device_id = "d1"
+        entity.device_name = "Dev"
+        entity.entity_type = "temperature"
+        entity.datapoints = {"Temperature": "3/1/1"}
+        entity.attributes = {}
+        entity.parameters = {}
+        sensor = LuxorLivingSensor(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        assert sensor._datapoint_address == "3/1/1"
+
+    def test_datapoint_address_co2_key(self, mock_coordinator, mock_config_entry, mock_knx_gateway):
+        """Kill: 'CO2' key mutation in entity_type dispatch."""
+        entity = Mock()
+        entity.unique_id = "co2_test"
+        entity.name = "CO2 Sensor"
+        entity.device_id = "d1"
+        entity.device_name = "Dev"
+        entity.entity_type = "co2"
+        entity.datapoints = {"CO2": "4/1/1"}
+        entity.attributes = {}
+        entity.parameters = {}
+        sensor = LuxorLivingSensor(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        assert sensor._datapoint_address == "4/1/1"
+
+    def test_datapoint_address_fallback_first_value(
+        self, mock_coordinator, mock_config_entry, mock_knx_gateway
+    ):
+        """Kill: fallback 'list(datapoints.values())[0]' index mutation."""
+        entity = Mock()
+        entity.unique_id = "fallback_test"
+        entity.name = "Generic Sensor"
+        entity.device_id = "d1"
+        entity.device_name = "Dev"
+        entity.entity_type = "generic"
+        entity.datapoints = {"SomeValue": "5/1/1"}
+        entity.attributes = {}
+        entity.parameters = {}
+        sensor = LuxorLivingSensor(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        assert sensor._datapoint_address == "5/1/1"
 
 
 # Add import for DOMAIN constant

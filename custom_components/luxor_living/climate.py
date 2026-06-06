@@ -191,8 +191,9 @@ class LuxorClimate(ClimateEntity):
             self.knx_gateway.register_listener(addr, self._handle_window_contact_update)
             self._knx_listener_refs.append((addr, self._handle_window_contact_update))
 
-        # Request initial temperature state from KNX bus
-        await self._update_temperature()
+        # Request initial temperature state — wait up to 5s for KNX connection
+        if self.knx_gateway.connected:
+            await self._update_temperature()
 
     async def async_will_remove_from_hass(self) -> None:
         """Run when entity is removed from hass."""

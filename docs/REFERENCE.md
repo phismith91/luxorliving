@@ -9,7 +9,7 @@ This document is the **single source of truth** for all options, platforms, endp
 | Requirement | Value |
 | --- | --- |
 | Home Assistant | ≥ 2025.12.0 |
-| Python | ≥ 3.12 |
+| Python | ≥ 3.13 |
 | Gateway hardware | Theben LUXORliving IP1 (BAOS 777) |
 | Project file | LXP file exported from Theben LUXORPlug software |
 | Network | Gateway reachable on port 3671 (KNX/IP) and port 443 (HTTPS REST) |
