@@ -3,15 +3,71 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## Unreleased
+## [1.1.12] - 2026-06-03
 
-### Added
+### Fixed
 
-- Placeholder
+- **KNX bus freeze after ~47 h — race condition between session refresh and
+  reconnect handler (issue #141)**: The `_session_refresh_loop` calls `logout()`
+  which causes xknx to detect a disconnect and fire `_async_on_reconnect`
+  *concurrently*. Without synchronization both coroutines executed
+  `logout → login → enable_tunneling` in parallel, creating 2+ orphaned sessions
+  per refresh cycle instead of 1. After ~7 cycles the IP1 session table overflowed
+  and the KNX bus froze (L_DATA_CON timeouts on all group addresses, confirmed by
+  user log from 2026-06-03).
 
-### Changed
+  Fix: `asyncio.Lock` (`_session_lock`) shared by both coroutines. The reconnect
+  handler skips execution immediately if the refresh loop holds the lock; otherwise
+  it acquires the lock before any REST session operation. This guarantees only one
+  session is active at a time.
 
-- Placeholder
+- **Session refresh interval reduced 6 h → 4 h** for a wider safety margin against
+  IP1 session table saturation.
+
+- **Lingering `_session_refresh_task` in tests**: two gateway tests that called
+  `async_setup()` without a matching `async_disconnect()` left a background task
+  running, causing pytest-asyncio ≥ 1.3 to raise `Failed: Lingering task after test`.
+
+## [1.1.11] - 2026-05-25
+
+### Fixed
+
+- **KNX bus freeze after 24–72 h uptime (issue #141 — complete fix)**: The
+  reactive reconnect handler from v1.1.10 only recovered *after* XKNX detected
+  a connection drop. This leaves the "silent freeze" case open: the IP1's
+  session/channel table saturates and the bus stops routing telegrams while
+  XKNX stays "connected". Two-layer protection now in place:
+  - **Proactive** — `_session_refresh_loop` background task wakes every 6 h and
+    cycles the REST session (logout → login → enable_tunneling) to flush stale
+    table entries before saturation. The 6 h interval is well below the observed
+    ~7 h freeze onset.
+  - **Reactive** (unchanged from v1.1.10) — `_on_connection_state_changed`
+    callback fires when XKNX detects a disconnect and immediately re-authenticates.
+- **Blocking file read in event loop** (`overrides.py:55`): `load_overrides()`
+  was called directly in the async setup path, triggering HA's
+  "Detected blocking call to `open()`" warning. Moved to
+  `hass.async_add_executor_job` so the file I/O runs in the executor thread pool.
+
+## [1.1.10] - 2026-05-20
+
+### Fixed
+
+- **R718 climate entities missing when H6 present (issue #141 regression)**: v1.1.7 introduced
+  a global Istwert-address set to deduplicate climate entities. Since H6 actuators are processed
+  before R718 sensors, the set claimed every shared address and blocked all R718 entities.
+  Replaced with per-device H6 tracking (`(device_id, istwert_addr)` key): channels within the
+  *same* H6 device sharing one room sensor are still deduplicated correctly, but R718 thermostats
+  on separate devices always produce their own climate entity. A setup with 3×H6 + 13×R718 now
+  correctly shows 26 climate entities instead of 13.
+
+- **KNX gateway loses bus access after reconnect / ~24 h uptime (issue #141)**: xknx's
+  `auto_reconnect=True` restores the KNX/IP transport layer after a connection drop, but
+  the IP1's REST tunneling authorisation was never renewed. The gateway accepted the KNX
+  connection yet ignored all telegrams. A connection-state callback now fires on every
+  xknx state transition:
+  - `DISCONNECTED` → log warning, mark gateway unavailable (entities become unavailable in HA)
+  - `CONNECTED` (after reconnect) → logout → login → `enable_tunneling` → mark available again
+  Session expiry tracking corrected from 1 h to 23.5 h to match the IP1 firmware's actual limit.
 
 ---
 

@@ -155,8 +155,10 @@ class BAOSRestClient:
 
                 self.session_token = cookie
 
-                # Session timeout: 1 hour (API doesn't send expiresIn in plain cookie response)
-                timeout_seconds = 3600
+                # IP1 firmware enforces a hard 24 h session limit. Track expiry at 23.5 h
+                # so _ensure_authenticated() fails before the gateway drops the session.
+                # The reconnect handler in knx_gateway.py renews tunneling on actual drops.
+                timeout_seconds = int(23.5 * 3600)  # 84600 s
                 self.session_expires = datetime.now() + timedelta(seconds=timeout_seconds)
 
                 _LOGGER.info(f"Login successful. Session expires at {self.session_expires}")
@@ -227,10 +229,10 @@ class BAOSRestClient:
             payload = {"enabled": True}
             headers = self._get_auth_headers()
 
-            _LOGGER.debug(f"Enabling tunneling at {url}")
-            _LOGGER.debug(f"Tunneling headers: {headers}")
             _LOGGER.debug(
-                f"Session token: {self.session_token[:10]}..." if self.session_token else "No token"
+                "Enabling tunneling at %s (token: %s)",
+                url,
+                "set" if self.session_token else "missing",
             )
 
             async with self._session.put(url, json=payload, headers=headers) as response:
@@ -271,6 +273,7 @@ class BAOSRestClient:
 
         return cast(bool, await circuit_breaker.call(_enable_tunneling))
 
+    # NOT CALLED BY INTEGRATION — logout disables tunneling automatically; kept for completeness
     async def disable_tunneling(self) -> bool:
         """
         Disable KNX Tunneling with circuit breaker protection.
@@ -309,6 +312,7 @@ class BAOSRestClient:
             _LOGGER.error(f"Error disabling tunneling: {e}")
             return False
 
+    # NOT CALLED BY INTEGRATION — reserved for future diagnostics/health checks
     async def get_tunneling_status(self) -> Dict[str, Any]:
         """
         Get current tunneling status.
@@ -333,6 +337,7 @@ class BAOSRestClient:
                 _LOGGER.warning(f"Get tunneling status returned {response.status}")
                 return {"enabled": False, "connectedClients": 0, "maxSlots": 1}
 
+    # NOT CALLED BY INTEGRATION — reserved for future datapoint polling (superseded by knxprod static lookup)
     async def async_get_datapoints(self) -> Optional[list]:
         """
         Get all BAOS datapoints with their current values.
@@ -394,6 +399,7 @@ class BAOSRestClient:
             _LOGGER.error(f"Network error fetching datapoints: {e}")
             return None
 
+    # NOT CALLED BY INTEGRATION — reserved for future datapoint polling (superseded by knxprod static lookup)
     async def async_get_datapoint_details(
         self, datapoint_id: int, timeout: float = 2.0
     ) -> Optional[dict]:
@@ -458,6 +464,7 @@ class BAOSRestClient:
             _LOGGER.debug(f"Network error fetching datapoint {datapoint_id}: {e}")
             return None
 
+    # NOT CALLED BY INTEGRATION — reserved for future datapoint polling (superseded by knxprod static lookup)
     async def async_get_datapoint_value(
         self, datapoint_id: int, timeout: float = 2.0
     ) -> Optional[Any]:
@@ -571,6 +578,7 @@ class BAOSRestClient:
 
         return True
 
+    # NOT CALLED BY INTEGRATION — used only in tests; diagnostics.py uses knx_gateway attributes directly
     def get_diagnostics(self) -> Dict[str, Any]:
         """
         Get diagnostic information.
