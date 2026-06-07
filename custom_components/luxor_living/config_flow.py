@@ -497,7 +497,7 @@ class LuxorLivingOptionsFlow(OptionsFlow):
 
         current_push_auth_method = self.config_entry.options.get(
             "push_auth_method",
-            self.config_entry.data.get("push_auth_method", "none"),
+            self.config_entry.data.get("push_auth_method", "token"),
         )
 
         current_allow_diagnostics = self.config_entry.options.get(
@@ -561,7 +561,6 @@ class LuxorLivingOptionsFlow(OptionsFlow):
                             ): selector.SelectSelector(
                                 selector.SelectSelectorConfig(
                                     options=[
-                                        selector.SelectOptionDict(value="none", label="None"),
                                         selector.SelectOptionDict(value="token", label="Token"),
                                         selector.SelectOptionDict(value="bearer", label="Bearer"),
                                         selector.SelectOptionDict(value="hmac", label="HMAC"),
