@@ -1,0 +1,36 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the use case or limitation you're running into.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: What should the integration do differently?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any workarounds or other approaches you've tried?
+    validations:
+      required: false
+
+  - type: input
+    id: device
+    attributes:
+      label: Affected Device / Function Type
+      description: e.g. R718 climate, dimmer, shutter, sensor…
+      placeholder: "e.g. R718 thermostat"
+    validations:
+      required: false
