@@ -15,7 +15,7 @@ async def test_push_view_calls_gateway():
     # Prepare integration state and register
     entry = MagicMock()
     entry.entry_id = "test_entry_id"
-    entry.data = {}
+    entry.data = {"push_auth_method": "token", "push_token": "test-token"}
     entry.options = {}
 
     state = IntegrationState(mapper=MagicMock(), config={}, overrides={}, entry=entry)
@@ -36,7 +36,7 @@ async def test_push_view_calls_gateway():
     req.json = AsyncMock(
         return_value={"entry_id": entry.entry_id, "address": "1/2/3", "value": True}
     )
-    req.headers = {}
+    req.headers = {"X-LUXOR-PUSH-TOKEN": "test-token"}
 
     resp = await view.post(req)
 
@@ -155,11 +155,14 @@ async def test_push_view_hmac_auth():
 # ── Helper ────────────────────────────────────────────────────────────────────
 
 
+_DEFAULT_AUTH = {"push_auth_method": "token", "push_token": "test-token"}
+
+
 def _make_view(entry_data=None, entry_options=None, entry_id="test_entry"):
     """Return a (view, entry, gateway) triple wired for testing post()."""
     entry = MagicMock()
     entry.entry_id = entry_id
-    entry.data = entry_data or {}
+    entry.data = entry_data if entry_data is not None else dict(_DEFAULT_AUTH)
     entry.options = entry_options or {}
 
     from custom_components.luxor_living.integration_state import IntegrationState
@@ -183,7 +186,7 @@ def _make_view(entry_data=None, entry_options=None, entry_id="test_entry"):
 def _make_request(payload, headers=None):
     req = MagicMock()
     req.json = AsyncMock(return_value=payload)
-    req.headers = headers or {}
+    req.headers = headers if headers is not None else {"X-LUXOR-PUSH-TOKEN": "test-token"}
     return req
 
 
@@ -301,20 +304,53 @@ class TestPushViewMutationTargets:
 
     @pytest.mark.smoke
     @pytest.mark.asyncio
-    async def test_no_auth_config_defaults_to_none_method(self):
-        """Kill mutmut_90: 'none' → 'NONE' fallback.
+    async def test_no_auth_method_configured_returns_403(self):
+        """Push endpoint must reject requests when no auth method is configured.
 
-        When no push_auth_method is configured the endpoint must accept
-        unauthenticated requests.
+        Security requirement: unauthenticated access is never permitted.
+        An entry with no push_auth_method must not allow arbitrary KNX writes.
         """
-        view, entry, gateway = _make_view()  # no auth configured
+        view, entry, gateway = _make_view(entry_data={})
 
         resp = await view.post(
-            _make_request({"entry_id": entry.entry_id, "address": "1/2/3", "value": True})
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": True},
+                headers={},
+            )
         )
 
-        assert resp.status == 200
-        gateway.process_incoming_value.assert_awaited_once()
+        assert resp.status == 403
+        gateway.process_incoming_value.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_token_auth_without_configured_token_returns_403(self):
+        """Token auth with no token stored must reject, not allow all requests."""
+        view, entry, gateway = _make_view(entry_data={"push_auth_method": "token"})
+
+        resp = await view.post(
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": True},
+                headers={"X-LUXOR-PUSH-TOKEN": "anything"},
+            )
+        )
+
+        assert resp.status == 403
+        gateway.process_incoming_value.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_bearer_auth_without_configured_token_returns_403(self):
+        """Bearer auth with no token stored must reject, not allow all requests."""
+        view, entry, gateway = _make_view(entry_data={"push_auth_method": "bearer"})
+
+        resp = await view.post(
+            _make_request(
+                {"entry_id": entry.entry_id, "address": "1/2/3", "value": True},
+                headers={"Authorization": "Bearer anything"},
+            )
+        )
+
+        assert resp.status == 403
+        gateway.process_incoming_value.assert_not_called()
 
 
 @pytest.mark.smoke

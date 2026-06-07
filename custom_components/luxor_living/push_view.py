@@ -78,7 +78,7 @@ class LuxorLivingPushView(HomeAssistantView):
         # Token-based (legacy): header X-LUXOR-PUSH-TOKEN must match
         if auth_method == "token":
             token_header = request.headers.get("X-LUXOR-PUSH-TOKEN")
-            if configured_token and token_header != configured_token:
+            if not configured_token or token_header != configured_token:
                 from aiohttp import web
 
                 return web.json_response({"error": "forbidden"}, status=403)
@@ -86,12 +86,8 @@ class LuxorLivingPushView(HomeAssistantView):
         # Bearer token: Authorization: Bearer <token>
         elif auth_method == "bearer":
             auth_header = request.headers.get("Authorization", "")
-            if configured_token and not auth_header.startswith("Bearer "):
-                from aiohttp import web
-
-                return web.json_response({"error": "forbidden"}, status=403)
-            bearer = auth_header.split(" ", 1)[1] if " " in auth_header else ""
-            if configured_token and bearer != configured_token:
+            bearer = auth_header.split(" ", 1)[1] if auth_header.startswith("Bearer ") else ""
+            if not configured_token or bearer != configured_token:
                 from aiohttp import web
 
                 return web.json_response({"error": "forbidden"}, status=403)
@@ -118,7 +114,11 @@ class LuxorLivingPushView(HomeAssistantView):
 
                 return web.json_response({"error": "forbidden"}, status=403)
 
-        # else: none -> accept unauthenticated pushes
+        # No valid auth method configured — always reject
+        else:
+            from aiohttp import web
+
+            return web.json_response({"error": "forbidden"}, status=403)
         # Handle push
         try:
             gateway = state.get_gateway_or_raise()

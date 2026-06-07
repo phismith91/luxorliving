@@ -39,7 +39,7 @@ class LuxorLivingHealthView(HomeAssistantView):
 
     url = "/api/luxor_living/health"
     name = "api:luxor_living:health"
-    requires_auth = False  # Allow unauthenticated access for monitoring
+    requires_auth = True
 
     def __init__(self, hass: HomeAssistant) -> None:
         """Initialize the health check view."""
