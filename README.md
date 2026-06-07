@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.1.12](https://github.com/phismith91/luxorliving/releases/tag/v1.1.12-rc.1) — Fix session race condition: asyncio.Lock prevents duplicate orphaned sessions that caused KNX bus freeze after ~47 h
+**Current release:** [v1.1.13](https://github.com/phismith91/luxorliving/releases/tag/v1.1.13) — Security fix: push endpoint and health view now require authentication
 <!-- RELEASE_NOTES_END -->
 
 ---
