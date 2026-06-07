@@ -1,36 +1,87 @@
 name: Feature Request
-description: Suggest a new feature or improvement
+description:
+  Suggest a new feature or improvement for the LUXORliving integration
 labels: ["enhancement"]
 body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which part of the integration does this involve?
+      options:
+        - "Entity platform (Light / Switch / Climate / Cover / Sensor)"
+        - "LXP import / entity mapping"
+        - "Config Flow / Options Flow"
+        - "REST client / BAOS API communication"
+        - "KNX Gateway / protocol"
+        - "Coordinator / polling"
+        - "Diagnostics / logging"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: device_type
+    attributes:
+      label: LUXORliving Device / Function Type
+      description: Which Theben device or KNX function type is this about?
+      placeholder:
+        "e.g. R718 thermostat, dimmer actuator, shutter, binary input…"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: api_support
+    attributes:
+      label: Is this exposed by the IP1 REST API (BAOS)?
+      description:
+        Check the IP1 web interface or Theben docs — if the data point isn't
+        available via REST, it cannot be implemented without major changes.
+      options:
+        - "Yes — visible in the IP1 web interface / BAOS"
+        - "No / not sure"
+        - "Unknown"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: lxp_support
+    attributes:
+      label: Is this represented in the LXP export?
+      description:
+        Open your LXP file and check if this device or function type appears.
+        Required for automatic entity mapping.
+      options:
+        - "Yes — present in LXP export"
+        - "No — not in LXP"
+        - "Unknown"
+    validations:
+      required: false
+
+  - type: input
+    id: ip1_firmware
+    attributes:
+      label: IP1 Firmware Version
+      description:
+        Some features require a specific IP1 firmware. Found in the IP1 web
+        interface.
+      placeholder: "e.g. 1.3.2"
+    validations:
+      required: false
+
   - type: textarea
     id: problem
     attributes:
       label: What problem does this solve?
-      description: Describe the use case or limitation you're running into.
+      description:
+        What can't you do today? What workaround are you currently using?
     validations:
       required: true
 
   - type: textarea
     id: solution
     attributes:
-      label: Proposed Solution
-      description: What should the integration do differently?
+      label: Proposed Behavior
+      description: How should the integration behave after this is implemented?
     validations:
       required: true
-
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives Considered
-      description: Any workarounds or other approaches you've tried?
-    validations:
-      required: false
-
-  - type: input
-    id: device
-    attributes:
-      label: Affected Device / Function Type
-      description: e.g. R718 climate, dimmer, shutter, sensor…
-      placeholder: "e.g. R718 thermostat"
-    validations:
-      required: false
