@@ -585,3 +585,56 @@ class TestH6WithinDeviceDedup:
         mapper = _mapper([dev1, dev2])
         climate_entities = mapper.get_entities_by_platform(Platform.CLIMATE)
         assert len(climate_entities) == 2
+
+
+class TestUniqueIdCollisionGuard:
+    """Same-platform unique_id collisions must be disambiguated.
+
+    HA's entity registry silently drops the second entity of a platform when
+    two entities share a unique_id (real case: S1 Garage in the Kennel project,
+    light 'Prise eau garage' + binary_sensor 'Eingang C1' both on address 2089).
+    """
+
+    def test_same_platform_collision_gets_channel_suffix(self):
+        act1 = _actuator("Light A", 1, [_datapoint("OnOff", 2089)])
+        act2 = _actuator("Light B", 2, [_datapoint("OnOff", 2089)])
+        device = _device("S1 Garage", actuators=[act1, act2], device_id="s1")
+        mapper = _mapper([device])
+        lights = mapper.get_entities_by_platform(Platform.LIGHT)
+        assert len(lights) == 2
+        uids = {e.unique_id for e in lights}
+        assert len(uids) == 2, f"unique_ids collide: {uids}"
+        # First claimant keeps the legacy id so existing registries stay intact
+        assert lights[0].unique_id == "s1_2089"
+        assert lights[1].unique_id == "s1_2089_ch2"
+
+    def test_cross_platform_same_address_uids_unchanged(self):
+        """Cross-platform duplicates are HA-legal and must stay byte-stable.
+
+        Renaming either would orphan already-registered entities.
+        """
+        act = _actuator("Prise eau garage", 1, [_datapoint("OnOff", 2089)])
+        sen = _sensor("Eingang C1", 3, [_datapoint("OnOff", 2089)])
+        device = _device("S1 Garage", actuators=[act], sensors=[sen], device_id="s1")
+        mapper = _mapper([device])
+        light = mapper.get_entities_by_platform(Platform.LIGHT)[0]
+        binary = mapper.get_entities_by_platform(Platform.BINARY_SENSOR)[0]
+        assert light.unique_id == "s1_2089"
+        assert binary.unique_id == "s1_2089"
+
+    def test_no_suffix_when_no_collision(self):
+        act1 = _actuator("Light A", 1, [_datapoint("OnOff", 2089)])
+        act2 = _actuator("Light B", 2, [_datapoint("OnOff", 2090)])
+        device = _device("S1 Garage", actuators=[act1, act2], device_id="s1")
+        mapper = _mapper([device])
+        lights = mapper.get_entities_by_platform(Platform.LIGHT)
+        assert {e.unique_id for e in lights} == {"s1_2089", "s1_2090"}
+
+    def test_triple_collision_stays_unique(self):
+        acts = [_actuator(f"Light {i}", i, [_datapoint("OnOff", 2089)]) for i in (1, 2, 3)]
+        device = _device("S1 Garage", actuators=acts, device_id="s1")
+        mapper = _mapper([device])
+        lights = mapper.get_entities_by_platform(Platform.LIGHT)
+        uids = [e.unique_id for e in lights]
+        assert len(set(uids)) == 3, f"unique_ids collide: {uids}"
+        assert uids[0] == "s1_2089"

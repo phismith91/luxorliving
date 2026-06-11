@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, Callable, cast
@@ -19,7 +20,13 @@ from xknx.telegram.address import GroupAddress
 from xknx.telegram.apci import GroupValueRead, GroupValueResponse, GroupValueWrite
 
 from .circuit_breaker import CircuitBreakerOpenException, get_knx_circuit_breaker
-from .const import SESSION_REFRESH_INTERVAL
+from .const import (
+    NOT_CONNECTED_LOG_INTERVAL,
+    RECONNECT_COOLDOWN_SECS,
+    RECONNECT_FAILURE_THRESHOLD,
+    RECONNECT_FAILURE_WINDOW,
+    SESSION_REFRESH_INTERVAL,
+)
 from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
 
 _LOGGER = logging.getLogger(__name__)
@@ -73,6 +80,11 @@ class LuxorKNXGateway:
         self._unregister_connection_cb: Callable[[], None] | None = None
         self._session_refresh_task: asyncio.Task | None = None
         self._session_lock = asyncio.Lock()  # Prevents concurrent REST session operations
+        self._reconnect_failures: list[float] = (
+            []
+        )  # monotonic timestamps of recent DISCONNECTED events
+        self._last_refresh_at: float = 0.0  # monotonic time of last successful REST refresh
+        self._last_not_connected_log_at: float = 0.0  # rate-limit "not connected" ERROR logs
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
@@ -296,22 +308,33 @@ class LuxorKNXGateway:
                 _LOGGER.info(
                     "Proactive session refresh — cycling REST auth to prevent gateway lockup"
                 )
-                async with self._session_lock:
-                    try:
-                        await self._rest_client.logout()
-                        await self._rest_client.login(self.username, self.password)
-                        await self._rest_client.enable_tunneling()
-                        self._connected = True
-                        _LOGGER.info("Proactive session refresh complete")
-                    except Exception as err:
-                        _LOGGER.error(
-                            "Proactive session refresh failed (will retry in %ds): %s",
-                            SESSION_REFRESH_INTERVAL,
-                            err,
-                        )
+                try:
+                    await self._async_forced_refresh()
+                except Exception as err:
+                    _LOGGER.error(
+                        "Proactive session refresh failed (will retry in %ds): %s",
+                        SESSION_REFRESH_INTERVAL,
+                        err,
+                    )
         except asyncio.CancelledError:
             _LOGGER.debug("Session refresh loop cancelled")
             raise
+
+    async def _async_forced_refresh(self) -> None:
+        """Proactive REST refresh regardless of xknx connection state.
+
+        Used by both the periodic timer and the reconnect-failure watchdog.
+        Acquires _session_lock to prevent concurrent REST cycles.
+        """
+        if not self._rest_client or self.simulation_mode:
+            return
+        async with self._session_lock:
+            await self._rest_client.logout()
+            await self._rest_client.login(self.username, self.password)
+            await self._rest_client.enable_tunneling()
+            self._connected = True
+            self._last_refresh_at = time.monotonic()
+            _LOGGER.info("REST session refresh complete (host=%s)", self.host)
 
     def _on_connection_state_changed(self, state: XknxConnectionState) -> None:
         """Handle xknx connection state changes.
@@ -329,9 +352,25 @@ class LuxorKNXGateway:
                 self.host,
                 self.port,
             )
+            now = time.monotonic()
+            self._reconnect_failures = [
+                t for t in self._reconnect_failures if now - t < RECONNECT_FAILURE_WINDOW
+            ]
+            self._reconnect_failures.append(now)
+            if len(self._reconnect_failures) >= RECONNECT_FAILURE_THRESHOLD:
+                self._reconnect_failures.clear()
+                _LOGGER.warning(
+                    "KNX gateway %s:%s failed to reconnect %d times in %ds — forcing REST refresh",
+                    self.host,
+                    self.port,
+                    RECONNECT_FAILURE_THRESHOLD,
+                    RECONNECT_FAILURE_WINDOW,
+                )
+                self.hass.async_create_task(self._async_forced_refresh())
         elif state == XknxConnectionState.CONNECTING:
             _LOGGER.info("KNX gateway %s:%s reconnecting…", self.host, self.port)
         elif state == XknxConnectionState.CONNECTED:
+            self._reconnect_failures.clear()
             _LOGGER.info(
                 "KNX gateway %s:%s reconnected — re-enabling REST tunneling",
                 self.host,
@@ -352,6 +391,14 @@ class LuxorKNXGateway:
         """
         if not self._rest_client or self.simulation_mode:
             return
+        age = time.monotonic() - self._last_refresh_at
+        if age < RECONNECT_COOLDOWN_SECS:
+            _LOGGER.info(
+                "Recent REST refresh (%.0fs ago) — skipping reconnect re-auth (host=%s)",
+                age,
+                self.host,
+            )
+            return
         if self._session_lock.locked():
             _LOGGER.info(
                 "Session refresh in progress — skipping reconnect re-auth (host=%s)", self.host
@@ -364,6 +411,7 @@ class LuxorKNXGateway:
                 await self._rest_client.login(self.username, self.password)
                 await self._rest_client.enable_tunneling()
                 self._connected = True
+                self._last_refresh_at = time.monotonic()
                 _LOGGER.info("Tunneling re-enabled — entities are available again")
             except Exception as err:
                 _LOGGER.error(
@@ -467,7 +515,12 @@ class LuxorKNXGateway:
             return True
 
         if not self._connected or not self._xknx:
-            _LOGGER.error("Cannot read - not connected to KNX gateway")
+            now = time.monotonic()
+            if now - self._last_not_connected_log_at >= NOT_CONNECTED_LOG_INTERVAL:
+                _LOGGER.error("Cannot read - not connected to KNX gateway")
+                self._last_not_connected_log_at = now
+            else:
+                _LOGGER.debug("Cannot read - not connected to KNX gateway")
             return False
 
         try:

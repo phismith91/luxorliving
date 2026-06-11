@@ -305,3 +305,64 @@ def test_lxp_cache_functionality():
     # We can't easily test async cache here, but we verify cache exists
     assert _lxp_cache is not None
     assert _lxp_cache.get_stats()["max_size"] > 0
+
+
+LXP_KENNEL = (
+    Path(__file__).parent.parent
+    / "docs"
+    / "LuxorLiving parameter vMK7 - 43783 Kennel - 20260503.lxp"
+)
+
+
+@pytest.mark.skipif(not LXP_KENNEL.exists(), reason="Kennel LXP not found")
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_kennel_lxp_climate_entity_count():
+    """Regression guard for issue #141: H6 channels must all produce climate entities.
+
+    v1.1.7 introduced a global dedup-set that collapsed all H6 channels sharing
+    a room sensor into one entity per device. Fixed in v1.1.12 (per-device dedup).
+
+    Expected: 511 H6 → 5, 512 H6 → 6, 513 H6 → 2, 13× R718 = 26 total.
+    """
+    project = await LXPParser(LXP_KENNEL).parse()
+    mapper = EntityMapper(project)
+    climate = mapper.get_entities_by_platform(Platform.CLIMATE)
+
+    assert len(climate) == 26, f"Expected 26 climate entities, got {len(climate)}"
+
+    h6_511 = [e for e in climate if e.device_name == "511 H6"]
+    h6_512 = [e for e in climate if e.device_name == "512 H6"]
+    h6_513 = [e for e in climate if e.device_name == "513 H6"]
+    r718 = [e for e in climate if "R718" in e.device_name]
+
+    assert len(h6_511) == 5, f"511 H6: expected 5, got {len(h6_511)}"
+    assert len(h6_512) == 6, f"512 H6: expected 6, got {len(h6_512)}"
+    assert len(h6_513) == 2, f"513 H6: expected 2, got {len(h6_513)}"
+    assert len(r718) == 13, f"R718: expected 13, got {len(r718)}"
+
+    uids = [e.unique_id for e in climate]
+    assert len(set(uids)) == len(
+        uids
+    ), f"Duplicate climate unique_ids: {[u for u in uids if uids.count(u) > 1]}"
+
+
+@pytest.mark.skipif(not LXP_KENNEL.exists(), reason="Kennel LXP not found")
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_kennel_lxp_no_same_platform_uid_collision():
+    """All entities within a platform must have unique IDs across the full Kennel project."""
+    project = await LXPParser(LXP_KENNEL).parse()
+    mapper = EntityMapper(project)
+
+    for platform in (
+        Platform.LIGHT,
+        Platform.BINARY_SENSOR,
+        Platform.SENSOR,
+        Platform.COVER,
+        Platform.CLIMATE,
+    ):
+        entities = mapper.get_entities_by_platform(platform)
+        uids = [e.unique_id for e in entities]
+        collisions = [u for u in set(uids) if uids.count(u) > 1]
+        assert not collisions, f"{platform}: uid collisions {collisions}"

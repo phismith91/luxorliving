@@ -429,3 +429,168 @@ class TestDiscovery:
         gw.register_listener("5/0/1", cb)
         await gw.process_incoming_value("5/0/1", (0x0C, 0x04))
         cb.assert_called_once()
+
+
+# ── Reconnect watchdog ────────────────────────────────────────────────────────
+
+
+class TestReconnectWatchdog:
+    """5 DISCONNECTED events in window → schedule _async_forced_refresh."""
+
+    def test_five_disconnects_schedule_forced_refresh(self):
+        from xknx.core import XknxConnectionState
+
+        gw = _gw(simulation_mode=False)
+        gw._rest_client = AsyncMock()
+        gw._setup_complete = True
+
+        for _ in range(5):
+            gw._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
+
+        gw.hass.async_create_task.assert_called()
+
+    def test_four_disconnects_no_forced_refresh(self):
+        from xknx.core import XknxConnectionState
+
+        gw = _gw(simulation_mode=False)
+        gw._rest_client = AsyncMock()
+        gw._setup_complete = True
+
+        for _ in range(4):
+            gw._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
+
+        gw.hass.async_create_task.assert_not_called()
+
+    def test_connected_resets_failure_counter(self):
+        from xknx.core import XknxConnectionState
+
+        gw = _gw(simulation_mode=False)
+        gw._rest_client = AsyncMock()
+        gw._setup_complete = True
+
+        for _ in range(4):
+            gw._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
+        gw._on_connection_state_changed(XknxConnectionState.CONNECTED)
+        gw.hass.async_create_task.reset_mock()
+
+        for _ in range(4):
+            gw._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
+
+        gw.hass.async_create_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_forced_refresh_calls_rest_cycle(self):
+        gw = _gw(simulation_mode=False)
+        rest = AsyncMock()
+        gw._rest_client = rest
+
+        await gw._async_forced_refresh()
+
+        rest.logout.assert_called_once()
+        rest.login.assert_called_once_with("admin", "pass")
+        rest.enable_tunneling.assert_called_once()
+
+
+# ── Timestamp guard ───────────────────────────────────────────────────────────
+
+
+class TestTimestampGuard:
+    """_async_on_reconnect skips re-auth if a REST refresh happened recently."""
+
+    @pytest.mark.asyncio
+    async def test_skips_reconnect_if_recent_refresh(self):
+        import time
+
+        gw = _gw(simulation_mode=False)
+        rest = AsyncMock()
+        gw._rest_client = rest
+        gw._last_refresh_at = time.monotonic()  # just refreshed
+
+        await gw._async_on_reconnect()
+
+        rest.logout.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_proceeds_if_refresh_was_old(self):
+        import time
+
+        gw = _gw(simulation_mode=False)
+        rest = AsyncMock()
+        gw._rest_client = rest
+        gw._last_refresh_at = time.monotonic() - 60  # 60 s ago
+
+        await gw._async_on_reconnect()
+
+        rest.logout.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_forced_refresh_updates_timestamp(self):
+        import time
+
+        gw = _gw(simulation_mode=False)
+        rest = AsyncMock()
+        gw._rest_client = rest
+        gw._last_refresh_at = 0.0
+
+        before = time.monotonic()
+        await gw._async_forced_refresh()
+
+        assert gw._last_refresh_at >= before
+
+
+# ── Not-connected rate-limit ──────────────────────────────────────────────────
+
+
+class TestNotConnectedRateLimit:
+    """'Cannot read - not connected' logs ERROR once per interval, then DEBUG."""
+
+    @pytest.mark.asyncio
+    async def test_first_call_logs_error(self, caplog):
+        import logging
+
+        gw = _gw(simulation_mode=False)
+        gw._connected = False
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gw.async_read_group_address("1/2/3")
+
+        errors = [
+            r
+            for r in caplog.records
+            if r.levelno == logging.ERROR and "not connected" in r.getMessage()
+        ]
+        assert errors
+
+    @pytest.mark.asyncio
+    async def test_second_call_within_interval_logs_debug(self, caplog):
+        import logging
+
+        gw = _gw(simulation_mode=False)
+        gw._connected = False
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gw.async_read_group_address("1/2/3")
+            await gw.async_read_group_address("1/2/3")
+
+        not_connected = [r for r in caplog.records if "not connected" in r.getMessage()]
+        assert len(not_connected) == 2
+        assert not_connected[1].levelno == logging.DEBUG
+
+    @pytest.mark.asyncio
+    async def test_after_interval_logs_error_again(self, caplog):
+        import logging
+        import time
+
+        gw = _gw(simulation_mode=False)
+        gw._connected = False
+        gw._last_not_connected_log_at = time.monotonic() - 61
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gw.async_read_group_address("1/2/3")
+
+        errors = [
+            r
+            for r in caplog.records
+            if r.levelno == logging.ERROR and "not connected" in r.getMessage()
+        ]
+        assert errors

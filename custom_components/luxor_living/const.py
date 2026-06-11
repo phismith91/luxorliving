@@ -24,6 +24,10 @@ DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin"
 DEFAULT_SCAN_INTERVAL = 30  # seconds
 SESSION_REFRESH_INTERVAL = 4 * 3600  # proactive REST session refresh every 4 h
+RECONNECT_FAILURE_THRESHOLD = 5  # forced REST refresh after this many DISCONNECTED events in window
+RECONNECT_FAILURE_WINDOW = 60  # seconds window for counting consecutive disconnects
+RECONNECT_COOLDOWN_SECS = 30  # skip reconnect re-auth if a refresh happened this recently
+NOT_CONNECTED_LOG_INTERVAL = 60  # rate-limit "not connected" ERROR log to once per N seconds
 DEFAULT_LOG_LEVEL = "info"
 DEFAULT_DISCOVERY_TIMEOUT = 2.0  # seconds
 

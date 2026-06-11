@@ -75,6 +75,8 @@ class EntityMapper:
         for device in self.project.devices:
             self._map_device(device)
 
+        self._deduplicate_unique_ids()
+
         # Apply overrides via dependency injection
         try:
             self.override_handler.apply_overrides(self.entities)
@@ -97,6 +99,41 @@ class EntityMapper:
 
         _LOGGER.info("Mapped %d entities total", len(self.entities))
         return self.entities
+
+    def _deduplicate_unique_ids(self) -> None:
+        """Disambiguate same-platform unique_id collisions.
+
+        HA's entity registry is keyed on (platform, unique_id) — when two
+        entities of the same platform collide, HA silently drops the second
+        one. Address-based IDs can collide when two channels share a group
+        address (e.g. two actuator channels wired to the same switch GA).
+
+        The first claimant keeps its ID so existing registries stay intact;
+        later entities get a channel suffix. Cross-platform duplicates are
+        HA-legal and left untouched for the same reason.
+        """
+        seen: set[tuple[Platform, str]] = set()
+        for entity in self.entities:
+            key = (entity.platform, entity.unique_id)
+            if key not in seen:
+                seen.add(key)
+                continue
+            base = entity.unique_id
+            channel = entity.attributes.get("channel")
+            candidate = f"{base}_ch{channel}" if channel is not None else f"{base}_2"
+            counter = 2
+            while (entity.platform, candidate) in seen:
+                counter += 1
+                candidate = f"{base}_{counter}"
+            _LOGGER.warning(
+                "unique_id collision on %s '%s' (%s) — renamed to %s",
+                entity.platform,
+                entity.name,
+                base,
+                candidate,
+            )
+            entity.unique_id = candidate
+            seen.add((entity.platform, candidate))
 
     def _map_device(self, device: LXPDevice) -> None:
         """Map a single device to entities."""

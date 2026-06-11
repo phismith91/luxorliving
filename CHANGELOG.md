@@ -3,6 +3,43 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
+## [1.1.14] - 2026-06-11
+
+### Fixed
+
+- **H6 multi-channel unique_id collision (issue #141 regression)**: All
+  channels of a Theben H6 climate actuator shared the same `unique_id` when
+  the `UmschaltenHeitzenKühlen` datapoint (10247) appeared first in the LXP
+  file's datapoint map. Home Assistant silently dropped all but the first
+  entity, leaving 5 of 6 H6 channels invisible. A new post-processing pass in
+  `EntityMapper._deduplicate_unique_ids()` detects same-platform collisions and
+  appends a `_ch{n}` suffix to duplicates. The first claimant retains its
+  original id (existing registry entries survive upgrade).
+
+- **KNX reconnect watchdog — proactive REST refresh after repeated disconnects**:
+  When xknx fails to reconnect (5 DISCONNECTED events in 60 s without a
+  CONNECTED), the integration now immediately triggers a forced REST
+  logout+login+enable_tunneling cycle without waiting up to 4 h for the
+  periodic session-refresh timer. This resolves the long outage Marcus reported
+  where a spontaneous IP1 disconnect caused a 3.5 h bus-freeze.
+
+- **Logout-feedback-loop guard (timestamp guard)**: `_async_on_reconnect` now
+  skips re-auth if a REST refresh completed less than 30 s ago. Without this
+  guard, `logout()` caused the IP1 to send a `DisconnectRequest`, xknx
+  reconnected, CONNECTED fired, `_async_on_reconnect` called `logout` again —
+  cycling 3× before the session lock stopped it.
+
+- **Rate-limited "Cannot read - not connected" log**: The error is now logged
+  at ERROR level at most once per 60 s; subsequent calls within the window log
+  at DEBUG. During the 3.5 h outage this message appeared 44,820 times and
+  flooded the HA log, masking the real reconnect failure.
+
+### Added
+
+- Regression test suite for Kennel LXP file: verifies 26 climate entities (H6
+  and R718 channels), correct per-device counts, and no same-platform unique_id
+  collisions across all 5 entity platforms.
+
 ## [1.1.13] - 2026-06-07
 
 ### Security
