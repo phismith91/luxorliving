@@ -157,3 +157,39 @@ async def test_diagnostics_runtime_data_missing_returns_empty_sections():
 
     assert diag["diagnostics_allowed"] is True
     assert "knx_gateway" not in diag
+
+
+@pytest.mark.asyncio
+async def test_diagnostics_falls_back_to_hass_data_when_no_runtime_data():
+    """Legacy path: runtime_data absent → read from hass.data[DOMAIN][entry_id]."""
+    hass = MagicMock(spec=HomeAssistant)
+
+    mock_gateway = MagicMock()
+    mock_gateway._connected = True
+    mock_gateway._tunneling_enabled = False
+    mock_gateway.simulation_mode = False
+    mock_gateway.host = "172.16.0.5"
+    mock_gateway._datapoint_mapping = {}
+
+    entry = _entry(allow_diagnostics=True)
+    # runtime_data is None → forces the hass.data fallback branch
+    entry.runtime_data = None
+    hass.data = {DOMAIN: {entry.entry_id: {DATA_KNX_GATEWAY: mock_gateway}}}
+
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert diag["knx_gateway"]["host"] == "172.16.0.5"
+
+
+@pytest.mark.asyncio
+async def test_diagnostics_fallback_handles_bad_hass_data():
+    """Legacy path: hass.data without .get must not crash diagnostics."""
+    hass = MagicMock(spec=HomeAssistant)
+    entry = _entry(allow_diagnostics=True)
+    entry.runtime_data = None
+    hass.data = None  # .get(...) raises AttributeError → handled
+
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert diag["diagnostics_allowed"] is True
+    assert "knx_gateway" not in diag
