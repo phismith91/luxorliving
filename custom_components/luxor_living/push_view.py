@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import logging
 
@@ -77,8 +79,8 @@ class LuxorLivingPushView(HomeAssistantView):
 
         # Token-based (legacy): header X-LUXOR-PUSH-TOKEN must match
         if auth_method == "token":
-            token_header = request.headers.get("X-LUXOR-PUSH-TOKEN")
-            if not configured_token or token_header != configured_token:
+            token_header = request.headers.get("X-LUXOR-PUSH-TOKEN", "")
+            if not configured_token or not hmac.compare_digest(token_header, configured_token):
                 from aiohttp import web
 
                 return web.json_response({"error": "forbidden"}, status=403)
@@ -87,16 +89,13 @@ class LuxorLivingPushView(HomeAssistantView):
         elif auth_method == "bearer":
             auth_header = request.headers.get("Authorization", "")
             bearer = auth_header.split(" ", 1)[1] if auth_header.startswith("Bearer ") else ""
-            if not configured_token or bearer != configured_token:
+            if not configured_token or not hmac.compare_digest(bearer, configured_token):
                 from aiohttp import web
 
                 return web.json_response({"error": "forbidden"}, status=403)
 
         # HMAC: header X-LUXOR-PUSH-SIGNATURE hex-encoded sha256 of sorted-json using token as key
         elif auth_method == "hmac":
-            import hashlib
-            import hmac
-
             sig_header = request.headers.get("X-LUXOR-PUSH-SIGNATURE", "")
             if not configured_token or not sig_header:
                 from aiohttp import web

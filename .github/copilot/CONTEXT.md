@@ -42,7 +42,7 @@ LUXORliving KNX-Systeme über das IP1 Interface.
 
 **WICHTIG:** Development und Testing erfolgt remote via SSH!
 
-- **Production HA:** 100.97.159.88 (via Tailscale VPN)
+- **Production HA:** <HA_HOST> (via Tailscale VPN)
 - **User:** phil
 - **SSH Auth:** Key-based (`~/.ssh/id_rsa`) - passwortlos
 - **Integration Path:** `/config/custom_components/luxor_living/`
@@ -55,7 +55,7 @@ LUXORliving KNX-Systeme über das IP1 Interface.
 **Solution:** Immer `-F /dev/null` verwenden:
 
 ```bash
-ssh -F /dev/null phil@100.97.159.88 "command"
+ssh -F /dev/null <HA_USER>@<HA_HOST> "command"
 GIT_SSH_COMMAND='ssh -F /dev/null' git push
 ```
 
@@ -64,22 +64,22 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push
 1. **Sync zu Temp:**
 
    ```bash
-   ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
+   ssh -F /dev/null <HA_USER>@<HA_HOST> "mkdir -p /tmp/luxor_deploy"
    rsync -avz --exclude="__pycache__" \
      -e "ssh -F /dev/null" \
      custom_components/luxor_living/ \
-     phil@100.97.159.88:/tmp/luxor_deploy/
+     <HA_USER>@<HA_HOST>:/tmp/luxor_deploy/
    ```
 
 2. **Copy mit sudo:**
 
    ```bash
-   ssh -F /dev/null phil@100.97.159.88 \
+   ssh -F /dev/null <HA_USER>@<HA_HOST> \
      "sudo cp -r /tmp/luxor_deploy/* /config/custom_components/luxor_living/ && \
       rm -rf /tmp/luxor_deploy"
    ```
 
-3. **HA Restart:** Manuell via UI (http://100.97.159.88:8123)
+3. **HA Restart:** Manuell via UI (http://<HA_HOST>:8123)
    - Einstellungen → System → Neustart
    - **Note:** SSH restart funktioniert nicht!
 
@@ -92,7 +92,7 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push
 ### Hardware Setup (Production)
 
 ```
-Developer PC (Local) ──SSH──> Home Assistant (100.97.159.88)
+Developer PC (Local) ──SSH──> Home Assistant (<HA_HOST>)
          ↓                           ↓
     GitHub Repo                LAN: 192.168.1.x
                                      ↓

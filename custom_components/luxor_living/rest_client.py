@@ -15,6 +15,21 @@ from .circuit_breaker import get_rest_api_circuit_breaker
 _LOGGER = logging.getLogger(__name__)
 
 
+def _make_ssl_context() -> ssl.SSLContext:
+    """Return an SSL context for the IP1 gateway.
+
+    The IP1 ships with a self-signed certificate so hostname verification and
+    cert chain validation must be disabled. TLS 1.2+ is enforced; @SECLEVEL=0
+    (null/export ciphers) is intentionally NOT set — the gateway supports
+    standard cipher suites without it.
+    """
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    return ctx
+
+
 class AuthenticationError(Exception):
     """Raised when authentication fails."""
 
@@ -65,21 +80,8 @@ class BAOSRestClient:
 
     async def __aenter__(self):
         """Context manager entry."""
-
-        # Create SSL context in executor to avoid blocking event loop
-        def create_ssl_context():
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
-            ssl_context.set_ciphers("DEFAULT:@SECLEVEL=0")
-            return ssl_context
-
-        import asyncio
-
         loop = asyncio.get_running_loop()
-        ssl_context = await loop.run_in_executor(None, create_ssl_context)
-
+        ssl_context = await loop.run_in_executor(None, _make_ssl_context)
         connector = aiohttp.TCPConnector(ssl=ssl_context)
         self._session = aiohttp.ClientSession(
             connector=connector, connector_owner=True, timeout=aiohttp.ClientTimeout(total=30)
@@ -107,22 +109,8 @@ class BAOSRestClient:
             AuthenticationError: If login fails
         """
         if not self._session:
-            # Create SSL context in executor to avoid blocking event loop
-            def create_ssl_context():
-                ssl_context = ssl.create_default_context()
-                ssl_context.check_hostname = False
-                ssl_context.verify_mode = ssl.CERT_NONE
-
-                # TLS 1.2+ for security (legacy devices may need fallback)
-                ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
-                ssl_context.set_ciphers("DEFAULT:@SECLEVEL=0")
-                return ssl_context
-
-            import asyncio
-
             loop = asyncio.get_running_loop()
-            ssl_context = await loop.run_in_executor(None, create_ssl_context)
-
+            ssl_context = await loop.run_in_executor(None, _make_ssl_context)
             connector = aiohttp.TCPConnector(ssl=ssl_context)
             self._session = aiohttp.ClientSession(
                 connector=connector, connector_owner=True, timeout=aiohttp.ClientTimeout(total=30)

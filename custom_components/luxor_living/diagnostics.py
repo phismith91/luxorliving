@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Mapping, cast
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
@@ -11,10 +11,19 @@ from homeassistant.core import HomeAssistant
 from .const import (
     CONF_CONNECTION_TYPE,
     CONF_LXP_FILE,
+    CONF_PUSH_TOKEN,
+    CONF_PUSH_WS_TOKEN,
     CONF_SIMULATION_MODE,
     DATA_KNX_GATEWAY,
     DOMAIN,
 )
+
+_REDACTED = "**REDACTED**"
+_SENSITIVE_OPTION_KEYS = {CONF_PUSH_TOKEN, CONF_PUSH_WS_TOKEN}
+
+
+def _redact_options(options: Mapping[str, Any]) -> dict[str, Any]:
+    return {k: _REDACTED if k in _SENSITIVE_OPTION_KEYS else v for k, v in options.items()}
 
 
 async def async_get_config_entry_diagnostics(
@@ -26,11 +35,6 @@ async def async_get_config_entry_diagnostics(
     even though it only performs synchronous data aggregation. The async signature
     is required by the framework and allows for future async operations if needed.
     """
-    try:
-        data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
-    except (KeyError, AttributeError):
-        data = {}
-
     # Respect user consent for diagnostics. If disabled, return a minimal payload.
     allow_diagnostics = entry.options.get("allow_diagnostics", False)
     if not allow_diagnostics:
@@ -41,15 +45,28 @@ async def async_get_config_entry_diagnostics(
                 "version": entry.version,
                 "domain": entry.domain,
                 "state": entry.state.value if entry.state else "unknown",
-                "options": entry.options,
+                "options": _redact_options(entry.options),
             },
             "diagnostics_allowed": False,
         }
 
-    knx_gateway = data.get(DATA_KNX_GATEWAY)
-    mapper = data.get("mapper")
-    coordinator = data.get("coordinator")
-    overrides = data.get("overrides", {})
+    # Read integration state from runtime_data (current pattern since refactor).
+    # Fall back to hass.data for tests that still use the old pattern.
+    state = getattr(entry, "runtime_data", None)
+    if state is not None:
+        knx_gateway = getattr(state, "knx_gateway", None)
+        mapper = getattr(state, "mapper", None)
+        coordinator = getattr(state, "coordinator", None)
+        overrides = getattr(state, "overrides", {})
+    else:
+        try:
+            data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+        except (KeyError, AttributeError):
+            data = {}
+        knx_gateway = data.get(DATA_KNX_GATEWAY)
+        mapper = data.get("mapper")
+        coordinator = data.get("coordinator")
+        overrides = data.get("overrides", {})
 
     diagnostics: dict[str, Any] = {
         "diagnostics_allowed": True,
@@ -67,7 +84,7 @@ async def async_get_config_entry_diagnostics(
                 CONF_SIMULATION_MODE: entry.data.get(CONF_SIMULATION_MODE),
                 CONF_LXP_FILE: "**REDACTED**",  # May contain sensitive paths
             },
-            "options": entry.options,
+            "options": _redact_options(entry.options),
         },
         "overrides": {
             "count": len(overrides),

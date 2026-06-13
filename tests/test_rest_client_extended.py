@@ -12,6 +12,7 @@ from custom_components.luxor_living.rest_client import (
     AuthenticationError,
     BAOSRestClient,
     TunnelingError,
+    _make_ssl_context,
 )
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -262,6 +263,47 @@ class TestBAOSRestClientUnit:
         logged_messages = " ".join(str(call) for call in mock_logger.debug.call_args_list)
         assert "s3cr3t" not in logged_messages
         assert "admin" in logged_messages
+
+
+class TestSslContextAndSessionCreation:
+    """Cover the TLS helper and the login() lazy-session-creation path."""
+
+    def test_make_ssl_context_disables_verification_no_seclevel(self):
+        import ssl as _ssl
+
+        ctx = _make_ssl_context()
+
+        assert ctx.check_hostname is False
+        assert ctx.verify_mode == _ssl.CERT_NONE
+        assert ctx.minimum_version == _ssl.TLSVersion.TLSv1_2
+
+    @pytest.mark.asyncio
+    async def test_login_creates_session_when_missing(self):
+        """login() with no existing session must build one via _make_ssl_context."""
+        c = BAOSRestClient("10.0.0.9", use_https=True)
+        assert c._session is None
+
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.text = AsyncMock(return_value="tok123")
+        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_response.__aexit__ = AsyncMock(return_value=False)
+
+        created_session = MagicMock()
+        created_session.post = MagicMock(return_value=mock_response)
+
+        with (
+            patch("custom_components.luxor_living.rest_client.aiohttp.TCPConnector") as mock_conn,
+            patch(
+                "custom_components.luxor_living.rest_client.aiohttp.ClientSession",
+                return_value=created_session,
+            ),
+        ):
+            token = await c.login("admin", "pw")
+
+        assert token == "tok123"
+        assert c._session is created_session
+        mock_conn.assert_called_once()
 
 
 # ── Integration tests with mock HTTP server ───────────────────────────────────

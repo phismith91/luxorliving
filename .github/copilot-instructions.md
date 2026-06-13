@@ -16,7 +16,7 @@
 
 **Connection Details:**
 
-- **Host:** 100.97.159.88 (via Tailscale VPN)
+- **Host:** <HA_HOST> (via Tailscale VPN)
 - **User:** phil
 - **Auth:** SSH-Key (`~/.ssh/id_rsa`) - passwortlos
 - **Target:** `/config/custom_components/luxor_living/` (root-owned, needs
@@ -30,7 +30,7 @@
 **Lösung:** Immer `-F /dev/null` verwenden:
 
 ```bash
-ssh -F /dev/null phil@100.97.159.88 "command"
+ssh -F /dev/null <HA_USER>@<HA_HOST> "command"
 GIT_SSH_COMMAND='ssh -F /dev/null' git push
 ```
 
@@ -46,19 +46,19 @@ GIT_SSH_COMMAND='ssh -F /dev/null' git push
 
 ```bash
 # Step 1: Sync zu Temp (als User phil)
-ssh -F /dev/null phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
+ssh -F /dev/null <HA_USER>@<HA_HOST> "mkdir -p /tmp/luxor_deploy"
 rsync -avz --exclude="__pycache__" \
   -e "ssh -F /dev/null" \
   custom_components/luxor_living/ \
-  phil@100.97.159.88:/tmp/luxor_deploy/
+  <HA_USER>@<HA_HOST>:/tmp/luxor_deploy/
 
 # Step 2: Copy mit sudo (files owned by root)
-ssh -F /dev/null phil@100.97.159.88 \
+ssh -F /dev/null <HA_USER>@<HA_HOST> \
   "sudo cp -r /tmp/luxor_deploy/* /config/custom_components/luxor_living/ && \
    rm -rf /tmp/luxor_deploy"
 
 # Step 3: HA Restart (manuell!)
-# → http://100.97.159.88:8123
+# → http://<HA_HOST>:8123
 # → Einstellungen → System → Neustart
 ```
 
