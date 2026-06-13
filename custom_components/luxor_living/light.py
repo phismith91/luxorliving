@@ -135,24 +135,18 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
             ),
         )
 
-        # Register listeners for BOTH status AND control addresses
+        # Compute the addresses to listen on for BOTH status AND control:
         # GroupValueResponse can come on either address!
         # STATUS address: for state updates from other devices
         # CONTROL address: for GroupValueResponse to our GroupValueRead
+        # Actual register_listener() happens in async_added_to_hass (event loop),
+        # NOT here — __init__ runs in an executor thread (see _create_light_entity).
         self._listen_addresses: list[str] = []
 
         if self._address_status:
-            self._knx_gateway.register_listener(
-                self._address_status,
-                self._handle_knx_update,
-            )
             self._listen_addresses.append(self._address_status)
 
         if self._address_on and self._address_on != self._address_status:
-            self._knx_gateway.register_listener(
-                self._address_on,
-                self._handle_knx_update,
-            )
             self._listen_addresses.append(self._address_on)
 
     def _is_rate_limited(self) -> bool:
@@ -181,8 +175,13 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         return False
 
     async def async_added_to_hass(self) -> None:
-        """Entity added to hass - request current state from KNX."""
+        """Entity added to hass - register listeners and request current state."""
         await super().async_added_to_hass()
+
+        # Register KNX listeners here (event loop), not in __init__ (executor thread),
+        # so _listeners is mutated on-loop and async_write_ha_state is safe.
+        for addr in self._listen_addresses:
+            self._knx_gateway.register_listener(addr, self._handle_knx_update)
 
         # Wait for KNX connection to be ready (max 5 seconds)
         if not self._knx_gateway._connected:
@@ -327,8 +326,14 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         self._address_dim: str | None = mapped_entity.datapoints.get("Dimmen%")
         self._address_dim_rel: str | None = mapped_entity.datapoints.get("DimmenRel")
         self._address_dim_status: str | None = mapped_entity.datapoints.get("Status%")
+        # Brightness listeners are registered in async_added_to_hass (event loop),
+        # NOT here — __init__ runs in an executor thread.
 
-        # Register listeners for brightness updates (status and control)
+    async def async_added_to_hass(self) -> None:
+        """Entity added to hass - register listeners and request current state."""
+        await super().async_added_to_hass()
+
+        # Register brightness listeners on the event loop (status and control)
         if self._address_dim:
             self._knx_gateway.register_listener(
                 self._address_dim,
@@ -339,10 +344,6 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
                 self._address_dim_status,
                 self._handle_brightness_update,
             )
-
-    async def async_added_to_hass(self) -> None:
-        """Entity added to hass - request current state from KNX."""
-        await super().async_added_to_hass()
 
         # Request current brightness from KNX bus
         # Prefer reading Status% (current brightness), also read Dimmen% for completeness
@@ -397,12 +398,17 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         Args:
             **kwargs: Additional keyword arguments (brightness, etc.)
         """
+        self._raise_if_unavailable()
+        if self._is_rate_limited():
+            return
+
         brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
 
         # Send brightness value if dimming address exists
         if self._address_dim:
-            # Convert brightness (0-255) to percentage (0-100)
-            percent = int(brightness * 100 / 255)
+            # Convert brightness (0-255) to percentage (0-100). Floor at 1% for any
+            # non-zero brightness so that brightness 1-2 does not round to 0% (= off).
+            percent = max(1, round(brightness * 100 / 255)) if brightness > 0 else 0
             success = await self._knx_gateway.async_send_telegram(
                 self._address_dim,
                 percent,

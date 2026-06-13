@@ -261,14 +261,19 @@ class LuxorClimate(ClimateEntity):
 
         self._attr_hvac_mode = hvac_mode
 
-        # For H6, we don't have explicit on/off control
-        # Setting to OFF means setting temperature to minimum
+        # For H6 there is no explicit on/off control: OFF lowers the bus setpoint
+        # to minimum. We remember the user's setpoint (without clobbering
+        # _attr_target_temperature) so HEAT can restore it instead of min_temp.
         if hvac_mode == HVACMode.OFF:
-            await self.async_set_temperature(temperature=self._attr_min_temp)
-        elif hvac_mode == HVACMode.HEAT and self._attr_target_temperature:
-            # Restore previous temperature or set to default
-            temp = self._attr_target_temperature or 20.0
-            await self.async_set_temperature(temperature=temp)
+            if self._attr_target_temperature is not None:
+                self._setpoint_before_off = self._attr_target_temperature
+            if "Sollwert" in self._datapoints:
+                await self.knx_gateway.async_send_telegram(
+                    self._datapoints["Sollwert"], float(self._attr_min_temp), "temperature"
+                )
+        elif hvac_mode == HVACMode.HEAT:
+            temp = getattr(self, "_setpoint_before_off", None) or self._attr_target_temperature
+            await self.async_set_temperature(temperature=temp or 20.0)
 
         self.async_write_ha_state()
 

@@ -390,3 +390,70 @@ class TestReconfigureFlow:
         mock_update.assert_called_once()
         _, kwargs = mock_update.call_args
         assert kwargs["data_updates"]["lxp_file"] == "/new/path.lxp"
+
+
+@pytest.mark.smoke
+class TestRoutingReachabilityCheck:
+    """Routing gateway reachability check must not block the loop or leak the socket."""
+
+    @pytest.fixture(autouse=True)
+    def patch_unique_id_methods(self):
+        """Patch unique-id helpers (context is a mappingproxy on a bare flow)."""
+        with (
+            patch(
+                "custom_components.luxor_living.config_flow.LuxorLivingConfigFlow.async_set_unique_id",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "custom_components.luxor_living.config_flow.LuxorLivingConfigFlow._abort_if_unique_id_configured",
+            ),
+        ):
+            yield
+
+    @pytest.mark.asyncio
+    async def test_routing_socket_is_closed(self, mock_hass, mock_lxp_parser):
+        """The probe socket must be closed after the reachability check."""
+        flow = LuxorLivingConfigFlow()
+        flow.hass = mock_hass
+        flow._lxp_file = "/test.lxp"
+        flow._project_name = "Test Project"
+
+        mock_sock = MagicMock()
+        with patch("socket.create_connection", return_value=mock_sock):
+            await flow.async_step_gateway(
+                {
+                    "host": "224.0.23.12",
+                    "port": 3671,
+                    "username": "admin",
+                    "password": "admin",
+                    CONF_CONNECTION_TYPE: CONNECTION_TYPE_ROUTING,
+                    CONF_SIMULATION_MODE: False,
+                }
+            )
+
+        mock_sock.close.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_routing_check_runs_in_executor(self, mock_lxp_parser):
+        """Blocking socket check must be offloaded via async_add_executor_job."""
+        flow = LuxorLivingConfigFlow()
+        hass = MagicMock()
+        hass.config.path = MagicMock(return_value="/config/.storage/x.lxp")
+        hass.async_add_executor_job = AsyncMock(side_effect=lambda func, *a: func(*a))
+        flow.hass = hass
+        flow._lxp_file = "/test.lxp"
+        flow._project_name = "Test Project"
+
+        with patch("socket.create_connection", return_value=MagicMock()):
+            await flow.async_step_gateway(
+                {
+                    "host": "224.0.23.12",
+                    "port": 3671,
+                    "username": "admin",
+                    "password": "admin",
+                    CONF_CONNECTION_TYPE: CONNECTION_TYPE_ROUTING,
+                    CONF_SIMULATION_MODE: False,
+                }
+            )
+
+        hass.async_add_executor_job.assert_called()
