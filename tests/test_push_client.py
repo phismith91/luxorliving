@@ -10,9 +10,17 @@ from custom_components.luxor_living.integration_state import IntegrationState
 from custom_components.luxor_living.push_client import PushClient
 
 
+@pytest.mark.enable_socket
 @pytest.mark.asyncio
 async def test_push_client_receives_and_forwards(aiohttp_server, socket_enabled):
-    """PushClient should connect to websocket server and forward messages to gateway."""
+    """PushClient should connect to websocket server and forward messages to gateway.
+
+    Marked enable_socket because it opens a real aiohttp websocket: the standalone
+    ClientSession spawns aiohttp's _run_safe_shutdown_loop daemon thread, which trips
+    the HA test framework's strict thread-leak guard. This is the same reason the
+    rest_client integration tests carry this marker; both are excluded from the
+    gated suite via `-m "not enable_socket"`.
+    """
 
     # Create a simple websocket handler that sends one message and then waits
     async def ws_handler(request):
