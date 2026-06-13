@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.1.14](https://github.com/phismith91/luxorliving/releases/tag/v1.1.14) — KNX reconnect watchdog + H6 unique_id collision fix (log-analysis hardening)
+**Current release:** [v1.1.15](https://github.com/phismith91/luxorliving/releases/tag/v1.1.15-rc.1) — pre-release: diagnostics token redaction + TLS/timing-safe auth hardening, dimmer/climate/listener entity fixes, dead-switch removal, fully green gated suite
 <!-- RELEASE_NOTES_END -->
 
 ---

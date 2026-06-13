@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "luxor-living"
-version = "1.1.14"
+version = "1.1.15"
 description = "Theben LUXORliving integration for Home Assistant"
 readme = "README.md"
 license = {text = "MIT"}
