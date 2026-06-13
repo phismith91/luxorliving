@@ -5,6 +5,12 @@ documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-13
+
+Pre-release (`v1.2.0-rc.1`). Adds the two deferred quality-scale items on top of
+the 1.1.15-rc hardening. `v1.1.15-rc.1` remains published as a fallback. Not yet
+validated against real IP1 hardware — promote to stable only after a live check.
+
 ### Added
 
 - **Gold quality scale — stale-device handling**: implemented
@@ -20,6 +26,15 @@ documented in this file.
   creating and owning their own `ClientSession`. The REST client accepts an
   injected session (`verify_ssl=False` for the IP1's self-signed cert) and only
   closes sessions it owns; the push client no longer closes the shared session.
+
+### Tests
+
+- Added an end-to-end TLS integration test
+  (`test_inject_session_tls_integration.py`) exercising the injected-session
+  constructor path over a real self-signed-TLS socket (login → datapoints),
+  proving the handshake and auth flow work on the shared `verify_ssl=False`
+  session without hardware. Plus gated unit tests for the owned-session default
+  branch.
 
 ## [1.1.15] - 2026-06-13
 

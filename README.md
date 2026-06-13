@@ -5,7 +5,7 @@
 [![Codecov](https://codecov.io/gh/phismith91/luxorliving/branch/main/graph/badge.svg)](https://codecov.io/gh/phismith91/luxorliving)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/phismith91/luxorliving?include_prereleases)](https://github.com/phismith91/luxorliving/releases)
 [![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](https://github.com/phismith91/luxorliving/blob/main/LICENSE)
-[![Tests: 986](https://img.shields.io/badge/Tests-986%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
+[![Tests: 988](https://img.shields.io/badge/Tests-988%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
 
 Home Assistant custom integration for **Theben LUXORliving KNX** systems. Connects via the BAOS 777 IP1 gateway using a LXP project file for automatic entity discovery — lights, covers, climate, sensors and binary sensors, all created without any manual YAML.
 
@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.1.15](https://github.com/phismith91/luxorliving/releases/tag/v1.1.15-rc.1) — pre-release: diagnostics token redaction + TLS/timing-safe auth hardening, dimmer/climate/listener entity fixes, dead-switch removal, fully green gated suite
+**Current release:** [v1.2.0](https://github.com/phismith91/luxorliving/releases/tag/v1.2.0-rc.1) — pre-release: quality-scale Gold (manual stale-device removal) + Platinum (shared `async_get_clientsession` injection in the REST and push clients). Builds on the 1.1.15-rc hardening (diagnostics redaction, TLS/timing-safe auth, entity fixes). _Fallback: [v1.1.15-rc.1](https://github.com/phismith91/luxorliving/releases/tag/v1.1.15-rc.1) remains available._
 <!-- RELEASE_NOTES_END -->
 
 ---
