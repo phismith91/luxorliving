@@ -113,7 +113,8 @@ async def async_create_fix_flow(
     data: dict[str, Any] | None,
 ) -> RepairsFlow:
     """Create flow for specific issue."""
-    if issue_id == "authentication_failed":
+    # Issues are created with a per-entry suffix: "authentication_failed_<entry_id>"
+    if issue_id.startswith("authentication_failed"):
         entry_id = data.get("entry_id") if data else None
         if entry_id:
             entry = hass.config_entries.async_get_entry(entry_id)

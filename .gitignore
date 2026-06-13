@@ -100,3 +100,9 @@ docs/Hauptwohnung.lxp
 docs/Einliegerwohnung.lxp
 
 node_modules/.cache/prettier/
+
+# Local build / analysis artifacts (not tracked)
+mutants/
+coverage.json
+luxor_living.zip
+.codegraph/

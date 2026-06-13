@@ -59,11 +59,11 @@ class TestPlatformImports:
         assert LuxorLivingLight is not None
         assert LuxorLivingDimmableLight is not None
 
-    def test_switch_platform_import(self):
-        """Test switch platform imports."""
-        from custom_components.luxor_living.switch import LuxorLivingSwitch
+    def test_switch_platform_removed(self):
+        """Switch platform module was removed (no LXP role maps to it)."""
+        import importlib.util
 
-        assert LuxorLivingSwitch is not None
+        assert importlib.util.find_spec("custom_components.luxor_living.switch") is None
 
     def test_binary_sensor_platform_import(self):
         """Test binary sensor platform imports."""

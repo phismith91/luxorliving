@@ -20,12 +20,12 @@ format:  ## Auto-format code with black and isort
 	isort custom_components tests scripts
 	@echo "✅ Formatting complete"
 
-lint:  ## Run linters (flake8, bandit - advisory)
+lint:  ## Run linters (flake8, bandit - enforced)
 	@echo "🔍 Running linters..."
 	@echo "→ flake8..."
-	@flake8 custom_components tests scripts --exit-zero || true
+	@flake8 custom_components tests scripts
 	@echo "→ bandit..."
-	@bandit -r custom_components/luxor_living/ --exit-zero || true
+	@bandit -ll -r custom_components/luxor_living/
 	@echo "✅ Linting complete"
 
 check:  ## Check formatting without modifying files

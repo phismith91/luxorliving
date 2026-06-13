@@ -41,7 +41,6 @@ _LOGGER = logging.getLogger(__name__)
 # Only include implemented platforms
 PLATFORMS: list[Platform] = [
     Platform.LIGHT,
-    Platform.SWITCH,
     Platform.BINARY_SENSOR,
     Platform.SENSOR,
     Platform.CLIMATE,
@@ -54,7 +53,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug("LUXORliving setup started")
 
     # Register health check endpoint (only once per integration)
-    if not hasattr(hass.data.get(DOMAIN, {}), "_health_registered"):
+    if not hass.data.get(DOMAIN, {}).get("_health_registered"):
         hass.http.register_view(LuxorLivingHealthView(hass))
         hass.data.setdefault(DOMAIN, {})
         hass.data[DOMAIN]["_health_registered"] = True
