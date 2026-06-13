@@ -129,26 +129,26 @@ No build step required - Python source files are used directly.
 authentication.
 
 ```bash
-# Deploy to remote HA (100.97.159.88 via Tailscale)
+# Deploy to remote HA (<HA_HOST> via Tailscale)
 # Step 1: Sync to temp directory
-ssh phil@100.97.159.88 "mkdir -p /tmp/luxor_deploy"
+ssh <HA_USER>@<HA_HOST> "mkdir -p /tmp/luxor_deploy"
 rsync -avz --exclude="__pycache__" \
   -e "ssh" \
   custom_components/luxor_living/ \
-  phil@100.97.159.88:/tmp/luxor_deploy/
+  <HA_USER>@<HA_HOST>:/tmp/luxor_deploy/
 
 # Step 2: Copy with sudo to final location
-ssh phil@100.97.159.88 \
+ssh <HA_USER>@<HA_HOST> \
   "sudo cp -r /tmp/luxor_deploy/* /config/custom_components/luxor_living/ && \
    rm -rf /tmp/luxor_deploy"
 
-# Step 3: Restart HA manually via UI (http://100.97.159.88:8123)
+# Step 3: Restart HA manually via UI (http://<HA_HOST>:8123)
 # Settings → System → Restart
 ```
 
 **SSH Configuration:**
 
-- Host: `100.97.159.88` (Tailscale VPN)
+- Host: `<HA_HOST>` (Tailscale VPN)
 - User: `phil`
 - Auth: SSH key (`~/.ssh/id_rsa`)
 - Files owned by root → use `sudo` for file operations
