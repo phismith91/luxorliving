@@ -356,3 +356,33 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.debug("Error stopping push client during unload: %s", err)
 
     return bool(unload_ok)
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    device_entry: dr.DeviceEntry,
+) -> bool:
+    """Allow manual deletion of a device that the integration no longer provides.
+
+    A device is considered *current* when one of its identifiers matches either
+    the gateway hub (``(DOMAIN, entry_id)``) or a ``device_id`` still present in
+    the active entity mapping. Devices that disappeared from the LXP project
+    (stale devices) carry no matching identifier and may be removed by the user;
+    current devices are protected. When the entry has no runtime data (already
+    torn down) every device is treated as stale.
+    """
+    current_ids: set[str] = {config_entry.entry_id}
+
+    runtime_data = getattr(config_entry, "runtime_data", None)
+    mapper = getattr(runtime_data, "mapper", None)
+    if mapper is not None:
+        for mapped_entity in mapper.entities:
+            device_id = getattr(mapped_entity, "device_id", None)
+            if device_id:
+                current_ids.add(device_id)
+
+    return not any(
+        domain == DOMAIN and identifier in current_ids
+        for domain, identifier in device_entry.identifiers
+    )
