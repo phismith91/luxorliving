@@ -56,7 +56,13 @@ class BAOSRestClient:
     - PUT /rest/device/authtunneling → Enable/Disable Tunneling
     """
 
-    def __init__(self, host: str, port: int = 443, use_https: bool = True):
+    def __init__(
+        self,
+        host: str,
+        port: int = 443,
+        use_https: bool = True,
+        session: Optional[aiohttp.ClientSession] = None,
+    ):
         """
         Initialize REST API Client.
 
@@ -64,6 +70,10 @@ class BAOSRestClient:
             host: IP address of BAOS 777 device
             port: Port for REST API (default: 443 for HTTPS)
             use_https: Use HTTPS for secure communication (default: True, recommended)
+            session: Optional aiohttp session to use. When provided (e.g. Home
+                Assistant's shared ``async_get_clientsession``), the client uses
+                it and never closes it. When omitted, the client lazily creates
+                and owns its own session.
         """
         self.host = host
         self.port = port
@@ -76,22 +86,26 @@ class BAOSRestClient:
         self.session_expires: Optional[datetime] = None
         self.tunneling_enabled = False
 
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: Optional[aiohttp.ClientSession] = session
+        self._owns_session = session is None
+        self._timeout = aiohttp.ClientTimeout(total=30)
 
     async def __aenter__(self):
         """Context manager entry."""
-        loop = asyncio.get_running_loop()
-        ssl_context = await loop.run_in_executor(None, _make_ssl_context)
-        connector = aiohttp.TCPConnector(ssl=ssl_context)
-        self._session = aiohttp.ClientSession(
-            connector=connector, connector_owner=True, timeout=aiohttp.ClientTimeout(total=30)
-        )
+        if self._owns_session and self._session is None:
+            loop = asyncio.get_running_loop()
+            ssl_context = await loop.run_in_executor(None, _make_ssl_context)
+            connector = aiohttp.TCPConnector(ssl=ssl_context)
+            self._session = aiohttp.ClientSession(
+                connector=connector, connector_owner=True, timeout=self._timeout
+            )
         return self
 
     async def __aexit__(self, *args):
         """Context manager exit - ensures cleanup."""
         await self.logout()
-        if self._session:
+        # Only close sessions we own; injected (shared) sessions belong to HA.
+        if self._owns_session and self._session:
             await self._session.close()
 
     async def login(self, username: str, password: str) -> str:
@@ -108,12 +122,12 @@ class BAOSRestClient:
         Raises:
             AuthenticationError: If login fails
         """
-        if not self._session:
+        if not self._session and self._owns_session:
             loop = asyncio.get_running_loop()
             ssl_context = await loop.run_in_executor(None, _make_ssl_context)
             connector = aiohttp.TCPConnector(ssl=ssl_context)
             self._session = aiohttp.ClientSession(
-                connector=connector, connector_owner=True, timeout=aiohttp.ClientTimeout(total=30)
+                connector=connector, connector_owner=True, timeout=self._timeout
             )
 
         url = f"{self.base_url}/rest/login"
@@ -122,7 +136,7 @@ class BAOSRestClient:
         _LOGGER.debug(f"Attempting login to {url} with user: {username}")
 
         try:
-            async with self._session.post(url, json=payload) as response:
+            async with self._session.post(url, json=payload, timeout=self._timeout) as response:
                 _LOGGER.debug(f"Login response status: {response.status}")
                 _LOGGER.debug(f"Login response headers: {response.headers}")
 
@@ -177,7 +191,7 @@ class BAOSRestClient:
         _LOGGER.debug(f"Logging out from {url}")
 
         try:
-            async with self._session.post(url, headers=headers) as response:
+            async with self._session.post(url, headers=headers, timeout=self._timeout) as response:
                 if response.status in (200, 204):  # API returns 204 per docs
                     _LOGGER.info("Logout successful. Tunneling auto-deactivated.")
                 else:
@@ -223,7 +237,9 @@ class BAOSRestClient:
                 "set" if self.session_token else "missing",
             )
 
-            async with self._session.put(url, json=payload, headers=headers) as response:
+            async with self._session.put(
+                url, json=payload, headers=headers, timeout=self._timeout
+            ) as response:
                 _LOGGER.debug(f"Tunneling response status: {response.status}")
                 _LOGGER.debug(f"Tunneling response headers: {response.headers}")
 
@@ -282,7 +298,9 @@ class BAOSRestClient:
 
             _LOGGER.debug(f"Disabling tunneling at {url}")
 
-            async with self._session.put(url, json=payload, headers=headers) as response:
+            async with self._session.put(
+                url, json=payload, headers=headers, timeout=self._timeout
+            ) as response:
                 if response.status in (200, 204):
                     self.tunneling_enabled = False
                     _LOGGER.info(f"KNX Tunneling disabled ({response.status})")
@@ -318,7 +336,7 @@ class BAOSRestClient:
         url = f"{self.base_url}/rest/device/authtunneling"
         headers = self._get_auth_headers()
 
-        async with self._session.get(url, headers=headers) as response:
+        async with self._session.get(url, headers=headers, timeout=self._timeout) as response:
             if response.status == 200:
                 return cast(Dict[str, Any], await response.json())
             else:
@@ -358,7 +376,7 @@ class BAOSRestClient:
         _LOGGER.debug(f"🔍 Fetching all datapoints from {url}")
 
         try:
-            async with self._session.get(url, headers=headers) as response:
+            async with self._session.get(url, headers=headers, timeout=self._timeout) as response:
                 if response.status == 401:
                     _LOGGER.error("Session expired when fetching datapoints")
                     return None

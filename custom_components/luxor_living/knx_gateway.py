@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Any, Callable, cast
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from xknx import XKNX
 from xknx.core import XknxConnectionState
 from xknx.dpt import DPTArray, DPTBinary
@@ -142,7 +143,8 @@ class LuxorKNXGateway:
                 _LOGGER.debug("Step 1/3: REST API Login...")
 
                 # Create REST client and enter async context
-                self._rest_client = BAOSRestClient(self.host, port=self.http_port)
+                session = async_get_clientsession(self.hass, verify_ssl=False)
+                self._rest_client = BAOSRestClient(self.host, port=self.http_port, session=session)
                 await self._rest_client.__aenter__()
 
                 try:

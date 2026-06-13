@@ -3,6 +3,24 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **Gold quality scale — stale-device handling**: implemented
+  `async_remove_config_entry_device`. Devices that disappeared from the LXP
+  project (no longer mapped by the integration) can now be deleted manually from
+  the HA UI, while the gateway hub and active devices remain protected.
+
+### Changed
+
+- **Platinum quality scale — inject websession**: the REST client
+  (`BAOSRestClient`) and the WebSocket `PushClient` now obtain their aiohttp
+  session from Home Assistant's shared `async_get_clientsession(hass)` instead of
+  creating and owning their own `ClientSession`. The REST client accepts an
+  injected session (`verify_ssl=False` for the IP1's self-signed cert) and only
+  closes sessions it owns; the push client no longer closes the shared session.
+
 ## [1.1.15] - 2026-06-13
 
 Pre-release (`v1.1.15-rc.1`). Bundles the post-1.1.14 security, entity, and hygiene fixes plus a
