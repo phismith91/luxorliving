@@ -165,6 +165,18 @@ class TestAsyncCreateFixFlow:
         assert result.entry is entry
 
     @pytest.mark.asyncio
+    async def test_suffixed_issue_id_matches_repair_flow(self):
+        """Real issue IDs are 'authentication_failed_<entry_id>' — must still match."""
+        hass = MagicMock()
+        entry = _make_entry()
+        hass.config_entries.async_get_entry = MagicMock(return_value=entry)
+        result = await async_create_fix_flow(
+            hass, "authentication_failed_test_id", {"entry_id": "test_id"}
+        )
+        assert isinstance(result, LuxorLivingAuthenticationRepairFlow)
+        assert result.entry is entry
+
+    @pytest.mark.asyncio
     async def test_authentication_failed_issue_without_entry_id(self):
         from homeassistant.components.repairs import ConfirmRepairFlow
 

@@ -7,8 +7,8 @@ instructions, and quality gates are in `AGENTS.md`.
 ## Project Summary
 
 Home Assistant custom integration for Theben LUXORliving KNX systems via the
-IP1 interface (BAOS REST API). HACS-ready, Python 3.14, pytest, HA 2026.4.x.
-Current stable version: v1.1.6.
+IP1 interface (BAOS REST API). HACS-ready, Python 3.13+, pytest, HA 2026.4.x.
+Current stable version: v1.1.14.
 
 ## Dual-AI Setup
 
@@ -40,7 +40,7 @@ Never skip these — CI runs the exact same checks and will fail if you do not.
 | `.github/copilot/CONTEXT.md`      | Architecture, current status, agent coordination (SSoT) |
 | `.github/copilot-instructions.md` | SSH deployment & release workflow                       |
 | `custom_components/luxor_living/` | Integration source                                      |
-| `tests/`                          | pytest test suite (301 tests)                           |
+| `tests/`                          | pytest test suite (~1000 tests)                         |
 | `docs/`                           | Architecture, KNX implementation, installation          |
 
 ## Domain Reference (Copilot Agents)

@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "luxor-living"
-version = "1.1.11"
+version = "1.1.14"
 description = "Theben LUXORliving integration for Home Assistant"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "Phil", email = "phil@example.com"}
+    {name = "phismith91", email = "software@withphil.de"}
 ]
 requires-python = ">=3.13"
 dependencies = [
@@ -32,10 +32,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/phil/luxorliving"
-Documentation = "https://github.com/phil/luxorliving/docs"
-Repository = "https://github.com/phil/luxorliving.git"
-Issues = "https://github.com/phil/luxorliving/issues"
+Homepage = "https://github.com/phismith91/luxorliving"
+Documentation = "https://github.com/phismith91/luxorliving/tree/main/docs"
+Repository = "https://github.com/phismith91/luxorliving.git"
+Issues = "https://github.com/phismith91/luxorliving/issues"
 
 [project.optional-dependencies]
 dev = [

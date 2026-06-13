@@ -35,7 +35,7 @@ repos:
     rev: 1.7.9
     hooks:
       - id: bandit
-        args: [-ll, -r, custom_components/luxor_living, --exit-zero]
+        args: [-ll, -r, custom_components/luxor_living]
         pass_filenames: false
 
   # General file checks

@@ -15,10 +15,12 @@ class TestPlatformsList:
 
         assert Platform.LIGHT in PLATFORMS
 
-    def test_platforms_contains_switch(self):
+    def test_platforms_does_not_contain_switch(self):
+        # Switch platform was removed: no LXP role maps to Platform.SWITCH,
+        # switching actuators are exposed as `light`.
         from custom_components.luxor_living import PLATFORMS
 
-        assert Platform.SWITCH in PLATFORMS
+        assert Platform.SWITCH not in PLATFORMS
 
     def test_platforms_contains_binary_sensor(self):
         from custom_components.luxor_living import PLATFORMS
@@ -40,11 +42,11 @@ class TestPlatformsList:
 
         assert Platform.COVER in PLATFORMS
 
-    def test_platforms_has_exactly_six_entries(self):
+    def test_platforms_has_exactly_five_entries(self):
         """Kill: extra/missing platform mutations."""
         from custom_components.luxor_living import PLATFORMS
 
-        assert len(PLATFORMS) == 6
+        assert len(PLATFORMS) == 5
 
 
 @pytest.mark.smoke
