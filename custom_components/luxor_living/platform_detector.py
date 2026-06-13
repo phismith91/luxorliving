@@ -53,8 +53,15 @@ class PlatformDetector:
         "AirQuality": Platform.SENSOR,
         # Climate-related (future)
         "Setpoint": Platform.CLIMATE,
-        # Scene (future)
-        "Scene": Platform.SCENE,
+        # KNX scene addresses (DPT 17.001) carry a raw preset number (1–64) that
+        # activates a fixed state stored inside the KNX actuator. HA's own scene
+        # system is strictly more powerful: scenes can span any entity, include
+        # templates, and are managed via the UI. Exposing a KNX "Scene" role as
+        # a Platform.SCENE entity would offer no benefit over defining HA scenes
+        # that write directly to the relevant light/cover/climate entities.
+        # Deliberately set to None so the mapper skips these datapoints cleanly
+        # and logs a one-time info message instead of silently dropping them.
+        "Scene": None,
         # Generic
         "ZentralAus": None,  # Central off, not an entity
         "Panik": None,  # Panic mode, not an entity

@@ -184,7 +184,24 @@ class EntityMapper:
             # Determine platform based on primary roles
             determined_platform = self._determine_platform(datapoints)
             if determined_platform is None:
-                _LOGGER.debug("Skipping actuator %s - no mappable roles", actuator.name)
+                roles = list(datapoints.keys())
+                known_skipped = {r for r in roles if r in self.platform_detector.ROLE_TO_PLATFORM}
+                unknown = [r for r in roles if r not in self.platform_detector.ROLE_TO_PLATFORM]
+                if unknown:
+                    _LOGGER.warning(
+                        "Skipping actuator '%s' — unrecognised roles: %s. "
+                        "Please open an issue at https://github.com/phismith91/luxorliving/issues "
+                        "so this device type can be added.",
+                        actuator.name,
+                        unknown,
+                    )
+                else:
+                    _LOGGER.debug(
+                        "Skipping actuator '%s' — roles %s are intentionally unmapped "
+                        "(e.g. Scene, ZentralAus, status-only datapoints).",
+                        actuator.name,
+                        known_skipped,
+                    )
                 return
             platform = determined_platform
 
@@ -355,7 +372,24 @@ class EntityMapper:
                     entity_type = "binary_sensor"
 
         if platform is None:
-            _LOGGER.debug("Skipping sensor %s - no mappable roles", sensor.name)
+            roles = list(datapoints.keys())
+            known_skipped = {r for r in roles if r in self.platform_detector.ROLE_TO_PLATFORM}
+            unknown = [r for r in roles if r not in self.platform_detector.ROLE_TO_PLATFORM]
+            if unknown:
+                _LOGGER.warning(
+                    "Skipping sensor '%s' — unrecognised roles: %s. "
+                    "Please open an issue at https://github.com/phismith91/luxorliving/issues "
+                    "so this device type can be added.",
+                    sensor.name,
+                    unknown,
+                )
+            else:
+                _LOGGER.debug(
+                    "Skipping sensor '%s' — roles %s are intentionally unmapped "
+                    "(e.g. Scene, ZentralAus, status-only datapoints).",
+                    sensor.name,
+                    known_skipped,
+                )
             return
 
         # Generate unique ID - use the first datapoint address to ensure uniqueness
