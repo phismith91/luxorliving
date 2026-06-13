@@ -3,9 +3,9 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## [1.1.15-rc.1] - 2026-06-13
+## [1.1.15] - 2026-06-13
 
-Pre-release. Bundles the post-1.1.14 security, entity, and hygiene fixes plus a
+Pre-release (`v1.1.15-rc.1`). Bundles the post-1.1.14 security, entity, and hygiene fixes plus a
 fully green gated test suite. Two quality-scale items (Gold stale-device
 handling via `async_remove_config_entry_device`, Platinum websession injection)
 are deferred to separate branches.
