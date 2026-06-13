@@ -76,3 +76,22 @@ async def test_rest_client_does_not_close_injected_session():
     await client.__aexit__(None, None, None)
 
     shared.close.assert_not_called()
+
+
+@pytest.mark.smoke
+def test_rest_client_owns_session_when_none_injected():
+    """Without an injected session the client owns (and will create/close) its own."""
+    client = BAOSRestClient("1.2.3.4")
+    assert client._session is None
+    assert client._owns_session is True
+
+
+@pytest.mark.smoke
+@pytest.mark.asyncio
+async def test_rest_client_aexit_without_session_is_safe():
+    """Owned client that never opened a session exits cleanly (nothing to close)."""
+    client = BAOSRestClient("1.2.3.4")
+    client.logout = AsyncMock()
+    # _session is still None; the owned-but-empty branch must not raise.
+    await client.__aexit__(None, None, None)
+    client.logout.assert_awaited_once()
