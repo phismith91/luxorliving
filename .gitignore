@@ -53,6 +53,11 @@ benchmark_results.json
 
 # LXP project files (contain user data)
 *.lxp
+
+# ETS5/knxprod extracted working files and local reference docs
+*.knxprod_FILES/
+docs/*.pdf
+docs/home-assistant_*.zip
 *DEBUG_REPORT*
 *CRITICAL_SETUP*
 create_beta*.sh
