@@ -229,6 +229,29 @@ class TestLuxorClimate:
         # Should set temperature to minimum (5.0°C)
         mock_knx_gateway.async_send_telegram.assert_called_once_with(8198, 5.0, "temperature")
 
+    @pytest.mark.asyncio
+    async def test_off_then_heat_restores_previous_setpoint(
+        self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
+    ):
+        """OFF must not clobber the stored setpoint; HEAT restores it (not 5°C)."""
+        entity = LuxorClimate(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=climate_mapped_entity,
+            entry_id="test_entry",
+        )
+        entity.async_write_ha_state = MagicMock()
+        entity._attr_target_temperature = 22.0
+
+        await entity.async_set_hvac_mode(HVACMode.OFF)
+        mock_knx_gateway.async_send_telegram.reset_mock()
+
+        await entity.async_set_hvac_mode(HVACMode.HEAT)
+
+        # Must restore 22.0, NOT the 5.0 that OFF sent to the bus
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(8198, 22.0, "temperature")
+        assert entity.target_temperature == 22.0
+
     def test_available_when_connected(
         self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
     ):

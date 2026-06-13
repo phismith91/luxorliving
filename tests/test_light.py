@@ -101,8 +101,10 @@ class TestLuxorLivingLight:
         assert light._address_on == "1/2/3"
         assert light._address_status == "1/2/4"
 
-        # Should register listeners for status AND control addresses
-        assert mock_knx_gateway.register_listener.call_count == 2
+        # Listeners are deferred to async_added_to_hass (event loop), so __init__
+        # must compute the addresses but not register them yet.
+        assert mock_knx_gateway.register_listener.call_count == 0
+        assert set(light._listen_addresses) == {"1/2/3", "1/2/4"}
 
     @pytest.mark.asyncio
     async def test_async_added_to_hass(
@@ -499,13 +501,17 @@ class TestLightRegistrationMutants:
         )
         assert light._mapped_entity is mock_mapped_entity
 
-    def test_register_listener_uses_real_addresses(
+    @pytest.mark.asyncio
+    async def test_register_listener_uses_real_addresses(
         self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
     ):
         """Kill: register_listener(None, handler) mutations."""
-        _ = LuxorLivingLight(
+        mock_knx_gateway._connected = True
+        light = LuxorLivingLight(
             mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
         )
+        light.async_on_remove = Mock(return_value=lambda: None)
+        await light.async_added_to_hass()
         registered = [c[0][0] for c in mock_knx_gateway.register_listener.call_args_list]
         assert "1/2/3" in registered
         assert "1/2/4" in registered
@@ -520,10 +526,12 @@ class TestLightRegistrationMutants:
         assert "1/2/3" in light._listen_addresses
         assert "1/2/4" in light._listen_addresses
 
-    def test_same_address_not_registered_twice(
+    @pytest.mark.asyncio
+    async def test_same_address_not_registered_twice(
         self, mock_coordinator, mock_config_entry, mock_knx_gateway
     ):
         """Kill: _address_on != _address_status → or mutation (would register same addr twice)."""
+        mock_knx_gateway._connected = True
         entity = Mock()
         entity.unique_id = "same_addr"
         entity.name = "Same Addr Light"
@@ -533,7 +541,9 @@ class TestLightRegistrationMutants:
         entity.datapoints = {"OnOff": "1/1/1", "StatusOnOff": "1/1/1"}  # same address!
         entity.parameters = {}
         entity.attributes = {}
-        _ = LuxorLivingLight(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        light = LuxorLivingLight(mock_coordinator, mock_config_entry, entity, mock_knx_gateway)
+        light.async_on_remove = Mock(return_value=lambda: None)
+        await light.async_added_to_hass()
         assert mock_knx_gateway.register_listener.call_count == 1
 
     @pytest.mark.asyncio
@@ -586,13 +596,17 @@ class TestDimmableLightRegistrationMutants:
         )
         assert light.brightness == 255
 
-    def test_dimmable_register_listener_for_dim_address(
+    @pytest.mark.asyncio
+    async def test_dimmable_register_listener_for_dim_address(
         self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
     ):
         """Kill: register_listener(None, handler) for brightness address."""
-        _ = LuxorLivingDimmableLight(
+        mock_knx_gateway._connected = True
+        light = LuxorLivingDimmableLight(
             mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
         )
+        light.async_on_remove = Mock(return_value=lambda: None)
+        await light.async_added_to_hass()
         registered = [c[0][0] for c in mock_knx_gateway.register_listener.call_args_list]
         assert "1/2/7" in registered
 
@@ -604,3 +618,123 @@ class TestDimmableLightRegistrationMutants:
             mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
         )
         assert light._address_dim == "1/2/7"
+
+
+@pytest.mark.smoke
+class TestDimmerBrightnessFloor:
+    """Dimmer must not send 0% for a non-zero brightness (would switch light off)."""
+
+    @pytest.mark.asyncio
+    async def test_brightness_1_does_not_send_zero(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+
+        await light.async_turn_on(brightness=1)
+
+        percent = mock_knx_gateway.async_send_telegram.call_args[0][1]
+        assert percent >= 1, "brightness 1 must map to at least 1%, not 0% (off)"
+
+    @pytest.mark.asyncio
+    async def test_brightness_2_does_not_send_zero(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+
+        await light.async_turn_on(brightness=2)
+
+        percent = mock_knx_gateway.async_send_telegram.call_args[0][1]
+        assert percent >= 1
+
+    @pytest.mark.asyncio
+    async def test_brightness_255_sends_100(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+
+        await light.async_turn_on(brightness=255)
+
+        percent = mock_knx_gateway.async_send_telegram.call_args[0][1]
+        assert percent == 100
+
+
+@pytest.mark.smoke
+class TestDimmerTurnOnGuards:
+    """Dimmer turn_on must honour rate-limit and availability guards like the base class."""
+
+    @pytest.mark.asyncio
+    async def test_dimmer_turn_on_respects_rate_limit(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+        # Saturate the rate limiter
+        for _ in range(6):
+            light._is_rate_limited()
+        mock_knx_gateway.async_send_telegram.reset_mock()
+
+        await light.async_turn_on(brightness=128)
+
+        mock_knx_gateway.async_send_telegram.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_dimmer_turn_on_raises_when_unavailable(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        from homeassistant.exceptions import HomeAssistantError
+
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+        # Force unavailable
+        light._raise_if_unavailable = Mock(side_effect=HomeAssistantError("unavailable"))
+
+        with pytest.raises(HomeAssistantError):
+            await light.async_turn_on(brightness=128)
+
+        mock_knx_gateway.async_send_telegram.assert_not_called()
+
+
+@pytest.mark.smoke
+class TestLightListenerRegistrationTiming:
+    """Listeners must be registered in async_added_to_hass (event loop), not __init__ (executor)."""
+
+    def test_no_listener_registered_in_init(
+        self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+    ):
+        LuxorLivingLight(mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway)
+        mock_knx_gateway.register_listener.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_listeners_registered_after_added_to_hass(
+        self, mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+    ):
+        mock_knx_gateway._connected = True
+        light = LuxorLivingLight(
+            mock_coordinator, mock_config_entry, mock_mapped_entity, mock_knx_gateway
+        )
+        light.async_on_remove = Mock(return_value=lambda: None)
+
+        await light.async_added_to_hass()
+
+        assert mock_knx_gateway.register_listener.call_count >= 1
+
+    def test_no_brightness_listener_registered_in_init(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        mock_knx_gateway.register_listener.assert_not_called()

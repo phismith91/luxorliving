@@ -117,18 +117,27 @@ class TestLightInit:
         entity, _ = _make_light({"status@OnOff": "1/0/2"})
         assert entity._address_status == "1/0/2"
 
-    def test_registers_status_listener(self):
+    @pytest.mark.asyncio
+    async def test_registers_status_listener(self):
         entity, gateway = _make_light({"OnOff": "1/0/0", "status@OnOff": "1/0/2"})
+        entity.async_on_remove = MagicMock(return_value=lambda: None)
+        await entity.async_added_to_hass()
         addresses = [call[0][0] for call in gateway.register_listener.call_args_list]
         assert "1/0/2" in addresses
 
-    def test_registers_control_listener_when_different(self):
+    @pytest.mark.asyncio
+    async def test_registers_control_listener_when_different(self):
         entity, gateway = _make_light({"OnOff": "1/0/0", "status@OnOff": "1/0/2"})
+        entity.async_on_remove = MagicMock(return_value=lambda: None)
+        await entity.async_added_to_hass()
         addresses = [call[0][0] for call in gateway.register_listener.call_args_list]
         assert "1/0/0" in addresses
 
-    def test_no_duplicate_listener_same_address(self):
+    @pytest.mark.asyncio
+    async def test_no_duplicate_listener_same_address(self):
         entity, gateway = _make_light({"OnOff": "1/0/0", "status@OnOff": "1/0/0"})
+        entity.async_on_remove = MagicMock(return_value=lambda: None)
+        await entity.async_added_to_hass()
         assert gateway.register_listener.call_count == 1
 
     def test_initial_state_is_off(self):
@@ -296,13 +305,19 @@ class TestAsyncWillRemoveFromHass:
 
 
 class TestDimmableLight:
-    def test_registers_dim_listener(self):
+    @pytest.mark.asyncio
+    async def test_registers_dim_listener(self):
         entity, gateway = _make_dimmable({"OnOff": "1/0/0", "Dimmen%": "1/0/1", "Status%": "1/0/3"})
+        entity.async_on_remove = MagicMock(return_value=lambda: None)
+        await entity.async_added_to_hass()
         addresses = [call[0][0] for call in gateway.register_listener.call_args_list]
         assert "1/0/1" in addresses
 
-    def test_registers_dim_status_listener(self):
+    @pytest.mark.asyncio
+    async def test_registers_dim_status_listener(self):
         entity, gateway = _make_dimmable({"OnOff": "1/0/0", "Status%": "1/0/3"})
+        entity.async_on_remove = MagicMock(return_value=lambda: None)
+        await entity.async_added_to_hass()
         addresses = [call[0][0] for call in gateway.register_listener.call_args_list]
         assert "1/0/3" in addresses
 

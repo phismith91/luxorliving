@@ -246,11 +246,19 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             errors=errors,
                         )
                 else:
-                    # For Routing: validate gateway is reachable (ping check)
+                    # For Routing: validate gateway is reachable (ping check).
+                    # Run the blocking socket call in an executor and always close
+                    # the probe socket to avoid leaking a file descriptor.
                     try:
                         import socket
 
-                        socket.create_connection((user_input[CONF_HOST], 3671), timeout=2)
+                        def _probe() -> None:
+                            sock = socket.create_connection(
+                                (user_input[CONF_HOST], 3671), timeout=2
+                            )
+                            sock.close()
+
+                        await self.hass.async_add_executor_job(_probe)
                     except (ConnectionRefusedError, TimeoutError, OSError) as err:
                         _LOGGER.error(
                             "Cannot reach KNX/IP gateway at %s:%s - %s",

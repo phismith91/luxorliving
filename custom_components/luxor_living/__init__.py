@@ -9,6 +9,7 @@ from pathlib import Path
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 
 from .const import (
@@ -213,9 +214,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Connect to gateway
     if not await knx_gateway.async_setup():
         _LOGGER.error("Failed to connect to KNX gateway")
-        # Continue anyway in simulation mode
+        # In simulation mode we continue; otherwise raise ConfigEntryNotReady so
+        # Home Assistant retries setup automatically (e.g. after a brief outage)
+        # instead of leaving the integration permanently failed.
         if not simulation_mode:
-            return False
+            raise ConfigEntryNotReady(f"Unable to connect to KNX gateway at {host}")
 
     # Note: Datapoint mapping is now loaded in knx_gateway.async_setup()
     # via _async_load_datapoint_mapping() which fetches from REST API
