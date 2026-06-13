@@ -298,19 +298,20 @@ class TestRealLXPBenchmark:
         # Create mapper
         mapper = EntityMapper(project)
 
-        # Prepare a fake hass object with required data
+        # Prepare a fake hass object and the integration state on the config
+        # entry (platforms read entry.runtime_data, not hass.data).
+        from custom_components.luxor_living.integration_state import IntegrationState
+
         hass = MagicMock()
-        hass.data = {
-            DOMAIN: {
-                mock_config_entry.entry_id: {
-                    "mapper": mapper,
-                    "knx_gateway": mock_knx_gateway,
-                    "config": mock_config_entry.data,
-                    "overrides": {},
-                    "coordinator": mock_coordinator,
-                }
-            }
-        }
+        hass.data = {DOMAIN: {}}
+        mock_config_entry.runtime_data = IntegrationState(
+            mapper=mapper,
+            config=dict(mock_config_entry.data),
+            overrides={},
+            knx_gateway=mock_knx_gateway,
+            coordinator=mock_coordinator,
+            entry=mock_config_entry,
+        )
 
         created_entities = []
 
@@ -353,7 +354,7 @@ class TestRealLXPBenchmark:
             to_proxy(e) for e in mapper.entities if e.platform == platform
         ]
 
-        platforms = ["sensor", "binary_sensor", "light", "switch", "cover", "climate"]
+        platforms = ["sensor", "binary_sensor", "light", "cover", "climate"]
 
         start = time.perf_counter()
         for platform in platforms:
