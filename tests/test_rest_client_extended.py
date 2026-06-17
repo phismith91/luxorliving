@@ -1,8 +1,10 @@
 """Extended tests for BAOSRestClient covering uncovered branches."""
 
+import ssl
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import aiohttp
 import pytest
 import pytest_asyncio
 from aiohttp import web
@@ -217,6 +219,34 @@ class TestBAOSRestClientUnit:
     async def test_logout_no_token_is_noop(self):
         c = BAOSRestClient("10.0.0.1")
         await c.logout()  # must not raise, no session to clear
+
+    @pytest.mark.asyncio
+    async def test_login_retries_with_legacy_ssl_on_handshake_failure(self):
+        """Injected session should retry login with legacy SSL compatibility once."""
+        client = BAOSRestClient("10.0.0.1", session=MagicMock())
+        legacy_ssl_ctx = MagicMock()
+        client._build_ssl_context = AsyncMock(return_value=legacy_ssl_ctx)  # type: ignore[method-assign]
+
+        response = MagicMock()
+        response.status = 200
+        response.headers = {}
+        response.text = AsyncMock(return_value="retry_token")
+        ok_cm = AsyncMock()
+        ok_cm.__aenter__.return_value = response
+        ok_cm.__aexit__.return_value = None
+
+        ssl_error = aiohttp.ClientConnectorSSLError(
+            MagicMock(), ssl.SSLError("SSLV3_ALERT_HANDSHAKE_FAILURE")
+        )
+        client._session.post = MagicMock(side_effect=[ssl_error, ok_cm])  # type: ignore[union-attr]
+
+        token = await client.login("admin", "pass")
+
+        assert token == "retry_token"
+        assert client._request_ssl_context is legacy_ssl_ctx
+        client._build_ssl_context.assert_awaited_once_with(legacy_ciphers=True)  # type: ignore[attr-defined]
+        assert client._session.post.call_count == 2  # type: ignore[union-attr]
+        assert client._session.post.call_args_list[1].kwargs["ssl"] is legacy_ssl_ctx  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_get_tunneling_status_not_authenticated(self):

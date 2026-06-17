@@ -15,18 +15,20 @@ from .circuit_breaker import get_rest_api_circuit_breaker
 _LOGGER = logging.getLogger(__name__)
 
 
-def _make_ssl_context() -> ssl.SSLContext:
+def _make_ssl_context(*, legacy_ciphers: bool = False) -> ssl.SSLContext:
     """Return an SSL context for the IP1 gateway.
 
     The IP1 ships with a self-signed certificate so hostname verification and
-    cert chain validation must be disabled. TLS 1.2+ is enforced; @SECLEVEL=0
-    (null/export ciphers) is intentionally NOT set — the gateway supports
-    standard cipher suites without it.
+    cert chain validation must be disabled. TLS 1.2+ is enforced. For older
+    firmware variants, ``legacy_ciphers=True`` enables OpenSSL
+    ``DEFAULT:@SECLEVEL=0`` as a compatibility fallback.
     """
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    if legacy_ciphers:
+        ctx.set_ciphers("DEFAULT:@SECLEVEL=0")
     return ctx
 
 
@@ -89,12 +91,25 @@ class BAOSRestClient:
         self._session: Optional[aiohttp.ClientSession] = session
         self._owns_session = session is None
         self._timeout = aiohttp.ClientTimeout(total=30)
+        self._request_ssl_context: ssl.SSLContext | None = None
+
+    async def _build_ssl_context(self, *, legacy_ciphers: bool = False) -> ssl.SSLContext:
+        """Build gateway SSL context in executor to avoid event-loop blocking."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            None, lambda: _make_ssl_context(legacy_ciphers=legacy_ciphers)
+        )
+
+    def _ssl_request_kwargs(self) -> dict[str, ssl.SSLContext]:
+        """Return optional request SSL override for compatibility mode."""
+        if self._request_ssl_context is None:
+            return {}
+        return {"ssl": self._request_ssl_context}
 
     async def __aenter__(self):
         """Context manager entry."""
         if self._owns_session and self._session is None:
-            loop = asyncio.get_running_loop()
-            ssl_context = await loop.run_in_executor(None, _make_ssl_context)
+            ssl_context = await self._build_ssl_context()
             connector = aiohttp.TCPConnector(ssl=ssl_context)
             self._session = aiohttp.ClientSession(
                 connector=connector, connector_owner=True, timeout=self._timeout
@@ -123,8 +138,7 @@ class BAOSRestClient:
             AuthenticationError: If login fails
         """
         if not self._session and self._owns_session:
-            loop = asyncio.get_running_loop()
-            ssl_context = await loop.run_in_executor(None, _make_ssl_context)
+            ssl_context = await self._build_ssl_context()
             connector = aiohttp.TCPConnector(ssl=ssl_context)
             self._session = aiohttp.ClientSession(
                 connector=connector, connector_owner=True, timeout=self._timeout
@@ -136,7 +150,12 @@ class BAOSRestClient:
         _LOGGER.debug(f"Attempting login to {url} with user: {username}")
 
         try:
-            async with self._session.post(url, json=payload, timeout=self._timeout) as response:
+            async with self._session.post(
+                url,
+                json=payload,
+                timeout=self._timeout,
+                **self._ssl_request_kwargs(),
+            ) as response:
                 _LOGGER.debug(f"Login response status: {response.status}")
                 _LOGGER.debug(f"Login response headers: {response.headers}")
 
@@ -169,6 +188,18 @@ class BAOSRestClient:
                 assert self.session_token is not None
                 return self.session_token
 
+        except aiohttp.ClientConnectorSSLError as e:
+            if self._request_ssl_context is None:
+                _LOGGER.warning(
+                    "TLS handshake failed for %s; retrying with legacy cipher compatibility mode",
+                    self.host,
+                )
+                self._request_ssl_context = await self._build_ssl_context(legacy_ciphers=True)
+                try:
+                    return await self.login(username, password)
+                except aiohttp.ClientError as inner:
+                    raise AuthenticationError(f"Network error during login: {inner}")
+            raise AuthenticationError(f"Network error during login: {e}")
         except aiohttp.ClientError as e:
             raise AuthenticationError(f"Network error during login: {e}")
 
@@ -191,7 +222,9 @@ class BAOSRestClient:
         _LOGGER.debug(f"Logging out from {url}")
 
         try:
-            async with self._session.post(url, headers=headers, timeout=self._timeout) as response:
+            async with self._session.post(
+                url, headers=headers, timeout=self._timeout, **self._ssl_request_kwargs()
+            ) as response:
                 if response.status in (200, 204):  # API returns 204 per docs
                     _LOGGER.info("Logout successful. Tunneling auto-deactivated.")
                 else:
@@ -238,7 +271,11 @@ class BAOSRestClient:
             )
 
             async with self._session.put(
-                url, json=payload, headers=headers, timeout=self._timeout
+                url,
+                json=payload,
+                headers=headers,
+                timeout=self._timeout,
+                **self._ssl_request_kwargs(),
             ) as response:
                 _LOGGER.debug(f"Tunneling response status: {response.status}")
                 _LOGGER.debug(f"Tunneling response headers: {response.headers}")
@@ -299,7 +336,11 @@ class BAOSRestClient:
             _LOGGER.debug(f"Disabling tunneling at {url}")
 
             async with self._session.put(
-                url, json=payload, headers=headers, timeout=self._timeout
+                url,
+                json=payload,
+                headers=headers,
+                timeout=self._timeout,
+                **self._ssl_request_kwargs(),
             ) as response:
                 if response.status in (200, 204):
                     self.tunneling_enabled = False
@@ -336,7 +377,9 @@ class BAOSRestClient:
         url = f"{self.base_url}/rest/device/authtunneling"
         headers = self._get_auth_headers()
 
-        async with self._session.get(url, headers=headers, timeout=self._timeout) as response:
+        async with self._session.get(
+            url, headers=headers, timeout=self._timeout, **self._ssl_request_kwargs()
+        ) as response:
             if response.status == 200:
                 return cast(Dict[str, Any], await response.json())
             else:
@@ -376,7 +419,9 @@ class BAOSRestClient:
         _LOGGER.debug(f"🔍 Fetching all datapoints from {url}")
 
         try:
-            async with self._session.get(url, headers=headers, timeout=self._timeout) as response:
+            async with self._session.get(
+                url, headers=headers, timeout=self._timeout, **self._ssl_request_kwargs()
+            ) as response:
                 if response.status == 401:
                     _LOGGER.error("Session expired when fetching datapoints")
                     return None
@@ -444,7 +489,9 @@ class BAOSRestClient:
 
         try:
             async with asyncio.timeout(timeout):
-                async with self._session.get(url, headers=headers) as response:
+                async with self._session.get(
+                    url, headers=headers, **self._ssl_request_kwargs()
+                ) as response:
                     if response.status == 401:
                         _LOGGER.debug(f"Session expired when fetching datapoint {datapoint_id}")
                         return None
@@ -505,7 +552,9 @@ class BAOSRestClient:
 
         try:
             async with asyncio.timeout(timeout):
-                async with self._session.get(url, headers=headers) as response:
+                async with self._session.get(
+                    url, headers=headers, **self._ssl_request_kwargs()
+                ) as response:
                     if response.status == 401:
                         _LOGGER.error(f"Session expired when fetching datapoint {datapoint_id}")
                         return None
