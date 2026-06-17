@@ -94,14 +94,22 @@ class BAOSRestClient:
         self._request_ssl_context: ssl.SSLContext | None = None
 
     async def _build_ssl_context(self, *, legacy_ciphers: bool = False) -> ssl.SSLContext:
-        """Build gateway SSL context in executor to avoid event-loop blocking."""
+        """Build gateway SSL context in executor to avoid event-loop blocking.
+
+        When ``legacy_ciphers`` is enabled, the context permits
+        ``DEFAULT:@SECLEVEL=0`` for older IP1 firmware compatibility.
+        """
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             None, lambda: _make_ssl_context(legacy_ciphers=legacy_ciphers)
         )
 
-    def _ssl_request_kwargs(self) -> dict[str, ssl.SSLContext]:
-        """Return optional request SSL override for compatibility mode."""
+    def _ssl_request_kwargs(self) -> dict[str, object]:
+        """Return request SSL kwargs.
+
+        Empty until legacy compatibility mode is activated after a handshake
+        failure; then returns ``{"ssl": <legacy_context>}`` for all requests.
+        """
         if self._request_ssl_context is None:
             return {}
         return {"ssl": self._request_ssl_context}
@@ -149,7 +157,8 @@ class BAOSRestClient:
 
         _LOGGER.debug(f"Attempting login to {url} with user: {username}")
 
-        try:
+        async def _attempt_login_request() -> str:
+            """Execute one login HTTP request and return the session token."""
             async with self._session.post(
                 url,
                 json=payload,
@@ -188,15 +197,21 @@ class BAOSRestClient:
                 assert self.session_token is not None
                 return self.session_token
 
+        try:
+            return await _attempt_login_request()
+
         except aiohttp.ClientConnectorSSLError as e:
+            # Retry only once: after legacy context is set, later failures propagate.
             if self._request_ssl_context is None:
                 _LOGGER.warning(
-                    "TLS handshake failed for %s; retrying with legacy cipher compatibility mode",
+                    "TLS handshake failed for %s; retrying with legacy cipher "
+                    "compatibility mode (reduced TLS security via SECLEVEL=0): %s",
                     self.host,
+                    e,
                 )
                 self._request_ssl_context = await self._build_ssl_context(legacy_ciphers=True)
                 try:
-                    return await self.login(username, password)
+                    return await _attempt_login_request()
                 except aiohttp.ClientError as inner:
                     raise AuthenticationError(f"Network error during login: {inner}")
             raise AuthenticationError(f"Network error during login: {e}")

@@ -18,6 +18,7 @@ from custom_components.luxor_living.rest_client import (
 )
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+MOCK_SSL_ERROR_CODE = 1  # Synthetic OpenSSL error code used for mocked SSLError in tests.
 
 
 def _authenticated_client(host="192.168.1.1"):
@@ -236,7 +237,7 @@ class TestBAOSRestClientUnit:
         ok_cm.__aexit__.return_value = None
 
         ssl_error = aiohttp.ClientConnectorSSLError(
-            MagicMock(), ssl.SSLError("SSLV3_ALERT_HANDSHAKE_FAILURE")
+            MagicMock(), ssl.SSLError(MOCK_SSL_ERROR_CODE, "SSLV3_ALERT_HANDSHAKE_FAILURE")
         )
         client._session.post = MagicMock(side_effect=[ssl_error, ok_cm])  # type: ignore[union-attr]
 
@@ -247,6 +248,21 @@ class TestBAOSRestClientUnit:
         client._build_ssl_context.assert_awaited_once_with(legacy_ciphers=True)  # type: ignore[attr-defined]
         assert client._session.post.call_count == 2  # type: ignore[union-attr]
         assert client._session.post.call_args_list[1].kwargs["ssl"] is legacy_ssl_ctx  # type: ignore[union-attr]
+
+    @pytest.mark.asyncio
+    async def test_login_legacy_retry_failure_raises_authentication_error(self):
+        """If legacy retry also fails, login returns AuthenticationError."""
+        client = BAOSRestClient("10.0.0.1", session=MagicMock())
+        legacy_ssl_ctx = MagicMock()
+        client._build_ssl_context = AsyncMock(return_value=legacy_ssl_ctx)  # type: ignore[method-assign]
+
+        ssl_error = aiohttp.ClientConnectorSSLError(
+            MagicMock(), ssl.SSLError(MOCK_SSL_ERROR_CODE, "SSLV3_ALERT_HANDSHAKE_FAILURE")
+        )
+        client._session.post = MagicMock(side_effect=[ssl_error, ssl_error])  # type: ignore[union-attr]
+
+        with pytest.raises(AuthenticationError, match="Network error during login"):
+            await client.login("admin", "pass")
 
     @pytest.mark.asyncio
     async def test_get_tunneling_status_not_authenticated(self):
