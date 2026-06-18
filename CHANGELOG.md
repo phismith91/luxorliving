@@ -5,12 +5,45 @@ documented in this file.
 
 ## [Unreleased]
 
+Pre-release (`v1.2.0-rc.3`).
+
+### Fixed
+
+- **CRITICAL — IP1 legacy TLS (`@SECLEVEL=0`) restored**: `_make_ssl_context`
+  again sets `set_ciphers("DEFAULT:@SECLEVEL=0")`. It had been dropped in
+  `v1.1.15-rc.1` (carried into `v1.2.0-rc.2`) with an untested comment claiming
+  the gateway works without it — but that posture is identical to the failing
+  `v1.2.0-rc.1` shared session, so `v1.2.0-rc.2` was latently affected by the
+  same `SSLV3_ALERT_HANDSHAKE_FAILURE` on real hardware. The only field-proven
+  posture is `v1.1.14`'s `CERT_NONE` + `@SECLEVEL=0`.
+
+### Added
+
+- **Platinum quality scale — inject websession (done correctly)**: the REST
+  client (`BAOSRestClient`) and `PushClient` again accept Home Assistant's shared
+  session, now obtained with `async_get_clientsession(hass, verify_ssl=False,
+  ssl_cipher=SSLCipherList.INSECURE)`. `SSLCipherList.INSECURE` resolves to
+  `"DEFAULT:@SECLEVEL=0"`, so the shared session speaks the IP1's legacy TLS —
+  the missing parameter that broke `v1.2.0-rc.1`. Wired through `knx_gateway.py`,
+  `config_flow.py`, `repairs.py` and `push_client.py`. The owned-session path is
+  kept as a fallback (same `@SECLEVEL=0` context).
+- **Regression guards** (`test_inject_ssl_cipher.py`, gated suite): assert
+  `_make_ssl_context` sets `@SECLEVEL=0` + `CERT_NONE`, that the string matches
+  HA's `SSLCipherList.INSECURE`, and that every injection call site passes
+  `verify_ssl=False, ssl_cipher=SSLCipherList.INSECURE`. A live legacy-cipher
+  handshake cannot be reproduced in CI's modern OpenSSL, so end-to-end TLS
+  remains a manual pre-release check on real hardware.
+
 ## [1.2.0] - 2026-06-18
 
 Pre-release (`v1.2.0-rc.2`). Ships the Gold quality-scale item only. The
 Platinum websession-injection from `v1.2.0-rc.1` has been **reverted** — it
 broke the connection to real IP1 hardware (see below). `v1.1.15-rc.1` remains
 published as a fallback.
+
+> ⚠️ Superseded: `v1.2.0-rc.2` is itself affected by the latent `@SECLEVEL=0`
+> regression described under \[Unreleased] and must not be promoted. Use
+> `v1.2.0-rc.3`.
 
 ### Added
 

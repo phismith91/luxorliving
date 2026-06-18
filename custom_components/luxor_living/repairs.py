@@ -12,6 +12,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util.ssl import SSLCipherList
 
 from .const import DOMAIN
 from .rest_client import AuthenticationError, BAOSRestClient
@@ -62,7 +64,10 @@ class LuxorLivingAuthenticationRepairFlow(RepairsFlow):
             password = user_input[CONF_PASSWORD]
 
             try:
-                async with BAOSRestClient(host, use_https=True) as client:
+                session = async_get_clientsession(
+                    self.hass, verify_ssl=False, ssl_cipher=SSLCipherList.INSECURE
+                )
+                async with BAOSRestClient(host, use_https=True, session=session) as client:
                     await client.login(username, password)
                     _LOGGER.info("Authentication repair successful for %s", host)
 
