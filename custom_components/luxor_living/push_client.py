@@ -23,7 +23,6 @@ import logging
 
 from aiohttp import ClientSession, ClientWebSocketResponse
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.util.ssl import SSLCipherList
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,11 +64,12 @@ class PushClient:
     async def _run(self) -> None:
         """Run connection loop with exponential backoff."""
         backoff = 1.0
-        # Shared HA session configured for the IP1's legacy TLS (no cert verify +
-        # @SECLEVEL=0). HA owns its lifecycle; we never close it.
-        self._session = async_get_clientsession(
-            self.hass, verify_ssl=False, ssl_cipher=SSLCipherList.INSECURE
-        )
+        # The push websocket is a user-configured forwarder (push_ws_url), NOT the
+        # IP1 — it must keep normal TLS verification. The IP1's legacy-TLS
+        # workaround must NOT leak here, or it would disable certificate checks
+        # for an arbitrary, possibly internet-facing, token-authenticated
+        # endpoint. Use HA's standard shared session (full verification).
+        self._session = async_get_clientsession(self.hass)
 
         while not self._stopped:
             try:

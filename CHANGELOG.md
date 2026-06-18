@@ -5,7 +5,30 @@ documented in this file.
 
 ## [Unreleased]
 
-Pre-release (`v1.2.0-rc.3`).
+Pre-release (`v1.2.0-rc.4`).
+
+### Security
+
+- **Push forwarder no longer downgrades TLS**: `v1.2.0-rc.3` made `PushClient`
+  use `async_get_clientsession(hass, verify_ssl=False, ssl_cipher=INSECURE)` —
+  but `push_ws_url` is a user-configured forwarder, **not** the IP1. That blanket
+  application disabled certificate verification and lowered the cipher security
+  level for an arbitrary, possibly internet-facing, token-authenticated endpoint
+  (MITM / token-theft risk). `PushClient` now uses HA's standard shared session
+  with full TLS verification. The IP1 legacy-TLS posture is confined to the three
+  IP1-REST call sites (`knx_gateway`, `config_flow`, `repairs`). Only entries
+  with `push_ws_url` configured were affected. Guarded by
+  `test_push_client_does_not_downgrade_tls`.
+
+### Fixed (rc.4)
+
+- **Request timeouts on the injected session**: `login`/`logout`/`enable_tunneling`
+  now pass an explicit per-request `timeout` (30 s). The owned session set this at
+  session level; HA's shared session uses aiohttp's defaults (total 300 s), so the
+  explicit timeout restores the intended 30 s ceiling on the injected path.
+- **`_async_forced_refresh` error handling**: the fire-and-forget REST-refresh task
+  now catches exceptions (like `_async_on_reconnect`) instead of surfacing an
+  unhandled task error when a refresh login fails.
 
 ### Fixed
 

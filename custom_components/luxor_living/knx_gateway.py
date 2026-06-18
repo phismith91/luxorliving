@@ -336,12 +336,22 @@ class LuxorKNXGateway:
         if not self._rest_client or self.simulation_mode:
             return
         async with self._session_lock:
-            await self._rest_client.logout()
-            await self._rest_client.login(self.username, self.password)
-            await self._rest_client.enable_tunneling()
-            self._connected = True
-            self._last_refresh_at = time.monotonic()
-            _LOGGER.info("REST session refresh complete (host=%s)", self.host)
+            try:
+                await self._rest_client.logout()
+                await self._rest_client.login(self.username, self.password)
+                await self._rest_client.enable_tunneling()
+                self._connected = True
+                self._last_refresh_at = time.monotonic()
+                _LOGGER.info("REST session refresh complete (host=%s)", self.host)
+            except Exception as err:
+                # Fire-and-forget task: never let the exception escape unhandled.
+                self._connected = False
+                _LOGGER.error(
+                    "REST session refresh failed (host=%s): %s — "
+                    "reload the integration if the gateway remains unreachable",
+                    self.host,
+                    err,
+                )
 
     def _on_connection_state_changed(self, state: XknxConnectionState) -> None:
         """Handle xknx connection state changes.

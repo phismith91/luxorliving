@@ -68,12 +68,15 @@ def test_seclevel0_matches_ha_insecure_cipher():
     assert SSL_CIPHER_LISTS[SSLCipherList.INSECURE] == "DEFAULT:@SECLEVEL=0"
 
 
-@pytest.mark.parametrize(
-    "filename",
-    ["knx_gateway.py", "config_flow.py", "repairs.py", "push_client.py"],
-)
-def test_call_sites_inject_insecure_cipher(filename):
-    """Every injected-session call site must request the INSECURE cipher list.
+# Only these talk to the IP1's REST API (host from config) — they need the
+# legacy-TLS posture. push_client is deliberately excluded: it connects to a
+# user-configured forwarder (push_ws_url), not the IP1, and must keep normal TLS.
+IP1_REST_CALL_SITES = ["knx_gateway.py", "config_flow.py", "repairs.py"]
+
+
+@pytest.mark.parametrize("filename", IP1_REST_CALL_SITES)
+def test_ip1_call_sites_inject_insecure_cipher(filename):
+    """Every IP1-REST call site must request the INSECURE cipher list.
 
     Static guard: the exact regression in v1.2.0-rc.1 was injecting a session
     with ``verify_ssl=False`` but WITHOUT ``ssl_cipher=INSECURE``.
@@ -85,3 +88,16 @@ def test_call_sites_inject_insecure_cipher(filename):
         "— this reintroduces the IP1 handshake regression"
     )
     assert "verify_ssl=False" in source, f"{filename} must disable cert verification for the IP1"
+
+
+def test_push_client_does_not_downgrade_tls():
+    """push_client must NOT carry the IP1 legacy-TLS downgrade.
+
+    ``push_ws_url`` is an arbitrary, possibly internet-facing, token-authenticated
+    endpoint — disabling cert verification / lowering SECLEVEL there would be a
+    security regression (it was, briefly, in v1.2.0-rc.3).
+    """
+    source = (COMPONENT_DIR / "push_client.py").read_text(encoding="utf-8")
+    assert "async_get_clientsession" in source, "push_client should use HA's shared session"
+    assert "ssl_cipher" not in source, "push_client must not weaken ciphers for the forwarder"
+    assert "verify_ssl=False" not in source, "push_client must keep TLS verification"
