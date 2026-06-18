@@ -10,6 +10,8 @@ from datetime import datetime
 from typing import Any, Callable, cast
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util.ssl import SSLCipherList
 from xknx import XKNX
 from xknx.core import XknxConnectionState
 from xknx.dpt import DPTArray, DPTBinary
@@ -141,8 +143,13 @@ class LuxorKNXGateway:
             if self._connection_type == ConnectionType.TUNNELING:
                 _LOGGER.debug("Step 1/3: REST API Login...")
 
-                # Create REST client and enter async context
-                self._rest_client = BAOSRestClient(self.host, port=self.http_port)
+                # Create REST client and enter async context. Inject HA's shared
+                # session configured for the IP1's legacy TLS (no cert verify +
+                # @SECLEVEL=0 via SSLCipherList.INSECURE) — see _make_ssl_context.
+                session = async_get_clientsession(
+                    self.hass, verify_ssl=False, ssl_cipher=SSLCipherList.INSECURE
+                )
+                self._rest_client = BAOSRestClient(self.host, port=self.http_port, session=session)
                 await self._rest_client.__aenter__()
 
                 try:

@@ -22,6 +22,8 @@ import json
 import logging
 
 from aiohttp import ClientSession, ClientWebSocketResponse
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util.ssl import SSLCipherList
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +48,11 @@ class PushClient:
         self._task = self.hass.async_create_task(self._run())
 
     async def stop(self) -> None:
-        """Stop the client and cancel background task."""
+        """Stop the client and cancel background task.
+
+        The aiohttp session is owned by Home Assistant (shared via
+        ``async_get_clientsession``) so it is intentionally not closed here.
+        """
         self._stopped = True
         if self._task and not self._task.done():
             self._task.cancel()
@@ -54,16 +60,16 @@ class PushClient:
                 await self._task
             except asyncio.CancelledError:
                 pass
-        if self._session:
-            try:
-                await self._session.close()
-            except Exception as err:
-                _LOGGER.debug("Error closing push client session: %s", err)
+        self._session = None
 
     async def _run(self) -> None:
         """Run connection loop with exponential backoff."""
         backoff = 1.0
-        self._session = ClientSession()
+        # Shared HA session configured for the IP1's legacy TLS (no cert verify +
+        # @SECLEVEL=0). HA owns its lifecycle; we never close it.
+        self._session = async_get_clientsession(
+            self.hass, verify_ssl=False, ssl_cipher=SSLCipherList.INSECURE
+        )
 
         while not self._stopped:
             try:

@@ -18,6 +18,8 @@ from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult, section
 from homeassistant.helpers import selector
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util.ssl import SSLCipherList
 
 from .const import (
     CONF_ALLOW_DIAGNOSTICS,
@@ -447,7 +449,10 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         _LOGGER.debug("🔐 Validating credentials for %s@%s", username, host)
 
-        async with BAOSRestClient(host, port=DEFAULT_HTTP_PORT) as client:
+        session = async_get_clientsession(
+            self.hass, verify_ssl=False, ssl_cipher=SSLCipherList.INSECURE
+        )
+        async with BAOSRestClient(host, port=DEFAULT_HTTP_PORT, session=session) as client:
             # Attempt login - will raise AuthenticationError if invalid
             await client.login(username, password)
             _LOGGER.debug("Credentials validated successfully")

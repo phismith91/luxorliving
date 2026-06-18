@@ -19,14 +19,18 @@ def _make_ssl_context() -> ssl.SSLContext:
     """Return an SSL context for the IP1 gateway.
 
     The IP1 ships with a self-signed certificate so hostname verification and
-    cert chain validation must be disabled. TLS 1.2+ is enforced; @SECLEVEL=0
-    (null/export ciphers) is intentionally NOT set — the gateway supports
-    standard cipher suites without it.
+    cert chain validation must be disabled (``CERT_NONE``). It also negotiates a
+    legacy cipher that modern OpenSSL refuses at its default security level, so
+    ``@SECLEVEL=0`` is REQUIRED — dropping it caused ``SSLV3_ALERT_HANDSHAKE_FAILURE``
+    against real hardware (see v1.2.0-rc.1). This mirrors Home Assistant's
+    ``SSLCipherList.INSECURE`` ("DEFAULT:@SECLEVEL=0"), which the injected shared
+    session uses; this context is the fallback for the owned-session path.
     """
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    ctx.set_ciphers("DEFAULT:@SECLEVEL=0")
     return ctx
 
 
@@ -56,7 +60,13 @@ class BAOSRestClient:
     - PUT /rest/device/authtunneling → Enable/Disable Tunneling
     """
 
-    def __init__(self, host: str, port: int = 443, use_https: bool = True):
+    def __init__(
+        self,
+        host: str,
+        port: int = 443,
+        use_https: bool = True,
+        session: Optional[aiohttp.ClientSession] = None,
+    ):
         """
         Initialize REST API Client.
 
@@ -64,6 +74,13 @@ class BAOSRestClient:
             host: IP address of BAOS 777 device
             port: Port for REST API (default: 443 for HTTPS)
             use_https: Use HTTPS for secure communication (default: True, recommended)
+            session: Optional aiohttp session to use. When provided (Home
+                Assistant's shared session from ``async_get_clientsession(hass,
+                verify_ssl=False, ssl_cipher=SSLCipherList.INSECURE)``), the
+                client uses it and never closes it. The caller is responsible for
+                configuring the IP1's legacy TLS (``verify_ssl=False`` +
+                ``ssl_cipher=INSECURE``). When omitted, the client lazily creates
+                and owns its own session built on :func:`_make_ssl_context`.
         """
         self.host = host
         self.port = port
@@ -76,22 +93,26 @@ class BAOSRestClient:
         self.session_expires: Optional[datetime] = None
         self.tunneling_enabled = False
 
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: Optional[aiohttp.ClientSession] = session
+        self._owns_session = session is None
+        self._timeout = aiohttp.ClientTimeout(total=30)
 
     async def __aenter__(self):
         """Context manager entry."""
-        loop = asyncio.get_running_loop()
-        ssl_context = await loop.run_in_executor(None, _make_ssl_context)
-        connector = aiohttp.TCPConnector(ssl=ssl_context)
-        self._session = aiohttp.ClientSession(
-            connector=connector, connector_owner=True, timeout=aiohttp.ClientTimeout(total=30)
-        )
+        if self._owns_session and self._session is None:
+            loop = asyncio.get_running_loop()
+            ssl_context = await loop.run_in_executor(None, _make_ssl_context)
+            connector = aiohttp.TCPConnector(ssl=ssl_context)
+            self._session = aiohttp.ClientSession(
+                connector=connector, connector_owner=True, timeout=self._timeout
+            )
         return self
 
     async def __aexit__(self, *args):
         """Context manager exit - ensures cleanup."""
         await self.logout()
-        if self._session:
+        # Only close sessions we own; injected (shared) sessions belong to HA.
+        if self._owns_session and self._session:
             await self._session.close()
 
     async def login(self, username: str, password: str) -> str:
@@ -108,12 +129,12 @@ class BAOSRestClient:
         Raises:
             AuthenticationError: If login fails
         """
-        if not self._session:
+        if not self._session and self._owns_session:
             loop = asyncio.get_running_loop()
             ssl_context = await loop.run_in_executor(None, _make_ssl_context)
             connector = aiohttp.TCPConnector(ssl=ssl_context)
             self._session = aiohttp.ClientSession(
-                connector=connector, connector_owner=True, timeout=aiohttp.ClientTimeout(total=30)
+                connector=connector, connector_owner=True, timeout=self._timeout
             )
 
         url = f"{self.base_url}/rest/login"
