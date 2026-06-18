@@ -143,7 +143,7 @@ class BAOSRestClient:
         _LOGGER.debug(f"Attempting login to {url} with user: {username}")
 
         try:
-            async with self._session.post(url, json=payload) as response:
+            async with self._session.post(url, json=payload, timeout=self._timeout) as response:
                 _LOGGER.debug(f"Login response status: {response.status}")
                 _LOGGER.debug(f"Login response headers: {response.headers}")
 
@@ -198,7 +198,7 @@ class BAOSRestClient:
         _LOGGER.debug(f"Logging out from {url}")
 
         try:
-            async with self._session.post(url, headers=headers) as response:
+            async with self._session.post(url, headers=headers, timeout=self._timeout) as response:
                 if response.status in (200, 204):  # API returns 204 per docs
                     _LOGGER.info("Logout successful. Tunneling auto-deactivated.")
                 else:
@@ -244,7 +244,9 @@ class BAOSRestClient:
                 "set" if self.session_token else "missing",
             )
 
-            async with self._session.put(url, json=payload, headers=headers) as response:
+            async with self._session.put(
+                url, json=payload, headers=headers, timeout=self._timeout
+            ) as response:
                 _LOGGER.debug(f"Tunneling response status: {response.status}")
                 _LOGGER.debug(f"Tunneling response headers: {response.headers}")
 
