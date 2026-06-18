@@ -5,11 +5,12 @@ documented in this file.
 
 ## [Unreleased]
 
-## [1.2.0] - 2026-06-13
+## [1.2.0] - 2026-06-18
 
-Pre-release (`v1.2.0-rc.1`). Adds the two deferred quality-scale items on top of
-the 1.1.15-rc hardening. `v1.1.15-rc.1` remains published as a fallback. Not yet
-validated against real IP1 hardware — promote to stable only after a live check.
+Pre-release (`v1.2.0-rc.2`). Ships the Gold quality-scale item only. The
+Platinum websession-injection from `v1.2.0-rc.1` has been **reverted** — it
+broke the connection to real IP1 hardware (see below). `v1.1.15-rc.1` remains
+published as a fallback.
 
 ### Added
 
@@ -18,23 +19,24 @@ validated against real IP1 hardware — promote to stable only after a live chec
   project (no longer mapped by the integration) can now be deleted manually from
   the HA UI, while the gateway hub and active devices remain protected.
 
-### Changed
+### Reverted
 
-- **Platinum quality scale — inject websession**: the REST client
-  (`BAOSRestClient`) and the WebSocket `PushClient` now obtain their aiohttp
-  session from Home Assistant's shared `async_get_clientsession(hass)` instead of
-  creating and owning their own `ClientSession`. The REST client accepts an
-  injected session (`verify_ssl=False` for the IP1's self-signed cert) and only
-  closes sessions it owns; the push client no longer closes the shared session.
-
-### Tests
-
-- Added an end-to-end TLS integration test
-  (`test_inject_session_tls_integration.py`) exercising the injected-session
-  constructor path over a real self-signed-TLS socket (login → datapoints),
-  proving the handshake and auth flow work on the shared `verify_ssl=False`
-  session without hardware. Plus gated unit tests for the owned-session default
-  branch.
+- **Platinum quality scale — inject websession (regression fix)**: `v1.2.0-rc.1`
+  routed the REST client and `PushClient` through Home Assistant's shared
+  `async_get_clientsession(hass, verify_ssl=False)`. On real IP1 hardware this
+  caused `SSLV3_ALERT_HANDSHAKE_FAILURE`: the shared session bypassed the
+  client's custom `ssl_context`, so the `@SECLEVEL=0` cipher policy required to
+  talk to the IP1's legacy TLS was never applied (`verify_ssl=False` only
+  disables certificate verification, not the OpenSSL security level). The REST
+  client (`BAOSRestClient`) and `PushClient` again create and own their own
+  `ClientSession` with the `@SECLEVEL=0` `ssl_context`, identical to the
+  known-good `v1.1.14` / `v1.1.15-rc.1` path. The injected-session constructor
+  parameter and the two injection tests
+  (`test_inject_session_tls_integration.py`, `test_inject_websession.py`) were
+  removed — the integration self-signed-TLS test used a modern cipher and so
+  never reproduced the IP1's `SECLEVEL` failure, giving false confidence.
+  Platinum websession injection is incompatible with the IP1's TLS stack and is
+  dropped, not deferred.
 
 ## [1.1.15] - 2026-06-13
 

@@ -135,14 +135,12 @@ class TestPushClientBackoff:
                 client._stopped = True
 
         with (
-            patch(
-                "custom_components.luxor_living.push_client.async_get_clientsession"
-            ) as mock_get_session,
+            patch("custom_components.luxor_living.push_client.ClientSession") as mock_session_cls,
             patch("asyncio.sleep", side_effect=fake_sleep),
         ):
             mock_session = MagicMock()
             mock_session.ws_connect = MagicMock(side_effect=fake_ws_connect)
-            mock_get_session.return_value = mock_session
+            mock_session_cls.return_value = mock_session
             mock_session.close = AsyncMock()
 
             await client._run()
@@ -166,14 +164,12 @@ class TestPushClientBackoff:
                 client._stopped = True
 
         with (
-            patch(
-                "custom_components.luxor_living.push_client.async_get_clientsession"
-            ) as mock_get_session,
+            patch("custom_components.luxor_living.push_client.ClientSession") as mock_session_cls,
             patch("asyncio.sleep", side_effect=fake_sleep),
         ):
             mock_session = MagicMock()
             mock_session.ws_connect = MagicMock(side_effect=fake_ws_connect)
-            mock_get_session.return_value = mock_session
+            mock_session_cls.return_value = mock_session
             mock_session.close = AsyncMock()
 
             await client._run()

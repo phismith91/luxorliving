@@ -88,15 +88,9 @@ class TestLuxorLivingAuthenticationRepairFlow:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
-        with (
-            patch(
-                "custom_components.luxor_living.repairs.BAOSRestClient",
-                return_value=mock_client,
-            ),
-            patch(
-                "custom_components.luxor_living.repairs.async_get_clientsession",
-                return_value=MagicMock(),
-            ),
+        with patch(
+            "custom_components.luxor_living.repairs.BAOSRestClient",
+            return_value=mock_client,
         ):
             await flow.async_step_credentials({CONF_USERNAME: "admin", CONF_PASSWORD: "newpass"})
 
@@ -115,15 +109,9 @@ class TestLuxorLivingAuthenticationRepairFlow:
         mock_client.__aexit__ = AsyncMock(return_value=False)
         mock_client.login = AsyncMock(side_effect=AuthenticationError("Bad credentials"))
 
-        with (
-            patch(
-                "custom_components.luxor_living.repairs.BAOSRestClient",
-                return_value=mock_client,
-            ),
-            patch(
-                "custom_components.luxor_living.repairs.async_get_clientsession",
-                return_value=MagicMock(),
-            ),
+        with patch(
+            "custom_components.luxor_living.repairs.BAOSRestClient",
+            return_value=mock_client,
         ):
             await flow.async_step_credentials({CONF_USERNAME: "admin", CONF_PASSWORD: "wrong"})
 
@@ -141,15 +129,9 @@ class TestLuxorLivingAuthenticationRepairFlow:
         mock_client.__aexit__ = AsyncMock(return_value=False)
         mock_client.login = AsyncMock(side_effect=RuntimeError("Boom"))
 
-        with (
-            patch(
-                "custom_components.luxor_living.repairs.BAOSRestClient",
-                return_value=mock_client,
-            ),
-            patch(
-                "custom_components.luxor_living.repairs.async_get_clientsession",
-                return_value=MagicMock(),
-            ),
+        with patch(
+            "custom_components.luxor_living.repairs.BAOSRestClient",
+            return_value=mock_client,
         ):
             await flow.async_step_credentials({CONF_USERNAME: "admin", CONF_PASSWORD: "pass"})
 
