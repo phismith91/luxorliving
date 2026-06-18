@@ -236,6 +236,9 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             step_id="gateway",
                             data_schema=STEP_GATEWAY_DATA_SCHEMA,
                             errors=errors,
+                            description_placeholders={
+                                "project_name": self._project_name or "Unknown",
+                            },
                         )
                     except (ConnectionError, TimeoutError) as err:
                         _LOGGER.error("Connection error: %s", err)
@@ -244,6 +247,9 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             step_id="gateway",
                             data_schema=STEP_GATEWAY_DATA_SCHEMA,
                             errors=errors,
+                            description_placeholders={
+                                "project_name": self._project_name or "Unknown",
+                            },
                         )
                 else:
                     # For Routing: validate gateway is reachable (ping check).
@@ -271,6 +277,9 @@ class LuxorLivingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             step_id="gateway",
                             data_schema=STEP_GATEWAY_DATA_SCHEMA,
                             errors=errors,
+                            description_placeholders={
+                                "project_name": self._project_name or "Unknown",
+                            },
                         )
 
             # Prevent duplicate entries for the same gateway host

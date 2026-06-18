@@ -19,6 +19,22 @@ published as a fallback.
   project (no longer mapped by the integration) can now be deleted manually from
   the HA UI, while the gateway hub and active devices remain protected.
 
+### Fixed
+
+- **Log flood / HA rate-limiter**: per-telegram logging in `knx_gateway.py`
+  (incoming telegrams, DPT 9.xxx floats, external push) was emitted at INFO and
+  fired for every KNX telegram — on a busy bus this produced multi-MB logs and
+  tripped Home Assistant's "logging too frequently" limiter. Demoted to DEBUG.
+- **Config-flow broken description text**: the `gateway` step's error-redisplay
+  paths (`invalid_auth`, `cannot_connect`) did not pass the `project_name`
+  description placeholder, producing `MISSING_VALUE`/`MISSING_TRANSLATION` in the
+  UI on every failed connection attempt. All re-display paths now pass it.
+- **Startup warning spam**: multi-channel devices (e.g. climate controllers with
+  several channels under one `device_id`) collide on `unique_id` by design; the
+  disambiguation guard logged one WARNING per collision on every startup.
+  Per-collision detail moved to DEBUG with a single INFO summary; the
+  deterministic `_chN` suffix scheme is unchanged (no entity-id churn).
+
 ### Reverted
 
 - **Platinum quality scale — inject websession (regression fix)**: `v1.2.0-rc.1`

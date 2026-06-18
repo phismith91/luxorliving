@@ -696,9 +696,10 @@ class LuxorKNXGateway:
                     else f"{label}: {display_value:.1f}"
                 )
 
-            # Log DPT 9.xxx float telegrams at INFO level for monitoring
+            # Per-telegram logging is DEBUG only — on a busy bus this fires for
+            # every telegram and floods INFO logs (HA's log rate-limiter trips).
             if isinstance(value, float):
-                _LOGGER.info(
+                _LOGGER.debug(
                     "%s KNX %s %s → %s (%s)",
                     sensor_emoji,
                     sensor_label,
@@ -729,7 +730,7 @@ class LuxorKNXGateway:
                 if src_labels
                 else f" ← from {source_addr}"
             )
-            _LOGGER.info(
+            _LOGGER.debug(
                 "📥 Received KNX %s: %s=%s (DPT: %s)%s%s%s",
                 telegram_type,
                 group_address,
@@ -816,7 +817,7 @@ class LuxorKNXGateway:
             # else leave as-is (float, DPTArray-like, etc.)
 
             # Log incoming push
-            _LOGGER.info("📥 External push: %s = %s", group_address, processed_value)
+            _LOGGER.debug("📥 External push: %s = %s", group_address, processed_value)
 
             # Notify listeners if any
             if group_address in self._listeners:
