@@ -2,9 +2,8 @@
 
 import asyncio
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-import aiohttp
 import pytest
 
 from custom_components.luxor_living.integration_state import IntegrationState
@@ -60,30 +59,18 @@ async def test_push_client_receives_and_forwards(aiohttp_server, socket_enabled)
     fake_hass.async_create_task = lambda coro: asyncio.create_task(coro)
     fake_hass.config_entries.async_get_entry.return_value = entry
 
-    # PushClient now requests the shared session from HA via async_get_clientsession.
-    # Provide a real session the test owns and closes (stop() no longer closes it).
-    shared_session = aiohttp.ClientSession()
-    try:
-        with patch(
-            "custom_components.luxor_living.push_client.async_get_clientsession",
-            return_value=shared_session,
-        ):
-            # Start PushClient
-            client = PushClient(fake_hass, entry.entry_id, ws_url)
-            client.start()
+    # Start PushClient
+    client = PushClient(fake_hass, entry.entry_id, ws_url)
+    client.start()
 
-            # Wait for a short moment to allow connection and message processing
-            await asyncio.sleep(0.2)
+    # Wait for a short moment to allow connection and message processing
+    await asyncio.sleep(0.2)
 
-            # Verify that the gateway received the pushed value at least once
-            assert gateway.process_incoming_value.await_count >= 1
-            # Optionally check latest call args
-            last_call = gateway.process_incoming_value.await_args_list[-1]
-            assert last_call.args == ("1/2/3", True, None)
+    # Verify that the gateway received the pushed value at least once
+    assert gateway.process_incoming_value.await_count >= 1
+    # Optionally check latest call args
+    last_call = gateway.process_incoming_value.await_args_list[-1]
+    assert last_call.args == ("1/2/3", True, None)
 
-            # Clean up
-            await client.stop()
-    finally:
-        # PushClient no longer owns the session (HA owns the shared one), so the
-        # test closes the session it injected.
-        await shared_session.close()
+    # Clean up
+    await client.stop()

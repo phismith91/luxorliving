@@ -10,16 +10,6 @@ from homeassistant.core import HomeAssistant
 from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
 
 
-@pytest.fixture(autouse=True)
-def _mock_shared_session():
-    """Stub HA's shared websession helper so the gateway never builds a real one."""
-    with patch(
-        "custom_components.luxor_living.knx_gateway.async_get_clientsession",
-        return_value=MagicMock(),
-    ):
-        yield
-
-
 @pytest_asyncio.fixture
 def mock_hass():
     """Create a mock Home Assistant instance."""

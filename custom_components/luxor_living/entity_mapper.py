@@ -113,6 +113,7 @@ class EntityMapper:
         HA-legal and left untouched for the same reason.
         """
         seen: set[tuple[Platform, str]] = set()
+        collisions = 0
         for entity in self.entities:
             key = (entity.platform, entity.unique_id)
             if key not in seen:
@@ -125,7 +126,10 @@ class EntityMapper:
             while (entity.platform, candidate) in seen:
                 counter += 1
                 candidate = f"{base}_{counter}"
-            _LOGGER.warning(
+            # Expected for multi-channel devices (e.g. climate controllers expose
+            # several channels under one device_id) — disambiguation is the normal
+            # path, so log per-collision detail at DEBUG and summarise once below.
+            _LOGGER.debug(
                 "unique_id collision on %s '%s' (%s) — renamed to %s",
                 entity.platform,
                 entity.name,
@@ -134,6 +138,13 @@ class EntityMapper:
             )
             entity.unique_id = candidate
             seen.add((entity.platform, candidate))
+            collisions += 1
+
+        if collisions:
+            _LOGGER.info(
+                "Disambiguated %d unique_id collision(s) via channel suffixes",
+                collisions,
+            )
 
     def _map_device(self, device: LXPDevice) -> None:
         """Map a single device to entities."""
