@@ -168,6 +168,15 @@ class LuxorKNXGateway:
                 # without a clean logout. Risk: briefly disconnects LuxorPlay if
                 # it holds the slot, but it reconnects automatically and this is
                 # far preferable to a full IP1 lockup from slot exhaustion.
+                try:
+                    status = await self._rest_client.get_tunneling_status()
+                    _LOGGER.info(
+                        "IP1 tunneling slots before flush: %s/%s connected",
+                        status.get("connectedClients", "?"),
+                        status.get("maxSlots", "?"),
+                    )
+                except Exception:
+                    pass  # diagnostic only, never block startup
                 _LOGGER.debug("Step 2/3: Flushing stale tunneling sessions...")
                 await self._rest_client.disable_tunneling()
                 _LOGGER.debug("Step 2/3: Enabling KNX Tunneling...")
@@ -175,15 +184,6 @@ class LuxorKNXGateway:
                     await self._rest_client.enable_tunneling()
                     self._tunneling_enabled = True
                     _LOGGER.debug("KNX Tunneling enabled")
-                    try:
-                        status = await self._rest_client.get_tunneling_status()
-                        _LOGGER.info(
-                            "IP1 tunneling slots: %s/%s connected",
-                            status.get("connectedClients", "?"),
-                            status.get("maxSlots", "?"),
-                        )
-                    except Exception:
-                        pass  # diagnostic only, never block startup
                 except TunnelingError as err:
                     _LOGGER.error("Failed to enable tunneling: %s", err)
                     await self._rest_client.__aexit__(None, None, None)
