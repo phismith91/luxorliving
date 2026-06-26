@@ -5,7 +5,19 @@ documented in this file.
 
 ## [Unreleased]
 
-Pre-release (`v1.2.0-rc.4`).
+Pre-release (`v1.2.1-rc.1`).
+
+### Added
+
+- **H6 cooling-mode support**: H6 climate entities now support cooling in addition to heating when the `UmschaltenHeitzenKühlen` (heating/cooling mode-switch) datapoint is present. Marcus' setup with ION8 T10 mode-switch controlling H6 devices (511, 512, 513) is fully supported. Mode-switch control sends binary telegram: 1 for heating, 0 for cooling.
+
+### Fixed
+
+- **IP1 tunneling slot exhaustion**: Unclean HA shutdowns left stale tunneling slots on the IP1 (up to 4 slots, then lockup). `enable_tunneling()` now calls `disable_tunneling()` first to flush any orphaned sessions from previous crashed HA instances. Diagnostics added: log prints connected client count and slot saturation state on startup.
+
+## [1.2.0] - 2026-06-18
+
+Pre-release (`v1.2.0-rc.5`). Includes critical fixes for TLS and tunneling. rc.4
 
 ### Security
 
