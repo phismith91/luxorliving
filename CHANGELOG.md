@@ -3,9 +3,9 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## [Unreleased]
+## [1.2.1] - 2026-06-26
 
-Pre-release (`v1.2.1-rc.1`).
+Pre-release (`v1.2.1-rc.2`).
 
 ### Added
 
