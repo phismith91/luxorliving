@@ -349,6 +349,12 @@ class LuxorKNXGateway:
 
         Used by both the periodic timer and the reconnect-failure watchdog.
         Acquires _session_lock to prevent concurrent REST cycles.
+
+        Includes the same disable_tunneling() global flush as the initial
+        connect() — without it this only cycles our own session and never
+        clears slots orphaned by other clients (a crashed prior HA instance,
+        LuxorPlay) that accumulate during a long uptime and freeze the bus
+        between restarts, which defeats the point of a periodic self-heal.
         """
         if not self._rest_client or self.simulation_mode:
             return
@@ -356,6 +362,7 @@ class LuxorKNXGateway:
             try:
                 await self._rest_client.logout()
                 await self._rest_client.login(self.username, self.password)
+                await self._rest_client.disable_tunneling()
                 await self._rest_client.enable_tunneling()
                 self._connected = True
                 self._last_refresh_at = time.monotonic()

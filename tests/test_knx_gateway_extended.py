@@ -488,6 +488,7 @@ class TestReconnectWatchdog:
 
         rest.logout.assert_called_once()
         rest.login.assert_called_once_with("admin", "pass")
+        rest.disable_tunneling.assert_called_once()
         rest.enable_tunneling.assert_called_once()
 
 

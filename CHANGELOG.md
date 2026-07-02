@@ -3,9 +3,9 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## [1.2.1] - 2026-06-26
+## [1.2.1] - 2026-07-02
 
-Pre-release (`v1.2.1-rc.2`).
+Pre-release (`v1.2.1-rc.4`).
 
 ### Added
 
@@ -14,6 +14,7 @@ Pre-release (`v1.2.1-rc.2`).
 ### Fixed
 
 - **IP1 tunneling slot exhaustion**: Unclean HA shutdowns left stale tunneling slots on the IP1 (up to 4 slots, then lockup). `enable_tunneling()` now calls `disable_tunneling()` first to flush any orphaned sessions from previous crashed HA instances. Diagnostics added: log prints connected client count and slot saturation state on startup.
+- **Mid-uptime slot exhaustion (rc.4)**: The startup flush above only ran once per HA restart. Orphaned slots from other clients (a crashed prior instance, LuxorPlay) can still accumulate during a single long uptime and freeze the bus after ~24-72h without HA ever seeing a disconnect — confirmed on Marcus' 2026-06-30 log (~30h uptime, continuous `L_DATA_CON` confirmation timeouts, no disconnect logged, required a physical KNX restart). The existing 4h proactive `_session_refresh_loop` now also calls `disable_tunneling()` before re-login, so it actually clears device-wide orphaned slots instead of only cycling its own session.
 
 ## [1.2.0] - 2026-06-18
 
