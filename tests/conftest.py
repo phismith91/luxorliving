@@ -1,5 +1,7 @@
 """Pytest fixtures for LUXORliving tests."""
 
+import asyncio
+
 import pytest
 
 
@@ -10,6 +12,14 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "integration: medium-length integration tests")
     config.addinivalue_line("markers", "e2e: end-to-end style tests")
     config.addinivalue_line("markers", "enable_socket: marks tests that require socket access")
+
+
+@pytest.fixture
+def event_loop():
+    """Create an instance of the default event loop for each test case."""
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
 
 
 # Disable pytest-socket immediately to allow aiohttp mock servers
