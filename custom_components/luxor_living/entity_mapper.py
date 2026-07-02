@@ -245,6 +245,9 @@ class EntityMapper:
         if name.startswith(device.name + " "):
             name = name[len(device.name) + 1 :]
 
+        # Detect cooling capability for climate entities
+        cooling_capable = platform == Platform.CLIMATE and "UmschaltenHeitzenKühlen" in datapoints
+
         # Create mapped entity
         entity = MappedEntity(
             platform=platform,
@@ -263,10 +266,16 @@ class EntityMapper:
                 "knx_address": device.address,
             },
             parameters=actuator.parameters,
+            cooling_capable=cooling_capable,
         )
 
         self.entities.append(entity)
-        _LOGGER.debug("Mapped %s actuator '%s' to %s", entity_type, name, platform)
+        if cooling_capable:
+            _LOGGER.debug(
+                "Mapped %s actuator '%s' to %s (cooling capable)", entity_type, name, platform
+            )
+        else:
+            _LOGGER.debug("Mapped %s actuator '%s' to %s", entity_type, name, platform)
 
     def _map_sensor(self, device: LXPDevice, sensor: LXPSensor) -> None:
         """Map a sensor to entities."""

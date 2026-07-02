@@ -3,9 +3,22 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## [Unreleased]
+## [1.2.1] - 2026-07-02
 
-Pre-release (`v1.2.0-rc.4`).
+Pre-release (`v1.2.1-rc.4`).
+
+### Added
+
+- **H6 cooling-mode support**: H6 climate entities now support cooling in addition to heating when the `UmschaltenHeitzenKühlen` (heating/cooling mode-switch) datapoint is present. Marcus' setup with ION8 T10 mode-switch controlling H6 devices (511, 512, 513) is fully supported. Mode-switch control sends binary telegram: 1 for heating, 0 for cooling.
+
+### Fixed
+
+- **IP1 tunneling slot exhaustion**: Unclean HA shutdowns left stale tunneling slots on the IP1 (up to 4 slots, then lockup). `enable_tunneling()` now calls `disable_tunneling()` first to flush any orphaned sessions from previous crashed HA instances. Diagnostics added: log prints connected client count and slot saturation state on startup.
+- **Mid-uptime slot exhaustion (rc.4)**: The startup flush above only ran once per HA restart. Orphaned slots from other clients (a crashed prior instance, LuxorPlay) can still accumulate during a single long uptime and freeze the bus after ~24-72h without HA ever seeing a disconnect — confirmed on Marcus' 2026-06-30 log (~30h uptime, continuous `L_DATA_CON` confirmation timeouts, no disconnect logged, required a physical KNX restart). The existing 4h proactive `_session_refresh_loop` now also calls `disable_tunneling()` before re-login, so it actually clears device-wide orphaned slots instead of only cycling its own session. Slot-saturation diagnostics now log at WARNING (visible in default HA logs) once slots are at/over capacity, instead of only at DEBUG/INFO which most bug-report logs don't include.
+
+## [1.2.0] - 2026-06-18
+
+Pre-release (`v1.2.0-rc.5`). Includes critical fixes for TLS and tunneling. rc.4
 
 ### Security
 
