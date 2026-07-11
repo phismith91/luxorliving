@@ -28,6 +28,9 @@ from .const import (
     RECONNECT_FAILURE_THRESHOLD,
     RECONNECT_FAILURE_WINDOW,
     SESSION_REFRESH_INTERVAL,
+    ZOMBIE_CHECK_INTERVAL,
+    ZOMBIE_ERROR_THRESHOLD,
+    ZOMBIE_RECONNECT_COOLDOWN,
 )
 from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
 
@@ -400,6 +403,47 @@ class LuxorKNXGateway:
                     self.host,
                     err,
                 )
+
+    async def _zombie_watchdog_loop(self) -> None:
+        """Detect a 'zombie' tunnel and force a full reconnect.
+
+        xknx can report CONNECTED for hours while every outgoing telegram
+        fails its L_DATA_CON confirmation — the IP1/bus stops acking without
+        xknx's own heartbeat ever detecting a real disconnect (confirmed on
+        Marcus' 2026-07-10 log: ~20 confirmation timeouts/min for 9h, with
+        the periodic REST-session flush from #180 active throughout and not
+        stopping it, since that fix only cycles REST auth, never the xknx
+        tunnel object).
+
+        Polls xknx's own cemi_count_outgoing_error counter — incremented on
+        every ConfirmationError — instead of parsing xknx.log warning text.
+        """
+        try:
+            while True:
+                await asyncio.sleep(ZOMBIE_CHECK_INTERVAL)
+                if not self._xknx or self.simulation_mode:
+                    continue
+                error_count = self._xknx.connection_manager.cemi_count_outgoing_error
+                delta = error_count - self._last_cemi_error_count
+                self._last_cemi_error_count = error_count
+                if delta < ZOMBIE_ERROR_THRESHOLD:
+                    continue
+                now = time.monotonic()
+                if now - self._last_zombie_reconnect_at < ZOMBIE_RECONNECT_COOLDOWN:
+                    continue
+                self._last_zombie_reconnect_at = now
+                _LOGGER.warning(
+                    "KNX gateway %s:%s zombie tunnel detected — %d confirmation "
+                    "failures in %ds with no disconnect event, forcing full reconnect",
+                    self.host,
+                    self.port,
+                    delta,
+                    ZOMBIE_CHECK_INTERVAL,
+                )
+                self.hass.async_create_task(self._async_zombie_recover())
+        except asyncio.CancelledError:
+            _LOGGER.debug("Zombie watchdog loop cancelled")
+            raise
 
     def _on_connection_state_changed(self, state: XknxConnectionState) -> None:
         """Handle xknx connection state changes.

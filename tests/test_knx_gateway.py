@@ -870,6 +870,79 @@ class TestSessionRefreshLoop:
         assert gateway._connected is True
 
 
+class TestZombieWatchdog:
+    """Tests for the zombie-tunnel watchdog (_zombie_watchdog_loop)."""
+
+    def _make_gateway(self, mock_hass, *, simulation_mode: bool = False) -> LuxorKNXGateway:
+        return LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=simulation_mode,
+        )
+
+    def _controlled_sleep(self, sleep_calls: list[int], stop_after: int = 2):
+        async def _sleep(interval: int) -> None:
+            sleep_calls.append(interval)
+            if len(sleep_calls) >= stop_after:
+                raise asyncio.CancelledError
+
+        return _sleep
+
+    @pytest.mark.asyncio
+    async def test_watchdog_noop_below_threshold(self, mock_hass):
+        """Error count increasing by less than the threshold must not reconnect."""
+        from custom_components.luxor_living.const import ZOMBIE_ERROR_THRESHOLD
+
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = ZOMBIE_ERROR_THRESHOLD - 1
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_skips_without_xknx(self, mock_hass):
+        """Loop must not crash and must skip the check when _xknx is None."""
+        gateway = self._make_gateway(mock_hass)
+        gateway._xknx = None
+
+        sleep_calls: list[int] = []
+        with patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_skips_in_simulation_mode(self, mock_hass):
+        """Loop must not act on the counter in simulation mode."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = 999
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_not_called()
+
+
 class TestSessionLockRaceCondition:
     """Regression tests for the race condition between _session_refresh_loop and _async_on_reconnect.
 
