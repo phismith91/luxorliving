@@ -84,6 +84,20 @@ class TestLuxorKNXGateway:
 
         assert gateway._connection_type == ConnectionType.ROUTING
 
+    def test_init_zombie_watchdog_state(self, mock_hass):
+        """New zombie-watchdog fields must start unarmed/zeroed."""
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+
+        assert gateway._zombie_watchdog_task is None
+        assert gateway._last_cemi_error_count == 0
+        assert gateway._last_zombie_reconnect_at == 0.0
+
     @pytest.mark.asyncio
     async def test_async_setup_simulation_mode(self, mock_hass):
         """Test setup in simulation mode."""

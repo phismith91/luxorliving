@@ -87,6 +87,11 @@ class LuxorKNXGateway:
         )  # monotonic timestamps of recent DISCONNECTED events
         self._last_refresh_at: float = 0.0  # monotonic time of last successful REST refresh
         self._last_not_connected_log_at: float = 0.0  # rate-limit "not connected" ERROR logs
+        self._zombie_watchdog_task: asyncio.Task | None = None
+        self._last_cemi_error_count: int = 0  # cemi_count_outgoing_error at last watchdog check
+        self._last_zombie_reconnect_at: float = (
+            0.0  # monotonic time of last zombie-triggered reconnect
+        )
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
