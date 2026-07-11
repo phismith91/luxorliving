@@ -1043,6 +1043,79 @@ class TestZombieWatchdog:
         assert any("recovery failed" in m.lower() for m in messages)
         assert not any("recovery complete" in m.lower() for m in messages)
 
+    @pytest.mark.asyncio
+    @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
+    @patch("custom_components.luxor_living.knx_gateway.XKNX")
+    async def test_watchdog_task_started_on_setup_tunneling(
+        self, mock_xknx_class, mock_rest_class, mock_hass
+    ):
+        """async_setup() must start the zombie watchdog task for tunneling mode.
+
+        Mirrors the mock shape of test_async_setup_with_rest_auth (same file,
+        TestLuxorKNXGateway class) — AsyncMock XKNX/BAOSRestClient so a real
+        tunneling async_setup() completes without touching the network.
+        """
+        mock_rest_client = AsyncMock()
+        mock_rest_client.login = AsyncMock(return_value="test_token")
+        mock_rest_client.enable_tunneling = AsyncMock(return_value=True)
+        mock_rest_client.logout = AsyncMock()
+        mock_rest_client.__aexit__ = AsyncMock()
+        mock_rest_class.return_value = mock_rest_client
+
+        mock_xknx = AsyncMock()
+        mock_xknx.start = AsyncMock()
+        mock_xknx.stop = AsyncMock()
+        mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
+        mock_xknx.connection_manager.register_connection_state_changed_cb = MagicMock(
+            return_value=MagicMock()
+        )
+        mock_xknx.connection_manager.cemi_count_outgoing_error = 0
+        mock_xknx_class.return_value = mock_xknx
+
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            connection_type="tunneling",
+            simulation_mode=False,
+        )
+
+        await gateway.async_setup()
+
+        assert gateway._zombie_watchdog_task is not None
+        assert not gateway._zombie_watchdog_task.done()
+
+        # Teardown: cancel both background tasks so no lingering tasks remain
+        await gateway.async_disconnect()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_task_cancelled_on_disconnect(self, mock_hass):
+        """async_disconnect() must cancel a running zombie watchdog task."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        await gateway.async_setup()
+
+        async def _never_ending():
+            await asyncio.sleep(99999)
+
+        task = asyncio.create_task(_never_ending())
+        gateway._zombie_watchdog_task = task
+
+        await gateway.async_disconnect()
+
+        assert task.cancelled()
+        assert gateway._zombie_watchdog_task is None
+
+    @pytest.mark.asyncio
+    async def test_watchdog_task_none_safe_on_disconnect(self, mock_hass):
+        """async_disconnect() must not raise when _zombie_watchdog_task is None."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        await gateway.async_setup()
+        gateway._zombie_watchdog_task = None
+
+        await gateway.async_disconnect()  # must not raise
+
 
 class TestSessionLockRaceCondition:
     """Regression tests for the race condition between _session_refresh_loop and _async_on_reconnect.

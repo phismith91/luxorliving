@@ -234,6 +234,18 @@ class LuxorKNXGateway:
                 _LOGGER.debug(
                     "Session refresh loop started (interval %ds)", SESSION_REFRESH_INTERVAL
                 )
+                self._last_cemi_error_count = (
+                    self._xknx.connection_manager.cemi_count_outgoing_error
+                )
+                self._zombie_watchdog_task = asyncio.create_task(
+                    self._zombie_watchdog_loop(),
+                    name="luxor_zombie_watchdog",
+                )
+                _LOGGER.debug(
+                    "Zombie watchdog started (check interval %ds, threshold %d)",
+                    ZOMBIE_CHECK_INTERVAL,
+                    ZOMBIE_ERROR_THRESHOLD,
+                )
 
             _LOGGER.info(
                 "Successfully connected to KNX Gateway %s:%s (%s mode)",
@@ -302,6 +314,15 @@ class LuxorKNXGateway:
             except asyncio.CancelledError:
                 pass
         self._session_refresh_task = None
+
+        # Cancel zombie watchdog loop
+        if self._zombie_watchdog_task and not self._zombie_watchdog_task.done():
+            self._zombie_watchdog_task.cancel()
+            try:
+                await self._zombie_watchdog_task
+            except asyncio.CancelledError:
+                pass
+        self._zombie_watchdog_task = None
 
         # Cancel pending debounce task so no orphaned coroutines remain
         if self._debounce_task and not self._debounce_task.done():
