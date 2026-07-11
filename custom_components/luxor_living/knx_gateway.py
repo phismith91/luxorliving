@@ -168,15 +168,7 @@ class LuxorKNXGateway:
                 # without a clean logout. Risk: briefly disconnects LuxorPlay if
                 # it holds the slot, but it reconnects automatically and this is
                 # far preferable to a full IP1 lockup from slot exhaustion.
-                try:
-                    status = await self._rest_client.get_tunneling_status()
-                    _LOGGER.info(
-                        "IP1 tunneling slots before flush: %s/%s connected",
-                        status.get("connectedClients", "?"),
-                        status.get("maxSlots", "?"),
-                    )
-                except Exception:
-                    pass  # diagnostic only, never block startup
+                await self._log_slot_status("startup")
                 _LOGGER.debug("Step 2/3: Flushing stale tunneling sessions...")
                 await self._rest_client.disable_tunneling()
                 _LOGGER.debug("Step 2/3: Enabling KNX Tunneling...")
@@ -344,11 +336,43 @@ class LuxorKNXGateway:
             _LOGGER.debug("Session refresh loop cancelled")
             raise
 
+    async def _log_slot_status(self, context: str) -> None:
+        """Log IP1 tunneling slot saturation — diagnostic only, never raises.
+
+        WARNING (visible in default HA logs) when slots are already at/over
+        capacity — that's the state that precedes a bus freeze. DEBUG
+        otherwise, so healthy runs don't spam the log.
+        """
+        try:
+            status = await self._rest_client.get_tunneling_status()
+            connected = status.get("connectedClients", "?")
+            max_slots = status.get("maxSlots", "?")
+            saturated = (
+                isinstance(connected, int)
+                and isinstance(max_slots, int)
+                and (connected >= max_slots)
+            )
+            log = _LOGGER.warning if saturated else _LOGGER.debug
+            log(
+                "IP1 tunneling slots before flush (%s): %s/%s connected",
+                context,
+                connected,
+                max_slots,
+            )
+        except Exception:
+            pass  # diagnostic only, never block the caller
+
     async def _async_forced_refresh(self) -> None:
         """Proactive REST refresh regardless of xknx connection state.
 
         Used by both the periodic timer and the reconnect-failure watchdog.
         Acquires _session_lock to prevent concurrent REST cycles.
+
+        Includes the same disable_tunneling() global flush as the initial
+        connect() — without it this only cycles our own session and never
+        clears slots orphaned by other clients (a crashed prior HA instance,
+        LuxorPlay) that accumulate during a long uptime and freeze the bus
+        between restarts, which defeats the point of a periodic self-heal.
         """
         if not self._rest_client or self.simulation_mode:
             return
@@ -356,6 +380,8 @@ class LuxorKNXGateway:
             try:
                 await self._rest_client.logout()
                 await self._rest_client.login(self.username, self.password)
+                await self._log_slot_status("periodic refresh")
+                await self._rest_client.disable_tunneling()
                 await self._rest_client.enable_tunneling()
                 self._connected = True
                 self._last_refresh_at = time.monotonic()
