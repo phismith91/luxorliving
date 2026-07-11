@@ -452,6 +452,19 @@ class LuxorKNXGateway:
             _LOGGER.debug("Zombie watchdog loop cancelled")
             raise
 
+    async def _async_zombie_recover(self) -> None:
+        """Force a full REST+KNX reconnect after zombie-tunnel detection.
+
+        Fire-and-forget task (scheduled via hass.async_create_task): never
+        let the exception escape unhandled, matching _async_forced_refresh.
+        """
+        try:
+            await self.async_disconnect()
+            await self.async_setup()
+            _LOGGER.warning("Zombie-tunnel recovery complete (host=%s)", self.host)
+        except Exception as err:
+            _LOGGER.error("Zombie-tunnel recovery failed (host=%s): %s", self.host, err)
+
     def _on_connection_state_changed(self, state: XknxConnectionState) -> None:
         """Handle xknx connection state changes.
 

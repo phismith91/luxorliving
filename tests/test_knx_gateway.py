@@ -1,6 +1,7 @@
 """Tests for KNX Gateway."""
 
 import asyncio
+import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -942,6 +943,82 @@ class TestZombieWatchdog:
                 pass
 
         mock_hass.async_create_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_triggers_recovery_above_threshold(self, mock_hass):
+        """Error count jumping by >= threshold must schedule _async_zombie_recover."""
+        from custom_components.luxor_living.const import ZOMBIE_ERROR_THRESHOLD
+
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = ZOMBIE_ERROR_THRESHOLD
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_called_once()
+        # Coroutine objects expose __name__ == the method name; close it to
+        # avoid a "never awaited" warning since we don't run the event loop here.
+        scheduled_coro = mock_hass.async_create_task.call_args[0][0]
+        assert scheduled_coro.__name__ == "_async_zombie_recover"
+        scheduled_coro.close()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_respects_cooldown(self, mock_hass):
+        """A second breach within ZOMBIE_RECONNECT_COOLDOWN must not re-trigger."""
+        from custom_components.luxor_living.const import ZOMBIE_ERROR_THRESHOLD
+
+        gateway = self._make_gateway(mock_hass)
+        gateway._last_zombie_reconnect_at = time.monotonic()  # just fired
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = ZOMBIE_ERROR_THRESHOLD
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_async_zombie_recover_calls_disconnect_then_setup(self, mock_hass):
+        """Recovery must fully disconnect, then run setup again, in order."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        call_order: list[str] = []
+
+        async def _fake_disconnect():
+            call_order.append("disconnect")
+
+        async def _fake_setup():
+            call_order.append("setup")
+            return True
+
+        gateway.async_disconnect = _fake_disconnect
+        gateway.async_setup = _fake_setup
+
+        await gateway._async_zombie_recover()
+
+        assert call_order == ["disconnect", "setup"]
+
+    @pytest.mark.asyncio
+    async def test_async_zombie_recover_swallows_exceptions(self, mock_hass):
+        """A failure during recovery must be logged, not raised (fire-and-forget task)."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+
+        async def _boom():
+            raise RuntimeError("gateway unreachable")
+
+        gateway.async_disconnect = _boom
+
+        await gateway._async_zombie_recover()  # must not raise
 
 
 class TestSessionLockRaceCondition:
