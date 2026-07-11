@@ -421,26 +421,33 @@ class LuxorKNXGateway:
         try:
             while True:
                 await asyncio.sleep(ZOMBIE_CHECK_INTERVAL)
-                if not self._xknx or self.simulation_mode:
-                    continue
-                error_count = self._xknx.connection_manager.cemi_count_outgoing_error
-                delta = error_count - self._last_cemi_error_count
-                self._last_cemi_error_count = error_count
-                if delta < ZOMBIE_ERROR_THRESHOLD:
-                    continue
-                now = time.monotonic()
-                if now - self._last_zombie_reconnect_at < ZOMBIE_RECONNECT_COOLDOWN:
-                    continue
-                self._last_zombie_reconnect_at = now
-                _LOGGER.warning(
-                    "KNX gateway %s:%s zombie tunnel detected — %d confirmation "
-                    "failures in %ds with no disconnect event, forcing full reconnect",
-                    self.host,
-                    self.port,
-                    delta,
-                    ZOMBIE_CHECK_INTERVAL,
-                )
-                self.hass.async_create_task(self._async_zombie_recover())
+                try:
+                    if not self._xknx or self.simulation_mode:
+                        continue
+                    error_count = self._xknx.connection_manager.cemi_count_outgoing_error
+                    delta = error_count - self._last_cemi_error_count
+                    self._last_cemi_error_count = error_count
+                    if delta < ZOMBIE_ERROR_THRESHOLD:
+                        continue
+                    now = time.monotonic()
+                    if now - self._last_zombie_reconnect_at < ZOMBIE_RECONNECT_COOLDOWN:
+                        continue
+                    self._last_zombie_reconnect_at = now
+                    _LOGGER.warning(
+                        "KNX gateway %s:%s zombie tunnel detected — %d confirmation "
+                        "failures in %ds with no disconnect event, forcing full reconnect",
+                        self.host,
+                        self.port,
+                        delta,
+                        ZOMBIE_CHECK_INTERVAL,
+                    )
+                    self.hass.async_create_task(self._async_zombie_recover())
+                except Exception as err:
+                    _LOGGER.error(
+                        "Zombie watchdog check failed (will retry in %ds): %s",
+                        ZOMBIE_CHECK_INTERVAL,
+                        err,
+                    )
         except asyncio.CancelledError:
             _LOGGER.debug("Zombie watchdog loop cancelled")
             raise

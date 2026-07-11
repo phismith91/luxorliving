@@ -909,6 +909,7 @@ class TestZombieWatchdog:
                 pass
 
         mock_hass.async_create_task.assert_not_called()
+        assert gateway._last_cemi_error_count == ZOMBIE_ERROR_THRESHOLD - 1
 
     @pytest.mark.asyncio
     async def test_watchdog_skips_without_xknx(self, mock_hass):
