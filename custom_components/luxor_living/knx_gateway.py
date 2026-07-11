@@ -457,11 +457,22 @@ class LuxorKNXGateway:
 
         Fire-and-forget task (scheduled via hass.async_create_task): never
         let the exception escape unhandled, matching _async_forced_refresh.
+        Acquires _session_lock around the full disconnect+setup cycle so it
+        can't race the periodic session-refresh loop or the reconnect
+        handler over the REST session.
         """
         try:
-            await self.async_disconnect()
-            await self.async_setup()
-            _LOGGER.warning("Zombie-tunnel recovery complete (host=%s)", self.host)
+            async with self._session_lock:
+                await self.async_disconnect()
+                success = await self.async_setup()
+            if success:
+                _LOGGER.warning("Zombie-tunnel recovery complete (host=%s)", self.host)
+            else:
+                _LOGGER.error(
+                    "Zombie-tunnel recovery failed to reconnect (host=%s) — "
+                    "reload the integration if the gateway remains unreachable",
+                    self.host,
+                )
         except Exception as err:
             _LOGGER.error("Zombie-tunnel recovery failed (host=%s): %s", self.host, err)
 

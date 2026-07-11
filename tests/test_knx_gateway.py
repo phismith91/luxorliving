@@ -1020,6 +1020,29 @@ class TestZombieWatchdog:
 
         await gateway._async_zombie_recover()  # must not raise
 
+    @pytest.mark.asyncio
+    async def test_async_zombie_recover_logs_failure_when_setup_fails(self, mock_hass, caplog):
+        """If async_setup() returns False, must log failure, not 'recovery complete'."""
+        import logging
+
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+
+        async def _fake_disconnect():
+            pass
+
+        async def _fake_setup_fails():
+            return False
+
+        gateway.async_disconnect = _fake_disconnect
+        gateway.async_setup = _fake_setup_fails
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gateway._async_zombie_recover()
+
+        messages = [r.getMessage() for r in caplog.records]
+        assert any("recovery failed" in m.lower() for m in messages)
+        assert not any("recovery complete" in m.lower() for m in messages)
+
 
 class TestSessionLockRaceCondition:
     """Regression tests for the race condition between _session_refresh_loop and _async_on_reconnect.
