@@ -538,7 +538,7 @@ class EntityMapper:
         wetterstation_roles = {
             "Temperatur": "Außentemperatur",
             "Windgeschwindigkeit": "Windgeschwindigkeit",
-            "HelligkeitMitte": "Helligkeit Mitte",
+            "HelligkeitMitte": "Helligkeit Vorne",
             "HelligkeitLinks": "Helligkeit Links",
             "HelligkeitRechts": "Helligkeit Rechts",
             "Regen": "Regen",  # Binary/status
