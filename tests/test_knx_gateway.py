@@ -1150,6 +1150,51 @@ class TestZombieWatchdog:
             "disconnect",
         ]
 
+    @pytest.mark.asyncio
+    async def test_async_disconnect_for_unload_cancels_pending_recovery_task(self, mock_hass):
+        """Unload must cancel a pending zombie-recovery task before it can reconnect.
+
+        Proves the fix: a recovery task that hasn't reached its lock-acquisition
+        yet must be cancelled by unload, so it can never call async_setup()
+        after the integration is considered unloaded.
+
+        The `await asyncio.sleep(0)` after async_disconnect_for_unload() is
+        required for this to be a meaningful regression test: without it, the
+        freshly-created recovery task never gets a single turn on the event
+        loop within this test — regardless of whether the fix is present —
+        and the assertion would pass vacuously either way. The extra
+        sleep(0) forces one more loop iteration, giving a *pending*
+        (not-yet-cancelled, as in the pre-fix code) recovery task the chance
+        to run to completion — it has no real suspension points once the
+        lock is free, so one iteration is enough for it to call
+        async_setup() — which is exactly what must NOT happen once the fix
+        cancels it first.
+        """
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        setup_was_called = False
+
+        async def _fake_disconnect():
+            pass
+
+        async def _fake_setup():
+            nonlocal setup_was_called
+            setup_was_called = True
+            return True
+
+        gateway.async_disconnect = _fake_disconnect
+        gateway.async_setup = _fake_setup
+
+        # Simulate a recovery task that's been scheduled but hasn't run yet
+        # (it will try to acquire _session_lock and call setup once it gets
+        # a chance to run — which should never happen once cancelled).
+        gateway._zombie_recover_task = asyncio.create_task(gateway._async_zombie_recover())
+
+        await gateway.async_disconnect_for_unload()
+        await asyncio.sleep(0)  # give any still-pending task a chance to run
+
+        assert setup_was_called is False
+        assert gateway._zombie_recover_task.cancelled() or gateway._zombie_recover_task.done()
+
 
 class TestSessionLockRaceCondition:
     """Regression tests for the race condition between _session_refresh_loop and _async_on_reconnect.

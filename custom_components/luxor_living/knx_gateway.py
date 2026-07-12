@@ -95,6 +95,7 @@ class LuxorKNXGateway:
         self._last_zombie_reconnect_at: float = (
             0.0  # monotonic time of last zombie-triggered reconnect
         )
+        self._zombie_recover_task: asyncio.Task | None = None
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
@@ -336,15 +337,26 @@ class LuxorKNXGateway:
     async def async_disconnect_for_unload(self) -> None:
         """Disconnect for integration unload, serialized against zombie recovery.
 
-        Acquires _session_lock so an in-flight _async_zombie_recover() (which
-        holds the lock across its own disconnect+setup cycle) can't race this
-        shutdown — either this runs fully before recovery starts, or fully
-        after recovery finishes, never interleaved. Without this, an unload
-        during an in-flight recovery could tear down fields the recovery just
-        repopulated, or let the recovery's async_setup() silently re-establish
-        a connection and background tasks after HA already considers the
-        integration unloaded (orphaned connection + leaked tasks).
+        Cancels any pending or in-flight _async_zombie_recover() task first —
+        without this, a recovery task created but not yet holding
+        _session_lock could still win the lock after this method's own
+        disconnect finishes, silently re-establishing a connection and
+        background tasks after HA already considers the entry unloaded.
+        Then acquires _session_lock for the disconnect itself so it can't
+        interleave with a recovery that was already mid-flight (had already
+        acquired the lock before this method got a chance to cancel it —
+        cancelling it here just unblocks it faster; the lock ensures
+        correctness either way).
         """
+        if self._zombie_recover_task and not self._zombie_recover_task.done():
+            self._zombie_recover_task.cancel()
+            try:
+                await self._zombie_recover_task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                pass  # recovery's own errors are already logged internally
+
         async with self._session_lock:
             await self.async_disconnect()
 
@@ -477,7 +489,9 @@ class LuxorKNXGateway:
                         delta,
                         ZOMBIE_CHECK_INTERVAL,
                     )
-                    self.hass.async_create_task(self._async_zombie_recover())
+                    self._zombie_recover_task = self.hass.async_create_task(
+                        self._async_zombie_recover()
+                    )
                 except Exception as err:
                     _LOGGER.error(
                         "Zombie watchdog check failed (will retry in %ds): %s",
