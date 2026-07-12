@@ -3,9 +3,9 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## [1.2.1] - 2026-07-02
+## [1.2.1] - 2026-07-12
 
-Pre-release (`v1.2.1-rc.4`).
+Pre-release (`v1.2.1-rc.5`).
 
 ### Added
 
@@ -15,7 +15,8 @@ Pre-release (`v1.2.1-rc.4`).
 
 - **IP1 tunneling slot exhaustion**: Unclean HA shutdowns left stale tunneling slots on the IP1 (up to 4 slots, then lockup). `enable_tunneling()` now calls `disable_tunneling()` first to flush any orphaned sessions from previous crashed HA instances. Diagnostics added: log prints connected client count and slot saturation state on startup.
 - **Mid-uptime slot exhaustion (rc.4)**: The startup flush above only ran once per HA restart. Orphaned slots from other clients (a crashed prior instance, LuxorPlay) can still accumulate during a single long uptime and freeze the bus after ~24-72h without HA ever seeing a disconnect — confirmed on Marcus' 2026-06-30 log (~30h uptime, continuous `L_DATA_CON` confirmation timeouts, no disconnect logged, required a physical KNX restart). The existing 4h proactive `_session_refresh_loop` now also calls `disable_tunneling()` before re-login, so it actually clears device-wide orphaned slots instead of only cycling its own session. Slot-saturation diagnostics now log at WARNING (visible in default HA logs) once slots are at/over capacity, instead of only at DEBUG/INFO which most bug-report logs don't include.
-- **Zombie-tunnel watchdog**: The IP1 tunnel can report CONNECTED for hours while every outgoing telegram fails its L_DATA_CON confirmation, with xknx's own heartbeat never detecting a real disconnect (confirmed on a 2026-07-10 log: ~20 confirmation timeouts/min for 9h, unaffected by the existing periodic REST-session flush from #180, which only cycles the REST layer, not the xknx tunnel object). A new watchdog polls xknx's `cemi_count_outgoing_error` counter every 30s and forces a full REST+KNX reconnect if it jumps by 5+ in one window, with a 5-minute cooldown to avoid reconnect storms.
+- **Zombie-tunnel watchdog**: The IP1 tunnel can report CONNECTED for hours while every outgoing telegram fails its L_DATA_CON confirmation, with xknx's own heartbeat never detecting a real disconnect (confirmed on a 2026-07-10 log: ~20 confirmation timeouts/min for 9h, unaffected by the existing periodic REST-session flush from #180, which only cycles the REST layer, not the xknx tunnel object). A new watchdog polls xknx's `cemi_count_outgoing_error` counter every 30s and forces a full REST+KNX reconnect if it jumps by 5+ in one window, with a 5-minute cooldown to avoid reconnect storms. Also serializes the recovery cycle against the periodic session refresh and against integration unload, so a reload during an in-flight recovery can't leak a connection or background tasks.
+- **Wetterstation "Vorne" sensor mislabeled as "Mitte"**: Theben's own KNX product definition (ComObject 0 "Helligkeitswert vorne", parameter enum "Sensor vorne") has no "Mitte" position — only vorne/links/rechts. The front-facing brightness sensor's display name is now "Helligkeit Vorne" instead of "Helligkeit Mitte". Also escalated the two periodic-refresh success log lines from INFO to WARNING so they're visible in default HA log exports.
 
 ## [1.2.0] - 2026-06-18
 
