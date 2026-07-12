@@ -276,6 +276,15 @@ class LuxorKNXGateway:
 
             return False
 
+    async def _cancel_task(self, task: asyncio.Task | None) -> None:
+        """Cancel a background task if still running and await its cancellation."""
+        if task and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
     async def async_disconnect(self) -> None:
         """
         Disconnect from KNX gateway and cleanup REST session.
@@ -308,21 +317,11 @@ class LuxorKNXGateway:
                 self._rest_client = None
 
         # Cancel session refresh loop
-        if self._session_refresh_task and not self._session_refresh_task.done():
-            self._session_refresh_task.cancel()
-            try:
-                await self._session_refresh_task
-            except asyncio.CancelledError:
-                pass
+        await self._cancel_task(self._session_refresh_task)
         self._session_refresh_task = None
 
         # Cancel zombie watchdog loop
-        if self._zombie_watchdog_task and not self._zombie_watchdog_task.done():
-            self._zombie_watchdog_task.cancel()
-            try:
-                await self._zombie_watchdog_task
-            except asyncio.CancelledError:
-                pass
+        await self._cancel_task(self._zombie_watchdog_task)
         self._zombie_watchdog_task = None
 
         # Cancel pending debounce task so no orphaned coroutines remain
@@ -348,14 +347,7 @@ class LuxorKNXGateway:
         cancelling it here just unblocks it faster; the lock ensures
         correctness either way).
         """
-        if self._zombie_recover_task and not self._zombie_recover_task.done():
-            self._zombie_recover_task.cancel()
-            try:
-                await self._zombie_recover_task
-            except asyncio.CancelledError:
-                pass
-            except Exception:
-                pass  # recovery's own errors are already logged internally
+        await self._cancel_task(self._zombie_recover_task)
 
         async with self._session_lock:
             await self.async_disconnect()
