@@ -343,7 +343,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Disconnect KNX gateway using type-safe state
     state = entry.runtime_data
     if state.knx_gateway:
-        await state.knx_gateway.async_disconnect()
+        await state.knx_gateway.async_disconnect_for_unload()
 
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 

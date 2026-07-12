@@ -55,7 +55,7 @@ class TestAsyncUnloadEntry:
 
     @pytest.mark.asyncio
     async def test_disconnects_knx_gateway_on_unload(self):
-        """Kill: gateway.async_disconnect() call removed."""
+        """Kill: gateway.async_disconnect_for_unload() call removed."""
         from custom_components.luxor_living import async_unload_entry
 
         hass = MagicMock()
@@ -63,7 +63,7 @@ class TestAsyncUnloadEntry:
 
         state = MagicMock()
         state.knx_gateway = MagicMock()
-        state.knx_gateway.async_disconnect = AsyncMock()
+        state.knx_gateway.async_disconnect_for_unload = AsyncMock()
         state.push_client = None
 
         entry = MagicMock()
@@ -71,7 +71,7 @@ class TestAsyncUnloadEntry:
 
         result = await async_unload_entry(hass, entry)
 
-        state.knx_gateway.async_disconnect.assert_awaited_once()
+        state.knx_gateway.async_disconnect_for_unload.assert_awaited_once()
         assert result is True
 
     @pytest.mark.asyncio
@@ -84,7 +84,7 @@ class TestAsyncUnloadEntry:
 
         state = MagicMock()
         state.knx_gateway = MagicMock()
-        state.knx_gateway.async_disconnect = AsyncMock()
+        state.knx_gateway.async_disconnect_for_unload = AsyncMock()
         state.push_client = None
 
         entry = MagicMock()
@@ -103,7 +103,7 @@ class TestAsyncUnloadEntry:
 
         state = MagicMock()
         state.knx_gateway = MagicMock()
-        state.knx_gateway.async_disconnect = AsyncMock()
+        state.knx_gateway.async_disconnect_for_unload = AsyncMock()
         push_client = MagicMock()
         push_client.stop = AsyncMock()
         state.push_client = push_client

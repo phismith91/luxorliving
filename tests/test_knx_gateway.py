@@ -1116,6 +1116,40 @@ class TestZombieWatchdog:
 
         await gateway.async_disconnect()  # must not raise
 
+    @pytest.mark.asyncio
+    async def test_async_disconnect_for_unload_waits_for_session_lock(self, mock_hass):
+        """Unload must wait for an in-flight zombie recovery's lock before disconnecting.
+
+        Proves the fix: if _session_lock is already held (simulating an
+        in-flight _async_zombie_recover), async_disconnect_for_unload() must
+        block until the lock is released, rather than racing ahead.
+        """
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        call_order: list[str] = []
+
+        async def _fake_disconnect():
+            call_order.append("disconnect")
+
+        gateway.async_disconnect = _fake_disconnect
+
+        async def _hold_lock_then_release():
+            async with gateway._session_lock:
+                call_order.append("lock_acquired_by_recovery")
+                await asyncio.sleep(0.05)
+                call_order.append("lock_released_by_recovery")
+
+        holder_task = asyncio.create_task(_hold_lock_then_release())
+        await asyncio.sleep(0)  # let holder_task acquire the lock first
+
+        await gateway.async_disconnect_for_unload()
+        await holder_task
+
+        assert call_order == [
+            "lock_acquired_by_recovery",
+            "lock_released_by_recovery",
+            "disconnect",
+        ]
+
 
 class TestSessionLockRaceCondition:
     """Regression tests for the race condition between _session_refresh_loop and _async_on_reconnect.

@@ -333,6 +333,21 @@ class LuxorKNXGateway:
         self._tunneling_enabled = False
         self._xknx = None
 
+    async def async_disconnect_for_unload(self) -> None:
+        """Disconnect for integration unload, serialized against zombie recovery.
+
+        Acquires _session_lock so an in-flight _async_zombie_recover() (which
+        holds the lock across its own disconnect+setup cycle) can't race this
+        shutdown — either this runs fully before recovery starts, or fully
+        after recovery finishes, never interleaved. Without this, an unload
+        during an in-flight recovery could tear down fields the recovery just
+        repopulated, or let the recovery's async_setup() silently re-establish
+        a connection and background tasks after HA already considers the
+        integration unloaded (orphaned connection + leaked tasks).
+        """
+        async with self._session_lock:
+            await self.async_disconnect()
+
     async def _session_refresh_loop(self) -> None:
         """Periodically re-authenticate to prevent IP1 session-table saturation.
 
