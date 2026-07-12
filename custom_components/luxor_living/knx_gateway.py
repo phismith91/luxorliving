@@ -369,7 +369,7 @@ class LuxorKNXGateway:
                 await asyncio.sleep(SESSION_REFRESH_INTERVAL)
                 if not self._rest_client or self.simulation_mode:
                     continue
-                _LOGGER.info(
+                _LOGGER.warning(
                     "Proactive session refresh — cycling REST auth to prevent gateway lockup"
                 )
                 try:
@@ -433,7 +433,7 @@ class LuxorKNXGateway:
                 await self._rest_client.enable_tunneling()
                 self._connected = True
                 self._last_refresh_at = time.monotonic()
-                _LOGGER.info("REST session refresh complete (host=%s)", self.host)
+                _LOGGER.warning("REST session refresh complete (host=%s)", self.host)
             except Exception as err:
                 # Fire-and-forget task: never let the exception escape unhandled.
                 self._connected = False
