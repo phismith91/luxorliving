@@ -52,7 +52,7 @@ dev = [
     "flake8-docstrings==1.7.0",
     "pylint==4.0.6",
     "mypy==2.2.0",
-    "types-requests==2.33.0.20260518",
+    "types-requests==2.33.0.20260712",
     "radon==6.0.1",
     "bandit==1.9.4",
     "pre-commit==4.6.0",
