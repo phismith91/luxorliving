@@ -488,6 +488,7 @@ class TestReconnectWatchdog:
 
         rest.logout.assert_called_once()
         rest.login.assert_called_once_with("admin", "pass")
+        rest.disable_tunneling.assert_called_once()
         rest.enable_tunneling.assert_called_once()
 
 
@@ -594,3 +595,54 @@ class TestNotConnectedRateLimit:
             if r.levelno == logging.ERROR and "not connected" in r.getMessage()
         ]
         assert errors
+
+
+# ── Slot saturation diagnostic ─────────────────────────────────────────────────
+
+
+class TestLogSlotStatus:
+    """_log_slot_status escalates to WARNING only when slots are saturated."""
+
+    @pytest.mark.asyncio
+    async def test_saturated_logs_warning(self, caplog):
+        import logging
+
+        gw = _gw(simulation_mode=False)
+        gw._rest_client = AsyncMock()
+        gw._rest_client.get_tunneling_status.return_value = {
+            "connectedClients": 4,
+            "maxSlots": 4,
+        }
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gw._log_slot_status("test")
+
+        matches = [r for r in caplog.records if "slots before flush" in r.getMessage()]
+        assert matches
+        assert matches[0].levelno == logging.WARNING
+
+    @pytest.mark.asyncio
+    async def test_healthy_logs_debug(self, caplog):
+        import logging
+
+        gw = _gw(simulation_mode=False)
+        gw._rest_client = AsyncMock()
+        gw._rest_client.get_tunneling_status.return_value = {
+            "connectedClients": 1,
+            "maxSlots": 4,
+        }
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gw._log_slot_status("test")
+
+        matches = [r for r in caplog.records if "slots before flush" in r.getMessage()]
+        assert matches
+        assert matches[0].levelno == logging.DEBUG
+
+    @pytest.mark.asyncio
+    async def test_rest_error_swallowed(self):
+        gw = _gw(simulation_mode=False)
+        gw._rest_client = AsyncMock()
+        gw._rest_client.get_tunneling_status.side_effect = RuntimeError("boom")
+
+        await gw._log_slot_status("test")  # must not raise

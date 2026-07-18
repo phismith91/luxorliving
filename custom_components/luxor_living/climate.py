@@ -95,7 +95,6 @@ class LuxorClimate(ClimateEntity):
 
     _attr_has_entity_name = True
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
-    _attr_hvac_modes = [HVACMode.HEAT, HVACMode.OFF]
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.TURN_OFF
@@ -119,6 +118,14 @@ class LuxorClimate(ClimateEntity):
 
         # Map datapoint addresses by role (MappedEntity.datapoints is already dict[str, int])
         self._datapoints = mapped_entity.datapoints
+
+        # Track cooling capability (based on UmschaltenHeitzenKühlen datapoint presence)
+        self._cooling_capable = mapped_entity.cooling_capable
+        self._attr_hvac_modes = (
+            [HVACMode.HEAT, HVACMode.COOL, HVACMode.OFF]
+            if self._cooling_capable
+            else [HVACMode.HEAT, HVACMode.OFF]
+        )
 
         # Set unique ID
         self._attr_unique_id = mapped_entity.unique_id
@@ -274,6 +281,15 @@ class LuxorClimate(ClimateEntity):
         elif hvac_mode == HVACMode.HEAT:
             temp = getattr(self, "_setpoint_before_off", None) or self._attr_target_temperature
             await self.async_set_temperature(temperature=temp or 20.0)
+            if self._cooling_capable and "UmschaltenHeitzenKühlen" in self._datapoints:
+                await self.knx_gateway.async_send_telegram(
+                    self._datapoints["UmschaltenHeitzenKühlen"], 1, "binary"
+                )
+        elif hvac_mode == HVACMode.COOL:
+            if self._cooling_capable and "UmschaltenHeitzenKühlen" in self._datapoints:
+                await self.knx_gateway.async_send_telegram(
+                    self._datapoints["UmschaltenHeitzenKühlen"], 0, "binary"
+                )
 
         self.async_write_ha_state()
 
