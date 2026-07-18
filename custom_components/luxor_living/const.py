@@ -27,6 +27,15 @@ SESSION_REFRESH_INTERVAL = 4 * 3600  # proactive REST session refresh every 4 h
 RECONNECT_FAILURE_THRESHOLD = 5  # forced REST refresh after this many DISCONNECTED events in window
 RECONNECT_FAILURE_WINDOW = 60  # seconds window for counting consecutive disconnects
 RECONNECT_COOLDOWN_SECS = 30  # skip reconnect re-auth if a refresh happened this recently
+ZOMBIE_CHECK_INTERVAL = 30  # seconds between cemi_count_outgoing_error polls
+ZOMBIE_ERROR_THRESHOLD = (
+    5  # new L_DATA_CON confirmation failures per check interval to declare zombie tunnel
+)
+ZOMBIE_RECONNECT_COOLDOWN = (
+    300  # seconds to wait after a zombie-triggered reconnect before arming again
+)
+ZOMBIE_RECOVERY_TIMEOUT = 120  # seconds before a stuck zombie-recovery (disconnect+setup) is abandoned, releasing _session_lock
+XKNX_STOP_TIMEOUT = 15  # seconds before a hanging xknx.stop() is abandoned during disconnect
 NOT_CONNECTED_LOG_INTERVAL = 60  # rate-limit "not connected" ERROR log to once per N seconds
 DEFAULT_LOG_LEVEL = "info"
 DEFAULT_DISCOVERY_TIMEOUT = 2.0  # seconds

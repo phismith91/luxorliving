@@ -28,6 +28,11 @@ from .const import (
     RECONNECT_FAILURE_THRESHOLD,
     RECONNECT_FAILURE_WINDOW,
     SESSION_REFRESH_INTERVAL,
+    XKNX_STOP_TIMEOUT,
+    ZOMBIE_CHECK_INTERVAL,
+    ZOMBIE_ERROR_THRESHOLD,
+    ZOMBIE_RECONNECT_COOLDOWN,
+    ZOMBIE_RECOVERY_TIMEOUT,
 )
 from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
 
@@ -87,6 +92,15 @@ class LuxorKNXGateway:
         )  # monotonic timestamps of recent DISCONNECTED events
         self._last_refresh_at: float = 0.0  # monotonic time of last successful REST refresh
         self._last_not_connected_log_at: float = 0.0  # rate-limit "not connected" ERROR logs
+        self._zombie_watchdog_task: asyncio.Task | None = None
+        self._last_cemi_error_count: int = 0  # cemi_count_outgoing_error at last watchdog check
+        self._last_cemi_incoming_count: int = 0  # cemi_count_incoming at last watchdog check
+        self._last_telegram_received_at: float = 0.0  # monotonic time of last incoming telegram
+        self._last_zombie_reconnect_at: float = (
+            -ZOMBIE_RECONNECT_COOLDOWN
+        )  # monotonic time of last zombie-triggered reconnect ("never" — must not
+        # collide with a low time.monotonic() value on a freshly booted host)
+        self._zombie_recover_task: asyncio.Task | None = None
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
@@ -226,6 +240,19 @@ class LuxorKNXGateway:
                 _LOGGER.debug(
                     "Session refresh loop started (interval %ds)", SESSION_REFRESH_INTERVAL
                 )
+                self._last_cemi_error_count = (
+                    self._xknx.connection_manager.cemi_count_outgoing_error
+                )
+                self._last_cemi_incoming_count = self._xknx.connection_manager.cemi_count_incoming
+                self._zombie_watchdog_task = asyncio.create_task(
+                    self._zombie_watchdog_loop(),
+                    name="luxor_zombie_watchdog",
+                )
+                _LOGGER.debug(
+                    "Zombie watchdog started (check interval %ds, threshold %d)",
+                    ZOMBIE_CHECK_INTERVAL,
+                    ZOMBIE_ERROR_THRESHOLD,
+                )
 
             _LOGGER.info(
                 "Successfully connected to KNX Gateway %s:%s (%s mode)",
@@ -255,12 +282,27 @@ class LuxorKNXGateway:
 
             return False
 
+    async def _cancel_task(self, task: asyncio.Task | None) -> None:
+        """Cancel a background task if still running and await its cancellation."""
+        if task and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
     async def async_disconnect(self) -> None:
         """
         Disconnect from KNX gateway and cleanup REST session.
 
         NOTE: Logout automatically deactivates tunneling!
         """
+        # Reject new outgoing telegrams FIRST — xknx.stop() joins the telegram
+        # queue, and with _connected still True entity polling keeps refilling
+        # that queue during teardown, so on a zombie tunnel (consumer drains
+        # ~1 telegram/3s via confirmation timeout) stop() never returns.
+        self._connected = False
+
         # Stop reconnect handler before disconnecting so it doesn't fire during teardown
         self._setup_complete = False
         if self._unregister_connection_cb:
@@ -269,9 +311,24 @@ class LuxorKNXGateway:
 
         # Disconnect KNX
         if self._xknx and not self.simulation_mode:
+            # Drop the queued backlog so stop()'s queue-join returns promptly.
+            # Safe to discard: the tunnel is being torn down, every pending
+            # telegram would only burn its ~3s confirmation timeout anyway.
             try:
-                await self._xknx.stop()
+                for _ in range(self._xknx.telegrams.qsize()):
+                    self._xknx.telegrams.get_nowait()
+                    self._xknx.telegrams.task_done()
+            except Exception:  # pragma: no cover - defensive, queue may be mocked
+                pass
+            try:
+                await asyncio.wait_for(self._xknx.stop(), timeout=XKNX_STOP_TIMEOUT)
                 _LOGGER.info("Disconnected from KNX Gateway")
+            except asyncio.TimeoutError:
+                _LOGGER.error(
+                    "xknx stop timed out after %ss — abandoning instance "
+                    "(next setup flushes the stale IP1 slot via disable_tunneling)",
+                    XKNX_STOP_TIMEOUT,
+                )
             except Exception as err:
                 _LOGGER.error("Error disconnecting from KNX: %s", err)
 
@@ -287,13 +344,12 @@ class LuxorKNXGateway:
                 self._rest_client = None
 
         # Cancel session refresh loop
-        if self._session_refresh_task and not self._session_refresh_task.done():
-            self._session_refresh_task.cancel()
-            try:
-                await self._session_refresh_task
-            except asyncio.CancelledError:
-                pass
+        await self._cancel_task(self._session_refresh_task)
         self._session_refresh_task = None
+
+        # Cancel zombie watchdog loop
+        await self._cancel_task(self._zombie_watchdog_task)
+        self._zombie_watchdog_task = None
 
         # Cancel pending debounce task so no orphaned coroutines remain
         if self._debounce_task and not self._debounce_task.done():
@@ -303,6 +359,25 @@ class LuxorKNXGateway:
         self._connected = False
         self._tunneling_enabled = False
         self._xknx = None
+
+    async def async_disconnect_for_unload(self) -> None:
+        """Disconnect for integration unload, serialized against zombie recovery.
+
+        Cancels any pending or in-flight _async_zombie_recover() task first —
+        without this, a recovery task created but not yet holding
+        _session_lock could still win the lock after this method's own
+        disconnect finishes, silently re-establishing a connection and
+        background tasks after HA already considers the entry unloaded.
+        Then acquires _session_lock for the disconnect itself so it can't
+        interleave with a recovery that was already mid-flight (had already
+        acquired the lock before this method got a chance to cancel it —
+        cancelling it here just unblocks it faster; the lock ensures
+        correctness either way).
+        """
+        await self._cancel_task(self._zombie_recover_task)
+
+        async with self._session_lock:
+            await self.async_disconnect()
 
     async def _session_refresh_loop(self) -> None:
         """Periodically re-authenticate to prevent IP1 session-table saturation.
@@ -321,7 +396,7 @@ class LuxorKNXGateway:
                 await asyncio.sleep(SESSION_REFRESH_INTERVAL)
                 if not self._rest_client or self.simulation_mode:
                     continue
-                _LOGGER.info(
+                _LOGGER.warning(
                     "Proactive session refresh — cycling REST auth to prevent gateway lockup"
                 )
                 try:
@@ -341,8 +416,13 @@ class LuxorKNXGateway:
 
         WARNING (visible in default HA logs) when slots are already at/over
         capacity — that's the state that precedes a bus freeze. DEBUG
-        otherwise, so healthy runs don't spam the log.
+        otherwise, so healthy runs don't spam the log. A failing query is
+        itself logged at WARNING: on 2026-07-07 the IP1's REST port died
+        alongside the tunnel, so "REST unreachable at detection time" is a
+        diagnostic answer, not noise.
         """
+        if not self._rest_client:
+            return  # simulation mode / mid-teardown — nothing to query
         try:
             status = await self._rest_client.get_tunneling_status()
             connected = status.get("connectedClients", "?")
@@ -359,8 +439,8 @@ class LuxorKNXGateway:
                 connected,
                 max_slots,
             )
-        except Exception:
-            pass  # diagnostic only, never block the caller
+        except Exception as err:  # diagnostic only, never raises to the caller
+            _LOGGER.warning("IP1 slot status query failed (%s): %s", context, err)
 
     async def _async_forced_refresh(self) -> None:
         """Proactive REST refresh regardless of xknx connection state.
@@ -385,7 +465,7 @@ class LuxorKNXGateway:
                 await self._rest_client.enable_tunneling()
                 self._connected = True
                 self._last_refresh_at = time.monotonic()
-                _LOGGER.info("REST session refresh complete (host=%s)", self.host)
+                _LOGGER.warning("REST session refresh complete (host=%s)", self.host)
             except Exception as err:
                 # Fire-and-forget task: never let the exception escape unhandled.
                 self._connected = False
@@ -395,6 +475,118 @@ class LuxorKNXGateway:
                     self.host,
                     err,
                 )
+
+    async def _zombie_watchdog_loop(self) -> None:
+        """Detect a 'zombie' tunnel and force a full reconnect.
+
+        xknx can report CONNECTED for hours while every outgoing telegram
+        fails its L_DATA_CON confirmation — the IP1/bus stops acking without
+        xknx's own heartbeat ever detecting a real disconnect (confirmed on
+        Marcus' 2026-07-10 log: ~20 confirmation timeouts/min for 9h, with
+        the periodic REST-session flush from #180 active throughout and not
+        stopping it, since that fix only cycles REST auth, never the xknx
+        tunnel object).
+
+        Polls xknx's own cemi_count_outgoing_error counter — incremented on
+        every ConfirmationError — instead of parsing xknx.log warning text.
+        """
+        try:
+            while True:
+                await asyncio.sleep(ZOMBIE_CHECK_INTERVAL)
+                try:
+                    if not self._xknx or self.simulation_mode:
+                        continue
+                    error_count = self._xknx.connection_manager.cemi_count_outgoing_error
+                    incoming_count = self._xknx.connection_manager.cemi_count_incoming
+                    delta = error_count - self._last_cemi_error_count
+                    incoming_delta = incoming_count - self._last_cemi_incoming_count
+                    self._last_cemi_error_count = error_count
+                    self._last_cemi_incoming_count = incoming_count
+                    if delta < ZOMBIE_ERROR_THRESHOLD:
+                        continue
+                    now = time.monotonic()
+                    if now - self._last_zombie_reconnect_at < ZOMBIE_RECONNECT_COOLDOWN:
+                        continue
+                    self._last_zombie_reconnect_at = now
+                    last_rx = (
+                        f"{now - self._last_telegram_received_at:.0f}s ago"
+                        if self._last_telegram_received_at
+                        else "never"
+                    )
+                    _LOGGER.warning(
+                        "KNX gateway %s:%s zombie tunnel detected — %d confirmation "
+                        "failures in %ds with no disconnect event "
+                        "(%s incoming CEMI frames in same window, last incoming "
+                        "telegram: %s), forcing full reconnect",
+                        self.host,
+                        self.port,
+                        delta,
+                        ZOMBIE_CHECK_INTERVAL,
+                        incoming_delta,
+                        last_rx,
+                    )
+                    self._zombie_recover_task = self.hass.async_create_task(
+                        self._async_zombie_recover()
+                    )
+                except Exception as err:
+                    _LOGGER.error(
+                        "Zombie watchdog check failed (will retry in %ds): %s",
+                        ZOMBIE_CHECK_INTERVAL,
+                        err,
+                    )
+        except asyncio.CancelledError:
+            _LOGGER.debug("Zombie watchdog loop cancelled")
+            raise
+
+    async def _async_zombie_recover(self) -> None:
+        """Force a full REST+KNX reconnect after zombie-tunnel detection.
+
+        Fire-and-forget task (scheduled via hass.async_create_task): never
+        let the exception escape unhandled, matching _async_forced_refresh.
+        Acquires _session_lock around the full disconnect+setup cycle so it
+        can't race the periodic session-refresh loop or the reconnect
+        handler over the REST session.
+
+        Bounded by ZOMBIE_RECOVERY_TIMEOUT: a real zombie tunnel means the
+        IP1 stops acking at the protocol level, and xknx.stop()/start() have
+        no internal timeout for that — without this guard a stuck recovery
+        holds _session_lock forever, starving every later recovery attempt
+        AND the periodic proactive refresh (confirmed on Marcus'
+        2026-07-17 log: 3h40 of repeated zombie detections with zero
+        completion/failure logged, because the very first recovery attempt
+        never returned).
+        """
+
+        async def _recover() -> bool:
+            # Snapshot IP1 slot state while the zombie condition is live —
+            # after teardown the evidence is gone. Outside the lock: the
+            # query is read-only and its 30s REST timeout must not extend
+            # the lock hold.
+            await self._log_slot_status("zombie detection")
+            async with self._session_lock:
+                await self.async_disconnect()
+                return await self.async_setup()
+
+        try:
+            success = await asyncio.wait_for(_recover(), timeout=ZOMBIE_RECOVERY_TIMEOUT)
+            if success:
+                _LOGGER.warning("Zombie-tunnel recovery complete (host=%s)", self.host)
+            else:
+                _LOGGER.error(
+                    "Zombie-tunnel recovery failed to reconnect (host=%s) — "
+                    "reload the integration if the gateway remains unreachable",
+                    self.host,
+                )
+        except asyncio.TimeoutError:
+            self._connected = False
+            _LOGGER.error(
+                "Zombie-tunnel recovery timed out after %ss (host=%s) — "
+                "_session_lock released, will retry at next zombie detection",
+                ZOMBIE_RECOVERY_TIMEOUT,
+                self.host,
+            )
+        except Exception as err:
+            _LOGGER.error("Zombie-tunnel recovery failed (host=%s): %s", self.host, err)
 
     def _on_connection_state_changed(self, state: XknxConnectionState) -> None:
         """Handle xknx connection state changes.
@@ -669,6 +861,10 @@ class LuxorKNXGateway:
 
     async def _telegram_received_callback(self, telegram: Telegram) -> None:
         """Handle incoming KNX telegrams."""
+        # Track bus liveness BEFORE the payload filter — a GroupValueRead from
+        # another client still proves the bus alive (zombie-detection diagnostic).
+        self._last_telegram_received_at = time.monotonic()
+
         if not isinstance(telegram.payload, (GroupValueWrite, GroupValueResponse)):
             return
 

@@ -112,3 +112,5 @@ coverage.json
 luxor_living.zip
 .codegraph/
 .mutmut-cache
+
+.worktrees/

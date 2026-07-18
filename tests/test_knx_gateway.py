@@ -1,6 +1,7 @@
 """Tests for KNX Gateway."""
 
 import asyncio
+import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -83,6 +84,24 @@ class TestLuxorKNXGateway:
         from xknx.io import ConnectionType
 
         assert gateway._connection_type == ConnectionType.ROUTING
+
+    def test_init_zombie_watchdog_state(self, mock_hass):
+        """New zombie-watchdog fields must start unarmed/zeroed."""
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+
+        from custom_components.luxor_living.const import ZOMBIE_RECONNECT_COOLDOWN
+
+        assert gateway._zombie_watchdog_task is None
+        assert gateway._last_cemi_error_count == 0
+        # sentinel "never" — must not collide with a low time.monotonic()
+        # value on a freshly booted host (see test_watchdog_triggers_on_low_system_uptime)
+        assert gateway._last_zombie_reconnect_at == -ZOMBIE_RECONNECT_COOLDOWN
 
     @pytest.mark.asyncio
     async def test_async_setup_simulation_mode(self, mock_hass):
@@ -854,6 +873,626 @@ class TestSessionRefreshLoop:
                 pass
 
         assert gateway._connected is True
+
+
+class TestZombieWatchdog:
+    """Tests for the zombie-tunnel watchdog (_zombie_watchdog_loop)."""
+
+    def _make_gateway(self, mock_hass, *, simulation_mode: bool = False) -> LuxorKNXGateway:
+        return LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            simulation_mode=simulation_mode,
+        )
+
+    def _controlled_sleep(self, sleep_calls: list[int], stop_after: int = 2):
+        async def _sleep(interval: int) -> None:
+            sleep_calls.append(interval)
+            if len(sleep_calls) >= stop_after:
+                raise asyncio.CancelledError
+
+        return _sleep
+
+    @pytest.mark.asyncio
+    async def test_watchdog_noop_below_threshold(self, mock_hass):
+        """Error count increasing by less than the threshold must not reconnect."""
+        from custom_components.luxor_living.const import ZOMBIE_ERROR_THRESHOLD
+
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = ZOMBIE_ERROR_THRESHOLD - 1
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_not_called()
+        assert gateway._last_cemi_error_count == ZOMBIE_ERROR_THRESHOLD - 1
+
+    @pytest.mark.asyncio
+    async def test_watchdog_skips_without_xknx(self, mock_hass):
+        """Loop must not crash and must skip the check when _xknx is None."""
+        gateway = self._make_gateway(mock_hass)
+        gateway._xknx = None
+
+        sleep_calls: list[int] = []
+        with patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_skips_in_simulation_mode(self, mock_hass):
+        """Loop must not act on the counter in simulation mode."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = 999
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_triggers_recovery_above_threshold(self, mock_hass):
+        """Error count jumping by >= threshold must schedule _async_zombie_recover."""
+        from custom_components.luxor_living.const import ZOMBIE_ERROR_THRESHOLD
+
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = ZOMBIE_ERROR_THRESHOLD
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_called_once()
+        # Coroutine objects expose __name__ == the method name; close it to
+        # avoid a "never awaited" warning since we don't run the event loop here.
+        scheduled_coro = mock_hass.async_create_task.call_args[0][0]
+        assert scheduled_coro.__name__ == "_async_zombie_recover"
+        scheduled_coro.close()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_respects_cooldown(self, mock_hass):
+        """A second breach within ZOMBIE_RECONNECT_COOLDOWN must not re-trigger."""
+        from custom_components.luxor_living.const import ZOMBIE_ERROR_THRESHOLD
+
+        gateway = self._make_gateway(mock_hass)
+        gateway._last_zombie_reconnect_at = time.monotonic()  # just fired
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = ZOMBIE_ERROR_THRESHOLD
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_triggers_on_low_system_uptime(self, mock_hass):
+        """A never-yet-fired cooldown must not be mistaken for a recent one.
+
+        _last_zombie_reconnect_at starts at 0.0 ("never"). On a freshly
+        booted host, time.monotonic() can itself be a small value (e.g. right
+        after HA restart on a container with low uptime) — `now - 0.0 <
+        COOLDOWN` would then be true, silently swallowing the very first
+        real detection.
+        """
+        from custom_components.luxor_living.const import ZOMBIE_ERROR_THRESHOLD
+
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = ZOMBIE_ERROR_THRESHOLD
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with (
+            patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)),
+            patch("time.monotonic", return_value=10.0),
+        ):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_called_once()
+        mock_hass.async_create_task.call_args[0][0].close()
+
+    @pytest.mark.asyncio
+    async def test_async_zombie_recover_calls_disconnect_then_setup(self, mock_hass):
+        """Recovery must fully disconnect, then run setup again, in order."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        call_order: list[str] = []
+
+        async def _fake_disconnect():
+            call_order.append("disconnect")
+
+        async def _fake_setup():
+            call_order.append("setup")
+            return True
+
+        gateway.async_disconnect = _fake_disconnect
+        gateway.async_setup = _fake_setup
+
+        await gateway._async_zombie_recover()
+
+        assert call_order == ["disconnect", "setup"]
+
+    @pytest.mark.asyncio
+    async def test_async_zombie_recover_swallows_exceptions(self, mock_hass):
+        """A failure during recovery must be logged, not raised (fire-and-forget task)."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+
+        async def _boom():
+            raise RuntimeError("gateway unreachable")
+
+        gateway.async_disconnect = _boom
+
+        await gateway._async_zombie_recover()  # must not raise
+
+    @pytest.mark.asyncio
+    async def test_async_zombie_recover_logs_failure_when_setup_fails(self, mock_hass, caplog):
+        """If async_setup() returns False, must log failure, not 'recovery complete'."""
+        import logging
+
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+
+        async def _fake_disconnect():
+            pass
+
+        async def _fake_setup_fails():
+            return False
+
+        gateway.async_disconnect = _fake_disconnect
+        gateway.async_setup = _fake_setup_fails
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gateway._async_zombie_recover()
+
+        messages = [r.getMessage() for r in caplog.records]
+        assert any("recovery failed" in m.lower() for m in messages)
+        assert not any("recovery complete" in m.lower() for m in messages)
+
+    @pytest.mark.asyncio
+    async def test_async_zombie_recover_times_out_and_releases_lock(self, mock_hass, caplog):
+        """A stuck async_disconnect() must not hold _session_lock forever.
+
+        Real zombie tunnel: xknx.stop() never returns. Reproduces Marcus'
+        2026-07-17 log: the watchdog's own recovery hung inside
+        the disconnect+setup cycle, permanently starving _session_lock so every
+        later recovery attempt AND the periodic proactive refresh blocked forever
+        on the same lock with no completion/failure ever logged again.
+        """
+        import logging
+
+        from custom_components.luxor_living.const import ZOMBIE_RECOVERY_TIMEOUT
+
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+
+        async def _hangs_forever():
+            await asyncio.Event().wait()
+
+        gateway.async_disconnect = _hangs_forever
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.ZOMBIE_RECOVERY_TIMEOUT", 0.05),
+            caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"),
+        ):
+            await asyncio.wait_for(gateway._async_zombie_recover(), timeout=2)
+
+        assert not gateway._session_lock.locked()
+        messages = [r.getMessage() for r in caplog.records]
+        assert any("timed out" in m.lower() for m in messages)
+
+        # Lock must be free for the next consumer (e.g. the periodic refresh loop).
+        async with asyncio.timeout(1):
+            async with gateway._session_lock:
+                pass
+
+    @pytest.mark.asyncio
+    @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
+    @patch("custom_components.luxor_living.knx_gateway.XKNX")
+    async def test_watchdog_task_started_on_setup_tunneling(
+        self, mock_xknx_class, mock_rest_class, mock_hass
+    ):
+        """async_setup() must start the zombie watchdog task for tunneling mode.
+
+        Mirrors the mock shape of test_async_setup_with_rest_auth (same file,
+        TestLuxorKNXGateway class) — AsyncMock XKNX/BAOSRestClient so a real
+        tunneling async_setup() completes without touching the network.
+        """
+        mock_rest_client = AsyncMock()
+        mock_rest_client.login = AsyncMock(return_value="test_token")
+        mock_rest_client.enable_tunneling = AsyncMock(return_value=True)
+        mock_rest_client.logout = AsyncMock()
+        mock_rest_client.__aexit__ = AsyncMock()
+        mock_rest_class.return_value = mock_rest_client
+
+        mock_xknx = AsyncMock()
+        mock_xknx.start = AsyncMock()
+        mock_xknx.stop = AsyncMock()
+        mock_xknx.telegram_queue.register_telegram_received_cb = MagicMock()
+        mock_xknx.connection_manager.register_connection_state_changed_cb = MagicMock(
+            return_value=MagicMock()
+        )
+        mock_xknx.connection_manager.cemi_count_outgoing_error = 0
+        mock_xknx_class.return_value = mock_xknx
+
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+            connection_type="tunneling",
+            simulation_mode=False,
+        )
+
+        await gateway.async_setup()
+
+        assert gateway._zombie_watchdog_task is not None
+        assert not gateway._zombie_watchdog_task.done()
+
+        # Teardown: cancel both background tasks so no lingering tasks remain
+        await gateway.async_disconnect()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_task_cancelled_on_disconnect(self, mock_hass):
+        """async_disconnect() must cancel a running zombie watchdog task."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        await gateway.async_setup()
+
+        async def _never_ending():
+            await asyncio.sleep(99999)
+
+        task = asyncio.create_task(_never_ending())
+        gateway._zombie_watchdog_task = task
+
+        await gateway.async_disconnect()
+
+        assert task.cancelled()
+        assert gateway._zombie_watchdog_task is None
+
+    @pytest.mark.asyncio
+    async def test_watchdog_task_none_safe_on_disconnect(self, mock_hass):
+        """async_disconnect() must not raise when _zombie_watchdog_task is None."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        await gateway.async_setup()
+        gateway._zombie_watchdog_task = None
+
+        await gateway.async_disconnect()  # must not raise
+
+    @pytest.mark.asyncio
+    async def test_async_disconnect_for_unload_waits_for_session_lock(self, mock_hass):
+        """Unload must wait for an in-flight zombie recovery's lock before disconnecting.
+
+        Proves the fix: if _session_lock is already held (simulating an
+        in-flight _async_zombie_recover), async_disconnect_for_unload() must
+        block until the lock is released, rather than racing ahead.
+        """
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        call_order: list[str] = []
+
+        async def _fake_disconnect():
+            call_order.append("disconnect")
+
+        gateway.async_disconnect = _fake_disconnect
+
+        async def _hold_lock_then_release():
+            async with gateway._session_lock:
+                call_order.append("lock_acquired_by_recovery")
+                await asyncio.sleep(0.05)
+                call_order.append("lock_released_by_recovery")
+
+        holder_task = asyncio.create_task(_hold_lock_then_release())
+        await asyncio.sleep(0)  # let holder_task acquire the lock first
+
+        await gateway.async_disconnect_for_unload()
+        await holder_task
+
+        assert call_order == [
+            "lock_acquired_by_recovery",
+            "lock_released_by_recovery",
+            "disconnect",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_async_disconnect_for_unload_cancels_pending_recovery_task(self, mock_hass):
+        """Unload must cancel a pending zombie-recovery task before it can reconnect.
+
+        Proves the fix: a recovery task that hasn't reached its lock-acquisition
+        yet must be cancelled by unload, so it can never call async_setup()
+        after the integration is considered unloaded.
+
+        The `await asyncio.sleep(0)` after async_disconnect_for_unload() is
+        required for this to be a meaningful regression test: without it, the
+        freshly-created recovery task never gets a single turn on the event
+        loop within this test — regardless of whether the fix is present —
+        and the assertion would pass vacuously either way. The extra
+        sleep(0) forces one more loop iteration, giving a *pending*
+        (not-yet-cancelled, as in the pre-fix code) recovery task the chance
+        to run to completion — it has no real suspension points once the
+        lock is free, so one iteration is enough for it to call
+        async_setup() — which is exactly what must NOT happen once the fix
+        cancels it first.
+        """
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        setup_was_called = False
+
+        async def _fake_disconnect():
+            pass
+
+        async def _fake_setup():
+            nonlocal setup_was_called
+            setup_was_called = True
+            return True
+
+        gateway.async_disconnect = _fake_disconnect
+        gateway.async_setup = _fake_setup
+
+        # Simulate a recovery task that's been scheduled but hasn't run yet
+        # (it will try to acquire _session_lock and call setup once it gets
+        # a chance to run — which should never happen once cancelled).
+        gateway._zombie_recover_task = asyncio.create_task(gateway._async_zombie_recover())
+
+        await gateway.async_disconnect_for_unload()
+        await asyncio.sleep(0)  # give any still-pending task a chance to run
+
+        assert setup_was_called is False
+        assert gateway._zombie_recover_task.cancelled() or gateway._zombie_recover_task.done()
+
+
+class TestZombieDetectionDiagnostics:
+    """Diagnostic snapshot at zombie detection.
+
+    Marcus' 2026-07-17 log showed the flood onset (14:37) with no preceding
+    event in the WARNING-level export — nothing to tell whether the bus was
+    fully dead or only the ack path, nor what the IP1 slot table looked like.
+    The detection WARNING must carry that context so the next field log can
+    answer it.
+    """
+
+    def _make_gateway(self, mock_hass) -> LuxorKNXGateway:
+        return LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+
+    def _controlled_sleep(self, sleep_calls: list[int], stop_after: int = 2):
+        async def _sleep(interval: int) -> None:
+            sleep_calls.append(interval)
+            if len(sleep_calls) >= stop_after:
+                raise asyncio.CancelledError
+
+        return _sleep
+
+    @pytest.mark.asyncio
+    async def test_detection_warning_includes_incoming_diagnostics(self, mock_hass, caplog):
+        """Detection WARNING must state incoming-CEMI delta and last-telegram age."""
+        import logging
+
+        from custom_components.luxor_living.const import ZOMBIE_ERROR_THRESHOLD
+
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = ZOMBIE_ERROR_THRESHOLD
+        mock_xknx.connection_manager.cemi_count_incoming = 7
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with (
+            patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)),
+            caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"),
+        ):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        detection = [m for m in (r.getMessage() for r in caplog.records) if "zombie tunnel" in m]
+        assert detection, "detection warning missing"
+        assert "incoming" in detection[0]
+        assert "7" in detection[0]
+        assert "never" in detection[0]  # no telegram received yet
+
+    @pytest.mark.asyncio
+    async def test_telegram_callback_tracks_last_received_time(self, mock_hass):
+        """Any incoming telegram must bump _last_telegram_received_at.
+
+        Even a GroupValueRead from another client still proves the bus alive.
+        """
+        from xknx.telegram.apci import GroupValueRead
+
+        gateway = self._make_gateway(mock_hass)
+        assert gateway._last_telegram_received_at == 0.0
+
+        telegram = MagicMock()
+        telegram.payload = GroupValueRead()  # filtered out for value handling
+        await gateway._telegram_received_callback(telegram)
+
+        assert gateway._last_telegram_received_at > 0.0
+
+    @pytest.mark.asyncio
+    async def test_zombie_recover_logs_slot_status_before_disconnect(self, mock_hass):
+        """Recovery must snapshot IP1 slot status before tearing anything down."""
+        gateway = self._make_gateway(mock_hass)
+        gateway.simulation_mode = True
+        call_order: list[str] = []
+
+        async def _fake_slot_status(context: str) -> None:
+            call_order.append(f"slots:{context}")
+
+        async def _fake_disconnect():
+            call_order.append("disconnect")
+
+        async def _fake_setup():
+            call_order.append("setup")
+            return True
+
+        gateway._log_slot_status = _fake_slot_status
+        gateway.async_disconnect = _fake_disconnect
+        gateway.async_setup = _fake_setup
+
+        await gateway._async_zombie_recover()
+
+        assert call_order == ["slots:zombie detection", "disconnect", "setup"]
+
+    @pytest.mark.asyncio
+    async def test_slot_status_query_failure_logs_warning(self, mock_hass, caplog):
+        """A failing slot-status query must be visible, not silently swallowed.
+
+        On 2026-07-07 the IP1's REST port died alongside the tunnel — whether
+        REST still answers at zombie detection is itself the diagnostic.
+        """
+        import logging
+
+        gateway = self._make_gateway(mock_hass)
+        mock_rest = AsyncMock()
+        mock_rest.get_tunneling_status = AsyncMock(side_effect=OSError("connection refused"))
+        gateway._rest_client = mock_rest
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gateway._log_slot_status("zombie detection")  # must not raise
+
+        messages = [r.getMessage() for r in caplog.records]
+        assert any("slot status" in m.lower() and "failed" in m.lower() for m in messages)
+
+    @pytest.mark.asyncio
+    async def test_slot_status_skips_silently_without_rest_client(self, mock_hass, caplog):
+        """No REST client (simulation/teardown) = nothing to query, not a failure."""
+        import logging
+
+        gateway = self._make_gateway(mock_hass)
+        gateway._rest_client = None
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gateway._log_slot_status("startup")
+
+        assert not [r for r in caplog.records if "failed" in r.getMessage().lower()]
+
+
+class TestDisconnectZombieSafety:
+    """async_disconnect() must terminate even when the tunnel is a zombie.
+
+    Marcus' 2026-07-17 log: recovery hung inside xknx.stop() for 3h40 because
+    stop() joins the telegram queue, the zombie consumer drains ~1 telegram/3s
+    (confirmation timeout), and entity polling kept refilling the queue since
+    _connected stayed True until the end of async_disconnect. The queue never
+    emptied, so stop() — and with it the whole recovery — never returned.
+    """
+
+    def _make_gateway(self, mock_hass) -> LuxorKNXGateway:
+        return LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+
+    def _make_xknx_with_queue(self) -> MagicMock:
+        mock_xknx = MagicMock()
+        mock_xknx.telegrams = asyncio.Queue()
+        mock_xknx.stop = AsyncMock()
+        return mock_xknx
+
+    @pytest.mark.asyncio
+    async def test_disconnect_rejects_sends_before_xknx_stop(self, mock_hass):
+        """_connected must already be False when xknx.stop() is awaited.
+
+        Otherwise entity polling keeps enqueueing telegrams during the stop,
+        refilling the very queue stop() is waiting to drain.
+        """
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = self._make_xknx_with_queue()
+        connected_at_stop: list[bool] = []
+
+        async def _stop() -> None:
+            connected_at_stop.append(gateway._connected)
+
+        mock_xknx.stop = _stop
+        gateway._xknx = mock_xknx
+        gateway._connected = True
+
+        await gateway.async_disconnect()
+
+        assert connected_at_stop == [False]
+
+    @pytest.mark.asyncio
+    async def test_disconnect_drains_pending_telegrams_before_stop(self, mock_hass):
+        """The queued telegram backlog must be dropped before xknx.stop().
+
+        On a zombie tunnel every queued telegram burns ~3s in confirmation
+        timeout, and stop() joins the queue before returning — a saturated
+        backlog makes stop() take minutes to forever. The stub stop() below
+        joins the queue exactly like the real one: without the drain it hangs.
+        """
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = self._make_xknx_with_queue()
+        for _ in range(5):
+            mock_xknx.telegrams.put_nowait(MagicMock())
+
+        async def _stop() -> None:
+            await asyncio.wait_for(mock_xknx.telegrams.join(), timeout=1)
+
+        mock_xknx.stop = _stop
+        gateway._xknx = mock_xknx
+
+        await asyncio.wait_for(gateway.async_disconnect(), timeout=2)
+
+        assert mock_xknx.telegrams.qsize() == 0
+
+    @pytest.mark.asyncio
+    async def test_disconnect_survives_hanging_xknx_stop(self, mock_hass, caplog):
+        """A stop() that never returns must not hang async_disconnect forever."""
+        import logging
+
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = self._make_xknx_with_queue()
+
+        async def _hangs_forever() -> None:
+            await asyncio.Event().wait()
+
+        mock_xknx.stop = _hangs_forever
+        gateway._xknx = mock_xknx
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.XKNX_STOP_TIMEOUT", 0.05),
+            caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"),
+        ):
+            await asyncio.wait_for(gateway.async_disconnect(), timeout=2)
+
+        assert gateway._xknx is None
+        assert gateway._connected is False
+        messages = [r.getMessage() for r in caplog.records]
+        assert any("timed out" in m.lower() for m in messages)
 
 
 class TestSessionLockRaceCondition:
