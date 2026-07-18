@@ -95,9 +95,13 @@ class TestLuxorKNXGateway:
             password="admin",
         )
 
+        from custom_components.luxor_living.const import ZOMBIE_RECONNECT_COOLDOWN
+
         assert gateway._zombie_watchdog_task is None
         assert gateway._last_cemi_error_count == 0
-        assert gateway._last_zombie_reconnect_at == 0.0
+        # sentinel "never" — must not collide with a low time.monotonic()
+        # value on a freshly booted host (see test_watchdog_triggers_on_low_system_uptime)
+        assert gateway._last_zombie_reconnect_at == -ZOMBIE_RECONNECT_COOLDOWN
 
     @pytest.mark.asyncio
     async def test_async_setup_simulation_mode(self, mock_hass):
@@ -987,6 +991,36 @@ class TestZombieWatchdog:
                 pass
 
         mock_hass.async_create_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_watchdog_triggers_on_low_system_uptime(self, mock_hass):
+        """A never-yet-fired cooldown must not be mistaken for a recent one.
+
+        _last_zombie_reconnect_at starts at 0.0 ("never"). On a freshly
+        booted host, time.monotonic() can itself be a small value (e.g. right
+        after HA restart on a container with low uptime) — `now - 0.0 <
+        COOLDOWN` would then be true, silently swallowing the very first
+        real detection.
+        """
+        from custom_components.luxor_living.const import ZOMBIE_ERROR_THRESHOLD
+
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = ZOMBIE_ERROR_THRESHOLD
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with (
+            patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)),
+            patch("time.monotonic", return_value=10.0),
+        ):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        mock_hass.async_create_task.assert_called_once()
+        mock_hass.async_create_task.call_args[0][0].close()
 
     @pytest.mark.asyncio
     async def test_async_zombie_recover_calls_disconnect_then_setup(self, mock_hass):
