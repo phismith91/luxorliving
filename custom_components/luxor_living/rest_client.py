@@ -284,7 +284,6 @@ class BAOSRestClient:
 
         return cast(bool, await circuit_breaker.call(_enable_tunneling))
 
-    # NOT CALLED BY INTEGRATION — logout disables tunneling automatically; kept for completeness
     async def disable_tunneling(self) -> bool:
         """
         Disable KNX Tunneling with circuit breaker protection.

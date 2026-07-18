@@ -7,7 +7,7 @@ not actively maintained.
 
 | Version        | Supported          |
 | -------------- | ------------------ |
-| latest (1.1.x) | :white_check_mark: |
+| latest (1.2.x) | :white_check_mark: |
 | older          | :x:                |
 
 See the [Releases page](https://github.com/phismith91/luxorliving/releases) for

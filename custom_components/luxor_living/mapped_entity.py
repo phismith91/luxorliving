@@ -25,3 +25,6 @@ class MappedEntity:
     datapoints: dict[str, int]  # role -> address mapping
     attributes: dict[str, Any]  # Additional attributes
     parameters: dict[str, str]  # LXP parameters (timers, flags, etc.)
+    cooling_capable: bool = (
+        False  # Climate entity supports cooling mode (H6 with UmschaltenHeitzenKühlen)
+    )
