@@ -94,6 +94,8 @@ class LuxorKNXGateway:
         self._last_not_connected_log_at: float = 0.0  # rate-limit "not connected" ERROR logs
         self._zombie_watchdog_task: asyncio.Task | None = None
         self._last_cemi_error_count: int = 0  # cemi_count_outgoing_error at last watchdog check
+        self._last_cemi_incoming_count: int = 0  # cemi_count_incoming at last watchdog check
+        self._last_telegram_received_at: float = 0.0  # monotonic time of last incoming telegram
         self._last_zombie_reconnect_at: float = (
             0.0  # monotonic time of last zombie-triggered reconnect
         )
@@ -240,6 +242,7 @@ class LuxorKNXGateway:
                 self._last_cemi_error_count = (
                     self._xknx.connection_manager.cemi_count_outgoing_error
                 )
+                self._last_cemi_incoming_count = self._xknx.connection_manager.cemi_count_incoming
                 self._zombie_watchdog_task = asyncio.create_task(
                     self._zombie_watchdog_loop(),
                     name="luxor_zombie_watchdog",
@@ -412,8 +415,13 @@ class LuxorKNXGateway:
 
         WARNING (visible in default HA logs) when slots are already at/over
         capacity — that's the state that precedes a bus freeze. DEBUG
-        otherwise, so healthy runs don't spam the log.
+        otherwise, so healthy runs don't spam the log. A failing query is
+        itself logged at WARNING: on 2026-07-07 the IP1's REST port died
+        alongside the tunnel, so "REST unreachable at detection time" is a
+        diagnostic answer, not noise.
         """
+        if not self._rest_client:
+            return  # simulation mode / mid-teardown — nothing to query
         try:
             status = await self._rest_client.get_tunneling_status()
             connected = status.get("connectedClients", "?")
@@ -430,8 +438,8 @@ class LuxorKNXGateway:
                 connected,
                 max_slots,
             )
-        except Exception:
-            pass  # diagnostic only, never block the caller
+        except Exception as err:  # diagnostic only, never raises to the caller
+            _LOGGER.warning("IP1 slot status query failed (%s): %s", context, err)
 
     async def _async_forced_refresh(self) -> None:
         """Proactive REST refresh regardless of xknx connection state.
@@ -488,21 +496,33 @@ class LuxorKNXGateway:
                     if not self._xknx or self.simulation_mode:
                         continue
                     error_count = self._xknx.connection_manager.cemi_count_outgoing_error
+                    incoming_count = self._xknx.connection_manager.cemi_count_incoming
                     delta = error_count - self._last_cemi_error_count
+                    incoming_delta = incoming_count - self._last_cemi_incoming_count
                     self._last_cemi_error_count = error_count
+                    self._last_cemi_incoming_count = incoming_count
                     if delta < ZOMBIE_ERROR_THRESHOLD:
                         continue
                     now = time.monotonic()
                     if now - self._last_zombie_reconnect_at < ZOMBIE_RECONNECT_COOLDOWN:
                         continue
                     self._last_zombie_reconnect_at = now
+                    last_rx = (
+                        f"{now - self._last_telegram_received_at:.0f}s ago"
+                        if self._last_telegram_received_at
+                        else "never"
+                    )
                     _LOGGER.warning(
                         "KNX gateway %s:%s zombie tunnel detected — %d confirmation "
-                        "failures in %ds with no disconnect event, forcing full reconnect",
+                        "failures in %ds with no disconnect event "
+                        "(%s incoming CEMI frames in same window, last incoming "
+                        "telegram: %s), forcing full reconnect",
                         self.host,
                         self.port,
                         delta,
                         ZOMBIE_CHECK_INTERVAL,
+                        incoming_delta,
+                        last_rx,
                     )
                     self._zombie_recover_task = self.hass.async_create_task(
                         self._async_zombie_recover()
@@ -537,6 +557,11 @@ class LuxorKNXGateway:
         """
 
         async def _recover() -> bool:
+            # Snapshot IP1 slot state while the zombie condition is live —
+            # after teardown the evidence is gone. Outside the lock: the
+            # query is read-only and its 30s REST timeout must not extend
+            # the lock hold.
+            await self._log_slot_status("zombie detection")
             async with self._session_lock:
                 await self.async_disconnect()
                 return await self.async_setup()
@@ -835,6 +860,10 @@ class LuxorKNXGateway:
 
     async def _telegram_received_callback(self, telegram: Telegram) -> None:
         """Handle incoming KNX telegrams."""
+        # Track bus liveness BEFORE the payload filter — a GroupValueRead from
+        # another client still proves the bus alive (zombie-detection diagnostic).
+        self._last_telegram_received_at = time.monotonic()
+
         if not isinstance(telegram.payload, (GroupValueWrite, GroupValueResponse)):
             return
 

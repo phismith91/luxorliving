@@ -1232,6 +1232,138 @@ class TestZombieWatchdog:
         assert gateway._zombie_recover_task.cancelled() or gateway._zombie_recover_task.done()
 
 
+class TestZombieDetectionDiagnostics:
+    """Diagnostic snapshot at zombie detection.
+
+    Marcus' 2026-07-17 log showed the flood onset (14:37) with no preceding
+    event in the WARNING-level export — nothing to tell whether the bus was
+    fully dead or only the ack path, nor what the IP1 slot table looked like.
+    The detection WARNING must carry that context so the next field log can
+    answer it.
+    """
+
+    def _make_gateway(self, mock_hass) -> LuxorKNXGateway:
+        return LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+
+    def _controlled_sleep(self, sleep_calls: list[int], stop_after: int = 2):
+        async def _sleep(interval: int) -> None:
+            sleep_calls.append(interval)
+            if len(sleep_calls) >= stop_after:
+                raise asyncio.CancelledError
+
+        return _sleep
+
+    @pytest.mark.asyncio
+    async def test_detection_warning_includes_incoming_diagnostics(self, mock_hass, caplog):
+        """Detection WARNING must state incoming-CEMI delta and last-telegram age."""
+        import logging
+
+        from custom_components.luxor_living.const import ZOMBIE_ERROR_THRESHOLD
+
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = MagicMock()
+        mock_xknx.connection_manager.cemi_count_outgoing_error = ZOMBIE_ERROR_THRESHOLD
+        mock_xknx.connection_manager.cemi_count_incoming = 7
+        gateway._xknx = mock_xknx
+
+        sleep_calls: list[int] = []
+        with (
+            patch("asyncio.sleep", side_effect=self._controlled_sleep(sleep_calls)),
+            caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"),
+        ):
+            try:
+                await gateway._zombie_watchdog_loop()
+            except asyncio.CancelledError:
+                pass
+
+        detection = [m for m in (r.getMessage() for r in caplog.records) if "zombie tunnel" in m]
+        assert detection, "detection warning missing"
+        assert "incoming" in detection[0]
+        assert "7" in detection[0]
+        assert "never" in detection[0]  # no telegram received yet
+
+    @pytest.mark.asyncio
+    async def test_telegram_callback_tracks_last_received_time(self, mock_hass):
+        """Any incoming telegram must bump _last_telegram_received_at.
+
+        Even a GroupValueRead from another client still proves the bus alive.
+        """
+        from xknx.telegram.apci import GroupValueRead
+
+        gateway = self._make_gateway(mock_hass)
+        assert gateway._last_telegram_received_at == 0.0
+
+        telegram = MagicMock()
+        telegram.payload = GroupValueRead()  # filtered out for value handling
+        await gateway._telegram_received_callback(telegram)
+
+        assert gateway._last_telegram_received_at > 0.0
+
+    @pytest.mark.asyncio
+    async def test_zombie_recover_logs_slot_status_before_disconnect(self, mock_hass):
+        """Recovery must snapshot IP1 slot status before tearing anything down."""
+        gateway = self._make_gateway(mock_hass)
+        gateway.simulation_mode = True
+        call_order: list[str] = []
+
+        async def _fake_slot_status(context: str) -> None:
+            call_order.append(f"slots:{context}")
+
+        async def _fake_disconnect():
+            call_order.append("disconnect")
+
+        async def _fake_setup():
+            call_order.append("setup")
+            return True
+
+        gateway._log_slot_status = _fake_slot_status
+        gateway.async_disconnect = _fake_disconnect
+        gateway.async_setup = _fake_setup
+
+        await gateway._async_zombie_recover()
+
+        assert call_order == ["slots:zombie detection", "disconnect", "setup"]
+
+    @pytest.mark.asyncio
+    async def test_slot_status_query_failure_logs_warning(self, mock_hass, caplog):
+        """A failing slot-status query must be visible, not silently swallowed.
+
+        On 2026-07-07 the IP1's REST port died alongside the tunnel — whether
+        REST still answers at zombie detection is itself the diagnostic.
+        """
+        import logging
+
+        gateway = self._make_gateway(mock_hass)
+        mock_rest = AsyncMock()
+        mock_rest.get_tunneling_status = AsyncMock(side_effect=OSError("connection refused"))
+        gateway._rest_client = mock_rest
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gateway._log_slot_status("zombie detection")  # must not raise
+
+        messages = [r.getMessage() for r in caplog.records]
+        assert any("slot status" in m.lower() and "failed" in m.lower() for m in messages)
+
+    @pytest.mark.asyncio
+    async def test_slot_status_skips_silently_without_rest_client(self, mock_hass, caplog):
+        """No REST client (simulation/teardown) = nothing to query, not a failure."""
+        import logging
+
+        gateway = self._make_gateway(mock_hass)
+        gateway._rest_client = None
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"):
+            await gateway._log_slot_status("startup")
+
+        assert not [r for r in caplog.records if "failed" in r.getMessage().lower()]
+
+
 class TestDisconnectZombieSafety:
     """async_disconnect() must terminate even when the tunnel is a zombie.
 
