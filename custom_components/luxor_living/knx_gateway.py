@@ -31,6 +31,7 @@ from .const import (
     ZOMBIE_CHECK_INTERVAL,
     ZOMBIE_ERROR_THRESHOLD,
     ZOMBIE_RECONNECT_COOLDOWN,
+    ZOMBIE_RECOVERY_TIMEOUT,
 )
 from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
 
@@ -502,11 +503,24 @@ class LuxorKNXGateway:
         Acquires _session_lock around the full disconnect+setup cycle so it
         can't race the periodic session-refresh loop or the reconnect
         handler over the REST session.
+
+        Bounded by ZOMBIE_RECOVERY_TIMEOUT: a real zombie tunnel means the
+        IP1 stops acking at the protocol level, and xknx.stop()/start() have
+        no internal timeout for that — without this guard a stuck recovery
+        holds _session_lock forever, starving every later recovery attempt
+        AND the periodic proactive refresh (confirmed on Marcus'
+        2026-07-17 log: 3h40 of repeated zombie detections with zero
+        completion/failure logged, because the very first recovery attempt
+        never returned).
         """
-        try:
+
+        async def _recover() -> bool:
             async with self._session_lock:
                 await self.async_disconnect()
-                success = await self.async_setup()
+                return await self.async_setup()
+
+        try:
+            success = await asyncio.wait_for(_recover(), timeout=ZOMBIE_RECOVERY_TIMEOUT)
             if success:
                 _LOGGER.warning("Zombie-tunnel recovery complete (host=%s)", self.host)
             else:
@@ -515,6 +529,14 @@ class LuxorKNXGateway:
                     "reload the integration if the gateway remains unreachable",
                     self.host,
                 )
+        except asyncio.TimeoutError:
+            self._connected = False
+            _LOGGER.error(
+                "Zombie-tunnel recovery timed out after %ss (host=%s) — "
+                "_session_lock released, will retry at next zombie detection",
+                ZOMBIE_RECOVERY_TIMEOUT,
+                self.host,
+            )
         except Exception as err:
             _LOGGER.error("Zombie-tunnel recovery failed (host=%s): %s", self.host, err)
 

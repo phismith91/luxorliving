@@ -1044,6 +1044,42 @@ class TestZombieWatchdog:
         assert not any("recovery complete" in m.lower() for m in messages)
 
     @pytest.mark.asyncio
+    async def test_async_zombie_recover_times_out_and_releases_lock(self, mock_hass, caplog):
+        """A stuck async_disconnect() must not hold _session_lock forever.
+
+        Real zombie tunnel: xknx.stop() never returns. Reproduces Marcus'
+        2026-07-17 log: the watchdog's own recovery hung inside
+        the disconnect+setup cycle, permanently starving _session_lock so every
+        later recovery attempt AND the periodic proactive refresh blocked forever
+        on the same lock with no completion/failure ever logged again.
+        """
+        import logging
+
+        from custom_components.luxor_living.const import ZOMBIE_RECOVERY_TIMEOUT
+
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+
+        async def _hangs_forever():
+            await asyncio.Event().wait()
+
+        gateway.async_disconnect = _hangs_forever
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.ZOMBIE_RECOVERY_TIMEOUT", 0.05),
+            caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"),
+        ):
+            await asyncio.wait_for(gateway._async_zombie_recover(), timeout=2)
+
+        assert not gateway._session_lock.locked()
+        messages = [r.getMessage() for r in caplog.records]
+        assert any("timed out" in m.lower() for m in messages)
+
+        # Lock must be free for the next consumer (e.g. the periodic refresh loop).
+        async with asyncio.timeout(1):
+            async with gateway._session_lock:
+                pass
+
+    @pytest.mark.asyncio
     @patch("custom_components.luxor_living.knx_gateway.BAOSRestClient")
     @patch("custom_components.luxor_living.knx_gateway.XKNX")
     async def test_watchdog_task_started_on_setup_tunneling(
