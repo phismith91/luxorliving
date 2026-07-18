@@ -3,13 +3,83 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## [Unreleased]
+## [1.2.1] - 2026-07-02
 
-## [1.2.0] - 2026-06-13
+Pre-release (`v1.2.1-rc.4`).
 
-Pre-release (`v1.2.0-rc.1`). Adds the two deferred quality-scale items on top of
-the 1.1.15-rc hardening. `v1.1.15-rc.1` remains published as a fallback. Not yet
-validated against real IP1 hardware — promote to stable only after a live check.
+### Added
+
+- **H6 cooling-mode support**: H6 climate entities now support cooling in addition to heating when the `UmschaltenHeitzenKühlen` (heating/cooling mode-switch) datapoint is present. Marcus' setup with ION8 T10 mode-switch controlling H6 devices (511, 512, 513) is fully supported. Mode-switch control sends binary telegram: 1 for heating, 0 for cooling.
+
+### Fixed
+
+- **IP1 tunneling slot exhaustion**: Unclean HA shutdowns left stale tunneling slots on the IP1 (up to 4 slots, then lockup). `enable_tunneling()` now calls `disable_tunneling()` first to flush any orphaned sessions from previous crashed HA instances. Diagnostics added: log prints connected client count and slot saturation state on startup.
+- **Mid-uptime slot exhaustion (rc.4)**: The startup flush above only ran once per HA restart. Orphaned slots from other clients (a crashed prior instance, LuxorPlay) can still accumulate during a single long uptime and freeze the bus after ~24-72h without HA ever seeing a disconnect — confirmed on Marcus' 2026-06-30 log (~30h uptime, continuous `L_DATA_CON` confirmation timeouts, no disconnect logged, required a physical KNX restart). The existing 4h proactive `_session_refresh_loop` now also calls `disable_tunneling()` before re-login, so it actually clears device-wide orphaned slots instead of only cycling its own session. Slot-saturation diagnostics now log at WARNING (visible in default HA logs) once slots are at/over capacity, instead of only at DEBUG/INFO which most bug-report logs don't include.
+
+## [1.2.0] - 2026-06-18
+
+Pre-release (`v1.2.0-rc.5`). Includes critical fixes for TLS and tunneling. rc.4
+
+### Security
+
+- **Push forwarder no longer downgrades TLS**: `v1.2.0-rc.3` made `PushClient`
+  use `async_get_clientsession(hass, verify_ssl=False, ssl_cipher=INSECURE)` —
+  but `push_ws_url` is a user-configured forwarder, **not** the IP1. That blanket
+  application disabled certificate verification and lowered the cipher security
+  level for an arbitrary, possibly internet-facing, token-authenticated endpoint
+  (MITM / token-theft risk). `PushClient` now uses HA's standard shared session
+  with full TLS verification. The IP1 legacy-TLS posture is confined to the three
+  IP1-REST call sites (`knx_gateway`, `config_flow`, `repairs`). Only entries
+  with `push_ws_url` configured were affected. Guarded by
+  `test_push_client_does_not_downgrade_tls`.
+
+### Fixed (rc.4)
+
+- **Request timeouts on the injected session**: `login`/`logout`/`enable_tunneling`
+  now pass an explicit per-request `timeout` (30 s). The owned session set this at
+  session level; HA's shared session uses aiohttp's defaults (total 300 s), so the
+  explicit timeout restores the intended 30 s ceiling on the injected path.
+- **`_async_forced_refresh` error handling**: the fire-and-forget REST-refresh task
+  now catches exceptions (like `_async_on_reconnect`) instead of surfacing an
+  unhandled task error when a refresh login fails.
+
+### Fixed
+
+- **CRITICAL — IP1 legacy TLS (`@SECLEVEL=0`) restored**: `_make_ssl_context`
+  again sets `set_ciphers("DEFAULT:@SECLEVEL=0")`. It had been dropped in
+  `v1.1.15-rc.1` (carried into `v1.2.0-rc.2`) with an untested comment claiming
+  the gateway works without it — but that posture is identical to the failing
+  `v1.2.0-rc.1` shared session, so `v1.2.0-rc.2` was latently affected by the
+  same `SSLV3_ALERT_HANDSHAKE_FAILURE` on real hardware. The only field-proven
+  posture is `v1.1.14`'s `CERT_NONE` + `@SECLEVEL=0`.
+
+### Added
+
+- **Platinum quality scale — inject websession (done correctly)**: the REST
+  client (`BAOSRestClient`) and `PushClient` again accept Home Assistant's shared
+  session, now obtained with `async_get_clientsession(hass, verify_ssl=False,
+  ssl_cipher=SSLCipherList.INSECURE)`. `SSLCipherList.INSECURE` resolves to
+  `"DEFAULT:@SECLEVEL=0"`, so the shared session speaks the IP1's legacy TLS —
+  the missing parameter that broke `v1.2.0-rc.1`. Wired through `knx_gateway.py`,
+  `config_flow.py`, `repairs.py` and `push_client.py`. The owned-session path is
+  kept as a fallback (same `@SECLEVEL=0` context).
+- **Regression guards** (`test_inject_ssl_cipher.py`, gated suite): assert
+  `_make_ssl_context` sets `@SECLEVEL=0` + `CERT_NONE`, that the string matches
+  HA's `SSLCipherList.INSECURE`, and that every injection call site passes
+  `verify_ssl=False, ssl_cipher=SSLCipherList.INSECURE`. A live legacy-cipher
+  handshake cannot be reproduced in CI's modern OpenSSL, so end-to-end TLS
+  remains a manual pre-release check on real hardware.
+
+## [1.2.0] - 2026-06-18
+
+Pre-release (`v1.2.0-rc.2`). Ships the Gold quality-scale item only. The
+Platinum websession-injection from `v1.2.0-rc.1` has been **reverted** — it
+broke the connection to real IP1 hardware (see below). `v1.1.15-rc.1` remains
+published as a fallback.
+
+> ⚠️ Superseded: `v1.2.0-rc.2` is itself affected by the latent `@SECLEVEL=0`
+> regression described under \[Unreleased] and must not be promoted. Use
+> `v1.2.0-rc.3`.
 
 ### Added
 
@@ -18,23 +88,40 @@ validated against real IP1 hardware — promote to stable only after a live chec
   project (no longer mapped by the integration) can now be deleted manually from
   the HA UI, while the gateway hub and active devices remain protected.
 
-### Changed
+### Fixed
 
-- **Platinum quality scale — inject websession**: the REST client
-  (`BAOSRestClient`) and the WebSocket `PushClient` now obtain their aiohttp
-  session from Home Assistant's shared `async_get_clientsession(hass)` instead of
-  creating and owning their own `ClientSession`. The REST client accepts an
-  injected session (`verify_ssl=False` for the IP1's self-signed cert) and only
-  closes sessions it owns; the push client no longer closes the shared session.
+- **Log flood / HA rate-limiter**: per-telegram logging in `knx_gateway.py`
+  (incoming telegrams, DPT 9.xxx floats, external push) was emitted at INFO and
+  fired for every KNX telegram — on a busy bus this produced multi-MB logs and
+  tripped Home Assistant's "logging too frequently" limiter. Demoted to DEBUG.
+- **Config-flow broken description text**: the `gateway` step's error-redisplay
+  paths (`invalid_auth`, `cannot_connect`) did not pass the `project_name`
+  description placeholder, producing `MISSING_VALUE`/`MISSING_TRANSLATION` in the
+  UI on every failed connection attempt. All re-display paths now pass it.
+- **Startup warning spam**: multi-channel devices (e.g. climate controllers with
+  several channels under one `device_id`) collide on `unique_id` by design; the
+  disambiguation guard logged one WARNING per collision on every startup.
+  Per-collision detail moved to DEBUG with a single INFO summary; the
+  deterministic `_chN` suffix scheme is unchanged (no entity-id churn).
 
-### Tests
+### Reverted
 
-- Added an end-to-end TLS integration test
-  (`test_inject_session_tls_integration.py`) exercising the injected-session
-  constructor path over a real self-signed-TLS socket (login → datapoints),
-  proving the handshake and auth flow work on the shared `verify_ssl=False`
-  session without hardware. Plus gated unit tests for the owned-session default
-  branch.
+- **Platinum quality scale — inject websession (regression fix)**: `v1.2.0-rc.1`
+  routed the REST client and `PushClient` through Home Assistant's shared
+  `async_get_clientsession(hass, verify_ssl=False)`. On real IP1 hardware this
+  caused `SSLV3_ALERT_HANDSHAKE_FAILURE`: the shared session bypassed the
+  client's custom `ssl_context`, so the `@SECLEVEL=0` cipher policy required to
+  talk to the IP1's legacy TLS was never applied (`verify_ssl=False` only
+  disables certificate verification, not the OpenSSL security level). The REST
+  client (`BAOSRestClient`) and `PushClient` again create and own their own
+  `ClientSession` with the `@SECLEVEL=0` `ssl_context`, identical to the
+  known-good `v1.1.14` / `v1.1.15-rc.1` path. The injected-session constructor
+  parameter and the two injection tests
+  (`test_inject_session_tls_integration.py`, `test_inject_websession.py`) were
+  removed — the integration self-signed-TLS test used a modern cipher and so
+  never reproduced the IP1's `SECLEVEL` failure, giving false confidence.
+  Platinum websession injection is incompatible with the IP1's TLS stack and is
+  dropped, not deferred.
 
 ## [1.1.15] - 2026-06-13
 

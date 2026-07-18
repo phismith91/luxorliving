@@ -19,14 +19,18 @@ def _make_ssl_context() -> ssl.SSLContext:
     """Return an SSL context for the IP1 gateway.
 
     The IP1 ships with a self-signed certificate so hostname verification and
-    cert chain validation must be disabled. TLS 1.2+ is enforced; @SECLEVEL=0
-    (null/export ciphers) is intentionally NOT set — the gateway supports
-    standard cipher suites without it.
+    cert chain validation must be disabled (``CERT_NONE``). It also negotiates a
+    legacy cipher that modern OpenSSL refuses at its default security level, so
+    ``@SECLEVEL=0`` is REQUIRED — dropping it caused ``SSLV3_ALERT_HANDSHAKE_FAILURE``
+    against real hardware (see v1.2.0-rc.1). This mirrors Home Assistant's
+    ``SSLCipherList.INSECURE`` ("DEFAULT:@SECLEVEL=0"), which the injected shared
+    session uses; this context is the fallback for the owned-session path.
     """
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    ctx.set_ciphers("DEFAULT:@SECLEVEL=0")
     return ctx
 
 
@@ -70,10 +74,13 @@ class BAOSRestClient:
             host: IP address of BAOS 777 device
             port: Port for REST API (default: 443 for HTTPS)
             use_https: Use HTTPS for secure communication (default: True, recommended)
-            session: Optional aiohttp session to use. When provided (e.g. Home
-                Assistant's shared ``async_get_clientsession``), the client uses
-                it and never closes it. When omitted, the client lazily creates
-                and owns its own session.
+            session: Optional aiohttp session to use. When provided (Home
+                Assistant's shared session from ``async_get_clientsession(hass,
+                verify_ssl=False, ssl_cipher=SSLCipherList.INSECURE)``), the
+                client uses it and never closes it. The caller is responsible for
+                configuring the IP1's legacy TLS (``verify_ssl=False`` +
+                ``ssl_cipher=INSECURE``). When omitted, the client lazily creates
+                and owns its own session built on :func:`_make_ssl_context`.
         """
         self.host = host
         self.port = port
@@ -277,7 +284,6 @@ class BAOSRestClient:
 
         return cast(bool, await circuit_breaker.call(_enable_tunneling))
 
-    # NOT CALLED BY INTEGRATION — logout disables tunneling automatically; kept for completeness
     async def disable_tunneling(self) -> bool:
         """
         Disable KNX Tunneling with circuit breaker protection.
@@ -298,9 +304,7 @@ class BAOSRestClient:
 
             _LOGGER.debug(f"Disabling tunneling at {url}")
 
-            async with self._session.put(
-                url, json=payload, headers=headers, timeout=self._timeout
-            ) as response:
+            async with self._session.put(url, json=payload, headers=headers) as response:
                 if response.status in (200, 204):
                     self.tunneling_enabled = False
                     _LOGGER.info(f"KNX Tunneling disabled ({response.status})")
@@ -318,7 +322,6 @@ class BAOSRestClient:
             _LOGGER.error(f"Error disabling tunneling: {e}")
             return False
 
-    # NOT CALLED BY INTEGRATION — reserved for future diagnostics/health checks
     async def get_tunneling_status(self) -> Dict[str, Any]:
         """
         Get current tunneling status.
@@ -336,7 +339,7 @@ class BAOSRestClient:
         url = f"{self.base_url}/rest/device/authtunneling"
         headers = self._get_auth_headers()
 
-        async with self._session.get(url, headers=headers, timeout=self._timeout) as response:
+        async with self._session.get(url, headers=headers) as response:
             if response.status == 200:
                 return cast(Dict[str, Any], await response.json())
             else:
@@ -376,7 +379,7 @@ class BAOSRestClient:
         _LOGGER.debug(f"🔍 Fetching all datapoints from {url}")
 
         try:
-            async with self._session.get(url, headers=headers, timeout=self._timeout) as response:
+            async with self._session.get(url, headers=headers) as response:
                 if response.status == 401:
                     _LOGGER.error("Session expired when fetching datapoints")
                     return None

@@ -64,6 +64,11 @@ class PushClient:
     async def _run(self) -> None:
         """Run connection loop with exponential backoff."""
         backoff = 1.0
+        # The push websocket is a user-configured forwarder (push_ws_url), NOT the
+        # IP1 — it must keep normal TLS verification. The IP1's legacy-TLS
+        # workaround must NOT leak here, or it would disable certificate checks
+        # for an arbitrary, possibly internet-facing, token-authenticated
+        # endpoint. Use HA's standard shared session (full verification).
         self._session = async_get_clientsession(self.hass)
 
         while not self._stopped:

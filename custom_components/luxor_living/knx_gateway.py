@@ -11,6 +11,7 @@ from typing import Any, Callable, cast
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util.ssl import SSLCipherList
 from xknx import XKNX
 from xknx.core import XknxConnectionState
 from xknx.dpt import DPTArray, DPTBinary
@@ -142,8 +143,12 @@ class LuxorKNXGateway:
             if self._connection_type == ConnectionType.TUNNELING:
                 _LOGGER.debug("Step 1/3: REST API Login...")
 
-                # Create REST client and enter async context
-                session = async_get_clientsession(self.hass, verify_ssl=False)
+                # Create REST client and enter async context. Inject HA's shared
+                # session configured for the IP1's legacy TLS (no cert verify +
+                # @SECLEVEL=0 via SSLCipherList.INSECURE) — see _make_ssl_context.
+                session = async_get_clientsession(
+                    self.hass, verify_ssl=False, ssl_cipher=SSLCipherList.INSECURE
+                )
                 self._rest_client = BAOSRestClient(self.host, port=self.http_port, session=session)
                 await self._rest_client.__aenter__()
 
@@ -156,7 +161,16 @@ class LuxorKNXGateway:
                     self._rest_client = None
                     raise err  # Re-raise to trigger circuit breaker
 
-                # Step 2: Enable KNX Tunneling
+                # Step 2: Flush stale IP1 tunneling sessions, then enable.
+                # disable_tunneling() is a global device-level call that releases
+                # ALL occupied slots regardless of which client holds them — this
+                # clears sessions left by a previous HA instance that crashed
+                # without a clean logout. Risk: briefly disconnects LuxorPlay if
+                # it holds the slot, but it reconnects automatically and this is
+                # far preferable to a full IP1 lockup from slot exhaustion.
+                await self._log_slot_status("startup")
+                _LOGGER.debug("Step 2/3: Flushing stale tunneling sessions...")
+                await self._rest_client.disable_tunneling()
                 _LOGGER.debug("Step 2/3: Enabling KNX Tunneling...")
                 try:
                     await self._rest_client.enable_tunneling()
@@ -322,21 +336,65 @@ class LuxorKNXGateway:
             _LOGGER.debug("Session refresh loop cancelled")
             raise
 
+    async def _log_slot_status(self, context: str) -> None:
+        """Log IP1 tunneling slot saturation — diagnostic only, never raises.
+
+        WARNING (visible in default HA logs) when slots are already at/over
+        capacity — that's the state that precedes a bus freeze. DEBUG
+        otherwise, so healthy runs don't spam the log.
+        """
+        try:
+            status = await self._rest_client.get_tunneling_status()
+            connected = status.get("connectedClients", "?")
+            max_slots = status.get("maxSlots", "?")
+            saturated = (
+                isinstance(connected, int)
+                and isinstance(max_slots, int)
+                and (connected >= max_slots)
+            )
+            log = _LOGGER.warning if saturated else _LOGGER.debug
+            log(
+                "IP1 tunneling slots before flush (%s): %s/%s connected",
+                context,
+                connected,
+                max_slots,
+            )
+        except Exception:
+            pass  # diagnostic only, never block the caller
+
     async def _async_forced_refresh(self) -> None:
         """Proactive REST refresh regardless of xknx connection state.
 
         Used by both the periodic timer and the reconnect-failure watchdog.
         Acquires _session_lock to prevent concurrent REST cycles.
+
+        Includes the same disable_tunneling() global flush as the initial
+        connect() — without it this only cycles our own session and never
+        clears slots orphaned by other clients (a crashed prior HA instance,
+        LuxorPlay) that accumulate during a long uptime and freeze the bus
+        between restarts, which defeats the point of a periodic self-heal.
         """
         if not self._rest_client or self.simulation_mode:
             return
         async with self._session_lock:
-            await self._rest_client.logout()
-            await self._rest_client.login(self.username, self.password)
-            await self._rest_client.enable_tunneling()
-            self._connected = True
-            self._last_refresh_at = time.monotonic()
-            _LOGGER.info("REST session refresh complete (host=%s)", self.host)
+            try:
+                await self._rest_client.logout()
+                await self._rest_client.login(self.username, self.password)
+                await self._log_slot_status("periodic refresh")
+                await self._rest_client.disable_tunneling()
+                await self._rest_client.enable_tunneling()
+                self._connected = True
+                self._last_refresh_at = time.monotonic()
+                _LOGGER.info("REST session refresh complete (host=%s)", self.host)
+            except Exception as err:
+                # Fire-and-forget task: never let the exception escape unhandled.
+                self._connected = False
+                _LOGGER.error(
+                    "REST session refresh failed (host=%s): %s — "
+                    "reload the integration if the gateway remains unreachable",
+                    self.host,
+                    err,
+                )
 
     def _on_connection_state_changed(self, state: XknxConnectionState) -> None:
         """Handle xknx connection state changes.
@@ -698,9 +756,10 @@ class LuxorKNXGateway:
                     else f"{label}: {display_value:.1f}"
                 )
 
-            # Log DPT 9.xxx float telegrams at INFO level for monitoring
+            # Per-telegram logging is DEBUG only — on a busy bus this fires for
+            # every telegram and floods INFO logs (HA's log rate-limiter trips).
             if isinstance(value, float):
-                _LOGGER.info(
+                _LOGGER.debug(
                     "%s KNX %s %s → %s (%s)",
                     sensor_emoji,
                     sensor_label,
@@ -731,7 +790,7 @@ class LuxorKNXGateway:
                 if src_labels
                 else f" ← from {source_addr}"
             )
-            _LOGGER.info(
+            _LOGGER.debug(
                 "📥 Received KNX %s: %s=%s (DPT: %s)%s%s%s",
                 telegram_type,
                 group_address,
@@ -818,7 +877,7 @@ class LuxorKNXGateway:
             # else leave as-is (float, DPTArray-like, etc.)
 
             # Log incoming push
-            _LOGGER.info("📥 External push: %s = %s", group_address, processed_value)
+            _LOGGER.debug("📥 External push: %s = %s", group_address, processed_value)
 
             # Notify listeners if any
             if group_address in self._listeners:

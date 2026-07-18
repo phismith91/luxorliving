@@ -113,6 +113,7 @@ class EntityMapper:
         HA-legal and left untouched for the same reason.
         """
         seen: set[tuple[Platform, str]] = set()
+        collisions = 0
         for entity in self.entities:
             key = (entity.platform, entity.unique_id)
             if key not in seen:
@@ -125,7 +126,10 @@ class EntityMapper:
             while (entity.platform, candidate) in seen:
                 counter += 1
                 candidate = f"{base}_{counter}"
-            _LOGGER.warning(
+            # Expected for multi-channel devices (e.g. climate controllers expose
+            # several channels under one device_id) — disambiguation is the normal
+            # path, so log per-collision detail at DEBUG and summarise once below.
+            _LOGGER.debug(
                 "unique_id collision on %s '%s' (%s) — renamed to %s",
                 entity.platform,
                 entity.name,
@@ -134,6 +138,13 @@ class EntityMapper:
             )
             entity.unique_id = candidate
             seen.add((entity.platform, candidate))
+            collisions += 1
+
+        if collisions:
+            _LOGGER.info(
+                "Disambiguated %d unique_id collision(s) via channel suffixes",
+                collisions,
+            )
 
     def _map_device(self, device: LXPDevice) -> None:
         """Map a single device to entities."""
@@ -234,6 +245,9 @@ class EntityMapper:
         if name.startswith(device.name + " "):
             name = name[len(device.name) + 1 :]
 
+        # Detect cooling capability for climate entities
+        cooling_capable = platform == Platform.CLIMATE and "UmschaltenHeitzenKühlen" in datapoints
+
         # Create mapped entity
         entity = MappedEntity(
             platform=platform,
@@ -252,10 +266,16 @@ class EntityMapper:
                 "knx_address": device.address,
             },
             parameters=actuator.parameters,
+            cooling_capable=cooling_capable,
         )
 
         self.entities.append(entity)
-        _LOGGER.debug("Mapped %s actuator '%s' to %s", entity_type, name, platform)
+        if cooling_capable:
+            _LOGGER.debug(
+                "Mapped %s actuator '%s' to %s (cooling capable)", entity_type, name, platform
+            )
+        else:
+            _LOGGER.debug("Mapped %s actuator '%s' to %s", entity_type, name, platform)
 
     def _map_sensor(self, device: LXPDevice, sensor: LXPSensor) -> None:
         """Map a sensor to entities."""
