@@ -97,8 +97,9 @@ class LuxorKNXGateway:
         self._last_cemi_incoming_count: int = 0  # cemi_count_incoming at last watchdog check
         self._last_telegram_received_at: float = 0.0  # monotonic time of last incoming telegram
         self._last_zombie_reconnect_at: float = (
-            0.0  # monotonic time of last zombie-triggered reconnect
-        )
+            -ZOMBIE_RECONNECT_COOLDOWN
+        )  # monotonic time of last zombie-triggered reconnect ("never" — must not
+        # collide with a low time.monotonic() value on a freshly booted host)
         self._zombie_recover_task: asyncio.Task | None = None
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
