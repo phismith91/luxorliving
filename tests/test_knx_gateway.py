@@ -1232,6 +1232,103 @@ class TestZombieWatchdog:
         assert gateway._zombie_recover_task.cancelled() or gateway._zombie_recover_task.done()
 
 
+class TestDisconnectZombieSafety:
+    """async_disconnect() must terminate even when the tunnel is a zombie.
+
+    Marcus' 2026-07-17 log: recovery hung inside xknx.stop() for 3h40 because
+    stop() joins the telegram queue, the zombie consumer drains ~1 telegram/3s
+    (confirmation timeout), and entity polling kept refilling the queue since
+    _connected stayed True until the end of async_disconnect. The queue never
+    emptied, so stop() — and with it the whole recovery — never returned.
+    """
+
+    def _make_gateway(self, mock_hass) -> LuxorKNXGateway:
+        return LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+
+    def _make_xknx_with_queue(self) -> MagicMock:
+        mock_xknx = MagicMock()
+        mock_xknx.telegrams = asyncio.Queue()
+        mock_xknx.stop = AsyncMock()
+        return mock_xknx
+
+    @pytest.mark.asyncio
+    async def test_disconnect_rejects_sends_before_xknx_stop(self, mock_hass):
+        """_connected must already be False when xknx.stop() is awaited.
+
+        Otherwise entity polling keeps enqueueing telegrams during the stop,
+        refilling the very queue stop() is waiting to drain.
+        """
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = self._make_xknx_with_queue()
+        connected_at_stop: list[bool] = []
+
+        async def _stop() -> None:
+            connected_at_stop.append(gateway._connected)
+
+        mock_xknx.stop = _stop
+        gateway._xknx = mock_xknx
+        gateway._connected = True
+
+        await gateway.async_disconnect()
+
+        assert connected_at_stop == [False]
+
+    @pytest.mark.asyncio
+    async def test_disconnect_drains_pending_telegrams_before_stop(self, mock_hass):
+        """The queued telegram backlog must be dropped before xknx.stop().
+
+        On a zombie tunnel every queued telegram burns ~3s in confirmation
+        timeout, and stop() joins the queue before returning — a saturated
+        backlog makes stop() take minutes to forever. The stub stop() below
+        joins the queue exactly like the real one: without the drain it hangs.
+        """
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = self._make_xknx_with_queue()
+        for _ in range(5):
+            mock_xknx.telegrams.put_nowait(MagicMock())
+
+        async def _stop() -> None:
+            await asyncio.wait_for(mock_xknx.telegrams.join(), timeout=1)
+
+        mock_xknx.stop = _stop
+        gateway._xknx = mock_xknx
+
+        await asyncio.wait_for(gateway.async_disconnect(), timeout=2)
+
+        assert mock_xknx.telegrams.qsize() == 0
+
+    @pytest.mark.asyncio
+    async def test_disconnect_survives_hanging_xknx_stop(self, mock_hass, caplog):
+        """A stop() that never returns must not hang async_disconnect forever."""
+        import logging
+
+        gateway = self._make_gateway(mock_hass)
+        mock_xknx = self._make_xknx_with_queue()
+
+        async def _hangs_forever() -> None:
+            await asyncio.Event().wait()
+
+        mock_xknx.stop = _hangs_forever
+        gateway._xknx = mock_xknx
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.XKNX_STOP_TIMEOUT", 0.05),
+            caplog.at_level(logging.DEBUG, logger="custom_components.luxor_living.knx_gateway"),
+        ):
+            await asyncio.wait_for(gateway.async_disconnect(), timeout=2)
+
+        assert gateway._xknx is None
+        assert gateway._connected is False
+        messages = [r.getMessage() for r in caplog.records]
+        assert any("timed out" in m.lower() for m in messages)
+
+
 class TestSessionLockRaceCondition:
     """Regression tests for the race condition between _session_refresh_loop and _async_on_reconnect.
 

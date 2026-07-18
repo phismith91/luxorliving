@@ -28,6 +28,7 @@ from .const import (
     RECONNECT_FAILURE_THRESHOLD,
     RECONNECT_FAILURE_WINDOW,
     SESSION_REFRESH_INTERVAL,
+    XKNX_STOP_TIMEOUT,
     ZOMBIE_CHECK_INTERVAL,
     ZOMBIE_ERROR_THRESHOLD,
     ZOMBIE_RECONNECT_COOLDOWN,
@@ -292,6 +293,12 @@ class LuxorKNXGateway:
 
         NOTE: Logout automatically deactivates tunneling!
         """
+        # Reject new outgoing telegrams FIRST — xknx.stop() joins the telegram
+        # queue, and with _connected still True entity polling keeps refilling
+        # that queue during teardown, so on a zombie tunnel (consumer drains
+        # ~1 telegram/3s via confirmation timeout) stop() never returns.
+        self._connected = False
+
         # Stop reconnect handler before disconnecting so it doesn't fire during teardown
         self._setup_complete = False
         if self._unregister_connection_cb:
@@ -300,9 +307,24 @@ class LuxorKNXGateway:
 
         # Disconnect KNX
         if self._xknx and not self.simulation_mode:
+            # Drop the queued backlog so stop()'s queue-join returns promptly.
+            # Safe to discard: the tunnel is being torn down, every pending
+            # telegram would only burn its ~3s confirmation timeout anyway.
             try:
-                await self._xknx.stop()
+                for _ in range(self._xknx.telegrams.qsize()):
+                    self._xknx.telegrams.get_nowait()
+                    self._xknx.telegrams.task_done()
+            except Exception:  # pragma: no cover - defensive, queue may be mocked
+                pass
+            try:
+                await asyncio.wait_for(self._xknx.stop(), timeout=XKNX_STOP_TIMEOUT)
                 _LOGGER.info("Disconnected from KNX Gateway")
+            except asyncio.TimeoutError:
+                _LOGGER.error(
+                    "xknx stop timed out after %ss — abandoning instance "
+                    "(next setup flushes the stale IP1 slot via disable_tunneling)",
+                    XKNX_STOP_TIMEOUT,
+                )
             except Exception as err:
                 _LOGGER.error("Error disconnecting from KNX: %s", err)
 

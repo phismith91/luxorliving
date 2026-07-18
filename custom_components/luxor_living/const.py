@@ -35,6 +35,7 @@ ZOMBIE_RECONNECT_COOLDOWN = (
     300  # seconds to wait after a zombie-triggered reconnect before arming again
 )
 ZOMBIE_RECOVERY_TIMEOUT = 120  # seconds before a stuck zombie-recovery (disconnect+setup) is abandoned, releasing _session_lock
+XKNX_STOP_TIMEOUT = 15  # seconds before a hanging xknx.stop() is abandoned during disconnect
 NOT_CONNECTED_LOG_INTERVAL = 60  # rate-limit "not connected" ERROR log to once per N seconds
 DEFAULT_LOG_LEVEL = "info"
 DEFAULT_DISCOVERY_TIMEOUT = 2.0  # seconds
