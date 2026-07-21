@@ -535,12 +535,20 @@ class EntityMapper:
         Uses PlatformDetector for role-to-attributes mapping.
         """
         # Role -> entity_name_suffix mapping (uses PlatformDetector for class/unit)
+        #
+        # The role strings below come straight from Theben's LXP export and do
+        # NOT match physical sensor position — confirmed via #141 by comparing
+        # live values against LuxorPlay (ground truth) for the same install:
+        # it's a 3-way rotation, not a simple Vorne/Mitte rename.
+        #   role HelligkeitMitte  is physically "Links"
+        #   role HelligkeitLinks  is physically "Rechts"
+        #   role HelligkeitRechts is physically "Vorne"
         wetterstation_roles = {
             "Temperatur": "Außentemperatur",
             "Windgeschwindigkeit": "Windgeschwindigkeit",
-            "HelligkeitMitte": "Helligkeit Vorne",
-            "HelligkeitLinks": "Helligkeit Links",
-            "HelligkeitRechts": "Helligkeit Rechts",
+            "HelligkeitMitte": "Helligkeit Links",
+            "HelligkeitLinks": "Helligkeit Rechts",
+            "HelligkeitRechts": "Helligkeit Vorne",
             "Regen": "Regen",  # Binary/status
         }
 
