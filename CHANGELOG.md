@@ -3,9 +3,9 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## [1.2.1] - 2026-07-12
+## [1.2.1] - 2026-07-21
 
-Pre-release (`v1.2.1-rc.5`).
+Pre-release (`v1.2.1-rc.9`).
 
 ### Added
 
@@ -21,6 +21,9 @@ Pre-release (`v1.2.1-rc.5`).
 - **Zombie-detection diagnostics**: the flood onset in Marcus' 2026-07-17 log had no preceding event in the WARNING-level export — impossible to tell what triggered it. The detection WARNING now includes the incoming-CEMI count for the same 30s window and the age of the last incoming telegram (distinguishes "bus fully dead" from "only the ack path broken"), recovery snapshots the IP1 slot status via REST before teardown (visible when saturated — and taken while the evidence still exists), and a *failing* slot-status query now logs at WARNING instead of being silently swallowed: on 2026-07-07 the IP1's REST port died alongside the tunnel, so "REST unreachable at detection time" is itself a diagnostic answer.
 - **`async_disconnect()` could hang forever inside `xknx.stop()` on a zombie tunnel** (the exact hang behind the deadlock above): `xknx.stop()` joins the outgoing telegram queue before returning, but on a zombie tunnel the queue consumer only drains ~1 telegram per 3s (each burns its full L_DATA_CON confirmation timeout) — and because `_connected` was only set `False` at the *end* of `async_disconnect()`, entity polling kept refilling the queue throughout the teardown (visible in the 2026-07-17 log as an uninterrupted GroupValueRead flood every ~3s for 4h straight, across 45 zombie detections). The queue never emptied, so `stop()` never returned. Three-part fix: `_connected = False` is now set *first* (rejects new sends immediately), the queued telegram backlog is dropped before `stop()` (each pending telegram would only burn its confirmation timeout anyway), and `stop()` itself is bounded by a 15s timeout (`XKNX_STOP_TIMEOUT`) — on expiry the instance is abandoned and the next `async_setup()` flushes its stale IP1 slot via the existing device-wide `disable_tunneling()`.
 - **Zombie watchdog could silently skip its first-ever detection on a freshly booted host**: `_last_zombie_reconnect_at` used `0.0` as its "never fired" sentinel, but `time.monotonic()` is not guaranteed to start high — on a host/container with low uptime, `now - 0.0 < ZOMBIE_RECONNECT_COOLDOWN` (5 min) can be true even though no reconnect has ever happened, discarding the very first real zombie detection after an HA restart. Caught by CI (`pr #182`, "Run Tests" failing nondeterministically depending on runner uptime) rather than in the field. Sentinel changed to `-ZOMBIE_RECONNECT_COOLDOWN`, which is mathematically guaranteed to always clear the cooldown check regardless of `time.monotonic()`'s value.
+- **H6 heat/cool state not synced across shared mode-switch GA**: `UmschaltenHeitzenKühlen` drives every H6 device on the bus at once, but no H6 entity listened for the telegram itself — only the entity that sent the command updated locally, so sibling devices on the same switch kept showing stale heat/cool mode after a physical or HA-triggered change (confirmed by Marcus, #141: switching one H6 to cooling switches all of them physically, but HA only reflects it on the one commanded). Registers a KNX listener on the mode-switch GA (same pattern as Istwert/Sollwert/WindowContact) and updates `hvac_mode` from incoming telegrams, without touching the local-only OFF pseudo-state.
+- **Wetterstation Helligkeit sensors still wrong after the rc.5 naming fix**: rc.5 only renamed "Mitte" to "Vorne", the underlying values were never actually verified. Marcus (#141) confirmed via a live side-by-side comparison against LuxorPlay that it's a 3-way rotation, not a simple two-way swap: role `HelligkeitMitte` is physically "Links", role `HelligkeitLinks` is physically "Rechts", role `HelligkeitRechts` is physically "Vorne". Corrected the role→name mapping accordingly.
+- **Diagnostics export capped at 50 entities**: installs with ~160 entities (#141) were silently losing most of their entity list in "Download Diagnostics" exports. Cap raised to 200.
 
 ## [1.2.0] - 2026-06-18
 
