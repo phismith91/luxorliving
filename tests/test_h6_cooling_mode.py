@@ -256,3 +256,75 @@ class TestClimateHVACModes:
 
         # Verify binary telegram sent to mode-switch with 1 (heating)
         mock_knx_gateway.async_send_telegram.assert_called_with(102, 1, "binary")
+
+
+class TestModeSwitchListenerSync:
+    """Test that H6 entities stay in sync via the shared mode-switch GA.
+
+    UmschaltenHeitzenKühlen is one physical switch driving all H6 devices at
+    once — every H6 entity must listen for it, not just the one commanded
+    from HA, otherwise other entities show stale heat/cool state (#141).
+    """
+
+    def _make_cooling_entity(self, mock_coordinator, mock_knx_gateway, unique_id="test_climate"):
+        from custom_components.luxor_living.climate import LuxorClimate
+        from custom_components.luxor_living.mapped_entity import MappedEntity
+
+        mapped_entity = MappedEntity(
+            platform=Platform.CLIMATE,
+            unique_id=unique_id,
+            name="Test Climate",
+            device_name="511 H6",
+            device_id="test_h6_id",
+            entity_type="climate",
+            datapoints={"Sollwert": 100, "Istwert": 101, "UmschaltenHeitzenKühlen": 102},
+            attributes={},
+            parameters={"heizungsart": "102"},
+            cooling_capable=True,
+        )
+        entity = LuxorClimate(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=mapped_entity,
+            entry_id="test_entry",
+        )
+        entity.async_write_ha_state = lambda: None
+        return entity
+
+    @pytest.mark.asyncio
+    async def test_mode_switch_listener_registered(self, hass, mock_coordinator, mock_knx_gateway):
+        """async_added_to_hass must register a listener on the mode-switch GA."""
+        mock_knx_gateway.connected = False  # skip initial bus read, only check registration
+        entity = self._make_cooling_entity(mock_coordinator, mock_knx_gateway)
+
+        await entity.async_added_to_hass()
+
+        registered = [c[0][0] for c in mock_knx_gateway.register_listener.call_args_list]
+        assert 102 in registered
+
+    def test_incoming_telegram_cool_updates_other_entity(self, mock_coordinator, mock_knx_gateway):
+        """A mode-switch telegram from another device's command must flip this entity to COOL."""
+        entity = self._make_cooling_entity(mock_coordinator, mock_knx_gateway)
+        entity._attr_hvac_mode = HVACMode.HEAT
+
+        entity._handle_mode_switch_update(102, 0)
+
+        assert entity.hvac_mode == HVACMode.COOL
+
+    def test_incoming_telegram_heat_updates_other_entity(self, mock_coordinator, mock_knx_gateway):
+        """A mode-switch telegram value 1 must flip this entity to HEAT."""
+        entity = self._make_cooling_entity(mock_coordinator, mock_knx_gateway)
+        entity._attr_hvac_mode = HVACMode.COOL
+
+        entity._handle_mode_switch_update(102, 1)
+
+        assert entity.hvac_mode == HVACMode.HEAT
+
+    def test_incoming_telegram_does_not_override_off(self, mock_coordinator, mock_knx_gateway):
+        """OFF is a local-only pseudo state and must not be clobbered by bus telegrams."""
+        entity = self._make_cooling_entity(mock_coordinator, mock_knx_gateway)
+        entity._attr_hvac_mode = HVACMode.OFF
+
+        entity._handle_mode_switch_update(102, 0)
+
+        assert entity.hvac_mode == HVACMode.OFF
