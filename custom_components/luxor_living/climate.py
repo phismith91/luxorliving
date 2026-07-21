@@ -198,6 +198,11 @@ class LuxorClimate(ClimateEntity):
             self.knx_gateway.register_listener(addr, self._handle_window_contact_update)
             self._knx_listener_refs.append((addr, self._handle_window_contact_update))
 
+        if "UmschaltenHeitzenKühlen" in self._datapoints:
+            addr = self._datapoints["UmschaltenHeitzenKühlen"]
+            self.knx_gateway.register_listener(addr, self._handle_mode_switch_update)
+            self._knx_listener_refs.append((addr, self._handle_mode_switch_update))
+
         # Request initial temperature state — wait up to 5s for KNX connection
         if self.knx_gateway.connected:
             await self._update_temperature()
@@ -225,6 +230,19 @@ class LuxorClimate(ClimateEntity):
         if value is not None:
             self._window_contact_open = bool(value)
             self.async_write_ha_state()
+
+    def _handle_mode_switch_update(self, group_address: str, value: Any) -> None:
+        """Handle heating/cooling mode-switch telegram received via KNX.
+
+        UmschaltenHeitzenKühlen is a shared GA — one physical switch drives all
+        H6 devices on the bus at once, so every H6 entity must listen for it,
+        not just the one that sent the command. OFF is a local-only pseudo
+        state (not represented on the bus), so it's never overwritten here.
+        """
+        if value is None or self._attr_hvac_mode == HVACMode.OFF:
+            return
+        self._attr_hvac_mode = HVACMode.HEAT if value else HVACMode.COOL
+        self.async_write_ha_state()
 
     async def _update_temperature(self) -> None:
         """Request current and target temperatures from KNX bus."""
