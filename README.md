@@ -5,7 +5,7 @@
 [![Codecov](https://codecov.io/gh/phismith91/luxorliving/branch/main/graph/badge.svg)](https://codecov.io/gh/phismith91/luxorliving)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/phismith91/luxorliving?include_prereleases)](https://github.com/phismith91/luxorliving/releases)
 [![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](https://github.com/phismith91/luxorliving/blob/main/LICENSE)
-[![Tests: 1025](https://img.shields.io/badge/Tests-1025%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
+[![Tests: 1032](https://img.shields.io/badge/Tests-1032%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
 
 Home Assistant custom integration for **Theben LUXORliving KNX** systems. Connects via the BAOS 777 IP1 gateway using a LXP project file for automatic entity discovery — lights, covers, climate, sensors and binary sensors, all created without any manual YAML.
 
@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.2.1](https://github.com/phismith91/luxorliving/releases/tag/v1.2.1-rc.4) — pre-release: H6 cooling-mode support, plus IP1 tunneling slot-exhaustion fixes (startup flush + periodic 4h self-heal now both clear device-wide orphaned sessions, preventing the KNX-bus freeze that previously required a physical restart). Builds on the 1.2.0 TLS/tunneling hardening. _Fallback: [v1.1.15-rc.1](https://github.com/phismith91/luxorliving/releases/tag/v1.1.15-rc.1) remains available._
+**Current release:** [v1.2.1-rc.9](https://github.com/phismith91/luxorliving/releases/tag/v1.2.1-rc.9) — pre-release: fixes H6 heat/cool state not syncing across devices sharing the mode-switch GA, corrects the Wetterstation Helligkeit Vorne/Links/Rechts sensor mapping (a 3-way rotation, not the simple rename shipped in rc.5), and raises the diagnostics export cap from 50 to 200 entities. Builds on the rc.5–rc.8 IP1 tunneling slot-exhaustion and zombie-tunnel-watchdog fixes. _Fallback: [v1.1.15-rc.1](https://github.com/phismith91/luxorliving/releases/tag/v1.1.15-rc.1) remains available._
 <!-- RELEASE_NOTES_END -->
 
 ---
