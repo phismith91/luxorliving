@@ -1,45 +1,48 @@
 # Release Notes — v1.2.1
 
-> Pre-release: `v1.2.1-rc.4`.
+Stable release, 2026-07-26. Supersedes `v1.2.1-rc.4` through `rc.9` and all
+pre-1.2.1 pre-releases. Full detail per change in [CHANGELOG.md](../../CHANGELOG.md#121---2026-07-26).
 
 ## Added
 
 - **H6 cooling-mode support**: H6 climate entities now support cooling in
   addition to heating when the `UmschaltenHeitzenKühlen` (heating/cooling
   mode-switch) datapoint is present. Marcus' setup with ION8 T10 mode-switch
-  controlling H6 devices (511, 512, 513) is fully supported. Mode-switch
-  control sends a binary telegram: 1 for heating, 0 for cooling.
+  controlling H6 devices (511, 512, 513) is fully supported.
 
-## Fixed — IP1 tunneling slot exhaustion
+## Fixed
 
-Unclean HA shutdowns (or any other client crashing mid-session, e.g.
-LuxorPlay) leave a stale tunneling slot occupied on the IP1. The IP1 only
-has a handful of slots (observed max 4); once they fill up the whole KNX
-bus freezes and stops confirming telegrams, without HA ever seeing a clean
-disconnect. Recovery previously required a physical restart of the KNX
-system — reported as issue #141 and reproduced again in a 2026-06-30 log
-from Marcus (~30h into one HA uptime, continuous `L_DATA_CON` confirmation
-timeouts, no disconnect ever logged).
-
-Three changes close this:
-
-- **rc.1 — startup flush**: `connect()` now calls `disable_tunneling()`
-  (a global, device-level operation) before `enable_tunneling()`, clearing
-  any slot orphaned by a previous crashed instance every time HA starts up.
-- **rc.4 — periodic flush**: the existing 4h proactive
-  `_session_refresh_loop` — whose whole purpose is to catch slot
-  saturation "even when XKNX never detects a disconnect" — only cycled its
-  own REST session. It now also calls `disable_tunneling()`, so slots
-  orphaned by *other* clients get cleared during a single long uptime too,
-  not just at the next HA restart.
-- **rc.4 — visible diagnostics**: the slot-status check (`IP1 tunneling
-  slots before flush: X/Y connected`) used to log at INFO, which HA
-  doesn't show by default — it was invisible in every real-world bug
-  report, including Marcus' log (0 INFO lines total). It now logs at
-  WARNING once slots are at or over capacity, so the precursor to a freeze
-  shows up in a standard log export.
+- **IP1 tunneling slot exhaustion** (startup + mid-uptime): orphaned tunnel
+  slots from unclean shutdowns or other clients (LuxorPlay, a crashed prior
+  instance) no longer accumulate and freeze the bus. Flushed both at
+  startup and by the existing 4h periodic session refresh; slot-saturation
+  diagnostics escalated to WARNING so they show up in default HA logs.
+- **Zombie-tunnel watchdog**: detects a tunnel that reports CONNECTED but
+  silently stops confirming telegrams (xknx's own heartbeat misses this),
+  and forces a reconnect. Confirmed stable by Marcus since rc.9 — first
+  clean run since tracking began 2026-06-17. Three follow-up bugs in the
+  recovery path itself (a `_session_lock` deadlock, an `xknx.stop()` hang,
+  and a cooldown sentinel that could skip the first detection after a
+  restart) are all fixed.
+- **H6 heat/cool sync across the shared mode-switch GA**: commanding one H6
+  device from HA now updates every sibling device on the same physical
+  switch. Went through two attempts — rc.9 registered a bus listener but it
+  never fired for our own HA-triggered commands (xknx doesn't redeliver
+  outgoing telegrams as incoming); the final fix explicitly fans the value
+  out to siblings right after sending.
+- **Wetterstation Helligkeit sensor labels (Vorne/Links/Rechts)**: went
+  through three attempts based on Marcus' live comparisons against
+  LuxorPlay — a naming-only rename (rc.5), a full 3-way rotation (rc.9)
+  that turned out to overshoot by one step, and the final correction
+  (only `HelligkeitMitte` maps to a different physical position; `Links`
+  and `Rechts` were already correct).
+- **Diagnostics export capped at 50 entities**: raised to 200 — installs
+  with ~160 entities (Marcus') were silently losing most of the export.
 
 ## Validation
 
-- Gated test suite green (`pytest -m "not enable_socket"`): 939 passed.
-- Awaiting Marcus' re-validation on real IP1 hardware after upgrading.
+- Gated test suite green (`pytest -m "not enable_socket"`): 1033 collected.
+- H6 sync and Wetterstation fixes verified against Marcus' real LXP export
+  and his simulated sensor readings, not just synthetic test fixtures.
+- Zombie-tunnel watchdog confirmed stable in the field since rc.9
+  (2026-07-21 → 2026-07-26, no recurrence).
