@@ -299,11 +299,13 @@ class TestWetterstationMapping:
     def test_helligkeit_roles_map_to_physically_correct_position(self):
         """Confirmed via #141: LXP role text does not match physical sensor position.
 
-        LuxorPlay (ground truth, same LXP file) vs. our old labels showed a
-        3-way rotation, not a simple two-way swap:
+        Only HelligkeitMitte is actually swapped (it's physically "Links");
+        HelligkeitLinks and HelligkeitRechts are physically correct as-is.
+        The rc.9 fix rotated all three one step too far — Marcus's rc.9 report
+        showed Rechts/Vorne inverted, proving Links/Rechts should not move:
           role HelligkeitMitte  (addr 10244) is physically "Links"
-          role HelligkeitLinks  (addr 10243) is physically "Rechts"
-          role HelligkeitRechts (addr 10245) is physically "Vorne"
+          role HelligkeitLinks  (addr 10243) is physically "Vorne"
+          role HelligkeitRechts (addr 10245) is physically "Rechts"
         """
         roles = ["HelligkeitMitte", "HelligkeitLinks", "HelligkeitRechts"]
         datapoints = [
@@ -319,8 +321,8 @@ class TestWetterstationMapping:
 
         by_addr = {addr: e.name for e in sensors for addr in e.datapoints.values()}
         assert "Links" in by_addr[10244]
-        assert "Rechts" in by_addr[10243]
-        assert "Vorne" in by_addr[10245]
+        assert "Vorne" in by_addr[10243]
+        assert "Rechts" in by_addr[10245]
 
 
 # ── Query methods ─────────────────────────────────────────────────────────────

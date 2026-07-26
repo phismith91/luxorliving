@@ -1045,6 +1045,16 @@ class LuxorKNXGateway:
         webhook/WebSocket push spike to integrate external push events into the system.
         """
         try:
+            # Normalize address the same way register_listener does, so callers
+            # (e.g. climate.py's own-write fan-out) can pass either an int or a
+            # "x/y/z" string and still match the registered listener key.
+            try:
+                group_address = str(GroupAddress(group_address))
+            except Exception as err:
+                _LOGGER.debug(
+                    "Could not parse group address %r, using as-is: %s", group_address, err
+                )
+
             # Normalize value similar to _telegram_received_callback
             processed_value = value
 

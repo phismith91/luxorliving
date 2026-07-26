@@ -107,6 +107,7 @@ def mock_knx_gateway():
     gateway.async_setup = AsyncMock(return_value=True)
     gateway.async_disconnect = AsyncMock()
     gateway.update_all_entities = AsyncMock()
+    gateway.process_incoming_value = AsyncMock()
     gateway.get_all_entities = MagicMock(return_value=[])
     gateway.entity_mapper = MagicMock()
     gateway.entity_mapper.get_entity_overrides = MagicMock(return_value={})
