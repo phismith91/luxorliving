@@ -1,5 +1,8 @@
 """Tests for H6 cooling mode support."""
 
+import asyncio
+from unittest.mock import AsyncMock
+
 import pytest
 from homeassistant.components.climate import HVACMode
 from homeassistant.const import Platform
@@ -328,3 +331,41 @@ class TestModeSwitchListenerSync:
         entity._handle_mode_switch_update(102, 0)
 
         assert entity.hvac_mode == HVACMode.OFF
+
+    @pytest.mark.asyncio
+    async def test_hvac_mode_from_ha_syncs_sibling_entity(self, hass, mock_coordinator):
+        """Commanding one H6 from HA must update sibling H6 entities too (#141).
+
+        Regression test for the gap that let PR #190 ship broken: prior tests
+        called _handle_mode_switch_update() directly, which only proves the
+        listener callback works — never that async_set_hvac_mode() (the real
+        HA-triggered path) actually reaches it. A real xknx outgoing telegram
+        is never redelivered as incoming, so the fan-out must happen via
+        knx_gateway.process_incoming_value(), exercised here against a real
+        LuxorKNXGateway instance (not a MagicMock) so the listener registry
+        and dispatch are genuinely under test, not stubbed away.
+        """
+        from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
+
+        gateway = LuxorKNXGateway(
+            hass=hass,
+            host="192.168.1.100",
+            port=3671,
+            username="admin",
+            password="secret",
+            simulation_mode=False,
+        )
+        gateway.async_send_telegram = AsyncMock(return_value=True)
+        gateway._connected = True
+
+        salon = self._make_cooling_entity(mock_coordinator, gateway, unique_id="salon")
+        bathroom = self._make_cooling_entity(mock_coordinator, gateway, unique_id="bathroom")
+        salon._attr_hvac_mode = HVACMode.COOL
+        bathroom._attr_hvac_mode = HVACMode.COOL
+        await salon.async_added_to_hass()
+        await bathroom.async_added_to_hass()
+
+        await salon.async_set_hvac_mode(HVACMode.HEAT)
+        await asyncio.sleep(0)  # let the call_soon_threadsafe-scheduled listener fire
+
+        assert bathroom.hvac_mode == HVACMode.HEAT

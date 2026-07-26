@@ -300,14 +300,17 @@ class LuxorClimate(ClimateEntity):
             temp = getattr(self, "_setpoint_before_off", None) or self._attr_target_temperature
             await self.async_set_temperature(temperature=temp or 20.0)
             if self._cooling_capable and "UmschaltenHeitzenKühlen" in self._datapoints:
-                await self.knx_gateway.async_send_telegram(
-                    self._datapoints["UmschaltenHeitzenKühlen"], 1, "binary"
-                )
+                ga = self._datapoints["UmschaltenHeitzenKühlen"]
+                await self.knx_gateway.async_send_telegram(ga, 1, "binary")
+                # Our own outgoing telegram never loops back as "incoming", so
+                # sibling H6 entities on this shared GA would never hear it —
+                # fan it out to their listeners the same way a real bus echo would (#141).
+                await self.knx_gateway.process_incoming_value(ga, True, "binary")
         elif hvac_mode == HVACMode.COOL:
             if self._cooling_capable and "UmschaltenHeitzenKühlen" in self._datapoints:
-                await self.knx_gateway.async_send_telegram(
-                    self._datapoints["UmschaltenHeitzenKühlen"], 0, "binary"
-                )
+                ga = self._datapoints["UmschaltenHeitzenKühlen"]
+                await self.knx_gateway.async_send_telegram(ga, 0, "binary")
+                await self.knx_gateway.process_incoming_value(ga, False, "binary")
 
         self.async_write_ha_state()
 

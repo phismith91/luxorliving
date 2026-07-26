@@ -538,17 +538,18 @@ class EntityMapper:
         #
         # The role strings below come straight from Theben's LXP export and do
         # NOT match physical sensor position — confirmed via #141 by comparing
-        # live values against LuxorPlay (ground truth) for the same install:
-        # it's a 3-way rotation, not a simple Vorne/Mitte rename.
+        # live values against LuxorPlay (ground truth) for the same install.
+        # The rc.9 fix rotated all three one step too far (Marcus, 2026-07-26):
+        # only HelligkeitMitte is actually swapped; Links/Rechts are correct as-is.
         #   role HelligkeitMitte  is physically "Links"
-        #   role HelligkeitLinks  is physically "Rechts"
-        #   role HelligkeitRechts is physically "Vorne"
+        #   role HelligkeitLinks  is physically "Vorne"
+        #   role HelligkeitRechts is physically "Rechts"
         wetterstation_roles = {
             "Temperatur": "Außentemperatur",
             "Windgeschwindigkeit": "Windgeschwindigkeit",
             "HelligkeitMitte": "Helligkeit Links",
-            "HelligkeitLinks": "Helligkeit Rechts",
-            "HelligkeitRechts": "Helligkeit Vorne",
+            "HelligkeitLinks": "Helligkeit Vorne",
+            "HelligkeitRechts": "Helligkeit Rechts",
             "Regen": "Regen",  # Binary/status
         }
 

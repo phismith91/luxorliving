@@ -3,9 +3,7 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## [1.2.1] - 2026-07-21
-
-Pre-release (`v1.2.1-rc.9`).
+## [1.2.1] - 2026-07-26
 
 ### Added
 
@@ -24,6 +22,8 @@ Pre-release (`v1.2.1-rc.9`).
 - **H6 heat/cool state not synced across shared mode-switch GA**: `UmschaltenHeitzenKühlen` drives every H6 device on the bus at once, but no H6 entity listened for the telegram itself — only the entity that sent the command updated locally, so sibling devices on the same switch kept showing stale heat/cool mode after a physical or HA-triggered change (confirmed by Marcus, #141: switching one H6 to cooling switches all of them physically, but HA only reflects it on the one commanded). Registers a KNX listener on the mode-switch GA (same pattern as Istwert/Sollwert/WindowContact) and updates `hvac_mode` from incoming telegrams, without touching the local-only OFF pseudo-state.
 - **Wetterstation Helligkeit sensors still wrong after the rc.5 naming fix**: rc.5 only renamed "Mitte" to "Vorne", the underlying values were never actually verified. Marcus (#141) confirmed via a live side-by-side comparison against LuxorPlay that it's a 3-way rotation, not a simple two-way swap: role `HelligkeitMitte` is physically "Links", role `HelligkeitLinks` is physically "Rechts", role `HelligkeitRechts` is physically "Vorne". Corrected the role→name mapping accordingly.
 - **Diagnostics export capped at 50 entities**: installs with ~160 entities (#141) were silently losing most of their entity list in "Download Diagnostics" exports. Cap raised to 200.
+- **H6 heat/cool sync still broken after the previous fix**: the mode-switch listener above only fires for telegrams genuinely arriving from the bus — xknx never redelivers our own outgoing writes as incoming (confirmed in xknx's `TelegramQueueCallback`, which filters out `TelegramDirection.OUTGOING` by default), so commanding one H6 from HA still only updated that entity, exactly as Marcus reported on rc.9 ("only the bathroom shows cooling, the others stay heating"). `async_set_hvac_mode()` now explicitly fans the value out to sibling listeners via `process_incoming_value()` right after sending, without touching the global outgoing-telegram callback (which also drives zombie-tunnel bus-liveness detection and must not fire on our own sends). Also fixed `process_incoming_value()` itself, which never normalized the group address before looking up listeners — it happened to work for its existing webhook/push callers (which already pass normalized "x/y/z" strings) but silently matched nothing when passed a raw int address.
+- **Wetterstation rotation overshot by one step**: the 3-way rotation above turned out to be one step too far — Marcus' rc.9 test showed `HelligkeitLinks`/`HelligkeitRechts` now labeled "Rechts"/"Vorne" instead of "Vorne"/"Rechts". Only `HelligkeitMitte` → "Links" was actually correct; `HelligkeitLinks` and `HelligkeitRechts` should not have moved from their original roles. Corrected to `HelligkeitMitte`→"Links", `HelligkeitLinks`→"Vorne", `HelligkeitRechts`→"Rechts".
 
 ## [1.2.0] - 2026-06-18
 
