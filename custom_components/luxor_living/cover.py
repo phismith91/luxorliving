@@ -215,7 +215,8 @@ class LuxorCover(CoverEntity):
     def _handle_tilt_update(self, group_address: str, value: Any) -> None:
         """Handle tilt position update received via KNX telegram."""
         if isinstance(value, (int, float)):
-            self._attr_current_cover_tilt_position = int(value)
+            # KNX Lamelle% convention: 0 = open, 100 = closed → invert (#197)
+            self._attr_current_cover_tilt_position = 100 - int(value)
             self.async_write_ha_state()
 
     async def _update_position(self) -> None:
@@ -299,8 +300,9 @@ class LuxorCover(CoverEntity):
 
         try:
             if "Lamelle%" in self._datapoints:
+                # KNX Lamelle% convention: 0 = open, 100 = closed (#197)
                 await self.knx_gateway.async_send_telegram(
-                    self._datapoints["Lamelle%"], 100, "percent"
+                    self._datapoints["Lamelle%"], 0, "percent"
                 )
                 _LOGGER.info("Opening tilt for cover: %s", self.name)
         except Exception as e:
@@ -316,8 +318,9 @@ class LuxorCover(CoverEntity):
 
         try:
             if "Lamelle%" in self._datapoints:
+                # KNX Lamelle% convention: 0 = open, 100 = closed (#197)
                 await self.knx_gateway.async_send_telegram(
-                    self._datapoints["Lamelle%"], 0, "percent"
+                    self._datapoints["Lamelle%"], 100, "percent"
                 )
                 _LOGGER.info("Closing tilt for cover: %s", self.name)
         except Exception as e:
@@ -354,11 +357,13 @@ class LuxorCover(CoverEntity):
 
         try:
             if "Lamelle%" in self._datapoints:
+                # Invert HA tilt position to KNX Lamelle% convention (#197)
+                knx_tilt = 100 - int(tilt_position)
                 success = await self.knx_gateway.async_send_telegram(
-                    self._datapoints["Lamelle%"], int(tilt_position), "percent"
+                    self._datapoints["Lamelle%"], knx_tilt, "percent"
                 )
                 if success:
-                    self._attr_current_cover_tilt_position = tilt_position
+                    self._attr_current_cover_tilt_position = int(tilt_position)
                     self.async_write_ha_state()
                     _LOGGER.info("Set tilt position for %s to %d%%", self.name, tilt_position)
         except Exception as e:

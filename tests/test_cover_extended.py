@@ -241,7 +241,7 @@ class TestSetPosition:
 
 class TestTiltCommands:
     @pytest.mark.asyncio
-    async def test_open_tilt_sends_100(self):
+    async def test_open_tilt_sends_0(self):
         entity, gateway = _make_cover(
             [
                 {"role": "UpDown", "address": 200},
@@ -249,7 +249,7 @@ class TestTiltCommands:
             ]
         )
         await entity.async_open_cover_tilt()
-        gateway.async_send_telegram.assert_awaited_once_with(204, 100, "percent")
+        gateway.async_send_telegram.assert_awaited_once_with(204, 0, "percent")
 
     @pytest.mark.asyncio
     async def test_open_tilt_no_tilt_does_nothing(self):
@@ -269,7 +269,7 @@ class TestTiltCommands:
         await entity.async_open_cover_tilt()  # must not raise
 
     @pytest.mark.asyncio
-    async def test_close_tilt_sends_0(self):
+    async def test_close_tilt_sends_100(self):
         entity, gateway = _make_cover(
             [
                 {"role": "UpDown", "address": 200},
@@ -277,7 +277,7 @@ class TestTiltCommands:
             ]
         )
         await entity.async_close_cover_tilt()
-        gateway.async_send_telegram.assert_awaited_once_with(204, 0, "percent")
+        gateway.async_send_telegram.assert_awaited_once_with(204, 100, "percent")
 
     @pytest.mark.asyncio
     async def test_close_tilt_no_tilt_does_nothing(self):
@@ -334,7 +334,7 @@ class TestTiltCommands:
             ]
         )
         await entity.async_set_cover_tilt_position(**{"tilt_position": 45})
-        gateway.async_send_telegram.assert_awaited_once_with(204, 45, "percent")
+        gateway.async_send_telegram.assert_awaited_once_with(204, 55, "percent")
 
     @pytest.mark.asyncio
     async def test_set_tilt_no_tilt_does_nothing(self):
