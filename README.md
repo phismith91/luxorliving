@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.2.1-rc.9](https://github.com/phismith91/luxorliving/releases/tag/v1.2.1-rc.9) — pre-release: fixes H6 heat/cool state not syncing across devices sharing the mode-switch GA, corrects the Wetterstation Helligkeit Vorne/Links/Rechts sensor mapping (a 3-way rotation, not the simple rename shipped in rc.5), and raises the diagnostics export cap from 50 to 200 entities. Builds on the rc.5–rc.8 IP1 tunneling slot-exhaustion and zombie-tunnel-watchdog fixes. _Fallback: [v1.1.15-rc.1](https://github.com/phismith91/luxorliving/releases/tag/v1.1.15-rc.1) remains available._
+**Current release:** [v1.2.2-rc.1](https://github.com/phismith91/luxorliving/releases/tag/v1.2.2-rc.1) — pre-release: fixes cover tilt position being inverted (#197) — closed blinds reported tilt 100 instead of 0, and open/close-tilt commands sent the opposite KNX value from what they meant. Builds on the stable [v1.2.1](https://github.com/phismith91/luxorliving/releases/tag/v1.2.1) release.
 <!-- RELEASE_NOTES_END -->
 
 ---
