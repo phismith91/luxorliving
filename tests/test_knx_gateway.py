@@ -1078,6 +1078,80 @@ class TestZombieWatchdog:
         assert not any("recovery complete" in m.lower() for m in messages)
 
     @pytest.mark.asyncio
+    async def test_async_zombie_recover_schedules_retry_when_setup_fails(self, mock_hass):
+        """A failed recovery must schedule a retry loop, not give up permanently.
+
+        Without this, one failed async_setup() (e.g. IP1 still holding the
+        just-abandoned slot) leaves NOTHING running to ever reconnect: the
+        watchdog and session-refresh loops are only (re)started inside a
+        successful async_setup(), and async_disconnect() already cancelled
+        the old watchdog before this attempt. Reproduces Marcus'
+        2026-08-10/08-12 logs: zero further zombie/refresh log lines after
+        one failed recovery, permanent lockup until a physical bus restart.
+        """
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+
+        async def _fake_disconnect():
+            pass
+
+        async def _fake_setup_fails():
+            return False
+
+        gateway.async_disconnect = _fake_disconnect
+        gateway.async_setup = _fake_setup_fails
+
+        await gateway._async_zombie_recover()
+
+        mock_hass.async_create_task.assert_called_once()
+        scheduled_coro = mock_hass.async_create_task.call_args[0][0]
+        assert scheduled_coro.__name__ == "_recovery_retry_loop"
+        scheduled_coro.close()
+        assert gateway._recovery_retry_task is not None
+
+    @pytest.mark.asyncio
+    async def test_recovery_retry_loop_retries_until_setup_succeeds(self, mock_hass):
+        """Retry loop must keep calling async_setup() on an interval until it succeeds."""
+        from custom_components.luxor_living.const import ZOMBIE_RECOVERY_RETRY_INTERVAL
+
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        gateway._connected = False
+        setup_calls: list[int] = []
+
+        async def _fake_setup():
+            setup_calls.append(1)
+            return len(setup_calls) >= 2  # fails first attempt, succeeds second
+
+        gateway.async_setup = _fake_setup
+
+        sleep_calls: list[int] = []
+
+        async def _fake_sleep(interval: int) -> None:
+            sleep_calls.append(interval)
+
+        with patch("asyncio.sleep", side_effect=_fake_sleep):
+            await gateway._recovery_retry_loop()
+
+        assert sleep_calls == [ZOMBIE_RECOVERY_RETRY_INTERVAL, ZOMBIE_RECOVERY_RETRY_INTERVAL]
+        assert len(setup_calls) == 2
+
+    @pytest.mark.asyncio
+    async def test_recovery_retry_loop_skips_setup_if_already_connected(self, mock_hass):
+        """If something else already reconnected, the loop must not double-connect."""
+        gateway = self._make_gateway(mock_hass, simulation_mode=True)
+        gateway._connected = True
+
+        async def _fake_setup():
+            raise AssertionError("must not call async_setup() while already connected")
+
+        gateway.async_setup = _fake_setup
+
+        async def _fake_sleep(interval: int) -> None:
+            pass
+
+        with patch("asyncio.sleep", side_effect=_fake_sleep):
+            await gateway._recovery_retry_loop()
+
+    @pytest.mark.asyncio
     async def test_async_zombie_recover_times_out_and_releases_lock(self, mock_hass, caplog):
         """A stuck async_disconnect() must not hold _session_lock forever.
 

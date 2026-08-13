@@ -32,6 +32,7 @@ from .const import (
     ZOMBIE_CHECK_INTERVAL,
     ZOMBIE_ERROR_THRESHOLD,
     ZOMBIE_RECONNECT_COOLDOWN,
+    ZOMBIE_RECOVERY_RETRY_INTERVAL,
     ZOMBIE_RECOVERY_TIMEOUT,
 )
 from .rest_client import AuthenticationError, BAOSRestClient, TunnelingError
@@ -101,6 +102,7 @@ class LuxorKNXGateway:
         )  # monotonic time of last zombie-triggered reconnect ("never" — must not
         # collide with a low time.monotonic() value on a freshly booted host)
         self._zombie_recover_task: asyncio.Task | None = None
+        self._recovery_retry_task: asyncio.Task | None = None
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
@@ -351,6 +353,10 @@ class LuxorKNXGateway:
         await self._cancel_task(self._zombie_watchdog_task)
         self._zombie_watchdog_task = None
 
+        # Cancel a pending zombie-recovery retry loop
+        await self._cancel_task(self._recovery_retry_task)
+        self._recovery_retry_task = None
+
         # Cancel pending debounce task so no orphaned coroutines remain
         if self._debounce_task and not self._debounce_task.done():
             self._debounce_task.cancel()
@@ -573,10 +579,11 @@ class LuxorKNXGateway:
                 _LOGGER.warning("Zombie-tunnel recovery complete (host=%s)", self.host)
             else:
                 _LOGGER.error(
-                    "Zombie-tunnel recovery failed to reconnect (host=%s) — "
-                    "reload the integration if the gateway remains unreachable",
+                    "Zombie-tunnel recovery failed to reconnect (host=%s) — " "retrying every %ds",
                     self.host,
+                    ZOMBIE_RECOVERY_RETRY_INTERVAL,
                 )
+                self._schedule_recovery_retry()
         except asyncio.TimeoutError:
             self._connected = False
             _LOGGER.error(
@@ -587,6 +594,52 @@ class LuxorKNXGateway:
             )
         except Exception as err:
             _LOGGER.error("Zombie-tunnel recovery failed (host=%s): %s", self.host, err)
+
+    def _schedule_recovery_retry(self) -> None:
+        """Start the retry loop unless one is already running."""
+        if self._recovery_retry_task and not self._recovery_retry_task.done():
+            return
+        self._recovery_retry_task = self.hass.async_create_task(
+            self._recovery_retry_loop(), name="luxor_recovery_retry"
+        )
+
+    async def _recovery_retry_loop(self) -> None:
+        """Keep retrying async_setup() after a failed zombie recovery.
+
+        Without this, one failed reconnect permanently kills self-healing:
+        the watchdog and session-refresh loops are only (re)started inside a
+        successful async_setup(), and async_disconnect() already cancelled
+        the old watchdog before the failed attempt — so nothing is left to
+        ever retry (confirmed on Marcus' 2026-08-10/08-12 logs: zero further
+        zombie/refresh log lines after one failed recovery, "Cannot read -
+        not connected" every minute until a physical bus restart).
+        """
+        try:
+            while True:
+                await asyncio.sleep(ZOMBIE_RECOVERY_RETRY_INTERVAL)
+                if self._connected:
+                    return  # something else already reconnected us
+                async with self._session_lock:
+                    if self._connected:
+                        return
+                    try:
+                        if await self.async_setup():
+                            _LOGGER.warning(
+                                "Reconnected to KNX Gateway %s:%s after zombie-recovery retry",
+                                self.host,
+                                self.port,
+                            )
+                            return
+                    except Exception as err:
+                        _LOGGER.error(
+                            "Zombie-recovery retry failed (host=%s), will retry in %ds: %s",
+                            self.host,
+                            ZOMBIE_RECOVERY_RETRY_INTERVAL,
+                            err,
+                        )
+        except asyncio.CancelledError:
+            _LOGGER.debug("Zombie-recovery retry loop cancelled")
+            raise
 
     def _on_connection_state_changed(self, state: XknxConnectionState) -> None:
         """Handle xknx connection state changes.
