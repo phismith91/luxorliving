@@ -8,6 +8,7 @@ documented in this file.
 ### Fixed
 
 - **Cover tilt position inverted (#197)**: KNX `Lamelle%` follows the same 0=open/100=closed convention as `Höhe%` (fixed for main position in v1.1.6), but tilt read/write and the open/close-tilt commands passed values straight through. A closed blind reported `current_tilt_position: 100` instead of `0`, and "open tilt" sent the KNX-closed value (100) while "close tilt" sent the KNX-open value (0) — both commands were inverted. All four paths (`_handle_tilt_update`, `async_set_cover_tilt_position`, `async_open_cover_tilt`, `async_close_cover_tilt`) now apply the same `100 - x` inversion as position.
+- **Zombie-tunnel recovery could permanently kill all self-healing (#201)**: confirmed on two independent field logs (2026-08-10, 2026-08-12) — 6-7 successful zombie recoveries every ~5min, then one `async_setup()` attempt hit `E_NO_MORE_CONNECTIONS` (the just-abandoned tunnel's IP1 slot not freed in time), and from that point on the integration went completely silent: no further zombie/refresh log lines, just `Cannot read - not connected` every minute until a physical bus restart. Root cause: the zombie watchdog and session-refresh background loops are only (re)started inside a *successful* `async_setup()`, and `async_disconnect()` had already cancelled the old watchdog before the failed attempt — nothing was left running to ever retry. `_async_zombie_recover()` now schedules a retry loop on failure that keeps calling `async_setup()` every 60s until it succeeds.
 
 ## [1.2.1] - 2026-07-26
 
