@@ -24,10 +24,12 @@ from xknx.telegram.apci import GroupValueRead, GroupValueResponse, GroupValueWri
 from .circuit_breaker import CircuitBreakerOpenException, get_knx_circuit_breaker
 from .const import (
     NOT_CONNECTED_LOG_INTERVAL,
+    OUTGOING_QUEUE_BACKPRESSURE_LIMIT,
     RECONNECT_COOLDOWN_SECS,
     RECONNECT_FAILURE_THRESHOLD,
     RECONNECT_FAILURE_WINDOW,
     SESSION_REFRESH_INTERVAL,
+    XKNX_INTERFACE_STOP_TIMEOUT,
     XKNX_STOP_TIMEOUT,
     ZOMBIE_CHECK_INTERVAL,
     ZOMBIE_ERROR_THRESHOLD,
@@ -103,6 +105,7 @@ class LuxorKNXGateway:
         # collide with a low time.monotonic() value on a freshly booted host)
         self._zombie_recover_task: asyncio.Task | None = None
         self._recovery_retry_task: asyncio.Task | None = None
+        self._last_connect_error: str | None = None  # dedupe repeated connect-failure tracebacks
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
@@ -272,7 +275,16 @@ class LuxorKNXGateway:
             self._connected = False
             return False
         except Exception as err:
-            _LOGGER.error("Failed to connect to KNX Gateway: %s", err, exc_info=True)
+            # Full traceback only for a new error message — the 60s retry
+            # loop otherwise repeats the identical traceback dozens of times
+            # (42x E_NO_MORE_CONNECTIONS in Marcus' 2026-08-14 log).
+            err_text = str(err)
+            _LOGGER.error(
+                "Failed to connect to KNX Gateway: %s",
+                err,
+                exc_info=err_text != self._last_connect_error,
+            )
+            self._last_connect_error = err_text
             self._connected = False
 
             # Cleanup REST session on failure
@@ -313,24 +325,47 @@ class LuxorKNXGateway:
 
         # Disconnect KNX
         if self._xknx and not self.simulation_mode:
-            # Drop the queued backlog so stop()'s queue-join returns promptly.
+            # Drop the queued backlog so stop()'s queue-joins return promptly.
             # Safe to discard: the tunnel is being torn down, every pending
             # telegram would only burn its ~3s confirmation timeout anyway.
-            try:
-                for _ in range(self._xknx.telegrams.qsize()):
-                    self._xknx.telegrams.get_nowait()
-                    self._xknx.telegrams.task_done()
-            except Exception:  # pragma: no cover - defensive, queue may be mocked
-                pass
+            # BOTH queues matter: xknx moves outgoing telegrams from
+            # `telegrams` straight into `telegram_queue.outgoing_queue`,
+            # where the rate limiter drains ~1/3s on a zombie tunnel — by
+            # teardown time nearly the whole backlog has migrated there
+            # (2026-08-14 logs: ~80min of queued reads per leaked instance).
+            dropped = self._drain_queue(getattr(self._xknx, "telegrams", None))
+            dropped += self._drain_queue(
+                getattr(getattr(self._xknx, "telegram_queue", None), "outgoing_queue", None)
+            )
+            if dropped:
+                _LOGGER.warning("Dropped %d queued outgoing telegrams during teardown", dropped)
             try:
                 await asyncio.wait_for(self._xknx.stop(), timeout=XKNX_STOP_TIMEOUT)
                 _LOGGER.info("Disconnected from KNX Gateway")
             except asyncio.TimeoutError:
+                # Never abandon a live instance: heartbeat, auto-reconnect
+                # task, and transport would keep running and (re)grabbing an
+                # IP1 tunnel slot forever — 8 leaked instances occupied ALL
+                # slots on Marcus' 2026-08-14 logs (E_NO_MORE_CONNECTIONS on
+                # every reconnect until physical restart). Force-close the
+                # tunnel: DisconnectRequest + reconnect-task stop + transport
+                # close, freeing the slot device-side.
                 _LOGGER.error(
-                    "xknx stop timed out after %ss — abandoning instance "
-                    "(next setup flushes the stale IP1 slot via disable_tunneling)",
+                    "xknx stop timed out after %ss — force-closing tunnel interface",
                     XKNX_STOP_TIMEOUT,
                 )
+                try:
+                    await asyncio.wait_for(
+                        self._xknx.knxip_interface.stop(),
+                        timeout=XKNX_INTERFACE_STOP_TIMEOUT,
+                    )
+                    _LOGGER.warning("Tunnel interface force-closed — IP1 slot released")
+                except Exception as err:
+                    _LOGGER.error(
+                        "Tunnel interface force-close failed (%s) — IP1 slot may stay "
+                        "occupied until the next disable_tunneling flush",
+                        err,
+                    )
             except Exception as err:
                 _LOGGER.error("Error disconnecting from KNX: %s", err)
 
@@ -365,6 +400,21 @@ class LuxorKNXGateway:
         self._connected = False
         self._tunneling_enabled = False
         self._xknx = None
+
+    @staticmethod
+    def _drain_queue(queue: Any) -> int:
+        """Empty an asyncio.Queue, keeping its join() accounting balanced."""
+        if queue is None:
+            return 0
+        dropped = 0
+        try:
+            for _ in range(queue.qsize()):
+                queue.get_nowait()
+                queue.task_done()
+                dropped += 1
+        except Exception:  # pragma: no cover - defensive, queue may be mocked
+            pass
+        return dropped
 
     async def async_disconnect_for_unload(self) -> None:
         """Disconnect for integration unload, serialized against zombie recovery.
@@ -519,17 +569,23 @@ class LuxorKNXGateway:
                         if self._last_telegram_received_at
                         else "never"
                     )
+                    try:
+                        backlog = self._xknx.telegram_queue.outgoing_queue.qsize()
+                    except Exception:  # pragma: no cover - defensive
+                        backlog = "?"
                     _LOGGER.warning(
                         "KNX gateway %s:%s zombie tunnel detected — %d confirmation "
                         "failures in %ds with no disconnect event "
                         "(%s incoming CEMI frames in same window, last incoming "
-                        "telegram: %s), forcing full reconnect",
+                        "telegram: %s, %s telegrams queued outgoing), "
+                        "forcing full reconnect",
                         self.host,
                         self.port,
                         delta,
                         ZOMBIE_CHECK_INTERVAL,
                         incoming_delta,
                         last_rx,
+                        backlog,
                     )
                     self._zombie_recover_task = self.hass.async_create_task(
                         self._async_zombie_recover()
@@ -614,6 +670,7 @@ class LuxorKNXGateway:
         zombie/refresh log lines after one failed recovery, "Cannot read -
         not connected" every minute until a physical bus restart).
         """
+        attempt = 0
         try:
             while True:
                 await asyncio.sleep(ZOMBIE_RECOVERY_RETRY_INTERVAL)
@@ -622,17 +679,29 @@ class LuxorKNXGateway:
                 async with self._session_lock:
                     if self._connected:
                         return
+                    attempt += 1
                     try:
                         if await self.async_setup():
                             _LOGGER.warning(
-                                "Reconnected to KNX Gateway %s:%s after zombie-recovery retry",
+                                "Reconnected to KNX Gateway %s:%s after zombie-recovery "
+                                "retry (attempt %d)",
                                 self.host,
                                 self.port,
+                                attempt,
                             )
                             return
+                        _LOGGER.error(
+                            "Zombie-recovery retry attempt %d failed (host=%s), "
+                            "will retry in %ds",
+                            attempt,
+                            self.host,
+                            ZOMBIE_RECOVERY_RETRY_INTERVAL,
+                        )
                     except Exception as err:
                         _LOGGER.error(
-                            "Zombie-recovery retry failed (host=%s), will retry in %ds: %s",
+                            "Zombie-recovery retry attempt %d failed (host=%s), "
+                            "will retry in %ds: %s",
+                            attempt,
                             self.host,
                             ZOMBIE_RECOVERY_RETRY_INTERVAL,
                             err,
@@ -826,6 +895,27 @@ class LuxorKNXGateway:
                 self._last_not_connected_log_at = now
             else:
                 _LOGGER.debug("Cannot read - not connected to KNX gateway")
+            return False
+
+        # Backpressure: on a zombie tunnel entity polling queues ~17x faster
+        # than the rate limiter drains (~1/3s per confirmation timeout) —
+        # ~1600 doomed telegrams accumulate in one 5min zombie window
+        # (2026-08-14 logs), hanging teardown and flooding the bus. Skip the
+        # read instead; the next poll cycle retries once the backlog clears.
+        try:
+            backlog = self._xknx.telegram_queue.outgoing_queue.qsize()
+        except Exception:  # pragma: no cover - defensive, queue may be mocked
+            backlog = 0
+        if isinstance(backlog, int) and backlog >= OUTGOING_QUEUE_BACKPRESSURE_LIMIT:
+            now = time.monotonic()
+            if now - self._last_not_connected_log_at >= NOT_CONNECTED_LOG_INTERVAL:
+                _LOGGER.warning(
+                    "Skipping read of %s — %d telegrams already queued outgoing "
+                    "(gateway not keeping up)",
+                    group_address,
+                    backlog,
+                )
+                self._last_not_connected_log_at = now
             return False
 
         try:
