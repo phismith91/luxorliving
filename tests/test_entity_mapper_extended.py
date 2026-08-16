@@ -296,6 +296,34 @@ class TestWetterstationMapping:
         sensors = mapper.get_entities_by_platform(Platform.SENSOR)
         assert len(sensors) == len(roles)
 
+    def test_helligkeit_roles_map_to_physically_correct_position(self):
+        """Confirmed via #141: LXP role text does not match physical sensor position.
+
+        Only HelligkeitMitte is actually swapped (it's physically "Links");
+        HelligkeitLinks and HelligkeitRechts are physically correct as-is.
+        The rc.9 fix rotated all three one step too far — Marcus's rc.9 report
+        showed Rechts/Vorne inverted, proving Links/Rechts should not move:
+          role HelligkeitMitte  (addr 10244) is physically "Links"
+          role HelligkeitLinks  (addr 10243) is physically "Vorne"
+          role HelligkeitRechts (addr 10245) is physically "Rechts"
+        """
+        roles = ["HelligkeitMitte", "HelligkeitLinks", "HelligkeitRechts"]
+        datapoints = [
+            _datapoint(
+                r, 10244 if r == "HelligkeitMitte" else 10243 if r == "HelligkeitLinks" else 10245
+            )
+            for r in roles
+        ]
+        sensor = _sensor("Weather", 1, datapoints)
+        device = _device("Wetterstation Dach", sensors=[sensor])
+        mapper = _mapper([device])
+        sensors = mapper.get_entities_by_platform(Platform.SENSOR)
+
+        by_addr = {addr: e.name for e in sensors for addr in e.datapoints.values()}
+        assert "Links" in by_addr[10244]
+        assert "Vorne" in by_addr[10243]
+        assert "Rechts" in by_addr[10245]
+
 
 # ── Query methods ─────────────────────────────────────────────────────────────
 

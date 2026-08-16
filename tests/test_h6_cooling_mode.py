@@ -1,5 +1,8 @@
 """Tests for H6 cooling mode support."""
 
+import asyncio
+from unittest.mock import AsyncMock
+
 import pytest
 from homeassistant.components.climate import HVACMode
 from homeassistant.const import Platform
@@ -256,3 +259,113 @@ class TestClimateHVACModes:
 
         # Verify binary telegram sent to mode-switch with 1 (heating)
         mock_knx_gateway.async_send_telegram.assert_called_with(102, 1, "binary")
+
+
+class TestModeSwitchListenerSync:
+    """Test that H6 entities stay in sync via the shared mode-switch GA.
+
+    UmschaltenHeitzenKühlen is one physical switch driving all H6 devices at
+    once — every H6 entity must listen for it, not just the one commanded
+    from HA, otherwise other entities show stale heat/cool state (#141).
+    """
+
+    def _make_cooling_entity(self, mock_coordinator, mock_knx_gateway, unique_id="test_climate"):
+        from custom_components.luxor_living.climate import LuxorClimate
+        from custom_components.luxor_living.mapped_entity import MappedEntity
+
+        mapped_entity = MappedEntity(
+            platform=Platform.CLIMATE,
+            unique_id=unique_id,
+            name="Test Climate",
+            device_name="511 H6",
+            device_id="test_h6_id",
+            entity_type="climate",
+            datapoints={"Sollwert": 100, "Istwert": 101, "UmschaltenHeitzenKühlen": 102},
+            attributes={},
+            parameters={"heizungsart": "102"},
+            cooling_capable=True,
+        )
+        entity = LuxorClimate(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=mapped_entity,
+            entry_id="test_entry",
+        )
+        entity.async_write_ha_state = lambda: None
+        return entity
+
+    @pytest.mark.asyncio
+    async def test_mode_switch_listener_registered(self, hass, mock_coordinator, mock_knx_gateway):
+        """async_added_to_hass must register a listener on the mode-switch GA."""
+        mock_knx_gateway.connected = False  # skip initial bus read, only check registration
+        entity = self._make_cooling_entity(mock_coordinator, mock_knx_gateway)
+
+        await entity.async_added_to_hass()
+
+        registered = [c[0][0] for c in mock_knx_gateway.register_listener.call_args_list]
+        assert 102 in registered
+
+    def test_incoming_telegram_cool_updates_other_entity(self, mock_coordinator, mock_knx_gateway):
+        """A mode-switch telegram from another device's command must flip this entity to COOL."""
+        entity = self._make_cooling_entity(mock_coordinator, mock_knx_gateway)
+        entity._attr_hvac_mode = HVACMode.HEAT
+
+        entity._handle_mode_switch_update(102, 0)
+
+        assert entity.hvac_mode == HVACMode.COOL
+
+    def test_incoming_telegram_heat_updates_other_entity(self, mock_coordinator, mock_knx_gateway):
+        """A mode-switch telegram value 1 must flip this entity to HEAT."""
+        entity = self._make_cooling_entity(mock_coordinator, mock_knx_gateway)
+        entity._attr_hvac_mode = HVACMode.COOL
+
+        entity._handle_mode_switch_update(102, 1)
+
+        assert entity.hvac_mode == HVACMode.HEAT
+
+    def test_incoming_telegram_does_not_override_off(self, mock_coordinator, mock_knx_gateway):
+        """OFF is a local-only pseudo state and must not be clobbered by bus telegrams."""
+        entity = self._make_cooling_entity(mock_coordinator, mock_knx_gateway)
+        entity._attr_hvac_mode = HVACMode.OFF
+
+        entity._handle_mode_switch_update(102, 0)
+
+        assert entity.hvac_mode == HVACMode.OFF
+
+    @pytest.mark.asyncio
+    async def test_hvac_mode_from_ha_syncs_sibling_entity(self, hass, mock_coordinator):
+        """Commanding one H6 from HA must update sibling H6 entities too (#141).
+
+        Regression test for the gap that let PR #190 ship broken: prior tests
+        called _handle_mode_switch_update() directly, which only proves the
+        listener callback works — never that async_set_hvac_mode() (the real
+        HA-triggered path) actually reaches it. A real xknx outgoing telegram
+        is never redelivered as incoming, so the fan-out must happen via
+        knx_gateway.process_incoming_value(), exercised here against a real
+        LuxorKNXGateway instance (not a MagicMock) so the listener registry
+        and dispatch are genuinely under test, not stubbed away.
+        """
+        from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
+
+        gateway = LuxorKNXGateway(
+            hass=hass,
+            host="192.168.1.100",
+            port=3671,
+            username="admin",
+            password="secret",
+            simulation_mode=False,
+        )
+        gateway.async_send_telegram = AsyncMock(return_value=True)
+        gateway._connected = True
+
+        salon = self._make_cooling_entity(mock_coordinator, gateway, unique_id="salon")
+        bathroom = self._make_cooling_entity(mock_coordinator, gateway, unique_id="bathroom")
+        salon._attr_hvac_mode = HVACMode.COOL
+        bathroom._attr_hvac_mode = HVACMode.COOL
+        await salon.async_added_to_hass()
+        await bathroom.async_added_to_hass()
+
+        await salon.async_set_hvac_mode(HVACMode.HEAT)
+        await asyncio.sleep(0)  # let the call_soon_threadsafe-scheduled listener fire
+
+        assert bathroom.hvac_mode == HVACMode.HEAT

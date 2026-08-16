@@ -282,8 +282,8 @@ class TestLuxorCover:
 
         await entity.async_open_cover_tilt()
 
-        # Should send 100% to Lamelle% address as percent
-        mock_knx_gateway.async_send_telegram.assert_called_once_with(9222, 100, "percent")
+        # Should send KNX 0% to Lamelle% address (0 = open per KNX convention, #197)
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(9222, 0, "percent")
 
     @pytest.mark.asyncio
     async def test_close_tilt(self, mock_coordinator, mock_knx_gateway, blind_mapped_entity):
@@ -297,8 +297,8 @@ class TestLuxorCover:
 
         await entity.async_close_cover_tilt()
 
-        # Should send 0% to Lamelle% address as percent
-        mock_knx_gateway.async_send_telegram.assert_called_once_with(9222, 0, "percent")
+        # Should send KNX 100% to Lamelle% address (100 = closed per KNX convention, #197)
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(9222, 100, "percent")
 
     @pytest.mark.asyncio
     async def test_set_tilt_position(self, mock_coordinator, mock_knx_gateway, blind_mapped_entity):
@@ -313,8 +313,8 @@ class TestLuxorCover:
 
         await entity.async_set_cover_tilt_position(**{ATTR_TILT_POSITION: 60})
 
-        # Should send percent value to Lamelle% address (9222)
-        mock_knx_gateway.async_send_telegram.assert_called_once_with(9222, 60, "percent")
+        # Should send inverted percent value to Lamelle% address (100-60=40, #197)
+        mock_knx_gateway.async_send_telegram.assert_called_once_with(9222, 40, "percent")
         assert entity.current_cover_tilt_position == 60
 
     def test_available_when_connected(
@@ -730,7 +730,11 @@ class TestCoverMutationTargets:
     async def test_tilt_position_inverted_correctly(
         self, mock_coordinator, mock_knx_gateway, blind_mapped_entity
     ):
-        """Kill off-by-one mutations in tilt inversion."""
+        """Kill off-by-one mutations in tilt inversion.
+
+        Lamelle% follows the same KNX convention as Höhe%: 0 = open, 100 = closed.
+        HA tilt position 75 (75% open) must send KNX 25 (#197).
+        """
         entity = LuxorCover(
             coordinator=mock_coordinator,
             knx_gateway=mock_knx_gateway,
@@ -742,8 +746,27 @@ class TestCoverMutationTargets:
         await entity.async_set_cover_tilt_position(**{ATTR_TILT_POSITION: 75})
 
         call_args = mock_knx_gateway.async_send_telegram.call_args
-        assert call_args[0][1] == 75  # tilt passes through unchanged
+        assert call_args[0][1] == 25  # 100 - 75
         assert call_args[0][2] == "percent"
+        assert entity.current_cover_tilt_position == 75
+
+    @pytest.mark.smoke
+    @pytest.mark.asyncio
+    async def test_handle_tilt_update_inverted_correctly(
+        self, mock_coordinator, mock_knx_gateway, blind_mapped_entity
+    ):
+        """#197: KNX Lamelle% 75 (75% closed) must map to HA tilt position 25."""
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=blind_mapped_entity,
+            entry_id="e1",
+        )
+        entity.async_write_ha_state = MagicMock()
+
+        entity._handle_tilt_update(8711, 75)
+
+        assert entity.current_cover_tilt_position == 25
 
     # ── async_added_to_hass: listener key names ───────────────────────────
 
