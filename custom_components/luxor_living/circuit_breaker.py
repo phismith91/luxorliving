@@ -7,7 +7,7 @@ import logging
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class CircuitBreakerOpenException(Exception):
 class CircuitBreaker:
     """Circuit breaker implementation for resilient error handling."""
 
-    def __init__(self, name: str, config: Optional[CircuitBreakerConfig] = None):
+    def __init__(self, name: str, config: CircuitBreakerConfig | None = None):
         """Initialize circuit breaker.
 
         Args:
@@ -136,11 +136,11 @@ class CircuitBreaker:
             self._record_success()
             return result
 
-        except Exception as e:
+        except Exception:
             self._record_failure()
 
             # Re-raise original exception
-            raise e
+            raise
 
     def get_stats(self) -> dict[str, Any]:
         """Get circuit breaker statistics."""

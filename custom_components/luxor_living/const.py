@@ -35,6 +35,15 @@ ZOMBIE_RECONNECT_COOLDOWN = (
     300  # seconds to wait after a zombie-triggered reconnect before arming again
 )
 ZOMBIE_RECOVERY_TIMEOUT = 120  # seconds before a stuck zombie-recovery (disconnect+setup) is abandoned, releasing _session_lock
+ZOMBIE_RECOVERY_RETRY_INTERVAL = (
+    60  # seconds between async_setup() retries after a failed zombie recovery
+)
+XKNX_INTERFACE_STOP_TIMEOUT = (
+    5  # seconds for the forced knxip_interface.stop() after a stop() timeout
+)
+OUTGOING_QUEUE_BACKPRESSURE_LIMIT = (
+    50  # skip entity-poll reads when this many telegrams are already queued outgoing
+)
 XKNX_STOP_TIMEOUT = 15  # seconds before a hanging xknx.stop() is abandoned during disconnect
 NOT_CONNECTED_LOG_INTERVAL = 60  # rate-limit "not connected" ERROR log to once per N seconds
 DEFAULT_LOG_LEVEL = "info"
