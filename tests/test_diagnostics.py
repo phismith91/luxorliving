@@ -334,12 +334,12 @@ async def test_diagnostics_gateway_exception(mock_config_entry, mock_hass_data):
 
 @pytest.mark.asyncio
 async def test_diagnostics_entity_limit(mock_config_entry, mock_hass_data):
-    """Test that diagnostics limits entity details to 50."""
+    """Test that diagnostics limits entity details to 200 (#141: 160-entity installs need headroom)."""
     hass = MagicMock(spec=HomeAssistant)
 
-    # Create 100 entities
+    # Create 250 entities
     entities = []
-    for i in range(100):
+    for i in range(250):
         entities.append(
             MappedEntity(
                 platform=Platform.LIGHT,
@@ -359,9 +359,9 @@ async def test_diagnostics_entity_limit(mock_config_entry, mock_hass_data):
 
     diag = await async_get_config_entry_diagnostics(hass, mock_config_entry)
 
-    # Should limit to 50 in details but show total in summary
-    assert len(diag["entities"]) == 50
-    assert diag["entity_summary"]["total"] == 100
+    # Should limit to 200 in details but show total in summary
+    assert len(diag["entities"]) == 200
+    assert diag["entity_summary"]["total"] == 250
 
 
 @pytest.mark.asyncio

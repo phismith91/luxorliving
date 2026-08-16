@@ -117,8 +117,9 @@ async def async_get_config_entry_diagnostics(
             entity_list: list[dict[str, Any]] = []
             diagnostics["entities"] = entity_list
 
-            # Collect entity details (limit to 50 for performance)
-            for entity in entities[:50]:
+            # Collect entity details (limit to 200 for performance — #141: 160-entity
+            # installs were hitting the old 50 cap and losing most of the export)
+            for entity in entities[:200]:
                 # MappedEntity objects have attributes
                 entity_info = {
                     "unique_id": getattr(entity, "unique_id", "unknown"),
