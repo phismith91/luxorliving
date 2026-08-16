@@ -1,6 +1,8 @@
 # Release Notes — v1.2.2
 
-Pre-release (`v1.2.2-rc.4`). Full detail per change in [CHANGELOG.md](../../CHANGELOG.md#122---2026-08-02).
+Stable release. Full detail per change in [CHANGELOG.md](../../CHANGELOG.md#122---2026-08-16).
+
+Validated through four release candidates (rc.1–rc.4) against real IP1 hardware.
 
 ## Fixed
 
