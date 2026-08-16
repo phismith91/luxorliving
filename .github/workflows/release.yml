@@ -13,7 +13,8 @@ on:
     inputs:
       tag:
         description:
-          "Tag to release (e.g. v0.8.0 or v0.8.0-rc.1) — tag must already exist"
+          "Tag to release (e.g. v1.2.2 or v1.2.2-rc.1). Created at the default
+          branch HEAD if it does not exist yet."
         required: true
 
 permissions:

@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.2.2-rc.1](https://github.com/phismith91/luxorliving/releases/tag/v1.2.2-rc.1) — pre-release: fixes cover tilt position being inverted (#197) — closed blinds reported tilt 100 instead of 0, and open/close-tilt commands sent the opposite KNX value from what they meant. Builds on the stable [v1.2.1](https://github.com/phismith91/luxorliving/releases/tag/v1.2.1) release.
+**Current release:** [v1.2.2](https://github.com/phismith91/luxorliving/releases/tag/v1.2.2) — fixes the KNX tunnel getting stuck after a failed reconnect (#201): a zombie-tunnel recovery that failed once used to disable all further self-healing, and teardown could leave live tunnel instances holding every IP1 slot until a physical bus restart. Also fixes cover tilt position being inverted (#197).
 <!-- RELEASE_NOTES_END -->
 
 ---
