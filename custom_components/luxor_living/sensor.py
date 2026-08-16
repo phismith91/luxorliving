@@ -6,9 +6,21 @@ import asyncio
 import logging
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import (
+    LIGHT_LUX,
+    PERCENTAGE,
+    Platform,
+    UnitOfSpeed,
+    UnitOfTemperature,
+    UnitOfVolumetricFlux,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -21,6 +33,57 @@ from .knx_gateway import LuxorKNXGateway
 _LOGGER = logging.getLogger(__name__)
 
 PARALLEL_UPDATES = 0
+
+SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
+    "temperature": SensorEntityDescription(
+        key="temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "humidity": SensorEntityDescription(
+        key="humidity",
+        device_class=SensorDeviceClass.HUMIDITY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "pressure": SensorEntityDescription(
+        key="pressure",
+        device_class=SensorDeviceClass.PRESSURE,
+        native_unit_of_measurement="Pa",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "co2": SensorEntityDescription(
+        key="co2",
+        device_class=SensorDeviceClass.CO2,
+        native_unit_of_measurement="ppm",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "brightness": SensorEntityDescription(
+        key="brightness",
+        device_class=SensorDeviceClass.ILLUMINANCE,
+        native_unit_of_measurement=LIGHT_LUX,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "windspeed": SensorEntityDescription(
+        key="windspeed",
+        device_class=SensorDeviceClass.WIND_SPEED,
+        native_unit_of_measurement=UnitOfSpeed.METERS_PER_SECOND,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "rainvolume": SensorEntityDescription(
+        key="rainvolume",
+        device_class=SensorDeviceClass.PRECIPITATION_INTENSITY,
+        native_unit_of_measurement=UnitOfVolumetricFlux.MILLIMETERS_PER_HOUR,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "airquality": SensorEntityDescription(
+        key="airquality",
+        device_class=SensorDeviceClass.AQI,
+        native_unit_of_measurement=None,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+}
 
 
 async def async_setup_entry(
@@ -120,18 +183,26 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
         self._knx_gateway = knx_gateway
         self._attr_native_value = None
 
-        # Get sensor-specific attributes from mapped entity
-        self._attr_native_unit_of_measurement = mapped_entity.attributes.get("unit_of_measurement")
-        device_class = mapped_entity.attributes.get("device_class")
-        if device_class:
-            self._attr_device_class = device_class
+        entity_type = mapped_entity.entity_type.lower()
+
+        # Use shared entity description for known sensor types
+        description = SENSOR_DESCRIPTIONS.get(entity_type)
+        if description is not None:
+            self.entity_description = description
+        else:
+            # Fallback: set attributes directly for unknown types
+            self._attr_native_unit_of_measurement = mapped_entity.attributes.get(
+                "unit_of_measurement"
+            )
+            device_class = mapped_entity.attributes.get("device_class")
+            if device_class:
+                self._attr_device_class = device_class
 
         # Store datapoint address for state reading
         datapoints = mapped_entity.datapoints
         self._datapoint_address: str | None = None
 
         # Get the primary datapoint address based on entity type
-        entity_type = mapped_entity.entity_type.lower()
         if entity_type == "temperature":
             self._datapoint_address = datapoints.get("Temperature")
         elif entity_type == "humidity":
@@ -153,12 +224,15 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
             if datapoints:
                 self._datapoint_address = list(datapoints.values())[0]
 
+        _unit = getattr(self, "_attr_native_unit_of_measurement", None)
+        if _unit is None and description is not None:
+            _unit = description.native_unit_of_measurement
         _LOGGER.debug(
             "Initialized sensor '%s' (type=%s, address=%s, unit=%s)",
             mapped_entity.name,
             entity_type,
             self._datapoint_address,
-            self._attr_native_unit_of_measurement,
+            _unit,
         )
 
     async def async_added_to_hass(self) -> None:
@@ -219,7 +293,13 @@ class LuxorLivingSensor(LuxorLivingEntity, SensorEntity):
             group_address,
             value,
             normalized,
-            self._attr_native_unit_of_measurement or "",
+            getattr(self, "_attr_native_unit_of_measurement", None)
+            or (
+                self.entity_description.native_unit_of_measurement
+                if self.entity_description
+                else ""
+            )
+            or "",
         )
 
         if normalized is None:

@@ -53,15 +53,17 @@ class TestInit:
         entity = _make_sensor(entity_type="health", name="System Health")
         from homeassistant.helpers.entity import EntityCategory
 
-        assert entity._attr_entity_category == EntityCategory.DIAGNOSTIC
+        # Health type uses entity_description which carries the category
+        assert entity.entity_description.entity_category == EntityCategory.DIAGNOSTIC
 
     def test_health_entity_disabled_by_default(self):
         entity = _make_sensor(entity_type="health", name="System Health")
-        assert entity._attr_entity_registry_enabled_default is False
+        assert entity.entity_description.entity_registry_enabled_default is False
 
     def test_non_health_entity_no_diagnostic_category(self):
         entity = _make_sensor(entity_type="motion")
-        assert not hasattr(entity, "_attr_entity_category") or entity._attr_entity_category is None
+        # Motion uses entity_description with no entity_category set
+        assert entity.entity_description.entity_category is None
 
     def test_address_from_status_onoff(self):
         entity = _make_sensor(datapoints={"status@OnOff": "1/0/0"})
@@ -86,11 +88,12 @@ class TestInit:
 class TestDetectDeviceClass:
     def test_motion_entity_type(self):
         entity = _make_sensor(entity_type="motion")
-        assert entity._attr_device_class == BinarySensorDeviceClass.MOTION
+        # Known types use entity_description for device_class
+        assert entity.entity_description.device_class == BinarySensorDeviceClass.MOTION
 
     def test_health_entity_type(self):
         entity = _make_sensor(entity_type="health")
-        assert entity._attr_device_class == BinarySensorDeviceClass.CONNECTIVITY
+        assert entity.entity_description.device_class == BinarySensorDeviceClass.CONNECTIVITY
 
     def test_smoke_by_name_german(self):
         entity = _make_sensor(name="Rauchmelder Wohnzimmer")

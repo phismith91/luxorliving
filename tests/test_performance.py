@@ -313,6 +313,13 @@ class TestRealLXPBenchmark:
             entry=mock_config_entry,
         )
 
+        # Wire up runtime_data (the pattern used by all platform setup functions)
+        runtime_data = MagicMock()
+        runtime_data.mapper = mapper
+        runtime_data.knx_gateway = mock_knx_gateway
+        runtime_data.coordinator = mock_coordinator
+        mock_config_entry.runtime_data = runtime_data
+
         created_entities = []
 
         def async_add_entities(entities, update_before_add=False):

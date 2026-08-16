@@ -9,6 +9,7 @@ from homeassistant.const import Platform
 from xknx.telegram.address import GroupAddress
 
 from .const import DOMAIN
+from .knxprod_reader import DEVICE_CATEGORIES
 from .lxp_parser import LXPActuator, LXPDevice, LXPProject, LXPSensor
 from .mapped_entity import MappedEntity
 from .override_handler import OverrideHandler
@@ -148,6 +149,27 @@ class EntityMapper:
 
     def _map_device(self, device: LXPDevice) -> None:
         """Map a single device to entities."""
+        # Wetterstation is identified by name (matches lxp_parser._is_weather_station_device)
+        # and handled entirely in _map_sensor; bypass the appId-based category check
+        # so it is never silently skipped. The device shares appId 18585 with M140.
+        name_lower = device.name.lower()
+        is_weather_station = "wetterstation" in name_lower or "weather station" in name_lower
+
+        if not is_weather_station:
+            category = DEVICE_CATEGORIES.get(device.device_type)
+            if category == "input_only":
+                _LOGGER.debug(
+                    "Skipping input-only device '%s' (%s)", device.name, device.device_type
+                )
+                return
+            if category == "unsupported":
+                _LOGGER.info(
+                    "Device '%s' (%s) is not yet supported — no entities created",
+                    device.name,
+                    device.device_type,
+                )
+                return
+
         # Map actuators (lights, switches, covers)
         for actuator in device.actuators:
             self._map_actuator(device, actuator)

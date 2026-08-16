@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
+    BinarySensorEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -23,6 +24,23 @@ from .entity import LuxorLivingEntity
 _LOGGER = logging.getLogger(__name__)
 
 PARALLEL_UPDATES = 0
+
+BINARY_SENSOR_DESCRIPTIONS: dict[str, BinarySensorEntityDescription] = {
+    "motion": BinarySensorEntityDescription(
+        key="motion",
+        device_class=BinarySensorDeviceClass.MOTION,
+    ),
+    "health": BinarySensorEntityDescription(
+        key="health",
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    "regen": BinarySensorEntityDescription(
+        key="regen",
+        device_class=BinarySensorDeviceClass.MOISTURE,
+    ),
+}
 
 
 async def async_setup_entry(
@@ -92,13 +110,15 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
 
         self._attr_is_on = False
 
-        # Determine device class based on entity type and name
-        self._attr_device_class = self._detect_device_class(mapped_entity)
+        entity_type = getattr(mapped_entity, "entity_type", "").lower()
 
-        # Mark health/connectivity sensors as diagnostic and disabled by default
-        if getattr(mapped_entity, "entity_type", "") == "health":
-            self._attr_entity_category = EntityCategory.DIAGNOSTIC
-            self._attr_entity_registry_enabled_default = False
+        # Use shared entity description for known binary sensor types
+        description = BINARY_SENSOR_DESCRIPTIONS.get(entity_type)
+        if description is not None:
+            self.entity_description = description
+        else:
+            # Fallback: detect device class from name for unknown types
+            self._attr_device_class = self._detect_device_class(mapped_entity)
 
         # Store datapoint addresses — cover all known binary roles incl. Wetterstation rain
         self._address_status: str | None = (
@@ -111,10 +131,13 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
         # KNX listener ref for cleanup (populated in async_added_to_hass)
         self._knx_listener_addr: str | None = None
 
+        _device_class = getattr(self, "_attr_device_class", None)
+        if _device_class is None and description is not None:
+            _device_class = description.device_class
         _LOGGER.debug(
             "📊 Binary Sensor '%s' (class: %s) status address: %s",
             self.name,
-            self._attr_device_class,
+            _device_class,
             self._address_status,
         )
 
