@@ -1,0 +1,31 @@
+name: HA release notes check
+
+on:
+  schedule:
+    # 2nd of each month, 08:00 UTC — HA ships its monthly release first Wed
+    - cron: "0 8 2 * *"
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check last 10 HA core releases for relevant keywords
+        run: python3 .github/scripts/check_ha_release_notes.py
+
+      - name: Create issue if matches found
+        if: hashFiles('ha_release_check_report.md') != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title="HA release notes: possibly relevant changes ($(date +%Y-%m))"
+          if gh issue list --search "in:title \"HA release notes: possibly relevant changes\"" --state open --json title -q '.[].title' | grep -qF "$title"; then
+            echo "Issue already open this month, skipping."
+            exit 0
+          fi
+          gh issue create --title "$title" --label "dependencies" --body-file ha_release_check_report.md
