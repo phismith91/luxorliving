@@ -196,7 +196,6 @@ class EntityMapper:
             determined_platform = self._determine_platform(datapoints)
             if determined_platform is None:
                 roles = list(datapoints.keys())
-                known_skipped = {r for r in roles if r in self.platform_detector.ROLE_TO_PLATFORM}
                 unknown = [r for r in roles if r not in self.platform_detector.ROLE_TO_PLATFORM]
                 if unknown:
                     _LOGGER.warning(
@@ -207,6 +206,9 @@ class EntityMapper:
                         unknown,
                     )
                 else:
+                    known_skipped = {
+                        r for r in roles if r in self.platform_detector.ROLE_TO_PLATFORM
+                    }
                     _LOGGER.debug(
                         "Skipping actuator '%s' — roles %s are intentionally unmapped "
                         "(e.g. Scene, ZentralAus, status-only datapoints).",
@@ -277,6 +279,32 @@ class EntityMapper:
         else:
             _LOGGER.debug("Mapped %s actuator '%s' to %s", entity_type, name, platform)
 
+    def _make_sensor_climate_entity(
+        self, device: LXPDevice, sensor: LXPSensor, datapoints: dict[str, int], label: str
+    ) -> MappedEntity:
+        """Build a CLIMATE MappedEntity from a sensor channel (R718 or RTR)."""
+        name = sensor.name or f"{device.name} Ch{sensor.channel}"
+        if name.startswith(device.name + " "):
+            name = name[len(device.name) + 1 :]
+        entity = MappedEntity(
+            platform=Platform.CLIMATE,
+            unique_id=f"{device.id}_{datapoints['Istwert']}",
+            name=name,
+            device_name=device.name,
+            device_id=device.id,
+            entity_type="climate",
+            datapoints=datapoints,
+            attributes={
+                "channel": sensor.channel,
+                "sensor_type": sensor.sensor_type,
+                "serial_number": device.serial_number,
+                "knx_address": device.address,
+            },
+            parameters=sensor.parameters,
+        )
+        _LOGGER.debug("Mapped %s '%s' to climate", label, name)
+        return entity
+
     def _map_sensor(self, device: LXPDevice, sensor: LXPSensor) -> None:
         """Map a sensor to entities."""
         # Collect datapoints by role
@@ -301,29 +329,9 @@ class EntityMapper:
             and "status@Sollwert" in datapoints
             and sensor.parameters.get("activateRTR") != "1"
         ):
-            istwert_addr = datapoints["Istwert"]
-            unique_id = f"{device.id}_{istwert_addr}"
-            name = sensor.name or f"{device.name} Ch{sensor.channel}"
-            if name.startswith(device.name + " "):
-                name = name[len(device.name) + 1 :]
-            entity = MappedEntity(
-                platform=Platform.CLIMATE,
-                unique_id=unique_id,
-                name=name,
-                device_name=device.name,
-                device_id=device.id,
-                entity_type="climate",
-                datapoints=datapoints,
-                attributes={
-                    "channel": sensor.channel,
-                    "sensor_type": sensor.sensor_type,
-                    "serial_number": device.serial_number,
-                    "knx_address": device.address,
-                },
-                parameters=sensor.parameters,
+            self.entities.append(
+                self._make_sensor_climate_entity(device, sensor, datapoints, "R718 thermostat")
             )
-            self.entities.append(entity)
-            _LOGGER.debug("Mapped R718 thermostat '%s' to climate", name)
             return
 
         # RTR thermostat detection: activateRTR=1 + Istwert + (Sollwert or status@Sollwert)
@@ -332,30 +340,9 @@ class EntityMapper:
             and "Istwert" in datapoints
             and ("Sollwert" in datapoints or "status@Sollwert" in datapoints)
         ):
-            istwert_addr = datapoints["Istwert"]
-            address = istwert_addr
-            unique_id = f"{device.id}_{address}"
-            name = sensor.name or f"{device.name} Ch{sensor.channel}"
-            if name.startswith(device.name + " "):
-                name = name[len(device.name) + 1 :]
-            entity = MappedEntity(
-                platform=Platform.CLIMATE,
-                unique_id=unique_id,
-                name=name,
-                device_name=device.name,
-                device_id=device.id,
-                entity_type="climate",
-                datapoints=datapoints,
-                attributes={
-                    "channel": sensor.channel,
-                    "sensor_type": sensor.sensor_type,
-                    "serial_number": device.serial_number,
-                    "knx_address": device.address,
-                },
-                parameters=sensor.parameters,
+            self.entities.append(
+                self._make_sensor_climate_entity(device, sensor, datapoints, "RTR sensor")
             )
-            self.entities.append(entity)
-            _LOGGER.debug("Mapped RTR sensor '%s' to climate", name)
             return
 
         # Determine platform based on sensor roles
@@ -384,16 +371,15 @@ class EntityMapper:
         # must map to binary_sensor regardless of whether status@OnOff is also present.
         if platform is None:
             if "status@OnOff" in datapoints or "OnOff" in datapoints:
-                if "MasterSlave" in datapoints or sensor.sensor_type == 1:
-                    platform = Platform.BINARY_SENSOR
-                    entity_type = "motion"
-                else:
-                    platform = Platform.BINARY_SENSOR
-                    entity_type = "binary_sensor"
+                platform = Platform.BINARY_SENSOR
+                entity_type = (
+                    "motion"
+                    if ("MasterSlave" in datapoints or sensor.sensor_type == 1)
+                    else "binary_sensor"
+                )
 
         if platform is None:
             roles = list(datapoints.keys())
-            known_skipped = {r for r in roles if r in self.platform_detector.ROLE_TO_PLATFORM}
             unknown = [r for r in roles if r not in self.platform_detector.ROLE_TO_PLATFORM]
             if unknown:
                 _LOGGER.warning(
@@ -404,6 +390,7 @@ class EntityMapper:
                     unknown,
                 )
             else:
+                known_skipped = {r for r in roles if r in self.platform_detector.ROLE_TO_PLATFORM}
                 _LOGGER.debug(
                     "Skipping sensor '%s' — roles %s are intentionally unmapped "
                     "(e.g. Scene, ZentralAus, status-only datapoints).",
@@ -479,10 +466,7 @@ class EntityMapper:
 
     def get_entity_by_unique_id(self, unique_id: str) -> MappedEntity | None:
         """Get entity by unique ID."""
-        for entity in self.entities:
-            if entity.unique_id == unique_id:
-                return entity
-        return None
+        return next((e for e in self.entities if e.unique_id == unique_id), None)
 
     def get_group_address_label_map(self) -> dict[str, list[str]]:
         """Build a map of KNX group address string → list of labels 'Name (ID)'.
@@ -501,9 +485,7 @@ class EntityMapper:
                     )
                     # Fallback: derive GA via bit masks (main/line/group)
                     ga_str = f"{addr >> 11}/{(addr >> 8) & 0x7}/{addr & 0xFF}"
-                if ga_str not in ga_labels:
-                    ga_labels[ga_str] = []
-                if label not in ga_labels[ga_str]:
+                if label not in ga_labels.setdefault(ga_str, []):
                     ga_labels[ga_str].append(label)
         return ga_labels
 
@@ -517,9 +499,7 @@ class EntityMapper:
             if not ia:
                 continue
             ia_str = str(ia)
-            if ia_str not in ia_labels:
-                ia_labels[ia_str] = []
-            if dev_label not in ia_labels[ia_str]:
+            if dev_label not in ia_labels.setdefault(ia_str, []):
                 ia_labels[ia_str].append(dev_label)
         return ia_labels
 

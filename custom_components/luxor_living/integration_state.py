@@ -38,13 +38,6 @@ class IntegrationState:
     # Optional push client for receiving websocket events
     push_client: Any | None = None
 
-    def __post_init__(self) -> None:
-        """Validate required fields after initialization."""
-        if self.mapper is None:
-            raise ValueError("IntegrationState requires mapper instance")
-        if self.config is None:
-            raise ValueError("IntegrationState requires config dict")
-
     @property
     def is_ready(self) -> bool:
         """Check if integration is fully initialized.
@@ -54,12 +47,9 @@ class IntegrationState:
         """
         return self.knx_gateway is not None and self.coordinator is not None
 
-    def get_entity_count(self) -> int:
-        """Get total number of mapped entities.
-
-        Returns:
-            Number of entities from mapper
-        """
+    @property
+    def entity_count(self) -> int:
+        """Total number of mapped entities."""
         return len(self.mapper.entities)
 
     def get_gateway_or_raise(self) -> KNXGateway:
