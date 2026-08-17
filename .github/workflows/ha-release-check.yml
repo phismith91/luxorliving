@@ -13,7 +13,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check last 10 HA core releases for relevant keywords
         run: python3 .github/scripts/check_ha_release_notes.py
