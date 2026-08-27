@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import datetime
 from typing import Any, Callable, cast
 
@@ -25,6 +25,10 @@ from .circuit_breaker import CircuitBreakerOpenException, get_knx_circuit_breake
 from .const import (
     NOT_CONNECTED_LOG_INTERVAL,
     OUTGOING_QUEUE_BACKPRESSURE_LIMIT,
+    READ_DEGRADE_COOLDOWN,
+    READ_DEGRADE_ERROR_THRESHOLD,
+    READ_DEGRADE_WINDOW,
+    READ_REQUEST_INTERVAL,
     RECONNECT_COOLDOWN_SECS,
     RECONNECT_FAILURE_THRESHOLD,
     RECONNECT_FAILURE_WINDOW,
@@ -107,6 +111,23 @@ class LuxorKNXGateway:
         self._recovery_retry_task: asyncio.Task | None = None
         self._last_connect_error: str | None = None  # dedupe repeated connect-failure tracebacks
         self._initial_read_pending: set[str] = set()  # Track pending initial reads
+        self._read_lock = asyncio.Lock()
+        self._last_read_sent_at: float = 0.0
+        self._adaptive_cemi_error_count: int = 0
+        self._read_degraded_until: float = 0.0
+        self._recent_confirmation_errors: deque[float] = deque()
+        self._read_timestamps: deque[float] = deque()
+        self._write_timestamps: deque[float] = deque()
+        self._disconnect_timestamps: deque[float] = deque()
+        self._zombie_recovery_timestamps: deque[float] = deque()
+        self._reads_sent_total: int = 0
+        self._writes_sent_total: int = 0
+        self._reads_skipped_not_connected_total: int = 0
+        self._reads_skipped_backpressure_total: int = 0
+        self._reads_skipped_degraded_total: int = 0
+        self._initial_reads_started_total: int = 0
+        self._teardown_dropped_telegrams_total: int = 0
+        self._max_outgoing_backlog: int = 0
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
         self._ga_sensor_type_map: dict[str, str] = {}  # {address: sensor_type} for known entities
@@ -249,6 +270,8 @@ class LuxorKNXGateway:
                     self._xknx.connection_manager.cemi_count_outgoing_error
                 )
                 self._last_cemi_incoming_count = self._xknx.connection_manager.cemi_count_incoming
+                self._adaptive_cemi_error_count = self._last_cemi_error_count
+                self._recent_confirmation_errors.clear()
                 self._zombie_watchdog_task = asyncio.create_task(
                     self._zombie_watchdog_loop(),
                     name="luxor_zombie_watchdog",
@@ -338,6 +361,7 @@ class LuxorKNXGateway:
                 getattr(getattr(self._xknx, "telegram_queue", None), "outgoing_queue", None)
             )
             if dropped:
+                self._teardown_dropped_telegrams_total += dropped
                 _LOGGER.warning("Dropped %d queued outgoing telegrams during teardown", dropped)
             try:
                 await asyncio.wait_for(self._xknx.stop(), timeout=XKNX_STOP_TIMEOUT)
@@ -556,6 +580,7 @@ class LuxorKNXGateway:
                     incoming_count = self._xknx.connection_manager.cemi_count_incoming
                     delta = error_count - self._last_cemi_error_count
                     incoming_delta = incoming_count - self._last_cemi_incoming_count
+                    self._record_confirmation_error_delta(max(delta, 0))
                     self._last_cemi_error_count = error_count
                     self._last_cemi_incoming_count = incoming_count
                     if delta < ZOMBIE_ERROR_THRESHOLD:
@@ -632,6 +657,7 @@ class LuxorKNXGateway:
         try:
             success = await asyncio.wait_for(_recover(), timeout=ZOMBIE_RECOVERY_TIMEOUT)
             if success:
+                self._record_event(self._zombie_recovery_timestamps)
                 _LOGGER.warning("Zombie-tunnel recovery complete (host=%s)", self.host)
             else:
                 _LOGGER.error(
@@ -721,6 +747,7 @@ class LuxorKNXGateway:
 
         if state == XknxConnectionState.DISCONNECTED:
             self._connected = False
+            self._record_event(self._disconnect_timestamps)
             _LOGGER.warning(
                 "KNX gateway %s:%s disconnected — entities will be unavailable",
                 self.host,
@@ -853,6 +880,8 @@ class LuxorKNXGateway:
             )
 
             await self._xknx.telegrams.put(telegram)
+            self._record_event(self._write_timestamps)
+            self._writes_sent_total += 1
 
             _LOGGER.debug(
                 "✅ Sent KNX telegram: %s=%s to %s",
@@ -889,6 +918,7 @@ class LuxorKNXGateway:
             return True
 
         if not self._connected or not self._xknx:
+            self._reads_skipped_not_connected_total += 1
             now = time.monotonic()
             if now - self._last_not_connected_log_at >= NOT_CONNECTED_LOG_INTERVAL:
                 _LOGGER.error("Cannot read - not connected to KNX gateway")
@@ -897,44 +927,70 @@ class LuxorKNXGateway:
                 _LOGGER.debug("Cannot read - not connected to KNX gateway")
             return False
 
-        # Backpressure: on a zombie tunnel entity polling queues ~17x faster
-        # than the rate limiter drains (~1/3s per confirmation timeout) —
-        # ~1600 doomed telegrams accumulate in one 5min zombie window
-        # (2026-08-14 logs), hanging teardown and flooding the bus. Skip the
-        # read instead; the next poll cycle retries once the backlog clears.
         try:
-            backlog = self._xknx.telegram_queue.outgoing_queue.qsize()
-        except Exception:  # pragma: no cover - defensive, queue may be mocked
-            backlog = 0
-        if isinstance(backlog, int) and backlog >= OUTGOING_QUEUE_BACKPRESSURE_LIMIT:
-            now = time.monotonic()
-            if now - self._last_not_connected_log_at >= NOT_CONNECTED_LOG_INTERVAL:
-                _LOGGER.warning(
-                    "Skipping read of %s — %d telegrams already queued outgoing "
-                    "(gateway not keeping up)",
-                    group_address,
-                    backlog,
+            async with self._read_lock:
+                if not self._connected or not self._xknx:
+                    self._reads_skipped_not_connected_total += 1
+                    now = time.monotonic()
+                    if now - self._last_not_connected_log_at >= NOT_CONNECTED_LOG_INTERVAL:
+                        _LOGGER.error("Cannot read - not connected to KNX gateway")
+                        self._last_not_connected_log_at = now
+                    else:
+                        _LOGGER.debug("Cannot read - not connected to KNX gateway")
+                    return False
+
+                self._update_adaptive_read_state()
+                now = time.monotonic()
+                if now < self._read_degraded_until:
+                    self._reads_skipped_degraded_total += 1
+                    if now - self._last_not_connected_log_at >= NOT_CONNECTED_LOG_INTERVAL:
+                        _LOGGER.warning(
+                            "Skipping read of %s — tunnel instability detected "
+                            "(recent confirmation timeouts, cooldown %ss remaining)",
+                            group_address,
+                            int(self._read_degraded_until - now),
+                        )
+                        self._last_not_connected_log_at = now
+                    return False
+
+                wait = READ_REQUEST_INTERVAL - (now - self._last_read_sent_at)
+                if wait > 0:
+                    await asyncio.sleep(wait)
+
+                backlog = self._get_outgoing_backlog()
+                if isinstance(backlog, int) and backlog >= OUTGOING_QUEUE_BACKPRESSURE_LIMIT:
+                    self._reads_skipped_backpressure_total += 1
+                    now = time.monotonic()
+                    if now - self._last_not_connected_log_at >= NOT_CONNECTED_LOG_INTERVAL:
+                        _LOGGER.warning(
+                            "Skipping read of %s — %d telegrams already queued outgoing "
+                            "(gateway not keeping up)",
+                            group_address,
+                            backlog,
+                        )
+                        self._last_not_connected_log_at = now
+                    return False
+
+                ga = GroupAddress(group_address)
+                telegram = Telegram(
+                    destination_address=ga,
+                    payload=GroupValueRead(),
                 )
-                self._last_not_connected_log_at = now
-            return False
 
-        try:
-            ga = GroupAddress(group_address)
-            telegram = Telegram(
-                destination_address=ga,
-                payload=GroupValueRead(),
-            )
+                if is_initial:
+                    self._initial_read_pending.add(group_address)
+                    self._initial_reads_started_total += 1
 
-            if is_initial:
-                self._initial_read_pending.add(group_address)
-
-            await self._xknx.telegrams.put(telegram)
-            _LOGGER.info(
-                "📤 Sent GroupValueRead to %s%s",
-                group_address,
-                " (INITIAL READ)" if is_initial else "",
-            )
-            return True
+                await self._xknx.telegrams.put(telegram)
+                self._last_read_sent_at = time.monotonic()
+                self._record_event(self._read_timestamps)
+                self._reads_sent_total += 1
+                _LOGGER.info(
+                    "📤 Sent GroupValueRead to %s%s",
+                    group_address,
+                    " (INITIAL READ)" if is_initial else "",
+                )
+                return True
 
         except Exception as err:
             _LOGGER.error("Failed to read from %s: %s", group_address, err)
@@ -1262,6 +1318,85 @@ class LuxorKNXGateway:
     def xknx(self) -> XKNX | None:
         """Return XKNX instance for advanced usage."""
         return self._xknx
+
+    @staticmethod
+    def _prune_event_window(events: deque[float], window_seconds: int | float, now: float) -> None:
+        """Drop timestamps older than the requested rolling window."""
+        cutoff = now - window_seconds
+        while events and events[0] < cutoff:
+            events.popleft()
+
+    def _record_event(self, events: deque[float], now: float | None = None) -> None:
+        """Record a timestamped event."""
+        events.append(time.monotonic() if now is None else now)
+
+    def _get_outgoing_backlog(self) -> int:
+        """Return current outgoing backlog and track the running maximum."""
+        try:
+            backlog = self._xknx.telegram_queue.outgoing_queue.qsize() if self._xknx else 0
+        except Exception:  # pragma: no cover - defensive, queue may be mocked
+            backlog = 0
+        if not isinstance(backlog, int):
+            backlog = 0
+        self._max_outgoing_backlog = max(self._max_outgoing_backlog, backlog)
+        return backlog
+
+    def _record_confirmation_error_delta(self, delta: int) -> None:
+        """Track recent confirmation failures for adaptive read suppression."""
+        if delta <= 0:
+            return
+        now = time.monotonic()
+        for _ in range(delta):
+            self._recent_confirmation_errors.append(now)
+        self._prune_event_window(self._recent_confirmation_errors, READ_DEGRADE_WINDOW, now)
+        if len(self._recent_confirmation_errors) >= READ_DEGRADE_ERROR_THRESHOLD:
+            self._read_degraded_until = max(self._read_degraded_until, now + READ_DEGRADE_COOLDOWN)
+
+    def _update_adaptive_read_state(self) -> None:
+        """Refresh rolling confirmation-timeout state from xknx counters."""
+        now = time.monotonic()
+        self._prune_event_window(self._recent_confirmation_errors, READ_DEGRADE_WINDOW, now)
+        if not self._xknx or self.simulation_mode:
+            return
+        try:
+            error_count = self._xknx.connection_manager.cemi_count_outgoing_error
+        except Exception:  # pragma: no cover - defensive
+            return
+        if not isinstance(error_count, int):
+            return
+        delta = max(0, error_count - self._adaptive_cemi_error_count)
+        self._adaptive_cemi_error_count = error_count
+        self._record_confirmation_error_delta(delta)
+
+    def get_traffic_stats(self) -> dict[str, Any]:
+        """Return current traffic-mitigation telemetry for diagnostics."""
+        now = time.monotonic()
+        self._prune_event_window(self._read_timestamps, 60, now)
+        self._prune_event_window(self._write_timestamps, 60, now)
+        self._prune_event_window(self._disconnect_timestamps, 3600, now)
+        self._prune_event_window(self._zombie_recovery_timestamps, 3600, now)
+        self._prune_event_window(self._recent_confirmation_errors, READ_DEGRADE_WINDOW, now)
+
+        return {
+            "reads_sent_total": self._reads_sent_total,
+            "reads_last_minute": len(self._read_timestamps),
+            "writes_sent_total": self._writes_sent_total,
+            "writes_last_minute": len(self._write_timestamps),
+            "reads_skipped_not_connected_total": self._reads_skipped_not_connected_total,
+            "reads_skipped_backpressure_total": self._reads_skipped_backpressure_total,
+            "reads_skipped_degraded_total": self._reads_skipped_degraded_total,
+            "initial_reads_started_total": self._initial_reads_started_total,
+            "pending_initial_reads": self.pending_initial_reads,
+            "disconnects_last_hour": len(self._disconnect_timestamps),
+            "zombie_recoveries_last_hour": len(self._zombie_recovery_timestamps),
+            "recent_confirmation_failures": len(self._recent_confirmation_errors),
+            "read_degraded": now < self._read_degraded_until,
+            "read_degraded_seconds_remaining": max(0, int(self._read_degraded_until - now)),
+            "read_rate_limit_interval_seconds": READ_REQUEST_INTERVAL,
+            "current_outgoing_backlog": self._get_outgoing_backlog(),
+            "max_outgoing_backlog": self._max_outgoing_backlog,
+            "teardown_dropped_telegrams_total": self._teardown_dropped_telegrams_total,
+        }
 
     async def async_batch_read_group_addresses(
         self, addresses: list[str], delay_ms: int = 50

@@ -27,6 +27,10 @@ SESSION_REFRESH_INTERVAL = 4 * 3600  # proactive REST session refresh every 4 h
 RECONNECT_FAILURE_THRESHOLD = 5  # forced REST refresh after this many DISCONNECTED events in window
 RECONNECT_FAILURE_WINDOW = 60  # seconds window for counting consecutive disconnects
 RECONNECT_COOLDOWN_SECS = 30  # skip reconnect re-auth if a refresh happened this recently
+READ_REQUEST_INTERVAL = 0.15  # minimum spacing between KNX group-read requests
+READ_DEGRADE_ERROR_THRESHOLD = 3  # recent confirmation timeouts before non-essential reads pause
+READ_DEGRADE_WINDOW = 60  # seconds window for recent confirmation-timeout tracking
+READ_DEGRADE_COOLDOWN = 120  # seconds to suppress group reads after timeout surge
 ZOMBIE_CHECK_INTERVAL = 30  # seconds between cemi_count_outgoing_error polls
 ZOMBIE_ERROR_THRESHOLD = (
     5  # new L_DATA_CON confirmation failures per check interval to declare zombie tunnel

@@ -370,5 +370,5 @@ class LuxorCover(CoverEntity):
             _LOGGER.error("Error setting tilt position for %s: %s", self.name, e)
 
     async def async_update(self) -> None:
-        """Update the entity."""
-        await self._update_position()
+        """Refresh coordinator state without actively polling KNX again."""
+        await self.coordinator.async_request_refresh()

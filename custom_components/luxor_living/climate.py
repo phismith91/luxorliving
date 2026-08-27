@@ -315,5 +315,5 @@ class LuxorClimate(ClimateEntity):
         self.async_write_ha_state()
 
     async def async_update(self) -> None:
-        """Update the entity."""
-        await self._update_temperature()
+        """Refresh coordinator state without actively polling KNX again."""
+        await self.coordinator.async_request_refresh()

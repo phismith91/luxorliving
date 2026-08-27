@@ -18,7 +18,9 @@ from custom_components.luxor_living.mapped_entity import MappedEntity
 @pytest.fixture
 def mock_coordinator():
     """Create mock coordinator."""
-    return MagicMock()
+    coordinator = MagicMock()
+    coordinator.async_request_refresh = AsyncMock()
+    return coordinator
 
 
 @pytest.fixture
@@ -115,6 +117,23 @@ class TestLuxorClimate:
         mock_knx_gateway.async_read_group_address.assert_any_call(8454)
         mock_knx_gateway.async_read_group_address.assert_any_call(8966)
         mock_knx_gateway.async_read_group_address.assert_any_call(9222)
+
+    @pytest.mark.asyncio
+    async def test_async_update_requests_coordinator_refresh_without_knx_reads(
+        self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
+    ):
+        """Manual entity refresh should not generate extra KNX reads."""
+        entity = LuxorClimate(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=climate_mapped_entity,
+            entry_id="test_entry",
+        )
+
+        await entity.async_update()
+
+        mock_coordinator.async_request_refresh.assert_awaited_once()
+        mock_knx_gateway.async_read_group_address.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_listeners_registered_on_added_to_hass(

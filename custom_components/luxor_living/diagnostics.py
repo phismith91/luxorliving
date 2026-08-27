@@ -102,6 +102,11 @@ async def async_get_config_entry_diagnostics(
                 "simulation_mode": getattr(knx_gateway, "simulation_mode", False),
                 "host": getattr(knx_gateway, "host", "unknown"),
             }
+            stats_getter = getattr(knx_gateway, "get_traffic_stats", None)
+            if callable(stats_getter):
+                traffic = stats_getter()
+                if isinstance(traffic, dict):
+                    diagnostics["knx_gateway"]["traffic"] = traffic
 
             # Datapoint mapping info (anonymized)
             if hasattr(knx_gateway, "_datapoint_mapping"):
