@@ -205,6 +205,8 @@ class TestReadGroupAddress:
         gw._xknx = MagicMock()
         gw._xknx.telegrams = AsyncMock()
         gw._xknx.telegrams.put = AsyncMock()
+        gw._xknx.connection_manager.cemi_count_outgoing_error = 0
+        gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
         result = await gw.async_read_group_address("1/0/0")
         assert result is True
         gw._xknx.telegrams.put.assert_awaited_once()
@@ -216,8 +218,27 @@ class TestReadGroupAddress:
         gw._xknx = MagicMock()
         gw._xknx.telegrams = AsyncMock()
         gw._xknx.telegrams.put = AsyncMock()
+        gw._xknx.connection_manager.cemi_count_outgoing_error = 0
+        gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
         await gw.async_read_group_address("1/0/0", is_initial=True)
         assert "1/0/0" in gw._initial_read_pending
+
+    @pytest.mark.asyncio
+    async def test_duplicate_initial_read_is_deduplicated(self):
+        gw = _gw(simulation_mode=False)
+        gw._connected = True
+        gw._xknx = MagicMock()
+        gw._xknx.telegrams = AsyncMock()
+        gw._xknx.telegrams.put = AsyncMock()
+        gw._xknx.connection_manager.cemi_count_outgoing_error = 0
+        gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
+        gw._initial_read_pending.add("1/0/0")
+
+        result = await gw.async_read_group_address("1/0/0", is_initial=True)
+
+        assert result is False
+        gw._xknx.telegrams.put.assert_not_awaited()
+        assert gw._initial_reads_deduplicated_total == 1
 
     @pytest.mark.asyncio
     async def test_read_exception_returns_false(self):
@@ -226,19 +247,159 @@ class TestReadGroupAddress:
         gw._xknx = MagicMock()
         gw._xknx.telegrams = AsyncMock()
         gw._xknx.telegrams.put = AsyncMock(side_effect=RuntimeError("err"))
+        gw._xknx.connection_manager.cemi_count_outgoing_error = 0
+        gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
         result = await gw.async_read_group_address("1/0/0")
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_read_initial_exception_removes_from_pending(self):
+    async def test_read_initial_pending_request_is_skipped(self):
         gw = _gw(simulation_mode=False)
         gw._connected = True
         gw._xknx = MagicMock()
         gw._xknx.telegrams = AsyncMock()
         gw._xknx.telegrams.put = AsyncMock(side_effect=RuntimeError("err"))
+        gw._xknx.connection_manager.cemi_count_outgoing_error = 0
+        gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
         gw._initial_read_pending.add("1/0/0")
-        await gw.async_read_group_address("1/0/0", is_initial=True)
-        assert "1/0/0" not in gw._initial_read_pending
+        result = await gw.async_read_group_address("1/0/0", is_initial=True)
+        assert result is False
+        assert "1/0/0" in gw._initial_read_pending
+        gw._xknx.telegrams.put.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_read_rate_limits_consecutive_requests(self):
+        gw = _gw(simulation_mode=False)
+        gw._connected = True
+        gw._xknx = MagicMock()
+        gw._xknx.telegrams = AsyncMock()
+        gw._xknx.telegrams.put = AsyncMock()
+        gw._xknx.connection_manager.cemi_count_outgoing_error = 0
+        gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
+        gw._last_read_sent_at = __import__("time").monotonic()
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.READ_REQUEST_INTERVAL", 0.1),
+            patch(
+                "custom_components.luxor_living.knx_gateway.asyncio.sleep", new=AsyncMock()
+            ) as sleep,
+        ):
+            await gw.async_read_group_address("1/0/0")
+
+        sleep.assert_awaited()
+
+    @pytest.mark.asyncio
+    async def test_initial_reads_use_gentler_rate_limit(self):
+        gw = _gw(simulation_mode=False)
+        gw._connected = True
+        gw._xknx = MagicMock()
+        gw._xknx.telegrams = AsyncMock()
+        gw._xknx.telegrams.put = AsyncMock()
+        gw._xknx.connection_manager.cemi_count_outgoing_error = 0
+        gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
+        gw._last_read_sent_at = __import__("time").monotonic()
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.READ_REQUEST_INTERVAL", 0.05),
+            patch(
+                "custom_components.luxor_living.knx_gateway.INITIAL_READ_REQUEST_INTERVAL", 0.2
+            ),
+            patch(
+                "custom_components.luxor_living.knx_gateway.asyncio.sleep", new=AsyncMock()
+            ) as sleep,
+        ):
+            await gw.async_read_group_address("1/0/0", is_initial=True)
+
+        sleep.assert_awaited()
+        assert any(call.args[0] > 0.1 for call in sleep.await_args_list)
+
+    @pytest.mark.asyncio
+    async def test_read_skips_when_confirmation_timeouts_trigger_cooldown(self):
+        gw = _gw(simulation_mode=False)
+        gw._connected = True
+        gw._xknx = MagicMock()
+        gw._xknx.telegrams = AsyncMock()
+        gw._xknx.telegrams.put = AsyncMock()
+        gw._xknx.connection_manager.cemi_count_outgoing_error = 3
+        gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.READ_DEGRADE_ERROR_THRESHOLD", 3),
+            patch("custom_components.luxor_living.knx_gateway.READ_DEGRADE_COOLDOWN", 60),
+        ):
+            result = await gw.async_read_group_address("1/0/0")
+
+        assert result is False
+        gw._xknx.telegrams.put.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_read_skips_during_recovery_quiet_phase(self):
+        gw = _gw(simulation_mode=False)
+        gw._connected = True
+        gw._xknx = MagicMock()
+        gw._xknx.telegrams = AsyncMock()
+        gw._xknx.telegrams.put = AsyncMock()
+        gw._xknx.connection_manager.cemi_count_outgoing_error = 0
+        gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
+        gw._read_quiet_until = __import__("time").monotonic() + 60
+
+        result = await gw.async_read_group_address("1/0/0")
+
+        assert result is False
+        assert gw._reads_skipped_quiet_phase_total == 1
+        gw._xknx.telegrams.put.assert_not_awaited()
+
+    def test_update_traffic_mode_prunes_stale_confirmation_errors(self):
+        import time
+
+        gw = _gw(simulation_mode=False)
+        gw._recent_confirmation_errors.append(time.monotonic() - 120)
+
+        gw._update_traffic_mode()
+
+        assert gw._traffic_mode == "normal"
+        assert len(gw._recent_confirmation_errors) == 0
+
+    def test_get_traffic_stats_reports_recent_activity(self):
+        import time
+
+        gw = _gw(simulation_mode=False)
+        now = time.monotonic()
+        gw._reads_sent_total = 2
+        gw._writes_sent_total = 1
+        gw._reads_skipped_degraded_total = 4
+        gw._initial_reads_started_total = 3
+        gw._teardown_dropped_telegrams_total = 7
+        gw._max_outgoing_backlog = 11
+        gw._read_timestamps.extend([now, now - 10])
+        gw._write_timestamps.append(now)
+        gw._read_reason_timestamps["initial_startup"].extend([now, now - 10])
+        gw._read_reason_totals["initial_startup"] = 2
+        gw._write_reason_timestamps["user_command"].append(now)
+        gw._write_reason_totals["user_command"] = 1
+        gw._disconnect_timestamps.append(now)
+        gw._zombie_recovery_timestamps.append(now)
+        gw._recent_confirmation_errors.extend([now, now - 1, now - 2])
+        gw._read_degraded_until = now + 30
+        gw._read_quiet_until = now + 20
+        gw._cautious_reads_until = now + 120
+        gw._last_disconnect_snapshot = {"event": "disconnect"}
+        gw._xknx = MagicMock()
+        gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 5
+
+        stats = gw.get_traffic_stats()
+
+        assert stats["reads_last_minute"] == 2
+        assert stats["reads_last_minute_by_reason"]["initial_startup"] == 2
+        assert stats["writes_last_minute"] == 1
+        assert stats["writes_last_minute_by_reason"]["user_command"] == 1
+        assert stats["disconnects_last_hour"] == 1
+        assert stats["zombie_recoveries_last_hour"] == 1
+        assert stats["initial_reads_started_total"] == 3
+        assert stats["read_degraded"] is True
+        assert stats["traffic_mode"] == "protected"
+        assert stats["current_outgoing_backlog"] == 5
+        assert stats["last_disconnect_snapshot"] == {"event": "disconnect"}
 
 
 # ── register_listener / unregister_listener ───────────────────────────────────
@@ -460,6 +621,18 @@ class TestReconnectWatchdog:
             gw._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
 
         gw.hass.async_create_task.assert_not_called()
+
+    def test_disconnect_captures_traffic_snapshot(self):
+        from xknx.core import XknxConnectionState
+
+        gw = _gw(simulation_mode=False)
+        gw._setup_complete = True
+        gw._read_reason_timestamps["state_refresh"].append(__import__("time").monotonic())
+
+        gw._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
+
+        assert gw._last_disconnect_snapshot is not None
+        assert gw._last_disconnect_snapshot["event"] == "disconnect"
 
     def test_connected_resets_failure_counter(self):
         from xknx.core import XknxConnectionState

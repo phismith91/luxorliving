@@ -202,14 +202,11 @@ class LuxorLivingLight(LuxorLivingEntity, LightEntity):
         # BETA 7.7: Use KNX GroupValueRead for initial state
         # REST API mapping removed (BAOS Datapoints ≠ GroupAddresses)
         # Request current state from KNX bus via GroupValueRead
-        # Read BOTH addresses to work around stale BAOS StatusOnOff values
-        # StatusOnOff may be stale if light was ON at BAOS startup or switched manually
-        # OnOff reflects actual actuator state more reliably
         addresses_to_read: list[tuple[str, str]] = []
 
         if self._address_status:
             addresses_to_read.append((self._address_status, "STATUS"))
-        if self._address_on and self._address_on != self._address_status:
+        elif self._address_on:
             addresses_to_read.append((self._address_on, "CONTROL"))
 
         if addresses_to_read:
@@ -346,7 +343,7 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
             )
 
         # Request current brightness from KNX bus
-        # Prefer reading Status% (current brightness), also read Dimmen% for completeness
+        # Prefer reading Status% (current brightness); only fall back to Dimmen%
         if self._address_dim_status:
             _LOGGER.debug(
                 "Requesting initial brightness for %s from %s",
@@ -357,7 +354,7 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
                 self._address_dim_status,
                 is_initial=True,
             )
-        if self._address_dim:
+        elif self._address_dim:
             _LOGGER.debug(
                 "Requesting initial brightness for %s from %s",
                 self.name,

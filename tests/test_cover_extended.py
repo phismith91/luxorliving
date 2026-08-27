@@ -34,6 +34,7 @@ def _mapped(datapoints=None, name="Test Cover"):
 
 def _make_cover(datapoints=None, connected=True):
     coordinator = MagicMock()
+    coordinator.async_request_refresh = AsyncMock()
     gateway = MagicMock()
     gateway.connected = connected
     gateway.async_send_telegram = AsyncMock(return_value=True)
@@ -406,10 +407,11 @@ class TestUpdatePosition:
         gateway.async_read_group_address.assert_awaited()
 
     @pytest.mark.asyncio
-    async def test_async_update_calls_update_position(self):
+    async def test_async_update_requests_coordinator_refresh_without_knx_read(self):
         entity, gateway = _make_cover([{"role": "StatusHöhe%", "address": 202}])
         await entity.async_update()
-        gateway.async_read_group_address.assert_awaited()
+        entity.coordinator.async_request_refresh.assert_awaited_once()
+        gateway.async_read_group_address.assert_not_awaited()
 
 
 # ── KNX position inversion ────────────────────────────────────────────────────

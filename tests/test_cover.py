@@ -148,7 +148,22 @@ class TestLuxorCover:
         await entity._update_position()
 
         # StatusHöhe% preferred over Höhe%; address 8710 from shutter_mapped_entity
-        mock_knx_gateway.async_read_group_address.assert_any_call(8710)
+        mock_knx_gateway.async_read_group_address.assert_any_call(8710, is_initial=False)
+
+    @pytest.mark.asyncio
+    async def test_added_to_hass_marks_initial_reads(
+        self, mock_coordinator, mock_knx_gateway, shutter_mapped_entity
+    ):
+        entity = LuxorCover(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=shutter_mapped_entity,
+            entry_id="test_entry",
+        )
+
+        await entity.async_added_to_hass()
+
+        mock_knx_gateway.async_read_group_address.assert_any_call(8710, is_initial=True)
 
     @pytest.mark.asyncio
     async def test_listeners_registered_on_added_to_hass(

@@ -255,11 +255,11 @@ class TestRateLimiting:
 
 class TestAsyncAddedToHass:
     @pytest.mark.asyncio
-    async def test_connected_reads_both_addresses(self):
+    async def test_connected_prefers_status_address(self):
         entity, gateway = _make_light({"OnOff": "1/0/0", "status@OnOff": "1/0/2"})
         entity.async_on_remove = MagicMock()
         await entity.async_added_to_hass()
-        assert gateway.async_read_group_address.await_count == 2
+        gateway.async_read_group_address.assert_awaited_once_with("1/0/2", is_initial=True)
 
     @pytest.mark.asyncio
     async def test_connected_reads_single_address(self):
@@ -365,6 +365,17 @@ class TestDimmableLight:
         await entity.async_added_to_hass()
         calls = [c[0][0] for c in gateway.async_read_group_address.await_args_list]
         assert "1/0/3" in calls
+
+    @pytest.mark.asyncio
+    async def test_async_added_prefers_dim_status_over_dim_control(self):
+        entity, gateway = _make_dimmable(
+            {"OnOff": "1/0/0", "Dimmen%": "1/0/1", "Status%": "1/0/3"}
+        )
+        entity.async_on_remove = MagicMock()
+        await entity.async_added_to_hass()
+        calls = [c.args[0] for c in gateway.async_read_group_address.await_args_list]
+        assert "1/0/3" in calls
+        assert "1/0/1" not in calls
 
     def test_handle_brightness_update_valid(self):
         entity, _ = _make_dimmable({"OnOff": "1/0/0", "Dimmen%": "1/0/1"})
