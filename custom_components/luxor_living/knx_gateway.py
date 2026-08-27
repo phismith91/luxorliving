@@ -917,16 +917,6 @@ class LuxorKNXGateway:
             )
             return True
 
-        if not self._connected or not self._xknx:
-            self._reads_skipped_not_connected_total += 1
-            now = time.monotonic()
-            if now - self._last_not_connected_log_at >= NOT_CONNECTED_LOG_INTERVAL:
-                _LOGGER.error("Cannot read - not connected to KNX gateway")
-                self._last_not_connected_log_at = now
-            else:
-                _LOGGER.debug("Cannot read - not connected to KNX gateway")
-            return False
-
         try:
             async with self._read_lock:
                 if not self._connected or not self._xknx:
@@ -1346,9 +1336,9 @@ class LuxorKNXGateway:
         if delta <= 0:
             return
         now = time.monotonic()
+        self._prune_event_window(self._recent_confirmation_errors, READ_DEGRADE_WINDOW, now)
         for _ in range(delta):
             self._recent_confirmation_errors.append(now)
-        self._prune_event_window(self._recent_confirmation_errors, READ_DEGRADE_WINDOW, now)
         if len(self._recent_confirmation_errors) >= READ_DEGRADE_ERROR_THRESHOLD:
             self._read_degraded_until = max(self._read_degraded_until, now + READ_DEGRADE_COOLDOWN)
 
