@@ -236,7 +236,7 @@ class TestReadGroupAddress:
 
         result = await gw.async_read_group_address("1/0/0", is_initial=True)
 
-        assert result is True
+        assert result is False
         gw._xknx.telegrams.put.assert_not_awaited()
         assert gw._initial_reads_deduplicated_total == 1
 
@@ -253,7 +253,7 @@ class TestReadGroupAddress:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_read_initial_pending_request_is_not_resent(self):
+    async def test_read_initial_pending_request_is_skipped(self):
         gw = _gw(simulation_mode=False)
         gw._connected = True
         gw._xknx = MagicMock()
@@ -263,7 +263,7 @@ class TestReadGroupAddress:
         gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
         gw._initial_read_pending.add("1/0/0")
         result = await gw.async_read_group_address("1/0/0", is_initial=True)
-        assert result is True
+        assert result is False
         assert "1/0/0" in gw._initial_read_pending
         gw._xknx.telegrams.put.assert_not_awaited()
 
@@ -311,7 +311,7 @@ class TestReadGroupAddress:
             await gw.async_read_group_address("1/0/0", is_initial=True)
 
         sleep.assert_awaited()
-        assert sleep.await_args.args[0] > 0.1
+        assert any(call.args[0] > 0.1 for call in sleep.await_args_list)
 
     @pytest.mark.asyncio
     async def test_read_skips_when_confirmation_timeouts_trigger_cooldown(self):
@@ -348,6 +348,17 @@ class TestReadGroupAddress:
         assert result is False
         assert gw._reads_skipped_quiet_phase_total == 1
         gw._xknx.telegrams.put.assert_not_awaited()
+
+    def test_update_traffic_mode_prunes_stale_confirmation_errors(self):
+        import time
+
+        gw = _gw(simulation_mode=False)
+        gw._recent_confirmation_errors.append(time.monotonic() - 120)
+
+        gw._update_traffic_mode()
+
+        assert gw._traffic_mode == "normal"
+        assert len(gw._recent_confirmation_errors) == 0
 
     def test_get_traffic_stats_reports_recent_activity(self):
         import time
@@ -610,6 +621,18 @@ class TestReconnectWatchdog:
             gw._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
 
         gw.hass.async_create_task.assert_not_called()
+
+    def test_disconnect_captures_traffic_snapshot(self):
+        from xknx.core import XknxConnectionState
+
+        gw = _gw(simulation_mode=False)
+        gw._setup_complete = True
+        gw._read_reason_timestamps["state_refresh"].append(__import__("time").monotonic())
+
+        gw._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
+
+        assert gw._last_disconnect_snapshot is not None
+        assert gw._last_disconnect_snapshot["event"] == "disconnect"
 
     def test_connected_resets_failure_counter(self):
         from xknx.core import XknxConnectionState
