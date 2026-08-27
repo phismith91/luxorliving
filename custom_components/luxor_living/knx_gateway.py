@@ -454,7 +454,7 @@ class LuxorKNXGateway:
                 queue.task_done()
                 dropped += 1
         except Exception:  # pragma: no cover - defensive, queue may be mocked
-            pass
+            _LOGGER.debug("Queue drain aborted while tearing down mocked queue", exc_info=True)
         return dropped
 
     async def async_disconnect_for_unload(self) -> None:

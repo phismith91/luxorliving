@@ -114,9 +114,9 @@ class TestLuxorClimate:
         await entity._update_temperature()
 
         # Istwert (8454), StatusSollwert preferred over Sollwert (8966), WindowContact (9222)
-        mock_knx_gateway.async_read_group_address.assert_any_call(8454)
-        mock_knx_gateway.async_read_group_address.assert_any_call(8966)
-        mock_knx_gateway.async_read_group_address.assert_any_call(9222)
+        mock_knx_gateway.async_read_group_address.assert_any_call(8454, is_initial=False)
+        mock_knx_gateway.async_read_group_address.assert_any_call(8966, is_initial=False)
+        mock_knx_gateway.async_read_group_address.assert_any_call(9222, is_initial=False)
 
     @pytest.mark.asyncio
     async def test_added_to_hass_marks_initial_reads(

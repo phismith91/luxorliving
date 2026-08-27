@@ -148,7 +148,7 @@ class TestLuxorCover:
         await entity._update_position()
 
         # StatusHöhe% preferred over Höhe%; address 8710 from shutter_mapped_entity
-        mock_knx_gateway.async_read_group_address.assert_any_call(8710)
+        mock_knx_gateway.async_read_group_address.assert_any_call(8710, is_initial=False)
 
     @pytest.mark.asyncio
     async def test_added_to_hass_marks_initial_reads(

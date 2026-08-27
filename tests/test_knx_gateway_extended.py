@@ -253,7 +253,7 @@ class TestReadGroupAddress:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_read_initial_exception_removes_from_pending(self):
+    async def test_read_initial_pending_request_is_not_resent(self):
         gw = _gw(simulation_mode=False)
         gw._connected = True
         gw._xknx = MagicMock()
@@ -262,8 +262,10 @@ class TestReadGroupAddress:
         gw._xknx.connection_manager.cemi_count_outgoing_error = 0
         gw._xknx.telegram_queue.outgoing_queue.qsize.return_value = 0
         gw._initial_read_pending.add("1/0/0")
-        await gw.async_read_group_address("1/0/0", is_initial=True)
-        assert "1/0/0" not in gw._initial_read_pending
+        result = await gw.async_read_group_address("1/0/0", is_initial=True)
+        assert result is True
+        assert "1/0/0" in gw._initial_read_pending
+        gw._xknx.telegrams.put.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_read_rate_limits_consecutive_requests(self):
