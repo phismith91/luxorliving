@@ -249,7 +249,7 @@ class TestKNXListener:
 
         await entity.async_added_to_hass()
 
-        gateway.async_read_group_address.assert_awaited_once_with(2330)
+        gateway.async_read_group_address.assert_awaited_once_with(2330, is_initial=True)
 
     @pytest.mark.asyncio
     async def test_knx_state_true_updates_coordinator(self):
@@ -352,7 +352,7 @@ class TestRainSensorListener:
 
         assert entity._knx_listener_addr == 5120
         gateway.register_listener.assert_called_once_with(5120, entity._handle_knx_state)
-        gateway.async_read_group_address.assert_called_once_with(5120)
+        gateway.async_read_group_address.assert_called_once_with(5120, is_initial=True)
 
     @pytest.mark.asyncio
     async def test_rain_sensor_state_updates_on_knx_telegram(self):

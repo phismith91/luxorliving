@@ -194,7 +194,7 @@ class LuxorCover(CoverEntity):
 
         # Request initial position state — wait up to 5s for KNX connection
         if self.knx_gateway.connected:
-            await self._update_position()
+            await self._update_position(is_initial=True)
 
     async def async_will_remove_from_hass(self) -> None:
         """Run when entity is removed from hass."""
@@ -219,19 +219,23 @@ class LuxorCover(CoverEntity):
             self._attr_current_cover_tilt_position = 100 - int(value)
             self.async_write_ha_state()
 
-    async def _update_position(self) -> None:
+    async def _update_position(self, is_initial: bool = False) -> None:
         """Request current position and tilt from KNX bus."""
         # Read current position (StatusHöhe% preferred, fallback to Höhe%)
         position_dp = "StatusHöhe%" if "StatusHöhe%" in self._datapoints else "Höhe%"
         if position_dp in self._datapoints:
-            await self.knx_gateway.async_read_group_address(self._datapoints[position_dp])
+            await self.knx_gateway.async_read_group_address(
+                self._datapoints[position_dp], is_initial=is_initial
+            )
 
         # Read current tilt position if available
         has_tilt = "Lamelle%" in self._datapoints or "StatusLamelle%" in self._datapoints
         if has_tilt:
             tilt_dp = "StatusLamelle%" if "StatusLamelle%" in self._datapoints else "Lamelle%"
             if tilt_dp in self._datapoints:
-                await self.knx_gateway.async_read_group_address(self._datapoints[tilt_dp])
+                await self.knx_gateway.async_read_group_address(
+                    self._datapoints[tilt_dp], is_initial=is_initial
+                )
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""

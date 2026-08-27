@@ -23,12 +23,16 @@ from xknx.telegram.apci import GroupValueRead, GroupValueResponse, GroupValueWri
 
 from .circuit_breaker import CircuitBreakerOpenException, get_knx_circuit_breaker
 from .const import (
+    CAUTIOUS_READ_REQUEST_INTERVAL,
+    CAUTIOUS_TRAFFIC_PERIOD,
+    INITIAL_READ_REQUEST_INTERVAL,
     NOT_CONNECTED_LOG_INTERVAL,
     OUTGOING_QUEUE_BACKPRESSURE_LIMIT,
     READ_DEGRADE_COOLDOWN,
     READ_DEGRADE_ERROR_THRESHOLD,
     READ_DEGRADE_WINDOW,
     READ_REQUEST_INTERVAL,
+    RECOVERY_READ_QUIET_PERIOD,
     RECONNECT_COOLDOWN_SECS,
     RECONNECT_FAILURE_THRESHOLD,
     RECONNECT_FAILURE_WINDOW,
@@ -115,9 +119,16 @@ class LuxorKNXGateway:
         self._last_read_sent_at: float = 0.0
         self._adaptive_cemi_error_count: int = 0
         self._read_degraded_until: float = 0.0
+        self._read_quiet_until: float = 0.0
+        self._cautious_reads_until: float = 0.0
+        self._traffic_mode: str = "normal"
         self._recent_confirmation_errors: deque[float] = deque()
         self._read_timestamps: deque[float] = deque()
         self._write_timestamps: deque[float] = deque()
+        self._read_reason_timestamps: defaultdict[str, deque[float]] = defaultdict(deque)
+        self._write_reason_timestamps: defaultdict[str, deque[float]] = defaultdict(deque)
+        self._read_reason_totals: defaultdict[str, int] = defaultdict(int)
+        self._write_reason_totals: defaultdict[str, int] = defaultdict(int)
         self._disconnect_timestamps: deque[float] = deque()
         self._zombie_recovery_timestamps: deque[float] = deque()
         self._reads_sent_total: int = 0
@@ -125,9 +136,15 @@ class LuxorKNXGateway:
         self._reads_skipped_not_connected_total: int = 0
         self._reads_skipped_backpressure_total: int = 0
         self._reads_skipped_degraded_total: int = 0
+        self._reads_skipped_quiet_phase_total: int = 0
         self._initial_reads_started_total: int = 0
+        self._initial_reads_deduplicated_total: int = 0
         self._teardown_dropped_telegrams_total: int = 0
         self._max_outgoing_backlog: int = 0
+        self._max_reads_per_10_seconds: int = 0
+        self._max_writes_per_10_seconds: int = 0
+        self._last_disconnect_snapshot: dict[str, Any] | None = None
+        self._last_zombie_snapshot: dict[str, Any] | None = None
         self._ga_label_map: dict[str, list[str]] = {}
         self._ia_label_map: dict[str, list[str]] = {}
         self._ga_sensor_type_map: dict[str, str] = {}  # {address: sensor_type} for known entities
@@ -545,6 +562,7 @@ class LuxorKNXGateway:
                 await self._rest_client.enable_tunneling()
                 self._connected = True
                 self._last_refresh_at = time.monotonic()
+                self._arm_recovery_read_protection("forced_refresh")
                 _LOGGER.warning("REST session refresh complete (host=%s)", self.host)
             except Exception as err:
                 # Fire-and-forget task: never let the exception escape unhandled.
@@ -598,6 +616,13 @@ class LuxorKNXGateway:
                         backlog = self._xknx.telegram_queue.outgoing_queue.qsize()
                     except Exception:  # pragma: no cover - defensive
                         backlog = "?"
+                    self._last_zombie_snapshot = self._capture_traffic_snapshot(
+                        event="zombie_tunnel",
+                        backlog=backlog,
+                        confirmation_failures=delta,
+                        incoming_cemi_frames=incoming_delta,
+                        last_incoming_telegram=last_rx,
+                    )
                     _LOGGER.warning(
                         "KNX gateway %s:%s zombie tunnel detected — %d confirmation "
                         "failures in %ds with no disconnect event "
@@ -658,6 +683,7 @@ class LuxorKNXGateway:
             success = await asyncio.wait_for(_recover(), timeout=ZOMBIE_RECOVERY_TIMEOUT)
             if success:
                 self._record_event(self._zombie_recovery_timestamps)
+                self._arm_recovery_read_protection("zombie_recovery")
                 _LOGGER.warning("Zombie-tunnel recovery complete (host=%s)", self.host)
             else:
                 _LOGGER.error(
@@ -813,6 +839,7 @@ class LuxorKNXGateway:
                 await self._rest_client.enable_tunneling()
                 self._connected = True
                 self._last_refresh_at = time.monotonic()
+                self._arm_recovery_read_protection("reconnect")
                 _LOGGER.info("Tunneling re-enabled — entities are available again")
             except Exception as err:
                 _LOGGER.error(
@@ -826,6 +853,7 @@ class LuxorKNXGateway:
         group_address: str,
         value: bool | int | float | bytes,
         value_type: str = "binary",
+        context: str = "user_command",
     ) -> bool:
         """Send a KNX telegram to a group address.
 
@@ -880,7 +908,7 @@ class LuxorKNXGateway:
             )
 
             await self._xknx.telegrams.put(telegram)
-            self._record_event(self._write_timestamps)
+            self._record_traffic_event("write", context)
             self._writes_sent_total += 1
 
             _LOGGER.debug(
@@ -900,7 +928,9 @@ class LuxorKNXGateway:
             )
             return False
 
-    async def async_read_group_address(self, group_address: str, is_initial: bool = False) -> bool:
+    async def async_read_group_address(
+        self, group_address: str, is_initial: bool = False, context: str | None = None
+    ) -> bool:
         """Send a read request to a KNX group address.
 
         Args:
@@ -930,7 +960,10 @@ class LuxorKNXGateway:
                     return False
 
                 self._update_adaptive_read_state()
+                self._update_traffic_mode()
                 now = time.monotonic()
+                read_context = context or ("initial_startup" if is_initial else "state_refresh")
+
                 if now < self._read_degraded_until:
                     self._reads_skipped_degraded_total += 1
                     if now - self._last_not_connected_log_at >= NOT_CONNECTED_LOG_INTERVAL:
@@ -943,7 +976,23 @@ class LuxorKNXGateway:
                         self._last_not_connected_log_at = now
                     return False
 
-                wait = READ_REQUEST_INTERVAL - (now - self._last_read_sent_at)
+                if now < self._read_quiet_until and read_context != "recovery_probe":
+                    self._reads_skipped_quiet_phase_total += 1
+                    if now - self._last_not_connected_log_at >= NOT_CONNECTED_LOG_INTERVAL:
+                        _LOGGER.warning(
+                            "Skipping read of %s — recovery quiet phase active (%ss remaining)",
+                            group_address,
+                            int(self._read_quiet_until - now),
+                        )
+                        self._last_not_connected_log_at = now
+                    return False
+
+                if is_initial and group_address in self._initial_read_pending:
+                    self._initial_reads_deduplicated_total += 1
+                    _LOGGER.debug("Initial read for %s already pending — skipping duplicate", group_address)
+                    return True
+
+                wait = self._get_read_interval(is_initial) - (now - self._last_read_sent_at)
                 if wait > 0:
                     await asyncio.sleep(wait)
 
@@ -973,7 +1022,7 @@ class LuxorKNXGateway:
 
                 await self._xknx.telegrams.put(telegram)
                 self._last_read_sent_at = time.monotonic()
-                self._record_event(self._read_timestamps)
+                self._record_traffic_event("read", read_context)
                 self._reads_sent_total += 1
                 _LOGGER.info(
                     "📤 Sent GroupValueRead to %s%s",
@@ -1320,6 +1369,27 @@ class LuxorKNXGateway:
         """Record a timestamped event."""
         events.append(time.monotonic() if now is None else now)
 
+    def _record_traffic_event(self, direction: str, reason: str) -> None:
+        """Record a read/write event including its category and peak tracking."""
+        now = time.monotonic()
+        if direction == "read":
+            self._record_event(self._read_timestamps, now)
+            self._read_reason_timestamps[reason].append(now)
+            self._read_reason_totals[reason] += 1
+            self._prune_event_window(self._read_timestamps, 10, now)
+            self._prune_event_window(self._read_reason_timestamps[reason], 60, now)
+            self._max_reads_per_10_seconds = max(self._max_reads_per_10_seconds, len(self._read_timestamps))
+            return
+
+        self._record_event(self._write_timestamps, now)
+        self._write_reason_timestamps[reason].append(now)
+        self._write_reason_totals[reason] += 1
+        self._prune_event_window(self._write_timestamps, 10, now)
+        self._prune_event_window(self._write_reason_timestamps[reason], 60, now)
+        self._max_writes_per_10_seconds = max(
+            self._max_writes_per_10_seconds, len(self._write_timestamps)
+        )
+
     def _get_outgoing_backlog(self) -> int:
         """Return current outgoing backlog and track the running maximum."""
         try:
@@ -1358,9 +1428,76 @@ class LuxorKNXGateway:
         self._adaptive_cemi_error_count = error_count
         self._record_confirmation_error_delta(delta)
 
+    def _arm_recovery_read_protection(self, source: str) -> None:
+        """Enter a gentler traffic phase after reconnect/recovery work."""
+        now = time.monotonic()
+        self._read_quiet_until = max(self._read_quiet_until, now + RECOVERY_READ_QUIET_PERIOD)
+        self._cautious_reads_until = max(
+            self._cautious_reads_until, now + CAUTIOUS_TRAFFIC_PERIOD
+        )
+        self._update_traffic_mode(now)
+        _LOGGER.info(
+            "Traffic mode %s armed after %s (quiet %ss, cautious %ss)",
+            self._traffic_mode,
+            source,
+            RECOVERY_READ_QUIET_PERIOD,
+            CAUTIOUS_TRAFFIC_PERIOD,
+        )
+
+    def _update_traffic_mode(self, now: float | None = None) -> None:
+        """Update the externally visible traffic mode."""
+        current = time.monotonic() if now is None else now
+        if current < self._read_degraded_until:
+            self._traffic_mode = "protected"
+        elif current < self._read_quiet_until:
+            self._traffic_mode = "recovery"
+        elif current < self._cautious_reads_until or self._recent_confirmation_errors:
+            self._traffic_mode = "cautious"
+        else:
+            self._traffic_mode = "normal"
+
+    def _get_read_interval(self, is_initial: bool) -> float:
+        """Return the current pacing interval for outgoing read requests."""
+        interval = READ_REQUEST_INTERVAL
+        if is_initial:
+            interval = max(interval, INITIAL_READ_REQUEST_INTERVAL)
+        if self._traffic_mode in {"cautious", "recovery"}:
+            interval = max(interval, CAUTIOUS_READ_REQUEST_INTERVAL)
+        return interval
+
+    @staticmethod
+    def _window_reason_counts(events: defaultdict[str, deque[float]], now: float) -> dict[str, int]:
+        """Return counts per traffic reason for the last minute."""
+        counts: dict[str, int] = {}
+        for reason, timestamps in events.items():
+            cutoff = now - 60
+            while timestamps and timestamps[0] < cutoff:
+                timestamps.popleft()
+            if timestamps:
+                counts[reason] = len(timestamps)
+        return counts
+
+    def _capture_traffic_snapshot(self, event: str, **extra: Any) -> dict[str, Any]:
+        """Capture a diagnostic traffic snapshot around a disconnect/zombie event."""
+        now = time.monotonic()
+        self._update_traffic_mode(now)
+        snapshot = {
+            "event": event,
+            "traffic_mode": self._traffic_mode,
+            "reads_last_minute": self._window_reason_counts(self._read_reason_timestamps, now),
+            "writes_last_minute": self._window_reason_counts(self._write_reason_timestamps, now),
+            "current_outgoing_backlog": self._get_outgoing_backlog(),
+            "pending_initial_reads": self.pending_initial_reads,
+            "recent_confirmation_failures": len(self._recent_confirmation_errors),
+            "recovery_quiet_seconds_remaining": max(0, int(self._read_quiet_until - now)),
+        }
+        snapshot.update(extra)
+        return snapshot
+
     def get_traffic_stats(self) -> dict[str, Any]:
         """Return current traffic-mitigation telemetry for diagnostics."""
         now = time.monotonic()
+        self._update_traffic_mode(now)
         self._prune_event_window(self._read_timestamps, 60, now)
         self._prune_event_window(self._write_timestamps, 60, now)
         self._prune_event_window(self._disconnect_timestamps, 3600, now)
@@ -1370,22 +1507,40 @@ class LuxorKNXGateway:
         return {
             "reads_sent_total": self._reads_sent_total,
             "reads_last_minute": len(self._read_timestamps),
+            "reads_by_reason_total": dict(self._read_reason_totals),
+            "reads_last_minute_by_reason": self._window_reason_counts(
+                self._read_reason_timestamps, now
+            ),
             "writes_sent_total": self._writes_sent_total,
             "writes_last_minute": len(self._write_timestamps),
+            "writes_by_reason_total": dict(self._write_reason_totals),
+            "writes_last_minute_by_reason": self._window_reason_counts(
+                self._write_reason_timestamps, now
+            ),
             "reads_skipped_not_connected_total": self._reads_skipped_not_connected_total,
             "reads_skipped_backpressure_total": self._reads_skipped_backpressure_total,
             "reads_skipped_degraded_total": self._reads_skipped_degraded_total,
+            "reads_skipped_quiet_phase_total": self._reads_skipped_quiet_phase_total,
             "initial_reads_started_total": self._initial_reads_started_total,
+            "initial_reads_deduplicated_total": self._initial_reads_deduplicated_total,
             "pending_initial_reads": self.pending_initial_reads,
             "disconnects_last_hour": len(self._disconnect_timestamps),
             "zombie_recoveries_last_hour": len(self._zombie_recovery_timestamps),
             "recent_confirmation_failures": len(self._recent_confirmation_errors),
+            "traffic_mode": self._traffic_mode,
             "read_degraded": now < self._read_degraded_until,
             "read_degraded_seconds_remaining": max(0, int(self._read_degraded_until - now)),
-            "read_rate_limit_interval_seconds": READ_REQUEST_INTERVAL,
+            "recovery_quiet_seconds_remaining": max(0, int(self._read_quiet_until - now)),
+            "cautious_mode_seconds_remaining": max(0, int(self._cautious_reads_until - now)),
+            "read_rate_limit_interval_seconds": self._get_read_interval(False),
+            "initial_read_rate_limit_interval_seconds": self._get_read_interval(True),
+            "max_reads_per_10_seconds": self._max_reads_per_10_seconds,
+            "max_writes_per_10_seconds": self._max_writes_per_10_seconds,
             "current_outgoing_backlog": self._get_outgoing_backlog(),
             "max_outgoing_backlog": self._max_outgoing_backlog,
             "teardown_dropped_telegrams_total": self._teardown_dropped_telegrams_total,
+            "last_disconnect_snapshot": self._last_disconnect_snapshot,
+            "last_zombie_snapshot": self._last_zombie_snapshot,
         }
 
     async def async_batch_read_group_addresses(

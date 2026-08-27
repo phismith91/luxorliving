@@ -205,7 +205,7 @@ class LuxorClimate(ClimateEntity):
 
         # Request initial temperature state — wait up to 5s for KNX connection
         if self.knx_gateway.connected:
-            await self._update_temperature()
+            await self._update_temperature(is_initial=True)
 
     async def async_will_remove_from_hass(self) -> None:
         """Run when entity is removed from hass."""
@@ -244,16 +244,22 @@ class LuxorClimate(ClimateEntity):
         self._attr_hvac_mode = HVACMode.HEAT if value else HVACMode.COOL
         self.async_write_ha_state()
 
-    async def _update_temperature(self) -> None:
+    async def _update_temperature(self, is_initial: bool = False) -> None:
         """Request current and target temperatures from KNX bus."""
         if "Istwert" in self._datapoints:
-            await self.knx_gateway.async_read_group_address(self._datapoints["Istwert"])
+            await self.knx_gateway.async_read_group_address(
+                self._datapoints["Istwert"], is_initial=is_initial
+            )
 
         if self._target_dp_key in self._datapoints:
-            await self.knx_gateway.async_read_group_address(self._datapoints[self._target_dp_key])
+            await self.knx_gateway.async_read_group_address(
+                self._datapoints[self._target_dp_key], is_initial=is_initial
+            )
 
         if "WindowContact" in self._datapoints:
-            await self.knx_gateway.async_read_group_address(self._datapoints["WindowContact"])
+            await self.knx_gateway.async_read_group_address(
+                self._datapoints["WindowContact"], is_initial=is_initial
+            )
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""

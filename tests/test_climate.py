@@ -119,6 +119,23 @@ class TestLuxorClimate:
         mock_knx_gateway.async_read_group_address.assert_any_call(9222)
 
     @pytest.mark.asyncio
+    async def test_added_to_hass_marks_initial_reads(
+        self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
+    ):
+        entity = LuxorClimate(
+            coordinator=mock_coordinator,
+            knx_gateway=mock_knx_gateway,
+            mapped_entity=climate_mapped_entity,
+            entry_id="test_entry",
+        )
+
+        await entity.async_added_to_hass()
+
+        mock_knx_gateway.async_read_group_address.assert_any_call(8454, is_initial=True)
+        mock_knx_gateway.async_read_group_address.assert_any_call(8966, is_initial=True)
+        mock_knx_gateway.async_read_group_address.assert_any_call(9222, is_initial=True)
+
+    @pytest.mark.asyncio
     async def test_async_update_requests_coordinator_refresh_without_knx_reads(
         self, mock_coordinator, mock_knx_gateway, climate_mapped_entity
     ):
