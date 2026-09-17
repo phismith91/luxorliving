@@ -40,12 +40,13 @@ TEST_COUNT=$(python -m pytest tests/ --collect-only -q 2>&1 | grep "tests collec
 echo "   Actual tests: $TEST_COUNT"
 
 # Check for various test count patterns: "212 tests", "212/212", "Tests: 212"
+# Warning only — a stale badge is cosmetic, not release-blocking, and failing
+# CI on every test addition just forces a manual README bump each time.
 if grep -qE "($TEST_COUNT tests|$TEST_COUNT/$TEST_COUNT|Tests:? $TEST_COUNT)" README.md; then
     echo "   ✅ Test count $TEST_COUNT found in README.md"
 else
     echo "   ⚠️  Test count $TEST_COUNT NOT mentioned in README.md"
-    echo "      (Search for older count and update)"
-    ERRORS=$((ERRORS + 1))
+    echo "      (Search for older count and update — warning only, not blocking)"
 fi
 echo ""
 
