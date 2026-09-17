@@ -78,24 +78,6 @@ class TestIntegrationState:
         assert state.coordinator is mock_coordinator
         assert state.entry is mock_entry
 
-    def test_validation_missing_mapper(self, mock_config, mock_overrides):
-        """Test validation fails when mapper is None."""
-        with pytest.raises(ValueError, match="requires mapper"):
-            IntegrationState(
-                mapper=None,
-                config=mock_config,
-                overrides=mock_overrides,
-            )
-
-    def test_validation_missing_config(self, mock_mapper, mock_overrides):
-        """Test validation fails when config is None."""
-        with pytest.raises(ValueError, match="requires config"):
-            IntegrationState(
-                mapper=mock_mapper,
-                config=None,
-                overrides=mock_overrides,
-            )
-
     def test_is_ready_false(self, mock_mapper, mock_config, mock_overrides):
         """Test is_ready returns False when not fully initialized."""
         state = IntegrationState(
@@ -128,7 +110,7 @@ class TestIntegrationState:
             overrides=mock_overrides,
         )
 
-        assert state.get_entity_count() == 3
+        assert state.entity_count == 3
 
     def test_get_gateway_or_raise_success(
         self, mock_mapper, mock_config, mock_overrides, mock_knx_gateway

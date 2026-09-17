@@ -7,7 +7,6 @@ import hashlib
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Union
 
 try:
     from defusedxml import ElementTree as ET
@@ -49,7 +48,7 @@ class LXPCache:
             max_size: Maximum number of cached projects
             ttl_seconds: Time-to-live for cache entries in seconds
         """
-        self._cache: Dict[str, CacheEntry] = {}
+        self._cache: dict[str, CacheEntry] = {}
         self._max_size = max_size
         self._ttl_seconds = ttl_seconds
         self._hits = 0
@@ -159,7 +158,7 @@ class LXPCache:
 
         return project
 
-    def get_stats(self) -> Dict[str, Union[int, float]]:
+    def get_stats(self) -> dict[str, int | float]:
         """Get cache statistics."""
         total_accesses = self._hits + self._misses
         hit_rate = (self._hits / total_accesses * 100) if total_accesses > 0 else 0
@@ -282,7 +281,7 @@ class LXPParser:
         return await _lxp_cache.get_or_parse(Path(file_path), include_unaffected)
 
     @classmethod
-    def get_cache_stats(cls) -> Dict[str, Union[int, float]]:
+    def get_cache_stats(cls) -> dict[str, int | float]:
         """Get LXP cache statistics."""
         return _lxp_cache.get_stats()
 
@@ -572,6 +571,6 @@ class LXPParser:
 _lxp_cache = LXPCache(max_size=10, ttl_seconds=3600)
 
 
-def get_lxp_cache_stats() -> Dict[str, Union[int, float]]:
+def get_lxp_cache_stats() -> dict[str, int | float]:
     """Get global LXP cache statistics for health monitoring."""
     return _lxp_cache.get_stats()

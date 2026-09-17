@@ -10,6 +10,7 @@ from typing import Any
 from homeassistant.const import Platform
 
 from .mapped_entity import MappedEntity
+from .platform_detector import PlatformDetector
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,34 +43,7 @@ class OverrideHandler:
         handler.apply_overrides(entities)
     """
 
-    # Role to unit mapping (copied from PlatformDetector for now)
-    ROLE_TO_UNIT = {
-        "Temperature": "°C",
-        "Temperatur": "°C",
-        "Humidity": "%",
-        "Luftfeuchte": "%",
-        "Pressure": "hPa",
-        "Luftdruck": "hPa",
-        "CO2": "ppm",
-        "Brightness": "lx",
-        "Helligkeit": "lx",
-        "WindSpeed": "m/s",
-        "Windgeschwindigkeit": "km/h",
-        "RainVolume": "mm",
-    }
-
-    # Role to device class mapping (copied from PlatformDetector for now)
-    ROLE_TO_DEVICE_CLASS = {
-        "Temperature": "temperature",
-        "Temperatur": "temperature",
-        "Humidity": "humidity",
-        "Luftfeuchte": "humidity",
-        "Pressure": "pressure",
-        "Luftdruck": "pressure",
-        "Brightness": "illuminance",
-        "Helligkeit": "illuminance",
-        "RainVolume": "precipitation",
-    }
+    _detector = PlatformDetector()
 
     def __init__(self, overrides: dict[str, Any]) -> None:
         """Initialize OverrideHandler with override configuration.
@@ -113,12 +87,8 @@ class OverrideHandler:
 
                 # Map sensor role
                 # Allow override of unit/device_class
-                unit = ov.get("unit") if ov.get("unit") else self.ROLE_TO_UNIT.get(role)
-                device_class = (
-                    ov.get("device_class")
-                    if ov.get("device_class")
-                    else self.ROLE_TO_DEVICE_CLASS.get(role)
-                )
+                unit = ov.get("unit") or self._detector.get_unit(role)
+                device_class = ov.get("device_class") or self._detector.get_device_class(role)
 
                 entity = MappedEntity(
                     platform=Platform.SENSOR,

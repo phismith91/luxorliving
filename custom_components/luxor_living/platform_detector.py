@@ -8,8 +8,6 @@ Extracted from EntityMapper to follow Single Responsibility Principle.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from homeassistant.const import Platform
 
 
@@ -101,7 +99,7 @@ class PlatformDetector:
         "AirQuality": None,
     }
 
-    def detect_platform(self, role: str) -> Optional[Platform]:
+    def detect_platform(self, role: str) -> Platform | None:
         """Detect Home Assistant platform from KNX datapoint role.
 
         Args:
@@ -126,7 +124,7 @@ class PlatformDetector:
         """
         return self.ROLE_TO_PLATFORM.get(role)
 
-    def get_unit(self, role: str) -> Optional[str]:
+    def get_unit(self, role: str) -> str | None:
         """Get unit of measurement for sensor role.
 
         Args:
@@ -146,7 +144,7 @@ class PlatformDetector:
         """
         return self.ROLE_TO_UNIT.get(role)
 
-    def get_device_class(self, role: str) -> Optional[str]:
+    def get_device_class(self, role: str) -> str | None:
         """Get Home Assistant device class for sensor role.
 
         Args:

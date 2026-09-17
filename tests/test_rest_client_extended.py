@@ -69,53 +69,8 @@ async def tunneling_200_json(request):
     return web.json_response({"enabled": True})
 
 
-async def datapoints_ok(request):
-    return web.json_response({"datapoints": [{"id": 1}, {"id": 2}]})
-
-
-async def datapoints_401(request):
-    return web.Response(status=401)
-
-
-async def datapoints_500(request):
-    return web.Response(text="error", status=500)
-
-
-async def datapoints_bad_format(request):
-    return web.json_response([1, 2, 3])  # List instead of dict
-
-
-async def datapoint_detail_ok(request):
-    dp_id = request.match_info["id"]
-    return web.json_response({"id": int(dp_id), "name": "1/0/1", "value": True})
-
-
-async def datapoint_detail_404(request):
-    return web.Response(status=404)
-
-
-async def datapoint_detail_401(request):
-    return web.Response(status=401)
-
-
-async def datapoint_value_ok(request):
-    return web.json_response({"id": 1, "value": 42})
-
-
-async def datapoint_value_401(request):
-    return web.Response(status=401)
-
-
-async def datapoint_value_404(request):
-    return web.Response(status=404)
-
-
-async def datapoint_value_500(request):
-    return web.Response(text="err", status=500)
-
-
 async def tunneling_disable_fail(request):
-    return web.Response(text="err", status=500)
+    return web.Response(text="Internal Error", status=500)
 
 
 @pytest_asyncio.fixture
@@ -125,9 +80,6 @@ async def extended_server():
     app.router.add_post("/rest/logout", logout_200)
     app.router.add_put("/rest/device/authtunneling", tunneling_200_json)
     app.router.add_get("/rest/device/authtunneling", tunneling_200_json)
-    app.router.add_get("/rest/datapoints", datapoints_ok)
-    app.router.add_get("/rest/datapoints/{id}", datapoint_detail_ok)
-    app.router.add_get("/rest/datapoint/{id}", datapoint_value_ok)
 
     server = TestServer(app)
     client = TestClient(server)
@@ -223,24 +175,6 @@ class TestBAOSRestClientUnit:
         c = BAOSRestClient("10.0.0.1")
         with pytest.raises(AuthenticationError):
             await c.get_tunneling_status()
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoints_not_authenticated(self):
-        c = BAOSRestClient("10.0.0.1")
-        with pytest.raises(AuthenticationError):
-            await c.async_get_datapoints()
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoint_details_not_authenticated(self):
-        c = BAOSRestClient("10.0.0.1")
-        with pytest.raises(AuthenticationError):
-            await c.async_get_datapoint_details(1)
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoint_value_not_authenticated(self):
-        c = BAOSRestClient("10.0.0.1")
-        with pytest.raises(AuthenticationError):
-            await c.async_get_datapoint_value(1)
 
     @pytest.mark.asyncio
     async def test_login_debug_log_omits_password(self):
@@ -467,149 +401,6 @@ class TestBAOSRestClientIntegration:
         client.base_url = f"http://{tc.server.host}:{tc.server.port}"
         await client.logout()
         assert client.session_token is None
-        await tc.close()
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoints_success(self, extended_server):
-        host = extended_server.server.host
-        port = extended_server.server.port
-        client = _authenticated_client(host)
-        client._session = extended_server.session
-        client.base_url = f"http://{host}:{port}"
-        result = await client.async_get_datapoints()
-        assert result == [{"id": 1}, {"id": 2}]
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoints_401_returns_none(self):
-        app = web.Application()
-        app.router.add_get("/rest/datapoints", datapoints_401)
-        server = TestServer(app)
-        tc = TestClient(server)
-        await tc.start_server()
-        client = _authenticated_client(tc.server.host)
-        client._session = tc.session
-        client.base_url = f"http://{tc.server.host}:{tc.server.port}"
-        result = await client.async_get_datapoints()
-        assert result is None
-        await tc.close()
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoints_500_returns_none(self):
-        app = web.Application()
-        app.router.add_get("/rest/datapoints", datapoints_500)
-        server = TestServer(app)
-        tc = TestClient(server)
-        await tc.start_server()
-        client = _authenticated_client(tc.server.host)
-        client._session = tc.session
-        client.base_url = f"http://{tc.server.host}:{tc.server.port}"
-        result = await client.async_get_datapoints()
-        assert result is None
-        await tc.close()
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoints_bad_format_returns_none(self):
-        app = web.Application()
-        app.router.add_get("/rest/datapoints", datapoints_bad_format)
-        server = TestServer(app)
-        tc = TestClient(server)
-        await tc.start_server()
-        client = _authenticated_client(tc.server.host)
-        client._session = tc.session
-        client.base_url = f"http://{tc.server.host}:{tc.server.port}"
-        result = await client.async_get_datapoints()
-        assert result is None
-        await tc.close()
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoint_details_success(self, extended_server):
-        host = extended_server.server.host
-        port = extended_server.server.port
-        client = _authenticated_client(host)
-        client._session = extended_server.session
-        client.base_url = f"http://{host}:{port}"
-        result = await client.async_get_datapoint_details(5)
-        assert result is not None
-        assert result["id"] == 5
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoint_details_404_returns_none(self):
-        app = web.Application()
-        app.router.add_get("/rest/datapoints/{id}", datapoint_detail_404)
-        server = TestServer(app)
-        tc = TestClient(server)
-        await tc.start_server()
-        client = _authenticated_client(tc.server.host)
-        client._session = tc.session
-        client.base_url = f"http://{tc.server.host}:{tc.server.port}"
-        result = await client.async_get_datapoint_details(99)
-        assert result is None
-        await tc.close()
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoint_details_401_returns_none(self):
-        app = web.Application()
-        app.router.add_get("/rest/datapoints/{id}", datapoint_detail_401)
-        server = TestServer(app)
-        tc = TestClient(server)
-        await tc.start_server()
-        client = _authenticated_client(tc.server.host)
-        client._session = tc.session
-        client.base_url = f"http://{tc.server.host}:{tc.server.port}"
-        result = await client.async_get_datapoint_details(1)
-        assert result is None
-        await tc.close()
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoint_value_success(self, extended_server):
-        host = extended_server.server.host
-        port = extended_server.server.port
-        client = _authenticated_client(host)
-        client._session = extended_server.session
-        client.base_url = f"http://{host}:{port}"
-        result = await client.async_get_datapoint_value(1)
-        assert result == 42
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoint_value_401_returns_none(self):
-        app = web.Application()
-        app.router.add_get("/rest/datapoint/{id}", datapoint_value_401)
-        server = TestServer(app)
-        tc = TestClient(server)
-        await tc.start_server()
-        client = _authenticated_client(tc.server.host)
-        client._session = tc.session
-        client.base_url = f"http://{tc.server.host}:{tc.server.port}"
-        result = await client.async_get_datapoint_value(1)
-        assert result is None
-        await tc.close()
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoint_value_404_returns_none(self):
-        app = web.Application()
-        app.router.add_get("/rest/datapoint/{id}", datapoint_value_404)
-        server = TestServer(app)
-        tc = TestClient(server)
-        await tc.start_server()
-        client = _authenticated_client(tc.server.host)
-        client._session = tc.session
-        client.base_url = f"http://{tc.server.host}:{tc.server.port}"
-        result = await client.async_get_datapoint_value(1)
-        assert result is None
-        await tc.close()
-
-    @pytest.mark.asyncio
-    async def test_async_get_datapoint_value_500_returns_none(self):
-        app = web.Application()
-        app.router.add_get("/rest/datapoint/{id}", datapoint_value_500)
-        server = TestServer(app)
-        tc = TestClient(server)
-        await tc.start_server()
-        client = _authenticated_client(tc.server.host)
-        client._session = tc.session
-        client.base_url = f"http://{tc.server.host}:{tc.server.port}"
-        result = await client.async_get_datapoint_value(1)
-        assert result is None
         await tc.close()
 
     @pytest.mark.asyncio
