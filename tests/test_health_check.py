@@ -36,6 +36,10 @@ class TestLuxorLivingHealthView:
         mock_gateway.is_connected.return_value = True
         mock_gateway.simulation_mode = False
         mock_gateway._known_addresses = {"1/1/1", "1/1/2"}
+        mock_gateway.get_traffic_stats.return_value = {
+            "reads_last_minute": 2,
+            "writes_last_minute": 1,
+        }
         hass.data["luxor_living"]["entry_1"]["knx_gateway"] = mock_gateway
 
         return hass
@@ -93,6 +97,7 @@ class TestLuxorLivingHealthView:
         assert entry["entity_count"] == 2
         assert entry["discovered_sensors"] == 2
         assert entry["known_addresses"] == 2
+        assert entry["traffic"]["reads_last_minute"] == 2
 
     @pytest.mark.asyncio
     async def test_health_endpoint_no_entries(self, mock_hass):

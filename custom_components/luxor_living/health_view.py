@@ -102,6 +102,11 @@ class LuxorLivingHealthView(HomeAssistantView):
                     # Get known addresses count
                     if hasattr(knx_gateway, "_known_addresses"):
                         entry_health["known_addresses"] = len(knx_gateway._known_addresses)
+                    stats_getter = getattr(knx_gateway, "get_traffic_stats", None)
+                    if callable(stats_getter):
+                        traffic = stats_getter()
+                        if isinstance(traffic, dict):
+                            entry_health["traffic"] = traffic
 
                 health_data["entries"][entry_id] = entry_health
 
