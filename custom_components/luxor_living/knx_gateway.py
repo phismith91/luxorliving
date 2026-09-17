@@ -32,10 +32,10 @@ from .const import (
     READ_DEGRADE_ERROR_THRESHOLD,
     READ_DEGRADE_WINDOW,
     READ_REQUEST_INTERVAL,
-    RECOVERY_READ_QUIET_PERIOD,
     RECONNECT_COOLDOWN_SECS,
     RECONNECT_FAILURE_THRESHOLD,
     RECONNECT_FAILURE_WINDOW,
+    RECOVERY_READ_QUIET_PERIOD,
     SESSION_REFRESH_INTERVAL,
     XKNX_INTERFACE_STOP_TIMEOUT,
     XKNX_STOP_TIMEOUT,
@@ -1000,7 +1000,11 @@ class LuxorKNXGateway:
                             self._last_not_connected_log_at = now
                         return False
 
-                    if is_initial and group_address in self._initial_read_pending and not initial_reserved:
+                    if (
+                        is_initial
+                        and group_address in self._initial_read_pending
+                        and not initial_reserved
+                    ):
                         self._initial_reads_deduplicated_total += 1
                         _LOGGER.debug(
                             "Initial read for %s already pending — skipping duplicate",
@@ -1458,9 +1462,7 @@ class LuxorKNXGateway:
         """Enter a gentler traffic phase after reconnect/recovery work."""
         now = time.monotonic()
         self._read_quiet_until = max(self._read_quiet_until, now + RECOVERY_READ_QUIET_PERIOD)
-        self._cautious_reads_until = max(
-            self._cautious_reads_until, now + CAUTIOUS_TRAFFIC_PERIOD
-        )
+        self._cautious_reads_until = max(self._cautious_reads_until, now + CAUTIOUS_TRAFFIC_PERIOD)
         self._update_traffic_mode(now)
         _LOGGER.info(
             "Traffic mode %s armed after %s (quiet %ss, cautious %ss)",
@@ -1521,7 +1523,9 @@ class LuxorKNXGateway:
             "event": event,
             "traffic_mode": self._traffic_mode,
             "reads_last_minute": self._window_reason_counts(self._read_reason_timestamps, now - 60),
-            "writes_last_minute": self._window_reason_counts(self._write_reason_timestamps, now - 60),
+            "writes_last_minute": self._window_reason_counts(
+                self._write_reason_timestamps, now - 60
+            ),
             "current_outgoing_backlog": self._get_outgoing_backlog(),
             "pending_initial_reads": self.pending_initial_reads,
             "recent_confirmation_failures": len(self._recent_confirmation_errors),

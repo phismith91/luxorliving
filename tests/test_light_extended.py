@@ -368,9 +368,7 @@ class TestDimmableLight:
 
     @pytest.mark.asyncio
     async def test_async_added_prefers_dim_status_over_dim_control(self):
-        entity, gateway = _make_dimmable(
-            {"OnOff": "1/0/0", "Dimmen%": "1/0/1", "Status%": "1/0/3"}
-        )
+        entity, gateway = _make_dimmable({"OnOff": "1/0/0", "Dimmen%": "1/0/1", "Status%": "1/0/3"})
         entity.async_on_remove = MagicMock()
         await entity.async_added_to_hass()
         calls = [c.args[0] for c in gateway.async_read_group_address.await_args_list]

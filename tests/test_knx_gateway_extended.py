@@ -301,9 +301,7 @@ class TestReadGroupAddress:
 
         with (
             patch("custom_components.luxor_living.knx_gateway.READ_REQUEST_INTERVAL", 0.05),
-            patch(
-                "custom_components.luxor_living.knx_gateway.INITIAL_READ_REQUEST_INTERVAL", 0.2
-            ),
+            patch("custom_components.luxor_living.knx_gateway.INITIAL_READ_REQUEST_INTERVAL", 0.2),
             patch(
                 "custom_components.luxor_living.knx_gateway.asyncio.sleep", new=AsyncMock()
             ) as sleep,
