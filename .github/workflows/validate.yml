@@ -1,7 +1,10 @@
 name: Validate
 
+# push limited to main — an unrestricted push trigger alongside pull_request
+# ran hacs/hassfest twice per PR-branch push.
 on:
   push:
+    branches: [main]
   pull_request:
   schedule:
     - cron: "0 0 * * *"
