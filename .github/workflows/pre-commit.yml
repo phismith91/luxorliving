@@ -1,8 +1,8 @@
 name: Pre-commit checks
 
+# pull_request only — a push trigger alongside it ran every check twice per
+# PR-branch push (each push also fires the PR "synchronize" event).
 on:
-  push:
-    branches-ignore: [main]
   pull_request:
     types: [opened, synchronize, reopened]
 

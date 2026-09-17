@@ -51,6 +51,16 @@ Critical Rules:
 - **All tests must pass locally** before pushing
 - **Use pytest markers** appropriately (not enable_socket, asyncio)
 - **Maintain test isolation** - no shared state between tests
+- **`gh pr checks <N>` on a Draft PR hides real results** - the underlying
+  workflows (Run Tests, Release Checks, validate-hacs/hassfest) still trigger
+  and run against every commit, but GitHub omits their results from the PR's
+  checks view while it's a Draft, so a Draft can sit "green" (only
+  Analyze/CodeQL visible) while Run Tests is actually red against the current
+  HEAD. Verify the true state with
+  `gh api repos/<owner>/<repo>/commits/<sha>/check-runs` before trusting a Draft
+  PR looks clean, and always re-run the full suite locally (`pytest tests/`)
+  once before marking a PR ready for review — found on #212 (2026-09-17): a
+  3-week-old Draft had two failing tests hidden this way.
 
 Notes:
 
