@@ -52,6 +52,11 @@ def mock_hass_data():
     mock_gateway.simulation_mode = False
     mock_gateway.host = "192.168.1.100"
     mock_gateway._datapoint_mapping = {"1/2/3": "OnOff", "1/2/4": "Dimmen%"}
+    mock_gateway.get_traffic_stats.return_value = {
+        "reads_last_minute": 2,
+        "writes_last_minute": 1,
+        "disconnects_last_hour": 0,
+    }
 
     # Mock Mapper with entities
     mock_mapper = MagicMock(spec=EntityMapper)
@@ -259,6 +264,7 @@ async def test_diagnostics_coordinator(mock_config_entry, mock_hass_data):
     assert diag["coordinator"]["last_exception"] is None
     assert diag["coordinator"]["update_interval_seconds"] == 30.0
     assert diag["coordinator"]["scan_interval_configured"] == 30
+    assert diag["knx_gateway"]["traffic"]["reads_last_minute"] == 2
 
 
 @pytest.mark.asyncio
