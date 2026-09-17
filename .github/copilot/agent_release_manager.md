@@ -67,6 +67,17 @@ gh pr checks $PR_NUMBER
 # Required: Pre-commit checks | Run Tests | validate-hacs | validate-hassfest
 ```
 
+**If the PR is (or was) a Draft, don't trust this list alone** — GitHub hides
+Run Tests / Release Checks / validate-hacs / validate-hassfest results from
+`gh pr checks` while a PR is a Draft, even though those workflows already ran
+against every commit. Cross-check the actual HEAD commit before merging:
+
+```bash
+SHA=$(gh pr view $PR_NUMBER --json headRefOid -q .headRefOid)
+gh api repos/phismith91/luxorliving/commits/$SHA/check-runs \
+  --jq '.check_runs[] | "\(.name)\t\(.conclusion)"'
+```
+
 Poll every 60 seconds. If any check fails, read the log:
 
 ```bash

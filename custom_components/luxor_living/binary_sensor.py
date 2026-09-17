@@ -128,7 +128,7 @@ class LuxorLivingBinarySensor(LuxorLivingEntity, BinarySensorEntity):
         if knx_gateway:
             self._knx_listener_addr = self._address_status
             knx_gateway.register_listener(self._address_status, self._handle_knx_state)
-            await knx_gateway.async_read_group_address(self._address_status)
+            await knx_gateway.async_read_group_address(self._address_status, is_initial=True)
 
     async def async_will_remove_from_hass(self) -> None:
         """Unregister KNX listener on removal."""
