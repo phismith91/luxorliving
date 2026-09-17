@@ -377,7 +377,7 @@ class TestUpdatePosition:
             ]
         )
         await entity._update_position()
-        gateway.async_read_group_address.assert_awaited_with(202)
+        gateway.async_read_group_address.assert_awaited_with(202, is_initial=False)
 
     @pytest.mark.asyncio
     async def test_position_set_from_callback(self):

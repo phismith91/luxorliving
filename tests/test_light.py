@@ -119,8 +119,8 @@ class TestLuxorLivingLight:
 
         await light.async_added_to_hass()
 
-        # Request current state from BOTH addresses
-        assert mock_knx_gateway.async_read_group_address.call_count == 2
+        # Status address is preferred; control address is only a fallback
+        mock_knx_gateway.async_read_group_address.assert_awaited_once_with("1/2/4", is_initial=True)
 
     @pytest.mark.asyncio
     async def test_turn_on(
