@@ -36,10 +36,20 @@ def fetch_releases() -> list[dict]:
         return json.load(resp)
 
 
+def defuse_mentions(line: str) -> str:
+    """Break GitHub @mention autolinking so copied lines don't ping HA core devs.
+
+    HA's release notes attribute changes as `([@farmio] - [#178598])`; copied
+    verbatim into one of our issues, GitHub still notifies @farmio even though
+    the `[...]` reference link is dangling here (#214).
+    """
+    return re.sub(r"@(?=\w)", "@​", line)
+
+
 def matching_lines(body: str) -> list[str]:
     pattern = re.compile("|".join(re.escape(k) for k in KEYWORDS), re.IGNORECASE)
     lines = (line.strip() for line in body.splitlines())
-    return [line.lstrip("- ") for line in lines if line and pattern.search(line)]
+    return [defuse_mentions(line.lstrip("- ")) for line in lines if line and pattern.search(line)]
 
 
 def main() -> int:
