@@ -109,7 +109,6 @@ The gateway password is stored in HA's encrypted config-entry storage — it is 
 | **KNX-RF wireless devices** | Parsed, but RF-only devices without wired group addresses may not produce entities. |
 | **Energy metering actuators** | Not tested. |
 | **LXP reload without HA restart** | Use the *Reload integration* service action. Changing the LXP file requires a reconfigure flow (no entities are removed from the registry automatically). |
-| **No zeroconf auto-discovery** | Gateway must be configured manually; IP address is not auto-discovered at setup time. |
 
 ---
 
