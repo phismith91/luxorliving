@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.2.2-rc.5](https://github.com/phismith91/luxorliving/releases/tag/v1.2.2-rc.5) — pre-release: breaks the zombie-tunnel reconnect loop (#201) by pacing KNX reads and giving the tunnel a real quiet window after every reconnect, instead of hammering it right away. Builds on the stable [v1.2.1](https://github.com/phismith91/luxorliving/releases/tag/v1.2.1) release.
+**Current release:** [v1.2.2](https://github.com/phismith91/luxorliving/releases/tag/v1.2.2) — breaks the zombie-tunnel reconnect loop (#201) by pacing KNX reads and giving the tunnel a real quiet window after every reconnect, instead of hammering it right away. Also fixes inverted cover tilt position (#197). Supersedes the stable [v1.2.1](https://github.com/phismith91/luxorliving/releases/tag/v1.2.1) release.
 <!-- RELEASE_NOTES_END -->
 
 ---
