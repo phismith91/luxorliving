@@ -1,6 +1,7 @@
 # Release Notes — v1.2.2
 
-Pre-release (`v1.2.2-rc.4`). Full detail per change in [CHANGELOG.md](../../CHANGELOG.md#122---2026-08-02).
+Stable release, 2026-09-29. Supersedes `v1.2.2-rc.1` through `rc.5` and all
+pre-1.2.2 pre-releases. Full detail per change in [CHANGELOG.md](../../CHANGELOG.md#122---2026-09-29).
 
 ## Fixed
 
