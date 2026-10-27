@@ -318,6 +318,9 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
         """
         super().__init__(coordinator, entry, mapped_entity, knx_gateway)
         self._attr_brightness = 255
+        # Last non-zero brightness. Kept separately because turning the light off makes
+        # the actuator report Status% = 0, which overwrites _attr_brightness.
+        self._last_brightness: int | None = None
 
         # Additional datapoints for dimming
         self._address_dim: str | None = mapped_entity.datapoints.get("Dimmen%")
@@ -382,6 +385,8 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
             if isinstance(value, (int, float)):
                 self._attr_brightness = int(value * 255 / 100)
                 self._attr_is_on = self._attr_brightness > 0
+                if self._attr_brightness > 0:
+                    self._last_brightness = self._attr_brightness
                 self.async_write_ha_state()
                 _LOGGER.debug(
                     "Updated %s brightness: %d%%",
@@ -392,14 +397,28 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on.
 
+        Without an explicit brightness the last known non-zero brightness is restored.
+        If none is known yet (e.g. the light has been off since HA started), the light
+        is switched via OnOff so the actuator applies its own switch-on value instead
+        of forcing 100%.
+
         Args:
             **kwargs: Additional keyword arguments (brightness, etc.)
         """
+        brightness = kwargs.get(ATTR_BRIGHTNESS)
+        if brightness is None:
+            brightness = self._last_brightness
+
+        if brightness is None and self._address_on:
+            await super().async_turn_on(**kwargs)
+            return
+
         self._raise_if_unavailable()
         if self._is_rate_limited():
             return
 
-        brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
+        if brightness is None:
+            brightness = 255
 
         # Send brightness value if dimming address exists
         if self._address_dim:
@@ -414,6 +433,8 @@ class LuxorLivingDimmableLight(LuxorLivingLight):
             if success:
                 self._attr_is_on = True
                 self._attr_brightness = brightness
+                if brightness > 0:
+                    self._last_brightness = brightness
                 self.async_write_ha_state()
         else:
             # Fallback to simple on/off

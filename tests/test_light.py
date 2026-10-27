@@ -738,3 +738,104 @@ class TestLightListenerRegistrationTiming:
             mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
         )
         mock_knx_gateway.register_listener.assert_not_called()
+
+
+@pytest.mark.smoke
+class TestDimmerRestoreBrightness:
+    """turn_on without brightness must restore the last level, not force 100%."""
+
+    @pytest.mark.asyncio
+    async def test_turn_on_restores_brightness_after_status_zero(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+        # Actuator reports 40%, then 0% after being switched off
+        light._handle_brightness_update("1/2/7", 40)
+        light._handle_brightness_update("1/2/7", 0)
+
+        await light.async_turn_on()
+
+        mock_knx_gateway.async_send_telegram.assert_awaited_once_with("1/2/7", 40, "percent")
+        assert light.brightness == int(40 * 255 / 100)
+        assert light.is_on is True
+
+    @pytest.mark.asyncio
+    async def test_turn_on_restores_last_commanded_brightness(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+        await light.async_turn_on(brightness=128)
+        light._handle_brightness_update("1/2/7", 0)
+        mock_knx_gateway.async_send_telegram.reset_mock()
+
+        await light.async_turn_on()
+
+        mock_knx_gateway.async_send_telegram.assert_awaited_once_with(
+            "1/2/7", round(128 * 100 / 255), "percent"
+        )
+
+    @pytest.mark.asyncio
+    async def test_turn_on_without_known_brightness_uses_onoff(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        """Actuator applies its own switch-on value instead of a forced 100%."""
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+
+        await light.async_turn_on()
+
+        mock_knx_gateway.async_send_telegram.assert_awaited_once_with("1/2/5", True, "binary")
+        assert light.is_on is True
+
+    @pytest.mark.asyncio
+    async def test_turn_on_without_known_brightness_or_onoff_sends_100(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        mock_dimmable_entity.datapoints = {"Dimmen%": "1/2/7"}
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+
+        await light.async_turn_on()
+
+        mock_knx_gateway.async_send_telegram.assert_awaited_once_with("1/2/7", 100, "percent")
+
+    @pytest.mark.asyncio
+    async def test_explicit_brightness_overrides_last_brightness(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+        light._handle_brightness_update("1/2/7", 40)
+
+        await light.async_turn_on(brightness=255)
+
+        mock_knx_gateway.async_send_telegram.assert_awaited_once_with("1/2/7", 100, "percent")
+
+    @pytest.mark.asyncio
+    async def test_turn_on_without_known_brightness_raises_when_unavailable(
+        self, mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+    ):
+        from homeassistant.exceptions import HomeAssistantError
+
+        light = LuxorLivingDimmableLight(
+            mock_coordinator, mock_config_entry, mock_dimmable_entity, mock_knx_gateway
+        )
+        light.async_write_ha_state = Mock()
+        light._raise_if_unavailable = Mock(side_effect=HomeAssistantError("unavailable"))
+
+        with pytest.raises(HomeAssistantError):
+            await light.async_turn_on()
+
+        mock_knx_gateway.async_send_telegram.assert_not_called()
