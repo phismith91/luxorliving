@@ -5,7 +5,7 @@
 [![Codecov](https://codecov.io/gh/phismith91/luxorliving/branch/main/graph/badge.svg)](https://codecov.io/gh/phismith91/luxorliving)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/phismith91/luxorliving?include_prereleases)](https://github.com/phismith91/luxorliving/releases)
 [![License](https://img.shields.io/github/license/phismith91/luxorliving.svg)](https://github.com/phismith91/luxorliving/blob/main/LICENSE)
-[![Tests: 1051](https://img.shields.io/badge/Tests-1051%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
+[![Tests: 1057](https://img.shields.io/badge/Tests-1057%20passing-brightgreen.svg)](https://github.com/phismith91/luxorliving/blob/main/docs/TESTS.md)
 
 Home Assistant custom integration for **Theben LUXORliving KNX** systems. Connects via the BAOS 777 IP1 gateway using a LXP project file for automatic entity discovery — lights, covers, climate, sensors and binary sensors, all created without any manual YAML.
 
@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current release:** [v1.2.2](https://github.com/phismith91/luxorliving/releases/tag/v1.2.2) — breaks the zombie-tunnel reconnect loop (#201) by pacing KNX reads and giving the tunnel a real quiet window after every reconnect, instead of hammering it right away. Also fixes inverted cover tilt position (#197). Supersedes the stable [v1.2.1](https://github.com/phismith91/luxorliving/releases/tag/v1.2.1) release.
+**Current pre-release:** [v1.2.3-rc.1](https://github.com/phismith91/luxorliving/releases/tag/v1.2.3-rc.1) — fixes lights being switched off after a Home Assistant restart (#217) and restores a dimmer's previous brightness when it is switched on again (#237). The latest stable release is [v1.2.2](https://github.com/phismith91/luxorliving/releases/tag/v1.2.2).
 <!-- RELEASE_NOTES_END -->
 
 ---
