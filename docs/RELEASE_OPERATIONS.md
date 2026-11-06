@@ -172,7 +172,7 @@ Usage:
 
 - Release flow with remote verification (optional):
   ```bash
-  ./scripts/release_automation.sh --remote phil@100.97.159.88
+  ./scripts/release_automation.sh --remote user@<HA_HOST>
   ```
 
 What the script enforces:
@@ -285,7 +285,7 @@ ssh -F /dev/null YOUR_USER@YOUR_HA_IP \
 
 ```bash
 # ✅ Alle Tests müssen passing sein
-cd /home/phil/gitlab_github/luxorliving
+cd <REPO_DIR>
 python -m pytest tests/ -q --tb=short
 # EXPECTED: 207 passed in ~3s
 ```
@@ -726,7 +726,7 @@ be at zip root, NOT in nested subdirectory.
 
 ```bash
 # From repo root - creates nested structure!
-cd /home/phil/gitlab_github/luxorliving
+cd <REPO_DIR>
 zip -r /tmp/luxor_living.zip custom_components/luxor_living
 # Result: zip contains custom_components/luxor_living/* → HACS creates nested dir!
 ```
@@ -735,7 +735,7 @@ zip -r /tmp/luxor_living.zip custom_components/luxor_living
 
 ```bash
 # ALWAYS build from integration directory!
-cd /home/phil/gitlab_github/luxorliving/custom_components/luxor_living
+cd <REPO_DIR>/custom_components/luxor_living
 
 # Create zip with files at root
 zip -r /tmp/luxor_living-v0.6.0.zip . \

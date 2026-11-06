@@ -9,6 +9,7 @@ from collections import defaultdict, deque
 from datetime import datetime
 from typing import Any, Callable, cast
 
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util.ssl import SSLCipherList
@@ -54,6 +55,39 @@ DISCOVERY_MIN_SAMPLES = 3  # Minimum stable readings before creating sensor
 DISCOVERY_VALUE_TOLERANCE = 0.5  # Maximum value deviation for stability
 DISCOVERY_MAX_CANDIDATES_PER_ADDRESS = 20  # Prevent memory leak: max samples per address
 DISCOVERY_DEBOUNCE_DELAY = 2.0  # Seconds to wait before triggering reload (batch discoveries)
+
+
+# Command roles an actuator listens on. A read on an address that several
+# actuators share as command target makes them all answer, and some actuators
+# treat that answer as a new command (#217: every light switched off).
+_COMMAND_ROLES = frozenset({"OnOff", "SchaltenOnOff", "Dimmen%", "UpDown", "StepStop"})
+# Central functions: dangerous to read even if only one actuator is mapped.
+_CENTRAL_ROLES = frozenset({"ZentralAus", "Panik"})
+
+
+def compute_no_read_addresses(entities: Any) -> set[str]:
+    """Return group addresses that must never be read.
+
+    That is every central-function address plus every command address shared by
+    two or more actuators (group switches). Sensor entities are ignored, they only
+    listen. An actuator's own, unshared command address stays readable because
+    lights without a status address fall back to it for their initial state.
+    """
+    users: dict[str, set[str]] = defaultdict(set)
+    blocked: set[str] = set()
+    for entity in entities:
+        if entity.platform == Platform.BINARY_SENSOR:
+            continue
+        for role, address in entity.datapoints.items():
+            if not isinstance(address, int):
+                continue
+            ga = str(GroupAddress(address))
+            if role in _CENTRAL_ROLES:
+                blocked.add(ga)
+            elif role in _COMMAND_ROLES or role.endswith("/OnOff"):
+                users[ga].add(entity.unique_id)
+    blocked.update(ga for ga, owners in users.items() if len(owners) > 1)
+    return blocked
 
 
 class LuxorKNXGateway:
@@ -158,6 +192,7 @@ class LuxorKNXGateway:
             []
         )  # Notify when new sensor discovered
         self._known_addresses: set[str] = set()  # Known LXP addresses to exclude from discovery
+        self._no_read_addresses: set[str] = set()  # Shared command addresses, never read (#217)
         self._pending_discoveries: list[dict[str, Any]] = []  # Batch discoveries for debouncing
         self._debounce_task: asyncio.Task | None = None  # Debounce reload task
 
@@ -317,7 +352,7 @@ class LuxorKNXGateway:
         except Exception as err:
             # Full traceback only for a new error message — the 60s retry
             # loop otherwise repeats the identical traceback dozens of times
-            # (42x E_NO_MORE_CONNECTIONS in Marcus' 2026-08-14 log).
+            # (42x E_NO_MORE_CONNECTIONS in the reporter's 2026-08-14 log).
             err_text = str(err)
             _LOGGER.error(
                 "Failed to connect to KNX Gateway: %s",
@@ -387,7 +422,7 @@ class LuxorKNXGateway:
                 # Never abandon a live instance: heartbeat, auto-reconnect
                 # task, and transport would keep running and (re)grabbing an
                 # IP1 tunnel slot forever — 8 leaked instances occupied ALL
-                # slots on Marcus' 2026-08-14 logs (E_NO_MORE_CONNECTIONS on
+                # slots on the reporter's 2026-08-14 logs (E_NO_MORE_CONNECTIONS on
                 # every reconnect until physical restart). Force-close the
                 # tunnel: DisconnectRequest + reconnect-task stop + transport
                 # close, freeing the slot device-side.
@@ -580,7 +615,7 @@ class LuxorKNXGateway:
         xknx can report CONNECTED for hours while every outgoing telegram
         fails its L_DATA_CON confirmation — the IP1/bus stops acking without
         xknx's own heartbeat ever detecting a real disconnect (confirmed on
-        Marcus' 2026-07-10 log: ~20 confirmation timeouts/min for 9h, with
+        the reporter's 2026-07-10 log: ~20 confirmation timeouts/min for 9h, with
         the periodic REST-session flush from #180 active throughout and not
         stopping it, since that fix only cycles REST auth, never the xknx
         tunnel object).
@@ -663,7 +698,7 @@ class LuxorKNXGateway:
         IP1 stops acking at the protocol level, and xknx.stop()/start() have
         no internal timeout for that — without this guard a stuck recovery
         holds _session_lock forever, starving every later recovery attempt
-        AND the periodic proactive refresh (confirmed on Marcus'
+        AND the periodic proactive refresh (confirmed on the reporter's
         2026-07-17 log: 3h40 of repeated zombie detections with zero
         completion/failure logged, because the very first recovery attempt
         never returned).
@@ -718,7 +753,7 @@ class LuxorKNXGateway:
         the watchdog and session-refresh loops are only (re)started inside a
         successful async_setup(), and async_disconnect() already cancelled
         the old watchdog before the failed attempt — so nothing is left to
-        ever retry (confirmed on Marcus' 2026-08-10/08-12 logs: zero further
+        ever retry (confirmed on the reporter's 2026-08-10/08-12 logs: zero further
         zombie/refresh log lines after one failed recovery, "Cannot read -
         not connected" every minute until a physical bus restart).
         """
@@ -944,6 +979,13 @@ class LuxorKNXGateway:
         Returns:
             True if request was sent successfully
         """
+        if self._no_read_addresses and str(GroupAddress(group_address)) in self._no_read_addresses:
+            _LOGGER.debug(
+                "Not reading %s: shared command address, a read can trigger actuators",
+                group_address,
+            )
+            return False
+
         if self.simulation_mode:
             _LOGGER.debug(
                 "🔥 SIMULATION: Would read from KNX address %s",
@@ -1747,6 +1789,11 @@ class LuxorKNXGateway:
         _LOGGER.info(
             "Registered %d known LXP addresses (excluded from auto-discovery)", len(addresses)
         )
+
+    def set_no_read_addresses(self, addresses: set[str]) -> None:
+        """Set group addresses that must never be read (see compute_no_read_addresses)."""
+        self._no_read_addresses = set(addresses)
+        _LOGGER.debug("Registered %d never-read command addresses", len(addresses))
 
     def set_sensor_types(self, sensor_types: dict[str, str]) -> None:
         """Set known sensor types for accurate logging (e.g., {'5/0/3': 'illuminance'})."""

@@ -34,7 +34,7 @@
 
 ## Added
 
-- Regression test suite for Kennel LXP project file: verifies 26 climate
+- Regression test suite for large-climate LXP project file: verifies 26 climate
   entities (H6 and R718 channels), correct per-device counts, and no
   same-platform `unique_id` collisions across all 5 entity platforms.
 - 10 new unit tests for the three KNX hardening fixes (watchdog, timestamp

@@ -1085,7 +1085,7 @@ class TestZombieWatchdog:
         just-abandoned slot) leaves NOTHING running to ever reconnect: the
         watchdog and session-refresh loops are only (re)started inside a
         successful async_setup(), and async_disconnect() already cancelled
-        the old watchdog before this attempt. Reproduces Marcus'
+        the old watchdog before this attempt. Reproduces the reporter's
         2026-08-10/08-12 logs: zero further zombie/refresh log lines after
         one failed recovery, permanent lockup until a physical bus restart.
         """
@@ -1216,7 +1216,7 @@ class TestZombieWatchdog:
     async def test_async_zombie_recover_times_out_and_releases_lock(self, mock_hass, caplog):
         """A stuck async_disconnect() must not hold _session_lock forever.
 
-        Real zombie tunnel: xknx.stop() never returns. Reproduces Marcus'
+        Real zombie tunnel: xknx.stop() never returns. Reproduces the reporter's
         2026-07-17 log: the watchdog's own recovery hung inside
         the disconnect+setup cycle, permanently starving _session_lock so every
         later recovery attempt AND the periodic proactive refresh blocked forever
@@ -1404,7 +1404,7 @@ class TestZombieWatchdog:
 class TestZombieDetectionDiagnostics:
     """Diagnostic snapshot at zombie detection.
 
-    Marcus' 2026-07-17 log showed the flood onset (14:37) with no preceding
+    The reporter's 2026-07-17 log showed the flood onset (14:37) with no preceding
     event in the WARNING-level export — nothing to tell whether the bus was
     fully dead or only the ack path, nor what the IP1 slot table looked like.
     The detection WARNING must carry that context so the next field log can
@@ -1536,7 +1536,7 @@ class TestZombieDetectionDiagnostics:
 class TestDisconnectZombieSafety:
     """async_disconnect() must terminate even when the tunnel is a zombie.
 
-    Marcus' 2026-07-17 log: recovery hung inside xknx.stop() for 3h40 because
+    The reporter's 2026-07-17 log: recovery hung inside xknx.stop() for 3h40 because
     stop() joins the telegram queue, the zombie consumer drains ~1 telegram/3s
     (confirmation timeout), and entity polling kept refilling the queue since
     _connected stayed True until the end of async_disconnect. The queue never
@@ -1640,7 +1640,7 @@ class TestDisconnectZombieSafety:
         ~1 per 3s on a zombie tunnel. By teardown time nearly the whole
         entity-poll backlog (~1600 telegrams after a 5min zombie window) has
         already migrated there — draining only `xknx.telegrams` left stop()
-        joining a full outgoing_queue for up to ~80min. Confirmed on Marcus'
+        joining a full outgoing_queue for up to ~80min. Confirmed on the reporter's
         2026-08-14 logs: every recovery hit the 15s stop-timeout and leaked
         a live instance still flooding the bus from its outgoing_queue.
         """
@@ -1665,7 +1665,7 @@ class TestDisconnectZombieSafety:
 
         Dropping the reference leaves heartbeat, auto-reconnect task, and
         transport running — the leaked instance keeps (re)grabbing an IP1
-        tunnel slot forever. Marcus' 2026-08-14 logs show 8 leaked instances
+        tunnel slot forever. The reporter's 2026-08-14 logs show 8 leaked instances
         (source addresses 15.15.240-247) occupying ALL IP1 slots, so every
         reconnect attempt died with E_NO_MORE_CONNECTIONS until a physical
         restart. knxip_interface.stop() sends a DisconnectRequest, stops the
@@ -1772,7 +1772,7 @@ class TestOutgoingBackpressure:
 class TestConnectFailureLogHygiene:
     """Repeated identical connect failures must not spam full tracebacks.
 
-    Marcus' 2026-08-14 log: 42 identical E_NO_MORE_CONNECTIONS tracebacks
+    The reporter's 2026-08-14 log: 42 identical E_NO_MORE_CONNECTIONS tracebacks
     from the 60s retry loop drowned out everything else.
     """
 

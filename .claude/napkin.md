@@ -41,7 +41,7 @@
 ## Shell & Command Reliability
 
 1. **[2026-05-15] SSH config has invalid entries — always use `-F /dev/null`**
-   Do instead: `ssh -F /dev/null phil@100.97.159.88 "cmd"` and
+   Do instead: `ssh -F /dev/null user@<HA_HOST> "cmd"` and
    `GIT_SSH_COMMAND='ssh -F /dev/null' git push`.
 
 2. **[2026-05-16] Local venv is Python 3.12; CI uses Python 3.14** Some tests
