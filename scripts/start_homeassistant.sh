@@ -39,8 +39,8 @@ if [ ! -f "${LXP_FILE}" ]; then
     echo ""
     echo "⚠️  No LXP file found at: ${LXP_FILE}"
     echo "   The integration will look for:"
-    echo "   - ${HOME}/Nextcloud/Projekte_Rechner/Madeira/Schmidt_Madeira_V0.8.lxp"
-    echo "   - ${HOME}/Nextcloud/Projekte_Rechner/Madeira/Madeira.lxp"
+    echo "   - ${HOME}/Projects/example_project.lxp"
+    echo "   - ${HOME}/Projects/example_project_2.lxp"
     echo ""
 fi
 

@@ -7,7 +7,7 @@ pre-1.2.1 pre-releases. Full detail per change in [CHANGELOG.md](../../CHANGELOG
 
 - **H6 cooling-mode support**: H6 climate entities now support cooling in
   addition to heating when the `UmschaltenHeitzenKühlen` (heating/cooling
-  mode-switch) datapoint is present. Marcus' setup with ION8 T10 mode-switch
+  mode-switch) datapoint is present. The reporter's setup with ION8 T10 mode-switch
   controlling H6 devices (511, 512, 513) is fully supported.
 
 ## Fixed
@@ -19,7 +19,7 @@ pre-1.2.1 pre-releases. Full detail per change in [CHANGELOG.md](../../CHANGELOG
   diagnostics escalated to WARNING so they show up in default HA logs.
 - **Zombie-tunnel watchdog**: detects a tunnel that reports CONNECTED but
   silently stops confirming telegrams (xknx's own heartbeat misses this),
-  and forces a reconnect. Confirmed stable by Marcus since rc.9 — first
+  and forces a reconnect. Confirmed stable by the reporter since rc.9 — first
   clean run since tracking began 2026-06-17. Three follow-up bugs in the
   recovery path itself (a `_session_lock` deadlock, an `xknx.stop()` hang,
   and a cooldown sentinel that could skip the first detection after a
@@ -31,18 +31,18 @@ pre-1.2.1 pre-releases. Full detail per change in [CHANGELOG.md](../../CHANGELOG
   outgoing telegrams as incoming); the final fix explicitly fans the value
   out to siblings right after sending.
 - **Wetterstation Helligkeit sensor labels (Vorne/Links/Rechts)**: went
-  through three attempts based on Marcus' live comparisons against
+  through three attempts based on the reporter's live comparisons against
   LuxorPlay — a naming-only rename (rc.5), a full 3-way rotation (rc.9)
   that turned out to overshoot by one step, and the final correction
   (only `HelligkeitMitte` maps to a different physical position; `Links`
   and `Rechts` were already correct).
 - **Diagnostics export capped at 50 entities**: raised to 200 — installs
-  with ~160 entities (Marcus') were silently losing most of the export.
+  with ~160 entities (the reporter's) were silently losing most of the export.
 
 ## Validation
 
 - Gated test suite green (`pytest -m "not enable_socket"`): 1033 collected.
-- H6 sync and Wetterstation fixes verified against Marcus' real LXP export
+- H6 sync and Wetterstation fixes verified against the reporter's real LXP export
   and his simulated sensor readings, not just synthetic test fixtures.
 - Zombie-tunnel watchdog confirmed stable in the field since rc.9
   (2026-07-21 → 2026-07-26, no recurrence).

@@ -13,7 +13,7 @@
 ### Methode 1: Direkt mit gespeichertem Token
 
 ```bash
-cd /home/phil/gitlab_github/luxorliving
+cd <REPO_DIR>
 export GITHUB_TOKEN=$(cat ~/.github-token)
 python3 /tmp/create_github_release.py
 ```

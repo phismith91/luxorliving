@@ -20,10 +20,10 @@ async def main():
         lxp_file = Path(__file__).parent.parent / "data" / "test_project.lxp"
 
         if not lxp_file.exists():
-            lxp_file = Path("/home/phil/Nextcloud/Familie Schmidt_0.9.lxp")
+            lxp_file = Path("/home/user/projects/large_family_project.lxp")
 
         if not lxp_file.exists():
-            lxp_file = Path("/home/phil/Nextcloud/Familie Schmidt_0.8.lxp")
+            lxp_file = Path("/home/user/projects/large_family_project_old.lxp")
 
     if not lxp_file.exists():
         print(f"❌ LXP file not found: {lxp_file}")

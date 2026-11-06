@@ -352,7 +352,7 @@ class LuxorKNXGateway:
         except Exception as err:
             # Full traceback only for a new error message — the 60s retry
             # loop otherwise repeats the identical traceback dozens of times
-            # (42x E_NO_MORE_CONNECTIONS in Marcus' 2026-08-14 log).
+            # (42x E_NO_MORE_CONNECTIONS in the reporter's 2026-08-14 log).
             err_text = str(err)
             _LOGGER.error(
                 "Failed to connect to KNX Gateway: %s",
@@ -422,7 +422,7 @@ class LuxorKNXGateway:
                 # Never abandon a live instance: heartbeat, auto-reconnect
                 # task, and transport would keep running and (re)grabbing an
                 # IP1 tunnel slot forever — 8 leaked instances occupied ALL
-                # slots on Marcus' 2026-08-14 logs (E_NO_MORE_CONNECTIONS on
+                # slots on the reporter's 2026-08-14 logs (E_NO_MORE_CONNECTIONS on
                 # every reconnect until physical restart). Force-close the
                 # tunnel: DisconnectRequest + reconnect-task stop + transport
                 # close, freeing the slot device-side.
@@ -615,7 +615,7 @@ class LuxorKNXGateway:
         xknx can report CONNECTED for hours while every outgoing telegram
         fails its L_DATA_CON confirmation — the IP1/bus stops acking without
         xknx's own heartbeat ever detecting a real disconnect (confirmed on
-        Marcus' 2026-07-10 log: ~20 confirmation timeouts/min for 9h, with
+        the reporter's 2026-07-10 log: ~20 confirmation timeouts/min for 9h, with
         the periodic REST-session flush from #180 active throughout and not
         stopping it, since that fix only cycles REST auth, never the xknx
         tunnel object).
@@ -698,7 +698,7 @@ class LuxorKNXGateway:
         IP1 stops acking at the protocol level, and xknx.stop()/start() have
         no internal timeout for that — without this guard a stuck recovery
         holds _session_lock forever, starving every later recovery attempt
-        AND the periodic proactive refresh (confirmed on Marcus'
+        AND the periodic proactive refresh (confirmed on the reporter's
         2026-07-17 log: 3h40 of repeated zombie detections with zero
         completion/failure logged, because the very first recovery attempt
         never returned).
@@ -753,7 +753,7 @@ class LuxorKNXGateway:
         the watchdog and session-refresh loops are only (re)started inside a
         successful async_setup(), and async_disconnect() already cancelled
         the old watchdog before the failed attempt — so nothing is left to
-        ever retry (confirmed on Marcus' 2026-08-10/08-12 logs: zero further
+        ever retry (confirmed on the reporter's 2026-08-10/08-12 logs: zero further
         zombie/refresh log lines after one failed recovery, "Cannot read -
         not connected" every minute until a physical bus restart).
         """

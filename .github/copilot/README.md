@@ -241,7 +241,7 @@ und Copilot.
 
 ### Enthält:
 
-- 🏗️ **Production Environment:** Remote SSH deployment (100.97.159.88)
+- 🏗️ **Production Environment:** Remote SSH deployment (<HA_HOST>)
 - 📊 **Current Status:** v0.6.1 (Released 2026-01-16), v0.7.0 roadmap
 - 🔧 **Development Stack:** Python 3.13.11, HA 2026.1.x, pytest 9.0.0
 - 🏛️ **Architecture:** Layer design, core decisions

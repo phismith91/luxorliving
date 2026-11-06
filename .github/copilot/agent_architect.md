@@ -149,7 +149,7 @@ from .const import DOMAIN
 **Context.MD describes the production environment** - all development is
 remote-first:
 
-- SSH deployment to remote Home Assistant (100.97.159.88)
+- SSH deployment to remote Home Assistant (<HA_HOST>)
 - No local testing infrastructure
 - Pre-release testing via SSH before GitHub releases
 - Repository stays private during active development
