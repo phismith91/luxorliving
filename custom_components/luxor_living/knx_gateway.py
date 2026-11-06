@@ -9,6 +9,7 @@ from collections import defaultdict, deque
 from datetime import datetime
 from typing import Any, Callable, cast
 
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util.ssl import SSLCipherList
@@ -54,6 +55,39 @@ DISCOVERY_MIN_SAMPLES = 3  # Minimum stable readings before creating sensor
 DISCOVERY_VALUE_TOLERANCE = 0.5  # Maximum value deviation for stability
 DISCOVERY_MAX_CANDIDATES_PER_ADDRESS = 20  # Prevent memory leak: max samples per address
 DISCOVERY_DEBOUNCE_DELAY = 2.0  # Seconds to wait before triggering reload (batch discoveries)
+
+
+# Command roles an actuator listens on. A read on an address that several
+# actuators share as command target makes them all answer, and some actuators
+# treat that answer as a new command (#217: every light switched off).
+_COMMAND_ROLES = frozenset({"OnOff", "SchaltenOnOff", "Dimmen%", "UpDown", "StepStop"})
+# Central functions: dangerous to read even if only one actuator is mapped.
+_CENTRAL_ROLES = frozenset({"ZentralAus", "Panik"})
+
+
+def compute_no_read_addresses(entities: Any) -> set[str]:
+    """Return group addresses that must never be read.
+
+    That is every central-function address plus every command address shared by
+    two or more actuators (group switches). Sensor entities are ignored, they only
+    listen. An actuator's own, unshared command address stays readable because
+    lights without a status address fall back to it for their initial state.
+    """
+    users: dict[str, set[str]] = defaultdict(set)
+    blocked: set[str] = set()
+    for entity in entities:
+        if entity.platform == Platform.BINARY_SENSOR:
+            continue
+        for role, address in entity.datapoints.items():
+            if not isinstance(address, int):
+                continue
+            ga = str(GroupAddress(address))
+            if role in _CENTRAL_ROLES:
+                blocked.add(ga)
+            elif role in _COMMAND_ROLES or role.endswith("/OnOff"):
+                users[ga].add(entity.unique_id)
+    blocked.update(ga for ga, owners in users.items() if len(owners) > 1)
+    return blocked
 
 
 class LuxorKNXGateway:
@@ -158,6 +192,7 @@ class LuxorKNXGateway:
             []
         )  # Notify when new sensor discovered
         self._known_addresses: set[str] = set()  # Known LXP addresses to exclude from discovery
+        self._no_read_addresses: set[str] = set()  # Shared command addresses, never read (#217)
         self._pending_discoveries: list[dict[str, Any]] = []  # Batch discoveries for debouncing
         self._debounce_task: asyncio.Task | None = None  # Debounce reload task
 
@@ -944,6 +979,13 @@ class LuxorKNXGateway:
         Returns:
             True if request was sent successfully
         """
+        if self._no_read_addresses and str(GroupAddress(group_address)) in self._no_read_addresses:
+            _LOGGER.debug(
+                "Not reading %s: shared command address, a read can trigger actuators",
+                group_address,
+            )
+            return False
+
         if self.simulation_mode:
             _LOGGER.debug(
                 "🔥 SIMULATION: Would read from KNX address %s",
@@ -1747,6 +1789,11 @@ class LuxorKNXGateway:
         _LOGGER.info(
             "Registered %d known LXP addresses (excluded from auto-discovery)", len(addresses)
         )
+
+    def set_no_read_addresses(self, addresses: set[str]) -> None:
+        """Set group addresses that must never be read (see compute_no_read_addresses)."""
+        self._no_read_addresses = set(addresses)
+        _LOGGER.debug("Registered %d never-read command addresses", len(addresses))
 
     def set_sensor_types(self, sensor_types: dict[str, str]) -> None:
         """Set known sensor types for accurate logging (e.g., {'5/0/3': 'illuminance'})."""

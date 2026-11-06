@@ -3,6 +3,17 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **Home Assistant restart switched lights off (#217)**: a push-button sensor mapped onto the
+  central-off / panic group addresses (`5/1/248`, `5/1/249`) got an initial read at startup.
+  Every actuator answered with `0`, and the actuators then reported all lights as off. The
+  gateway now never reads central-function addresses or command addresses shared by several
+  actuators (group switches). Status addresses and an actuator's own command address are
+  unaffected.
+
 ## [1.2.2] - 2026-09-29
 
 ### Fixed

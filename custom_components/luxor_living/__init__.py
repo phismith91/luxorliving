@@ -31,7 +31,7 @@ from .coordinator import LuxorLivingCoordinator
 from .entity_mapper import EntityMapper
 from .health_view import LuxorLivingHealthView
 from .integration_state import IntegrationState
-from .knx_gateway import LuxorKNXGateway
+from .knx_gateway import LuxorKNXGateway, compute_no_read_addresses
 from .lxp_parser import LXPParser
 from .overrides import load_overrides
 from .push_view import LuxorLivingPushView
@@ -206,6 +206,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     known_addresses.add(address)
 
         knx_gateway.set_known_addresses(known_addresses)
+        knx_gateway.set_no_read_addresses(compute_no_read_addresses(mapper.entities))
         knx_gateway.set_sensor_types(sensor_types)
         _LOGGER.info("Excluded %d known LXP addresses from auto-discovery", len(known_addresses))
         _LOGGER.info("Registered %d sensor type mappings for accurate logging", len(sensor_types))
