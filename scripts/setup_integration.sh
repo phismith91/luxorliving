@@ -114,7 +114,7 @@ find ~/.homeassistant/custom_components/luxor_living -name "__pycache__" -type d
 
 echo ""
 echo "🚀 Starting Home Assistant..."
-cd <REPO_DIR>/scripts
+cd "$(dirname "$0")"
 ./start_homeassistant.sh &
 
 echo ""
