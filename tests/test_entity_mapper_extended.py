@@ -301,7 +301,7 @@ class TestWetterstationMapping:
 
         Only HelligkeitMitte is actually swapped (it's physically "Links");
         HelligkeitLinks and HelligkeitRechts are physically correct as-is.
-        The rc.9 fix rotated all three one step too far — Marcus's rc.9 report
+        The rc.9 fix rotated all three one step too far — the reporter's rc.9 report
         showed Rechts/Vorne inverted, proving Links/Rechts should not move:
           role HelligkeitMitte  (addr 10244) is physically "Links"
           role HelligkeitLinks  (addr 10243) is physically "Vorne"
@@ -619,7 +619,7 @@ class TestUniqueIdCollisionGuard:
     """Same-platform unique_id collisions must be disambiguated.
 
     HA's entity registry silently drops the second entity of a platform when
-    two entities share a unique_id (real case: S1 Garage in the Kennel project,
+    two entities share a unique_id (real case: S1 Garage in the large-climate project,
     light 'Prise eau garage' + binary_sensor 'Eingang C1' both on address 2089).
     """
 

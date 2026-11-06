@@ -40,7 +40,7 @@ breaks
    - Option B: Hotfix if recent commit introduced issue
    - Option C: Emergency patch if config issue
 4. **Implement Solution:**
-   - Test on remote HA (100.97.159.88)
+   - Test on remote HA (<HA_HOST>)
    - Create fix in `hotfix/` branch
    - Deploy with testing
 5. **Release:** Hotfix within 4 hours

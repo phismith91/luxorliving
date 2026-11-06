@@ -114,3 +114,7 @@ luxor_living.zip
 .mutmut-cache
 
 .worktrees/
+
+# Local anonymise deny-list (private names/hosts)
+.anonymise-denylist
+!tests/fixtures/*.lxp

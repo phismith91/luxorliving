@@ -8,7 +8,7 @@ echo "========================================"
 echo ""
 
 # Configuration
-LXP_FILE="/home/phil/.homeassistant/luxor_living/Schmidt_Madeira_V0.8.lxp"
+LXP_FILE="/home/user/.homeassistant/luxor_living/example_project.lxp"
 HOST="localhost"
 PORT="3671"
 USERNAME="admin"
@@ -40,7 +40,7 @@ import secrets
 import os
 
 # Configuration from environment
-lxp_file = os.environ.get('LXP_FILE', '/home/phil/.homeassistant/luxor_living/Schmidt_Madeira_V0.8.lxp')
+lxp_file = os.environ.get('LXP_FILE', '/home/user/.homeassistant/luxor_living/example_project.lxp')
 host = os.environ.get('HOST', 'localhost')
 port = int(os.environ.get('PORT', '3671'))
 username = os.environ.get('USERNAME', 'admin')
@@ -114,7 +114,7 @@ find ~/.homeassistant/custom_components/luxor_living -name "__pycache__" -type d
 
 echo ""
 echo "🚀 Starting Home Assistant..."
-cd /home/phil/gitlab_github/luxorliving/scripts
+cd <REPO_DIR>/scripts
 ./start_homeassistant.sh &
 
 echo ""

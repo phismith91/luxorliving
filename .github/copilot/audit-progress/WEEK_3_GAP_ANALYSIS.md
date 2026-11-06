@@ -649,7 +649,7 @@ discovered_sensors:
 2. **Assess** impact (how many users affected?)
 3. **Rollback** if recent release (see Emergency Rollback)
 4. **Hotfix** branch if not release-related
-5. **Test** on remote HA (100.97.159.88)
+5. **Test** on remote HA (<HA_HOST>)
 6. **Release** hotfix within 4 hours
 7. **Post-Incident Review** within 24 hours
 
