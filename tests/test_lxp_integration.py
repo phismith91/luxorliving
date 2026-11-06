@@ -12,7 +12,7 @@ from custom_components.luxor_living.lxp_parser import LXPParser
 
 # LXP file paths
 LXP_HAUPTWOHNUNG = Path(__file__).parent.parent / "docs" / "Hauptwohnung.lxp"
-LXP_FAMILIE_SCHMIDT = Path(__file__).parent.parent / "docs" / "Familie Schmidt_0.9.lxp"
+LXP_FAMILY = Path(__file__).parent.parent / "docs" / "large_family_project.lxp"
 
 
 @pytest.mark.skipif(not LXP_HAUPTWOHNUNG.exists(), reason="Hauptwohnung.lxp not found")
@@ -155,11 +155,11 @@ async def test_hauptwohnung_io_devices():
             print(f"  - {sensor.name} ({sensor.entity_type})")
 
 
-@pytest.mark.skipif(not LXP_FAMILIE_SCHMIDT.exists(), reason="Familie Schmidt_0.9.lxp not found")
+@pytest.mark.skipif(not LXP_FAMILY.exists(), reason="large_family_project.lxp not found")
 @pytest.mark.asyncio
 async def test_familie_schmidt_lxp_parsing():
-    """Test parsing of Familie Schmidt_0.9.lxp (standard devices, no IO)."""
-    parser = LXPParser(LXP_FAMILIE_SCHMIDT)
+    """Test parsing of large_family_project.lxp (standard devices, no IO)."""
+    parser = LXPParser(LXP_FAMILY)
     project = await parser.parse()
 
     # Verify project structure
@@ -175,7 +175,7 @@ async def test_familie_schmidt_lxp_parsing():
         total_actuators += len(device.actuators)
 
     # Log summary
-    print("\n=== Familie Schmidt_0.9.lxp ===")
+    print("\n=== large_family_project.lxp ===")
     print(f"Project: {project.name}")
     print(f"Devices: {len(project.devices)}")
     print(f"Sensors: {total_sensors}")
@@ -185,11 +185,11 @@ async def test_familie_schmidt_lxp_parsing():
     assert total_sensors > 0 or total_actuators > 0
 
 
-@pytest.mark.skipif(not LXP_FAMILIE_SCHMIDT.exists(), reason="Familie Schmidt_0.9.lxp not found")
+@pytest.mark.skipif(not LXP_FAMILY.exists(), reason="large_family_project.lxp not found")
 @pytest.mark.asyncio
 async def test_familie_schmidt_entity_mapping():
-    """Test entity mapping for Familie Schmidt_0.9.lxp."""
-    parser = LXPParser(LXP_FAMILIE_SCHMIDT)
+    """Test entity mapping for large_family_project.lxp."""
+    parser = LXPParser(LXP_FAMILY)
     project = await parser.parse()
 
     # Map entities
@@ -205,14 +205,14 @@ async def test_familie_schmidt_entity_mapping():
         platform = entity.platform
         platform_counts[platform] = platform_counts.get(platform, 0) + 1
 
-    print("\n=== Familie Schmidt Entity Mapping ===")
+    print("\n=== Family project Entity Mapping ===")
     print(f"Total entities: {len(entities)}")
     for platform, count in sorted(platform_counts.items(), key=lambda x: str(x[0])):
         print(f"  {platform.value}: {count}")
 
 
 @pytest.mark.skipif(
-    not LXP_HAUPTWOHNUNG.exists() or not LXP_FAMILIE_SCHMIDT.exists(),
+    not LXP_HAUPTWOHNUNG.exists() or not LXP_FAMILY.exists(),
     reason="Both LXP files required",
 )
 @pytest.mark.asyncio
@@ -222,7 +222,7 @@ async def test_compare_io_vs_standard_devices():
     parser_hw = LXPParser(LXP_HAUPTWOHNUNG)
     project_hw = await parser_hw.parse()
 
-    parser_fs = LXPParser(LXP_FAMILIE_SCHMIDT)
+    parser_fs = LXPParser(LXP_FAMILY)
     project_fs = await parser_fs.parse()
 
     # Map entities for both
@@ -247,7 +247,7 @@ async def test_compare_io_vs_standard_devices():
     print(f"  Switches: {len(switches_hw)}")
     print(f"  Total entities: {len(mapper_hw.entities)}")
 
-    print("\nFamilie Schmidt (Standard):")
+    print("\nFamily project (Standard):")
     print(f"  Sensors: {len(sensors_fs)}")
     print(f"  Lights: {len(lights_fs)}")
     print(f"  Switches: {len(switches_fs)}")
@@ -307,14 +307,10 @@ def test_lxp_cache_functionality():
     assert _lxp_cache.get_stats()["max_size"] > 0
 
 
-LXP_KENNEL = (
-    Path(__file__).parent.parent
-    / "docs"
-    / "LuxorLiving parameter vMK7 - 43783 Kennel - 20260503.lxp"
-)
+LXP_LARGE_CLIMATE = Path(__file__).parent.parent / "docs" / "large_climate_project.lxp"
 
 
-@pytest.mark.skipif(not LXP_KENNEL.exists(), reason="Kennel LXP not found")
+@pytest.mark.skipif(not LXP_LARGE_CLIMATE.exists(), reason="large-climate LXP not found")
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_kennel_lxp_climate_entity_count():
@@ -325,7 +321,7 @@ async def test_kennel_lxp_climate_entity_count():
 
     Expected: 511 H6 → 5, 512 H6 → 6, 513 H6 → 2, 13× R718 = 26 total.
     """
-    project = await LXPParser(LXP_KENNEL).parse()
+    project = await LXPParser(LXP_LARGE_CLIMATE).parse()
     mapper = EntityMapper(project)
     climate = mapper.get_entities_by_platform(Platform.CLIMATE)
 
@@ -347,12 +343,12 @@ async def test_kennel_lxp_climate_entity_count():
     ), f"Duplicate climate unique_ids: {[u for u in uids if uids.count(u) > 1]}"
 
 
-@pytest.mark.skipif(not LXP_KENNEL.exists(), reason="Kennel LXP not found")
+@pytest.mark.skipif(not LXP_LARGE_CLIMATE.exists(), reason="large-climate LXP not found")
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_kennel_lxp_no_same_platform_uid_collision():
-    """All entities within a platform must have unique IDs across the full Kennel project."""
-    project = await LXPParser(LXP_KENNEL).parse()
+    """All entities within a platform must have unique IDs across the full large-climate project."""
+    project = await LXPParser(LXP_LARGE_CLIMATE).parse()
     mapper = EntityMapper(project)
 
     for platform in (

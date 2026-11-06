@@ -519,7 +519,7 @@ class EntityMapper:
         # The role strings below come straight from Theben's LXP export and do
         # NOT match physical sensor position — confirmed via #141 by comparing
         # live values against LuxorPlay (ground truth) for the same install.
-        # The rc.9 fix rotated all three one step too far (Marcus, 2026-07-26):
+        # The rc.9 fix rotated all three one step too far (the reporter, 2026-07-26):
         # only HelligkeitMitte is actually swapped; Links/Rechts are correct as-is.
         #   role HelligkeitMitte  is physically "Links"
         #   role HelligkeitLinks  is physically "Vorne"

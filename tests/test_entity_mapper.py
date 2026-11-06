@@ -14,7 +14,7 @@ from custom_components.luxor_living.lxp_parser import LXPParser
 
 def main():
     """Test the entity mapper."""
-    lxp_file = Path("/home/phil/Nextcloud/Familie Schmidt_0.9.lxp")
+    lxp_file = Path("/home/user/projects/large_family_project.lxp")
 
     if not lxp_file.exists():
         print(f"❌ LXP file not found: {lxp_file}")

@@ -24,7 +24,7 @@ pre-1.2.2 pre-releases. Full detail per change in [CHANGELOG.md](../../CHANGELOG
   ever retry. A failed recovery now schedules a retry every 60s until it
   reconnects.
 - **Teardown leaked live xknx instances occupying every IP1 tunnel slot
-  (#201, rc.4)**: on rc.3, Marcus' 2026-08-14 logs showed the retry loop
+  (#201, rc.4)**: on rc.3, the reporter's 2026-08-14 logs showed the retry loop
   running (42 attempts) but every attempt dying with
   `E_NO_MORE_CONNECTIONS`, while 8 tunnel source addresses flooded the bus
   for hours — even LuxorPlay couldn't steer. Root cause: the 15s

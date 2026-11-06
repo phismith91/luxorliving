@@ -32,7 +32,7 @@ Home Assistant:
 
 ### Ansatz 1: LXP-Parser + KNX-YAML (aktuell implementiert)
 
-- **Quelle:** LXP-Projektdatei (Familie Schmidt)
+- **Quelle:** LXP-Projektdatei (Family project)
 - **Methode:** Parsen der LXP-Datei → Generierung von KNX YAML
 - **Integration:** Native Home Assistant KNX-Integration
 - **Status:** Implementiert, YAML generiert, aber Entities "unavailable"

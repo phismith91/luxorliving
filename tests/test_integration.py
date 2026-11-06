@@ -15,9 +15,9 @@ def main():
     """Test full integration flow."""
     # Find LXP file - try multiple locations
     possible_paths = [
-        Path(__file__).parent.parent / "Familie Schmidt_0.9.lxp",
-        Path.home() / "Nextcloud/Projekte_Rechner/Madeira/Schmidt_Madeira_V0.8.lxp",
-        Path.home() / "Nextcloud/Projekte_Rechner/Madeira/Madeira.lxp",
+        Path(__file__).parent.parent / "large_family_project.lxp",
+        Path.home() / "Projects/example_project.lxp",
+        Path.home() / "Projects/example_project_2.lxp",
     ]
 
     lxp_file = None

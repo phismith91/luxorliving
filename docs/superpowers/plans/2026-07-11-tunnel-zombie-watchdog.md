@@ -10,7 +10,7 @@
 
 **Tech Stack:** Python 3.13, asyncio, existing `LuxorKNXGateway` class in `custom_components/luxor_living/knx_gateway.py`, pytest + pytest-asyncio, xknx 3.15.0.
 
-**Context this plan assumes:** Marcus' 2026-07-10 log (`docs/home-assistant_2026-07-10T08-25-13.061Z.log`) shows ~20 `L_DATA_CON confirmation timed out` warnings per minute for ~9 hours (00:27–09:23), with the already-deployed periodic REST-session-flush fix (`_async_forced_refresh`, PR #180) active throughout and not stopping it — because that fix only cycles the REST/tunneling-slot layer, never the xknx tunnel object itself. This plan is the follow-up: force the actual xknx-level reconnect when this specific symptom recurs.
+**Context this plan assumes:** the reporter's 2026-07-10 log (`docs/home-assistant_2026-07-10T08-25-13.061Z.log`) shows ~20 `L_DATA_CON confirmation timed out` warnings per minute for ~9 hours (00:27–09:23), with the already-deployed periodic REST-session-flush fix (`_async_forced_refresh`, PR #180) active throughout and not stopping it — because that fix only cycles the REST/tunneling-slot layer, never the xknx tunnel object itself. This plan is the follow-up: force the actual xknx-level reconnect when this specific symptom recurs.
 
 ---
 
@@ -42,7 +42,7 @@ ZOMBIE_RECONNECT_COOLDOWN = 300  # seconds to wait after a zombie-triggered reco
 - [ ] **Step 2: Commit**
 
 ```bash
-cd "/home/philipp/projects/luxorliving  (public + maintance)"
+cd "<REPO_DIR>"
 git add custom_components/luxor_living/const.py
 git commit -m "feat: add zombie-tunnel watchdog constants"
 ```
@@ -98,7 +98,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "/home/philipp/projects/luxorliving  (public + maintance)"
+cd "<REPO_DIR>"
 git add custom_components/luxor_living/knx_gateway.py tests/test_knx_gateway.py
 git commit -m "feat: add zombie-watchdog state fields to LuxorKNXGateway"
 ```
@@ -205,7 +205,7 @@ In `custom_components/luxor_living/knx_gateway.py`, add this new method immediat
         xknx can report CONNECTED for hours while every outgoing telegram
         fails its L_DATA_CON confirmation — the IP1/bus stops acking without
         xknx's own heartbeat ever detecting a real disconnect (confirmed on
-        Marcus' 2026-07-10 log: ~20 confirmation timeouts/min for 9h, with
+        the reporter's 2026-07-10 log: ~20 confirmation timeouts/min for 9h, with
         the periodic REST-session flush from #180 active throughout and not
         stopping it, since that fix only cycles REST auth, never the xknx
         tunnel object).
@@ -264,7 +264,7 @@ Expected: PASS (3 tests) — note `test_watchdog_noop_below_threshold` and `test
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "/home/philipp/projects/luxorliving  (public + maintance)"
+cd "<REPO_DIR>"
 git add custom_components/luxor_living/knx_gateway.py tests/test_knx_gateway.py
 git commit -m "feat: add zombie-tunnel detection loop (no-op below threshold)"
 ```
@@ -403,7 +403,7 @@ Expected: PASS (7 tests total in the class)
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "/home/philipp/projects/luxorliving  (public + maintance)"
+cd "<REPO_DIR>"
 git add custom_components/luxor_living/knx_gateway.py tests/test_knx_gateway.py
 git commit -m "feat: trigger full reconnect on zombie-tunnel detection, with cooldown"
 ```
@@ -543,7 +543,7 @@ Expected: PASS (10 tests total in the class)
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "/home/philipp/projects/luxorliving  (public + maintance)"
+cd "<REPO_DIR>"
 git add custom_components/luxor_living/knx_gateway.py tests/test_knx_gateway.py
 git commit -m "feat: start/stop zombie watchdog task with the gateway lifecycle"
 ```
@@ -576,7 +576,7 @@ Add under the `### Fixed` section for the current unreleased version in `CHANGEL
 - [ ] **Step 4: Commit**
 
 ```bash
-cd "/home/philipp/projects/luxorliving  (public + maintance)"
+cd "<REPO_DIR>"
 git add CHANGELOG.md
 git commit -m "docs: changelog entry for zombie-tunnel watchdog"
 ```
@@ -586,6 +586,6 @@ git commit -m "docs: changelog entry for zombie-tunnel watchdog"
 ## Self-Review Notes (for whoever executes this plan)
 
 - **Spec coverage:** detection via existing xknx counter (Task 3), forced full reconnect (Task 4), cooldown to prevent storms (Task 4), lifecycle wiring so it starts/stops with the gateway (Task 5), visibility via WARNING logs consistent with the logging-level fix already merged in `fix/wetterstation-vorne-naming-and-refresh-logging` (Task 3's `_LOGGER.warning` calls). All covered.
-- **Not in scope for this plan (call out explicitly, don't silently add):** no UI/config option to tune the threshold/interval — these are constants, matching how `SESSION_REFRESH_INTERVAL` and `RECONNECT_FAILURE_THRESHOLD` are already unconfigurable constants in this codebase. Add a config option only if Marcus' real-world data shows the defaults need per-installation tuning.
+- **Not in scope for this plan (call out explicitly, don't silently add):** no UI/config option to tune the threshold/interval — these are constants, matching how `SESSION_REFRESH_INTERVAL` and `RECONNECT_FAILURE_THRESHOLD` are already unconfigurable constants in this codebase. Add a config option only if the reporter's real-world data shows the defaults need per-installation tuning.
 - **Branch:** create a fresh branch off `main` before starting (`git checkout main && git pull && git checkout -b feat/zombie-tunnel-watchdog`) — per this repo's workflow, never commit directly to `main`.
 - **After all tasks:** push the branch and open a PR (`gh pr create`), do not merge directly — Release Manager has exclusive merge authority per `AGENTS.md`.
