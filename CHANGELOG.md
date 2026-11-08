@@ -3,10 +3,16 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
-## [Unreleased]
+## [1.2.3] - 2026-11-06
 
 ### Fixed
 
+- **Dimmers came back at 100 % after being switched off and on (#237)**: a turn-on without
+  an explicit brightness always sent 100 %, and the actuator's `Status%` = 0 report on switch-off
+  wiped the stored level. The last non-zero brightness is now tracked and restored. With no known
+  level (light off since HA started) the dimmer is switched via its `OnOff` address, so the
+  actuator applies its own switch-on value. An explicit brightness always wins. Contributed by
+  @Kohbach.
 - **Home Assistant restart switched lights off (#217)**: a push-button sensor mapped onto the
   central-off / panic group addresses (`5/1/248`, `5/1/249`) got an initial read at startup.
   Every actuator answered with `0`, and the actuators then reported all lights as off. The
