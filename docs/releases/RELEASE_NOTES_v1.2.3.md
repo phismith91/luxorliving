@@ -1,6 +1,6 @@
 # Release Notes — v1.2.3
 
-Pre-release (rc.1), 2026-11-06. Full detail per change in
+Pre-release (rc.2), 2026-11-21. rc.2 adds the #247 fix; rc.1 is superseded. Full detail per change in
 [CHANGELOG.md](../../CHANGELOG.md#123---2026-11-06).
 
 ## Fixed
@@ -15,9 +15,18 @@ Pre-release (rc.1), 2026-11-06. Full detail per change in
   switched via `OnOff`, so the actuator applies its own switch-on value.
   Contributed by @Kohbach.
 
+- **Entities stayed unavailable for hours after a proactive session refresh
+  (#247)**: if the gateway reported a second disconnect right after the
+  4-hourly session refresh, the reconnect was recognised but the integration
+  never marked itself connected again. All entities stayed `unavailable` until
+  the next refresh, which could hit the same race. Reported by @Kohbach.
+
 ## Please test
 
 - After a Home Assistant restart, lights that were on must stay on.
 - A dimmer switched off and on again returns to its previous level.
 - If lights still switch off at restart, please send a debug log covering the
   restart (`custom_components.luxor_living: debug`).
+- Entities must not stay `unavailable` after the 4-hourly
+  `Proactive session refresh` log line. If they do, please send a debug log
+  covering one refresh.
