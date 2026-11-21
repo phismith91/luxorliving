@@ -2125,3 +2125,24 @@ class TestReconnectCooldownRestoresConnected:
         await gateway._async_on_reconnect()
 
         assert gateway._connected is False
+
+    @pytest.mark.asyncio
+    async def test_failed_forced_refresh_invalidates_cooldown(self, mock_hass):
+        """A half-done refresh (logout ok, login/enable failed) must not be masked.
+
+        logout() disables tunneling on the IP1. If the cycle then fails, the stale
+        _last_refresh_at must not let the cooldown branch claim connected.
+        """
+        gateway = self._make_gateway(mock_hass)
+        gateway._connected = True
+        gateway._last_refresh_at = time.monotonic()  # earlier success, <30s ago
+        gateway._rest_client.enable_tunneling.side_effect = RuntimeError("boom")
+
+        await gateway._async_forced_refresh()
+        assert gateway._connected is False
+
+        await gateway._async_on_reconnect()
+
+        # Cooldown must not apply: re-auth path ran (and failed again) -> still False.
+        assert gateway._connected is False
+        assert gateway._rest_client.login.await_count == 2

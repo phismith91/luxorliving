@@ -602,6 +602,9 @@ class LuxorKNXGateway:
             except Exception as err:
                 # Fire-and-forget task: never let the exception escape unhandled.
                 self._connected = False
+                # logout() already disabled tunneling on the IP1: a half-done cycle
+                # must not count as "recent refresh" for the reconnect cooldown.
+                self._last_refresh_at = -RECONNECT_COOLDOWN_SECS
                 _LOGGER.error(
                     "REST session refresh failed (host=%s): %s — "
                     "reload the integration if the gateway remains unreachable",
