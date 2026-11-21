@@ -11,6 +11,7 @@ from typing import Any, Callable, cast
 
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util.ssl import SSLCipherList
 from xknx import XKNX
@@ -26,6 +27,7 @@ from .circuit_breaker import CircuitBreakerOpenException, get_knx_circuit_breake
 from .const import (
     CAUTIOUS_READ_REQUEST_INTERVAL,
     CAUTIOUS_TRAFFIC_PERIOD,
+    DOMAIN,
     INITIAL_READ_REQUEST_INTERVAL,
     NOT_CONNECTED_LOG_INTERVAL,
     OUTGOING_QUEUE_BACKPRESSURE_LIMIT,
@@ -37,8 +39,10 @@ from .const import (
     RECONNECT_FAILURE_THRESHOLD,
     RECONNECT_FAILURE_WINDOW,
     RECOVERY_READ_QUIET_PERIOD,
+    REFRESH_REPAIR_THRESHOLD,
     SESSION_REFRESH_INTERVAL,
     SESSION_REFRESH_RETRY_INTERVAL,
+    SESSION_REFRESH_RETRY_MAX_INTERVAL,
     XKNX_INTERFACE_STOP_TIMEOUT,
     XKNX_STOP_TIMEOUT,
     ZOMBIE_CHECK_INTERVAL,
@@ -132,6 +136,7 @@ class LuxorKNXGateway:
         self._setup_complete = False  # Guards reconnect handler against initial-connect events
         self._unregister_connection_cb: Callable[[], None] | None = None
         self._session_refresh_task: asyncio.Task | None = None
+        self._refresh_repair_issue_open = False  # Repairs issue 'refresh_failing' is shown
         self._session_lock = asyncio.Lock()  # Prevents concurrent REST session operations
         self._reconnect_failures: list[float] = (
             []
@@ -620,15 +625,51 @@ class LuxorKNXGateway:
                 return False
 
     async def _async_refresh_until_success(self) -> None:
-        """Run a forced refresh, retrying quickly after a failure.
+        """Run a forced refresh, retrying with backoff after a failure.
 
         A failed cycle has already run logout() (tunneling off on the IP1) and
         left entities unavailable; waiting for the next 4 h cycle would keep
-        them dead for hours. Retries until it succeeds; cancellation (teardown)
-        ends the loop.
+        them dead for hours. Retries until it succeeds, backing off from
+        SESSION_REFRESH_RETRY_INTERVAL to SESSION_REFRESH_RETRY_MAX_INTERVAL so
+        a dead gateway is not hammered. After REFRESH_REPAIR_THRESHOLD
+        consecutive failures a Repairs issue tells the user in the HA UI; it is
+        removed on success. Cancellation (teardown) ends the loop.
         """
-        while not await self._async_forced_refresh():
-            await asyncio.sleep(SESSION_REFRESH_RETRY_INTERVAL)
+        failures = 0
+        try:
+            while not await self._async_forced_refresh():
+                failures += 1
+                if failures == REFRESH_REPAIR_THRESHOLD:
+                    self._set_refresh_repair_issue(True)
+                delay = min(
+                    SESSION_REFRESH_RETRY_INTERVAL * 2 ** (failures - 1),
+                    SESSION_REFRESH_RETRY_MAX_INTERVAL,
+                )
+                await asyncio.sleep(delay)
+        finally:
+            if self._refresh_repair_issue_open:
+                self._set_refresh_repair_issue(False)
+
+    def _set_refresh_repair_issue(self, active: bool) -> None:
+        """Create/remove the 'refresh keeps failing' Repairs issue. Never raises."""
+        issue_id = f"refresh_failing_{self.host}"
+        try:
+            if active:
+                ir.async_create_issue(
+                    self.hass,
+                    DOMAIN,
+                    issue_id,
+                    is_fixable=False,
+                    severity=ir.IssueSeverity.WARNING,
+                    translation_key="refresh_failing",
+                    translation_placeholders={"host": str(self.host)},
+                )
+                self._refresh_repair_issue_open = True
+            else:
+                ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+                self._refresh_repair_issue_open = False
+        except Exception as err:  # UI hint only, must never break the refresh loop
+            _LOGGER.debug("Could not update refresh repair issue: %s", err)
 
     def _xknx_is_connected(self) -> bool:
         """True if an xknx instance exists and currently reports CONNECTED."""

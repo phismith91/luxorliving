@@ -7,7 +7,7 @@ documented in this file.
 
 ### Fixed
 
-- **Connection flag no longer lies about availability (found by new chaos test harness)**: three more event orders could leave `connected` wrong. (1) A proactive refresh finishing after the IP1 had already dropped the tunnel set `connected=True` while xknx was down. (2) A reconnect re-auth finishing after a newer disconnect did the same. Both now set the flag from the real xknx state. (3) A failed refresh (after `logout()` had switched tunneling off) left every entity unavailable until the next refresh 4 h later; it now retries every 60 s until it succeeds.
+- **Connection flag no longer lies about availability (found by new chaos test harness)**: three more event orders could leave `connected` wrong. (1) A proactive refresh finishing after the IP1 had already dropped the tunnel set `connected=True` while xknx was down. (2) A reconnect re-auth finishing after a newer disconnect did the same. Both now set the flag from the real xknx state. (3) A failed refresh (after `logout()` had switched tunneling off) left every entity unavailable until the next refresh 4 h later; it now retries with backoff (60 s, doubling up to 5 min) until it succeeds. After 3 failed attempts a Repairs notice appears in Home Assistant (Settings → Repairs) so the problem is visible without reading logs; it disappears by itself once the refresh succeeds.
 
 ### Tests
 

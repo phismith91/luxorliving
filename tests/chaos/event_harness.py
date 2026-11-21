@@ -179,8 +179,10 @@ async def run_sequence(seq: tuple[str, ...]) -> list[str]:
     stub = SimpleNamespace(monotonic=lambda: world.clock, now=lambda: world.clock)
     original = gw_mod.time
     original_retry = gw_mod.SESSION_REFRESH_RETRY_INTERVAL
+    original_retry_max = gw_mod.SESSION_REFRESH_RETRY_MAX_INTERVAL
     gw_mod.time = stub  # the loop's own clock stays untouched
     gw_mod.SESSION_REFRESH_RETRY_INTERVAL = 0  # retries run immediately
+    gw_mod.SESSION_REFRESH_RETRY_MAX_INTERVAL = 0
     try:
         for op in seq:
             await world.apply(op)
@@ -189,6 +191,7 @@ async def run_sequence(seq: tuple[str, ...]) -> list[str]:
     finally:
         gw_mod.time = original
         gw_mod.SESSION_REFRESH_RETRY_INTERVAL = original_retry
+        gw_mod.SESSION_REFRESH_RETRY_MAX_INTERVAL = original_retry_max
         for t in world.tasks:
             if not t.done():
                 t.cancel()

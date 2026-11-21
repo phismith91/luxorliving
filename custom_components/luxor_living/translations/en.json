@@ -108,6 +108,10 @@
     "authentication_failed": {
       "title": "Authentication Failed for {host}",
       "description": "The authentication to your LUXORliving gateway at {host} has failed.\n\nError: {error}\n\nPlease verify your credentials (username: {username}) and update them if necessary."
+    },
+    "refresh_failing": {
+      "title": "LUXORliving session refresh keeps failing ({host})",
+      "description": "The periodic session refresh with your LUXORliving gateway at {host} has failed several times in a row. The integration keeps retrying automatically, but until it succeeds your LUXORliving entities may be unavailable.\n\nPlease check that the gateway is powered on and reachable on the network. If the problem persists, power-cycle the KNX system and reload the integration. This message disappears by itself as soon as the refresh succeeds."
     }
   }
 }
