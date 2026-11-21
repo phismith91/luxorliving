@@ -2040,3 +2040,88 @@ class TestRegisterListenerMutationTargets:
             assert key is not None
             assert key != "None"
         assert any(cb in cbs for cbs in gw._listeners.values())
+
+
+class TestReconnectCooldownRestoresConnected:
+    """Regression tests for issue #247.
+
+    After a proactive refresh, a second DISCONNECTED ~1s later clears _connected.
+    The following CONNECTED event hits the RECONNECT_COOLDOWN_SECS early return,
+    which used to leave _connected=False forever (all entities unavailable).
+    """
+
+    def _make_gateway(self, mock_hass, xknx_state=None) -> LuxorKNXGateway:
+        from xknx.core import XknxConnectionState
+
+        gateway = LuxorKNXGateway(
+            hass=mock_hass,
+            host="192.168.1.3",
+            port=3671,
+            username="admin",
+            password="admin",
+        )
+        gateway._rest_client = AsyncMock()
+        gateway._setup_complete = True
+        xknx = MagicMock()
+        xknx.connection_manager.state = (
+            XknxConnectionState.CONNECTED if xknx_state is None else xknx_state
+        )
+        gateway._xknx = xknx
+        return gateway
+
+    @pytest.mark.asyncio
+    async def test_cooldown_branch_restores_connected_after_second_disconnect(self, mock_hass):
+        """Refresh done, DISCONNECTED 1s later, CONNECTED -> _connected must be True."""
+        from xknx.core import XknxConnectionState
+
+        gateway = self._make_gateway(mock_hass)
+        gateway._connected = True
+        gateway._last_refresh_at = time.monotonic()  # refresh just completed
+
+        gateway._on_connection_state_changed(XknxConnectionState.DISCONNECTED)
+        assert gateway._connected is False
+
+        await gateway._async_on_reconnect()
+
+        assert gateway._connected is True
+
+    @pytest.mark.asyncio
+    async def test_cooldown_branch_does_not_touch_rest_session(self, mock_hass):
+        """Cooldown branch restores the flag only; no logout/login/enable_tunneling."""
+        gateway = self._make_gateway(mock_hass)
+        gateway._connected = False
+        gateway._last_refresh_at = time.monotonic()
+
+        await gateway._async_on_reconnect()
+
+        gateway._rest_client.logout.assert_not_called()
+        gateway._rest_client.login.assert_not_called()
+        gateway._rest_client.enable_tunneling.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_cooldown_branch_keeps_flag_false_if_xknx_disconnected_again(self, mock_hass):
+        """If xknx dropped again before the task ran, do not claim connected.
+
+        The next CONNECTED event schedules another _async_on_reconnect.
+        """
+        from xknx.core import XknxConnectionState
+
+        gateway = self._make_gateway(mock_hass, xknx_state=XknxConnectionState.DISCONNECTED)
+        gateway._connected = False
+        gateway._last_refresh_at = time.monotonic()
+
+        await gateway._async_on_reconnect()
+
+        assert gateway._connected is False
+
+    @pytest.mark.asyncio
+    async def test_cooldown_branch_without_xknx_keeps_flag_false(self, mock_hass):
+        """No xknx instance (torn down) -> never restore the flag."""
+        gateway = self._make_gateway(mock_hass)
+        gateway._xknx = None
+        gateway._connected = False
+        gateway._last_refresh_at = time.monotonic()
+
+        await gateway._async_on_reconnect()
+
+        assert gateway._connected is False

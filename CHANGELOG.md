@@ -3,6 +3,12 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **Entities stayed unavailable for hours after a proactive session refresh (#247)**: the refresh cycles the tunnel, and a second `DISCONNECTED` event arriving about 1 s after the refresh finished cleared the connected flag. The following `CONNECTED` event fell into the 30 s reconnect cooldown, which skipped re-auth (correct, the REST session was fresh) but never restored the flag, so every entity stayed unavailable until the next refresh 4 h later, which hit the same race. The cooldown path now marks the gateway connected again, provided xknx still reports `CONNECTED`.
+
 ## [1.2.3] - 2026-11-06
 
 ### Fixed

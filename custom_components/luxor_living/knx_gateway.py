@@ -859,6 +859,15 @@ class LuxorKNXGateway:
             return
         age = time.monotonic() - self._last_refresh_at
         if age < RECONNECT_COOLDOWN_SECS:
+            # Issue #247: a refresh-induced second DISCONNECTED clears _connected
+            # after the refresh already set it True. The REST session is fresh, so
+            # re-auth is skipped, but the flag must come back — otherwise nothing
+            # restores it and every entity stays unavailable. Only restore if xknx
+            # still reports CONNECTED: this task runs after the CONNECTED callback,
+            # and a newer DISCONNECTED would schedule its own reconnect later.
+            xknx = self._xknx
+            if xknx is not None and xknx.connection_manager.state == XknxConnectionState.CONNECTED:
+                self._connected = True
             _LOGGER.info(
                 "Recent REST refresh (%.0fs ago) — skipping reconnect re-auth (host=%s)",
                 age,
