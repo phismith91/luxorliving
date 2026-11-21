@@ -3,10 +3,13 @@
 All notable changes to the LUXORliving Home Assistant integration will be
 documented in this file.
 
+## [Unreleased]
+
 ## [1.2.3] - 2026-11-06
 
 ### Fixed
 
+- **Entities stayed unavailable for hours after a proactive session refresh (#247)**: the refresh cycles the tunnel, and a second `DISCONNECTED` event arriving about 1 s after the refresh finished cleared the connected flag. The following `CONNECTED` event fell into the 30 s reconnect cooldown, which skipped re-auth (correct, the REST session was fresh) but never restored the flag, so every entity stayed unavailable until the next refresh 4 h later, which hit the same race. The cooldown path now marks the gateway connected again, provided xknx still reports `CONNECTED`. A failed refresh cycle now also invalidates that cooldown, so a half-done cycle (logout done, tunneling off on the IP1) can never be reported as connected.
 - **Dimmers came back at 100 % after being switched off and on (#237)**: a turn-on without
   an explicit brightness always sent 100 %, and the actuator's `Status%` = 0 report on switch-off
   wiped the stored level. The last non-zero brightness is now tracked and restored. With no known
