@@ -108,6 +108,10 @@
     "authentication_failed": {
       "title": "Échec de l'authentification pour {host}",
       "description": "L'authentification auprès de votre passerelle LUXORliving à {host} a échoué.\n\nErreur : {error}\n\nVeuillez vérifier vos identifiants (nom d'utilisateur : {username}) et les mettre à jour si nécessaire."
+    },
+    "refresh_failing": {
+      "title": "Le renouvellement de session LUXORliving échoue de façon répétée ({host})",
+      "description": "Le renouvellement périodique de la session avec votre passerelle LUXORliving à l'adresse {host} a échoué plusieurs fois de suite. L'intégration réessaie automatiquement, mais tant que cela échoue, vos entités LUXORliving peuvent être indisponibles.\n\nVérifiez que la passerelle est sous tension et joignable sur le réseau. Si le problème persiste, coupez puis rétablissez l'alimentation du système KNX et rechargez l'intégration. Ce message disparaît de lui-même dès que le renouvellement réussit."
     }
   }
 }

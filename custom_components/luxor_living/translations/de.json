@@ -108,6 +108,10 @@
     "authentication_failed": {
       "title": "Authentifizierung fehlgeschlagen für {host}",
       "description": "Die Authentifizierung bei Ihrem LUXORliving Gateway unter {host} ist fehlgeschlagen.\n\nFehler: {error}\n\nBitte überprüfen Sie Ihre Zugangsdaten (Benutzername: {username}) und aktualisieren Sie diese bei Bedarf."
+    },
+    "refresh_failing": {
+      "title": "LUXORliving-Sitzungserneuerung schlägt wiederholt fehl ({host})",
+      "description": "Die regelmäßige Sitzungserneuerung mit Ihrem LUXORliving Gateway unter {host} ist mehrfach hintereinander fehlgeschlagen. Die Integration versucht es automatisch weiter, bis dahin können Ihre LUXORliving-Entitäten nicht verfügbar sein.\n\nBitte prüfen Sie, ob das Gateway eingeschaltet und im Netzwerk erreichbar ist. Besteht das Problem weiter, starten Sie das KNX-System neu (Strom aus/an) und laden Sie die Integration neu. Diese Meldung verschwindet von selbst, sobald die Erneuerung gelingt."
     }
   }
 }

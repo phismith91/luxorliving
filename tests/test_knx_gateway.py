@@ -11,6 +11,19 @@ from homeassistant.core import HomeAssistant
 from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
 
 
+def _attach_connected_xknx(gateway: LuxorKNXGateway) -> None:
+    """Give a gateway an xknx mock that reports CONNECTED.
+
+    Success paths now set ``_connected`` from the real xknx state instead of
+    unconditionally, so tests asserting ``_connected is True`` need this.
+    """
+    from xknx.core import XknxConnectionState
+
+    xknx = MagicMock()
+    xknx.connection_manager.state = XknxConnectionState.CONNECTED
+    gateway._xknx = xknx
+
+
 @pytest.fixture(autouse=True)
 def _mock_shared_session():
     """Stub HA's shared websession helper so the gateway never builds a real one."""
@@ -635,6 +648,7 @@ class TestReconnectHandler:
             simulation_mode=False,
         )
         gateway._connected = False
+        _attach_connected_xknx(gateway)
 
         mock_rest = AsyncMock()
         mock_rest.logout = AsyncMock()
@@ -857,6 +871,7 @@ class TestSessionRefreshLoop:
         mock_rest = AsyncMock()
         gateway._rest_client = mock_rest
         gateway._connected = False
+        _attach_connected_xknx(gateway)
 
         call_count = 0
 
@@ -1849,6 +1864,7 @@ class TestSessionLockRaceCondition:
         mock_rest = AsyncMock()
         gateway._rest_client = mock_rest
         gateway._setup_complete = True
+        _attach_connected_xknx(gateway)
 
         await gateway._async_on_reconnect()
 
@@ -2146,3 +2162,108 @@ class TestReconnectCooldownRestoresConnected:
         # Cooldown must not apply: re-auth path ran (and failed again) -> still False.
         assert gateway._connected is False
         assert gateway._rest_client.login.await_count == 2
+
+
+class TestRefreshRetryBackoff:
+    """Failed forced refresh retries with backoff and surfaces a Repairs issue."""
+
+    def _gateway(self, mock_hass) -> LuxorKNXGateway:
+        gateway = LuxorKNXGateway(
+            hass=mock_hass, host="192.168.1.3", port=3671, username="admin", password="admin"
+        )
+        gateway._rest_client = AsyncMock()
+        _attach_connected_xknx(gateway)
+        return gateway
+
+    @pytest.mark.asyncio
+    async def test_backoff_doubles_up_to_cap_then_succeeds(self, mock_hass):
+        gateway = self._gateway(mock_hass)
+        results = [False] * 6 + [True]
+        gateway._async_forced_refresh = AsyncMock(side_effect=results)
+        delays: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            delays.append(delay)
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.asyncio.sleep", fake_sleep),
+            patch("custom_components.luxor_living.knx_gateway.ir"),
+        ):
+            await gateway._async_refresh_until_success()
+
+        assert delays == [60, 120, 240, 300, 300, 300]
+
+    @pytest.mark.asyncio
+    async def test_repair_issue_after_threshold_and_removed_on_success(self, mock_hass):
+        gateway = self._gateway(mock_hass)
+        gateway._async_forced_refresh = AsyncMock(side_effect=[False, False, False, False, True])
+
+        async def fake_sleep(delay: float) -> None:
+            return None
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.asyncio.sleep", fake_sleep),
+            patch("custom_components.luxor_living.knx_gateway.ir") as ir_mock,
+        ):
+            await gateway._async_refresh_until_success()
+
+        ir_mock.async_create_issue.assert_called_once()
+        args, kwargs = ir_mock.async_create_issue.call_args
+        assert kwargs["translation_key"] == "refresh_failing"
+        assert kwargs["is_fixable"] is False
+        ir_mock.async_delete_issue.assert_called_once()
+        assert gateway._refresh_repair_issue_open is False
+
+    @pytest.mark.asyncio
+    async def test_no_repair_issue_below_threshold(self, mock_hass):
+        gateway = self._gateway(mock_hass)
+        gateway._async_forced_refresh = AsyncMock(side_effect=[False, False, True])
+
+        async def fake_sleep(delay: float) -> None:
+            return None
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.asyncio.sleep", fake_sleep),
+            patch("custom_components.luxor_living.knx_gateway.ir") as ir_mock,
+        ):
+            await gateway._async_refresh_until_success()
+
+        ir_mock.async_create_issue.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_repair_issue_removed_when_cancelled(self, mock_hass):
+        """Teardown mid-retry must not leave a stale Repairs issue behind."""
+        gateway = self._gateway(mock_hass)
+        gateway._async_forced_refresh = AsyncMock(return_value=False)
+        calls = 0
+
+        async def fake_sleep(delay: float) -> None:
+            nonlocal calls
+            calls += 1
+            if calls >= 4:
+                raise asyncio.CancelledError
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.asyncio.sleep", fake_sleep),
+            patch("custom_components.luxor_living.knx_gateway.ir") as ir_mock,
+        ):
+            with pytest.raises(asyncio.CancelledError):
+                await gateway._async_refresh_until_success()
+
+        ir_mock.async_create_issue.assert_called_once()
+        ir_mock.async_delete_issue.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_repair_issue_errors_never_break_the_loop(self, mock_hass):
+        gateway = self._gateway(mock_hass)
+        gateway._async_forced_refresh = AsyncMock(side_effect=[False, False, False, True])
+
+        async def fake_sleep(delay: float) -> None:
+            return None
+
+        with (
+            patch("custom_components.luxor_living.knx_gateway.asyncio.sleep", fake_sleep),
+            patch("custom_components.luxor_living.knx_gateway.ir") as ir_mock,
+        ):
+            ir_mock.async_create_issue.side_effect = RuntimeError("registry down")
+            await gateway._async_refresh_until_success()  # must not raise

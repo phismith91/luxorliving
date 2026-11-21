@@ -5,6 +5,14 @@ documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Connection flag no longer lies about availability (found by new chaos test harness)**: three more event orders could leave `connected` wrong. (1) A proactive refresh finishing after the IP1 had already dropped the tunnel set `connected=True` while xknx was down. (2) A reconnect re-auth finishing after a newer disconnect did the same. Both now set the flag from the real xknx state. (3) A failed refresh (after `logout()` had switched tunneling off) left every entity unavailable until the next refresh 4 h later; it now retries with backoff (60 s, doubling up to 5 min) until it succeeds. After 3 failed attempts a Repairs notice appears in Home Assistant (Settings → Repairs) so the problem is visible without reading logs; it disappears by itself once the refresh succeeds.
+
+### Tests
+
+- Exhaustive event-sequence harness (`tests/chaos/`): drives a real gateway through every short interleaving of xknx connect/disconnect, gated REST refresh steps (ok or failing) and clock jumps, and checks the `connected` flag after each. It reproduces #247 on the pre-fix code.
+
 ## [1.2.3] - 2026-11-06
 
 ### Fixed
