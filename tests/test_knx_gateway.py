@@ -11,6 +11,19 @@ from homeassistant.core import HomeAssistant
 from custom_components.luxor_living.knx_gateway import LuxorKNXGateway
 
 
+def _attach_connected_xknx(gateway: LuxorKNXGateway) -> None:
+    """Give a gateway an xknx mock that reports CONNECTED.
+
+    Success paths now set ``_connected`` from the real xknx state instead of
+    unconditionally, so tests asserting ``_connected is True`` need this.
+    """
+    from xknx.core import XknxConnectionState
+
+    xknx = MagicMock()
+    xknx.connection_manager.state = XknxConnectionState.CONNECTED
+    gateway._xknx = xknx
+
+
 @pytest.fixture(autouse=True)
 def _mock_shared_session():
     """Stub HA's shared websession helper so the gateway never builds a real one."""
@@ -635,6 +648,7 @@ class TestReconnectHandler:
             simulation_mode=False,
         )
         gateway._connected = False
+        _attach_connected_xknx(gateway)
 
         mock_rest = AsyncMock()
         mock_rest.logout = AsyncMock()
@@ -857,6 +871,7 @@ class TestSessionRefreshLoop:
         mock_rest = AsyncMock()
         gateway._rest_client = mock_rest
         gateway._connected = False
+        _attach_connected_xknx(gateway)
 
         call_count = 0
 
@@ -1849,6 +1864,7 @@ class TestSessionLockRaceCondition:
         mock_rest = AsyncMock()
         gateway._rest_client = mock_rest
         gateway._setup_complete = True
+        _attach_connected_xknx(gateway)
 
         await gateway._async_on_reconnect()
 

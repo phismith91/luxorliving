@@ -38,6 +38,7 @@ from .const import (
     RECONNECT_FAILURE_WINDOW,
     RECOVERY_READ_QUIET_PERIOD,
     SESSION_REFRESH_INTERVAL,
+    SESSION_REFRESH_RETRY_INTERVAL,
     XKNX_INTERFACE_STOP_TIMEOUT,
     XKNX_STOP_TIMEOUT,
     ZOMBIE_CHECK_INTERVAL,
@@ -532,7 +533,7 @@ class LuxorKNXGateway:
                     "Proactive session refresh — cycling REST auth to prevent gateway lockup"
                 )
                 try:
-                    await self._async_forced_refresh()
+                    await self._async_refresh_until_success()
                 except Exception as err:
                     _LOGGER.error(
                         "Proactive session refresh failed (will retry in %ds): %s",
@@ -574,7 +575,7 @@ class LuxorKNXGateway:
         except Exception as err:  # diagnostic only, never raises to the caller
             _LOGGER.warning("IP1 slot status query failed (%s): %s", context, err)
 
-    async def _async_forced_refresh(self) -> None:
+    async def _async_forced_refresh(self) -> bool:
         """Proactive REST refresh regardless of xknx connection state.
 
         Used by both the periodic timer and the reconnect-failure watchdog.
@@ -587,7 +588,7 @@ class LuxorKNXGateway:
         between restarts, which defeats the point of a periodic self-heal.
         """
         if not self._rest_client or self.simulation_mode:
-            return
+            return True  # nothing to refresh
         async with self._session_lock:
             try:
                 await self._rest_client.logout()
@@ -595,10 +596,15 @@ class LuxorKNXGateway:
                 await self._log_slot_status("periodic refresh")
                 await self._rest_client.disable_tunneling()
                 await self._rest_client.enable_tunneling()
-                self._connected = True
+                # xknx may have dropped (the refresh itself makes the IP1 send a
+                # DisconnectRequest) while we were awaiting REST: only claim
+                # connected if the tunnel is up now. A later CONNECTED event
+                # restores the flag via _async_on_reconnect.
+                self._connected = self._xknx_is_connected()
                 self._last_refresh_at = time.monotonic()
                 self._arm_recovery_read_protection("forced_refresh")
                 _LOGGER.warning("REST session refresh complete (host=%s)", self.host)
+                return True
             except Exception as err:
                 # Fire-and-forget task: never let the exception escape unhandled.
                 self._connected = False
@@ -611,6 +617,23 @@ class LuxorKNXGateway:
                     self.host,
                     err,
                 )
+                return False
+
+    async def _async_refresh_until_success(self) -> None:
+        """Run a forced refresh, retrying quickly after a failure.
+
+        A failed cycle has already run logout() (tunneling off on the IP1) and
+        left entities unavailable; waiting for the next 4 h cycle would keep
+        them dead for hours. Retries until it succeeds; cancellation (teardown)
+        ends the loop.
+        """
+        while not await self._async_forced_refresh():
+            await asyncio.sleep(SESSION_REFRESH_RETRY_INTERVAL)
+
+    def _xknx_is_connected(self) -> bool:
+        """True if an xknx instance exists and currently reports CONNECTED."""
+        xknx = self._xknx
+        return xknx is not None and xknx.connection_manager.state == XknxConnectionState.CONNECTED
 
     async def _zombie_watchdog_loop(self) -> None:
         """Detect a 'zombie' tunnel and force a full reconnect.
@@ -868,9 +891,7 @@ class LuxorKNXGateway:
             # restores it and every entity stays unavailable. Only restore if xknx
             # still reports CONNECTED: this task runs after the CONNECTED callback,
             # and a newer DISCONNECTED would schedule its own reconnect later.
-            xknx = self._xknx
-            if xknx is not None and xknx.connection_manager.state == XknxConnectionState.CONNECTED:
-                self._connected = True
+            self._connected = self._xknx_is_connected()
             _LOGGER.info(
                 "Recent REST refresh (%.0fs ago) — skipping reconnect re-auth (host=%s)",
                 age,
@@ -888,7 +909,9 @@ class LuxorKNXGateway:
                 await self._rest_client.logout()
                 await self._rest_client.login(self.username, self.password)
                 await self._rest_client.enable_tunneling()
-                self._connected = True
+                # A DISCONNECTED may have arrived while awaiting REST: the next
+                # CONNECTED schedules its own re-auth, so don't claim connected now.
+                self._connected = self._xknx_is_connected()
                 self._last_refresh_at = time.monotonic()
                 self._arm_recovery_read_protection("reconnect")
                 _LOGGER.info("Tunneling re-enabled — entities are available again")

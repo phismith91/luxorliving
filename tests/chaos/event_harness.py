@@ -116,7 +116,7 @@ class World:
         elif op in ("RS", "RF"):
             # RF = refresh whose enable_tunneling (5th REST call of a refresh) fails
             self.ip1.fail_on_call = self.ip1.calls + 5 if op == "RF" else None
-            self._spawn(gw._async_forced_refresh())
+            self._spawn(gw._async_refresh_until_success())
         elif op == "STEP" and self.ip1.pending:
             self.ip1.pending.pop(0).set_result(None)
         elif op == "FIN":  # let every in-flight REST cycle run to completion
@@ -178,7 +178,9 @@ async def run_sequence(seq: tuple[str, ...]) -> list[str]:
     world = World()
     stub = SimpleNamespace(monotonic=lambda: world.clock, now=lambda: world.clock)
     original = gw_mod.time
+    original_retry = gw_mod.SESSION_REFRESH_RETRY_INTERVAL
     gw_mod.time = stub  # the loop's own clock stays untouched
+    gw_mod.SESSION_REFRESH_RETRY_INTERVAL = 0  # retries run immediately
     try:
         for op in seq:
             await world.apply(op)
@@ -186,6 +188,7 @@ async def run_sequence(seq: tuple[str, ...]) -> list[str]:
         return world.violations()
     finally:
         gw_mod.time = original
+        gw_mod.SESSION_REFRESH_RETRY_INTERVAL = original_retry
         for t in world.tasks:
             if not t.done():
                 t.cancel()

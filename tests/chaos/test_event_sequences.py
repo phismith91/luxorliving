@@ -1,8 +1,9 @@
 """Exhaustive event-sequence ("chaos") tests for the gateway connection flag.
 
-See event_harness.py. Hard guards must always pass. The xfail tests document
-open findings from the spike (2026-11-21): when one is fixed, the strict xfail
-flips to XPASS and fails, which is the signal to turn it into a normal test.
+See event_harness.py. The named tests pin the three findings the harness
+produced (2026-11-21), each with its shortest reproducing sequence. The
+exhaustive test then checks ALL invariants over every sequence up to
+CHAOS_MAX_LEN ops (default 4; 5-6 take 20-70 s).
 """
 
 import os
@@ -14,34 +15,33 @@ from tests.chaos.event_harness import run_sequence, sequences
 pytestmark = pytest.mark.asyncio
 
 MAX_LEN = int(os.environ.get("CHAOS_MAX_LEN", "4"))
-HARD_GUARDS = ("LOCK:", "LIVENESS: stuck unavailable (xknx up, tunneling on")
 
 
-async def test_no_hang_no_lock_leak_and_no_stuck_with_tunneling_on():
-    """Regression guard for #247: xknx up + tunneling on must never stay unavailable."""
+async def test_all_sequences_keep_connected_flag_consistent():
+    """No sequence may hang, leak the lock, lie about availability or stay stuck."""
     failures = []
     for seq in sequences(MAX_LEN):
-        bad = [v for v in await run_sequence(seq) if v.startswith(HARD_GUARDS)]
+        bad = await run_sequence(seq)
         if bad:
             failures.append((" ".join(seq), bad))
     assert not failures, failures[:5]
 
 
-@pytest.mark.xfail(strict=True, reason="finding: refresh sets connected=True without checking xknx")
+async def test_issue_247_refresh_then_second_disconnect_restores_flag():
+    """#247: refresh done, DISCONNECTED, CONNECTED inside the cooldown."""
+    assert await run_sequence(("RS", "FIN", "DISC", "CONN")) == []
+
+
 async def test_refresh_must_not_claim_connected_while_xknx_down():
     """DISC arrives during a refresh; refresh then sets connected=True unconditionally."""
-    assert not [v for v in await run_sequence(("RS", "DISC")) if v.startswith("SAFETY")]
+    assert await run_sequence(("RS", "DISC")) == []
 
 
-@pytest.mark.xfail(strict=True, reason="finding: re-auth sets connected=True after a later DISC")
 async def test_reconnect_reauth_must_not_claim_connected_after_later_disconnect():
     """CONN starts re-auth, DISC arrives meanwhile, re-auth completes and overwrites False."""
-    assert not [v for v in await run_sequence(("DISC", "CONN", "DISC")) if v.startswith("SAFETY")]
+    assert await run_sequence(("DISC", "CONN", "DISC")) == []
 
 
-@pytest.mark.xfail(
-    strict=True, reason="finding: failed refresh leaves tunneling off until next 4h cycle"
-)
 async def test_failed_refresh_must_not_leave_entities_stuck_unavailable():
     """Refresh fails after logout(): xknx up, tunneling off, nothing retries for 4 h."""
-    assert not [v for v in await run_sequence(("RF",)) if v.startswith("LIVENESS")]
+    assert await run_sequence(("RF",)) == []
