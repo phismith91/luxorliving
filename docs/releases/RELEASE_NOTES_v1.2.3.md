@@ -1,7 +1,7 @@
 # Release Notes — v1.2.3
 
-Pre-release (rc.2), 2026-11-21. rc.2 adds the #247 fix; rc.1 is superseded. Full detail per change in
-[CHANGELOG.md](../../CHANGELOG.md#123---2026-11-06).
+Stable release, 2026-11-25. Promoted from v1.2.3-rc.2 without code changes; the rc.1/rc.2 pre-releases are superseded. Full detail per change in
+[CHANGELOG.md](../../CHANGELOG.md#123---2026-11-25).
 
 ## Fixed
 

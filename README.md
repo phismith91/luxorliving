@@ -47,7 +47,7 @@ Entities are discovered and created automatically from your LXP project file.
 [Release Operations](https://github.com/phismith91/luxorliving/blob/main/docs/RELEASE_OPERATIONS.md) · [Incident Response](https://github.com/phismith91/luxorliving/blob/main/docs/INCIDENT_RESPONSE_RUNBOOK.md) · [Changelog](https://github.com/phismith91/luxorliving/blob/main/CHANGELOG.md)
 
 <!-- RELEASE_NOTES_START -->
-**Current pre-release:** [v1.2.3-rc.2](https://github.com/phismith91/luxorliving/releases/tag/v1.2.3-rc.2) — fixes entities staying unavailable after the 4-hourly session refresh (#247), lights being switched off after a Home Assistant restart (#217) and restores a dimmer's previous brightness when it is switched on again (#237). The latest stable release is [v1.2.2](https://github.com/phismith91/luxorliving/releases/tag/v1.2.2).
+**Latest release:** [v1.2.3](https://github.com/phismith91/luxorliving/releases/tag/v1.2.3) — fixes entities staying unavailable after the 4-hourly session refresh (#247), lights being switched off after a Home Assistant restart (#217) and restores a dimmer's previous brightness when it is switched on again (#237). Previous stable: [v1.2.2](https://github.com/phismith91/luxorliving/releases/tag/v1.2.2).
 <!-- RELEASE_NOTES_END -->
 
 ---

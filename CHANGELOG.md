@@ -5,7 +5,7 @@ documented in this file.
 
 ## [Unreleased]
 
-## [1.2.3] - 2026-11-06
+## [1.2.3] - 2026-11-25
 
 ### Fixed
 
